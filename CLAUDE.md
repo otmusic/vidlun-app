@@ -9,6 +9,11 @@
 
 **Read these first. They override any other instruction in this document.**
 
+0. **Communication language.** Reply to the developer in **Ukrainian** —
+   explanations, questions, summaries, progress reports, and clarifications.
+   Everything that lands in the repository stays **English**: code, comments,
+   JSDoc, test names, commit messages, file names, README, and any documentation
+   file. Two different channels: talk Ukrainian, write English.
 1. **English only, everywhere in the codebase.** Identifiers, comments, JSDoc,
    test names, commit messages, file names, README, error messages thrown in
    code. No Cyrillic characters in any `.ts`/`.tsx` file.
@@ -48,9 +53,18 @@ speech pipeline must handle that. The codebase must not.
 ## 2. Stack and constraints
 
 - React Native + Expo, TypeScript in `strict` mode
-- iOS first; do not add Android-specific code paths yet
+- **iOS ships first. Android follows.** Build iOS-first, but never
+  iOS-only: keep all platform-specific code behind an adapter, use
+  `Platform.select` rather than forking components, and avoid iOS-only
+  libraries when a cross-platform one exists. Concretely — audio recording,
+  speech-to-text, notifications, secure storage, and haptics are the
+  platform-sensitive areas; each must sit behind a port interface so the
+  Android implementation is a new adapter, not a rewrite. Do not add
+  `.android.tsx` files yet, but do not write anything that would make one
+  unavoidable later.
 - Jest + ts-jest for tests
-- On-device speech-to-text via `whisper.rn`
+- On-device speech-to-text via `whisper.rn` (works on both platforms — a
+  second reason to prefer it over Apple's framework)
 - Cloud LLM for analysis (Claude Haiku for per-entry, Sonnet for weekly summary)
 - Local-first storage; no backend in the MVP
 - No state management library until a milestone actually needs one
@@ -225,11 +239,18 @@ Seven roots: `happy`, `surprised`, `bad`, `fearful`, `angry`, `disgusted`,
 
 ---
 
-## 7. Design tokens
+## 7. Design system
 
-Two themes. The accent colour **never** appears in the mood scale — teal means
-"Luna speaking / this is a control", the scale means "this is your feeling",
-honey means "achievement". One colour, one meaning.
+Three principles first, because they explain every rule below: **quiet by
+default** (saturation is loudness), **content over chrome**, and **one colour
+means exactly one thing**.
+
+### 7.1 Colour
+
+The accent colour **never** appears in the mood scale. Teal means "Luna is
+speaking / this is a control". The scale means "this is your feeling". Honey
+means "achievement". If a colour starts meaning two things, the language is
+broken.
 
 ```ts
 light = {
@@ -253,14 +274,130 @@ dark = {
 }
 ```
 
-- Spacing on an 8-grid: `4, 8, 16, 24, 32`. No arbitrary values.
-- Minimum tap target 44pt. Icons may look small; the touch area must not be.
-- Type scale: display 25, body/narrative 16 (line-height 1.6), label 15,
-  secondary 14, caption 11.5. Never below 14 for readable text.
-- Support Dynamic Type — no fixed heights on text containers.
-- Spring animation curve `cubic-bezier(.2,.9,.3,1.2)`; respect Reduce Motion.
-- Mood scale has **no signalling red**. The lowest state is a warm terracotta.
-  A difficult day must not look like an error.
+Mood scale mapping: value ≤2 → `low`, 3 → `tension`, ≥4 → `calm`.
+
+**The mood scale has no signalling red.** The lowest state is a warm terracotta.
+A person logging a hard day must not see the colour of a fire alarm — that
+moralises the feeling and discourages honest entries.
+
+### 7.2 Typography
+
+Two typefaces with a strict role split. This is the product's voice and must
+not be collapsed into one font.
+
+| Face | Used for | Never used for |
+|---|---|---|
+| **Fraunces** (serif) | anything Luna "says": display headings, AI narrative, the transcript quote, the reflection observation | buttons, labels, settings, numbers |
+| **Inter** (sans) | the entire interface: buttons, labels, lists, captions, stats | narrative text |
+
+Scale: display 25/500, narrative and body 16 with line-height 1.6, label 15/500,
+secondary 14, caption 11.5 with +4% letter-spacing and uppercase.
+
+- Never below 14px for readable text; the transcript is 16px because people
+  re-read their own entries at night with tired eyes.
+- Exactly three greys (`ink`, `inkSoft`, `inkFaint`) — never invent a fourth.
+- **Support Dynamic Type.** No fixed heights on text containers; everything
+  stretches with the system font size.
+
+### 7.3 Spacing, shape, touch
+
+- 8-grid: `4, 8, 16, 24, 32`. No arbitrary values — random 13s and 19s are the
+  usual reason a layout feels subtly wrong.
+- Radii: control `14`, card `12–16`, pill `20`, orb `50%`.
+- **Minimum tap target 44pt**, list rows `52`. Icons may look small — the touch
+  area must not be. Expand the hit area rather than the glyph.
+- Primary action lives in the **bottom third** (thumb zone). Never at the top.
+- One primary button per screen; everything else is secondary or text.
+
+### 7.4 Icons
+
+**One anchor icon per block, never inside a paragraph.** An icon identifies
+what a block *is* (a reminder, a pattern, a streak, a tag) so the eye
+recognises it without reading. Icons scattered through prose slow reading down
+and turn text into a list.
+
+- Thin weight (light/regular). Bold icons shout.
+- Muted colour (`inkSoft`) unless the icon carries the block's role.
+- 16–20px inline, 24px maximum.
+- Prefer a cross-platform icon set; on iOS, SF Symbols scale with Dynamic Type
+  automatically, so keep sizing token-driven rather than hard-coded.
+
+### 7.5 Motion and haptics
+
+- Spring curve `cubic-bezier(.2,.9,.3,1.2)`. No bounces, no parallax.
+- **The orb is the only element allowed continuous motion**: it breathes slowly
+  when idle (~3.6s cycle) and pulses while recording.
+- Screen transitions: the reflection card rises from the bottom; state changes
+  cross-fade. Nothing slides sideways.
+- **Haptics** on: recording start, auto-stop, and save. This matters more than
+  usual here — the user often is not looking at the screen while speaking.
+- Respect **Reduce Motion**: disable animation without breaking layout.
+
+### 7.6 Dark theme
+
+Not an inversion — a separate palette. The evening is the primary usage
+scenario, so this is not optional polish.
+
+- **Background is not black** (`#101615`). Pure black with light text is harsh
+  and reads cold.
+- **Text is not white** (`#E7EBE8`). Contrast stays within norms without the
+  "torch in the eyes" effect.
+- Depth comes from **surface elevation** (card lighter than canvas), not shadows.
+- **The accent inverts**: teal lightens and the text on it becomes dark
+  (`onAccent` flips with the theme). This is where quick dark modes usually break.
+- **Mood colours warm up.** Warm hues go dull and grey on dark backgrounds, so
+  the dark scale is lighter and slightly more saturated than the light one.
+- **The orb does not glow at night.** Its backing stays muted; only the glyph
+  is bright. A glowing ring fills the screen with light in a dark room.
+
+### 7.7 Surfaces and glass
+
+If using iOS 26 Liquid Glass: **navigation layer only** — a floating control
+above content. **Never on cards containing text about feelings.** Translucency
+over busy backgrounds destroys hierarchy and readability. Reflection cards,
+narrative blocks, and the emotion palette stay opaque.
+
+### 7.8 Accessibility
+
+- Text contrast minimum **4.5:1** in both themes.
+- **Colour is never the only carrier of meaning** — the mood scale is always
+  accompanied by a label or position.
+- Every icon-only control has an accessibility label; decorative icons are
+  hidden from screen readers.
+- Visible focus state: 2px accent ring with 2px offset.
+
+### 7.9 Copy and tone
+
+Copy is a design surface here, not an afterthought.
+
+- Luna observes, never diagnoses, advises, or praises. Acceptable: "Sounds like
+  the good kind of tired." Not acceptable: "You show signs of burnout"
+  (diagnosis), "Try going to bed earlier" (advice), "Well done for coping!"
+  (evaluation).
+- Never use warning colours or alarm icons on difficult emotions. A red border
+  on "loneliness" says *something is wrong with you*.
+- Empty-head rescue: when the user opens the app and has nothing to say, rotate
+  gentle prompts under the orb ("What is most on your mind right now?").
+  "I don't know what to write" is the main reason journals get abandoned.
+
+### 7.10 Known open issues
+
+Inherited from the design system; do not treat these as settled:
+
+- `warm` (#D9A05B) and `tension` (#D8A268) are tonally close, and collapse into
+  one token in dark theme. Rule holds: **honey is for achievements only, never
+  for a mood state.** Separate them by at least half a tone if a conflict shows.
+- Green confirmation and the teal accent are tonally adjacent — verify on a real
+  device that "saved" reads distinctly from a button.
+- The insights screen scrolls on small phones after the type scale increase.
+  Verify the narrative card fits above the fold on an SE-sized device.
+
+### 7.11 Reference
+
+A clickable HTML prototype exists covering 16 screens in both themes (splash,
+auth, onboarding, home, recording, processing, reflection, edit, saved,
+insights, upsell, paywall, settings). Use it as the source of truth for layout
+and flow. Ask the developer for `luna-prototype.html` and `luna-design-system.html` if it is not in the repo.
 
 ---
 
@@ -270,7 +407,8 @@ Complete milestones in order. Each ends with a green build and a commit.
 
 ### M0 — Foundation
 Expo + TypeScript strict, Jest, ESLint, folder structure, i18n scaffold with
-`en` and `uk` locale files, CI-ready npm scripts.
+`en` and `uk` locale files, CI-ready npm scripts, font loading (Fraunces +
+Inter) wired into the theme provider.
 **Done when:** `npm test` runs (even with zero tests) and typecheck passes.
 
 ### M1 — Domain
@@ -292,7 +430,8 @@ lifting, immutability, and the 4-emotion limit at ≥95% lines.
 ### M4 — Capture flow
 Screens: Home (orb, streak, recent entries), Recording, Processing, Reflection
 card, Edit. Text input fallback. Theme provider with light/dark.
-**Done when:** capture-to-save takes under ten seconds on a real phone.
+**Done when:** capture-to-save takes under ten seconds on a real phone, and no
+component contains an iOS-only assumption that would need an `.android.tsx` twin.
 
 ### M5 — Retention and monetization
 Insights screen (free daily trend + paywalled weekly narrative), onboarding
@@ -316,6 +455,11 @@ path got slower.
 - Do not add analytics or crash SDKs until M5.
 - Do not "improve" the capture flow by adding steps, confirmations, or optional
   fields.
+- Do not put an icon inside a paragraph of text, or use a single font for both
+  the interface and Luna's voice.
+- Do not write iOS-only code without an interface behind it — Android is next,
+  not hypothetical.
+- Do not reply to the developer in English.
 
 ---
 
