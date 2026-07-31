@@ -1,0 +1,15 @@
+{
+  "app.name": "Luna",
+  "home.prompt": "How are you feeling?",
+  "home.recordHint": "Tap and say one sentence",
+  "home.recentTitle": "Recent",
+  "home.emptyState": "Nothing here yet. Your first entry takes ten seconds.",
+  "recording.listening": "Listening",
+  "recording.stop": "Done",
+  "processing.thinking": "Reading what you said",
+  "reflection.title": "Here is what I heard",
+  "reflection.confirm": "That's right",
+  "reflection.edit": "Not quite",
+  "common.cancel": "Cancel",
+  "common.retry": "Try again"
+}

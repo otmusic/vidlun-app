@@ -1,0 +1,15 @@
+{
+  "app.name": "Luna",
+  "home.prompt": "Як ти зараз?",
+  "home.recordHint": "Натисни й скажи одне речення",
+  "home.recentTitle": "Нещодавні",
+  "home.emptyState": "Тут поки порожньо. Перший запис займе десять секунд.",
+  "recording.listening": "Слухаю",
+  "recording.stop": "Готово",
+  "processing.thinking": "Читаю те, що ти сказав",
+  "reflection.title": "Ось що я почула",
+  "reflection.confirm": "Саме так",
+  "reflection.edit": "Не зовсім",
+  "common.cancel": "Скасувати",
+  "common.retry": "Спробувати ще"
+}
