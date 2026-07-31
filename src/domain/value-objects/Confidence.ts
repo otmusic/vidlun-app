@@ -22,6 +22,18 @@ export class Confidence {
     return new Confidence(value);
   }
 
+  /**
+   * For speech-engine output. An unusable number means we do not know how well
+   * we heard, and not knowing is the same risk as hearing badly.
+   */
+  static clamped(value: number): Confidence {
+    if (Number.isNaN(value)) {
+      return new Confidence(0);
+    }
+
+    return new Confidence(Math.min(1, Math.max(0, value)));
+  }
+
   get level(): ConfidenceLevel {
     if (this.value >= HIGH_THRESHOLD) {
       return 'high';

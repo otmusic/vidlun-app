@@ -11,6 +11,16 @@ describe('Confidence', () => {
     expect(() => Confidence.of(value)).toThrow(InvalidConfidenceError);
   });
 
+  it('pulls a speech-engine value back into range instead of failing capture', () => {
+    expect(Confidence.clamped(1.4).value).toBe(1);
+    expect(Confidence.clamped(-0.2).value).toBe(0);
+    expect(Confidence.clamped(0.72).value).toBe(0.72);
+  });
+
+  it('treats an unusable value as knowing nothing about what it heard', () => {
+    expect(Confidence.clamped(Number.NaN).level).toBe('low');
+  });
+
   it.each([
     [0.95, 'high'],
     [0.8, 'high'],

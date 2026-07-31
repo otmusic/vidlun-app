@@ -25,10 +25,10 @@ module.exports = {
     'src/infrastructure/**/*.ts',
   ],
   coverageReporters: ['text-summary', 'lcov'],
-  // Weighted by risk, not spread evenly. The application threshold arrives
-  // with the use cases in M2.
+  // Weighted by risk, not spread evenly.
   coverageThreshold: {
     './src/domain/': { lines: 95 },
+    './src/application/': { lines: 90 },
     './src/infrastructure/': { lines: 60 },
   },
 };
