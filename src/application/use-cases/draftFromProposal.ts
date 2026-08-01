@@ -1,0 +1,41 @@
+import type { EmotionVocabulary } from '../../domain/entities/EmotionVocabulary';
+import { MoodEntry, type EntrySource } from '../../domain/entities/MoodEntry';
+import type { ReflectionProposal } from '../../domain/ports/IReflectionAnalyzer';
+import type { Confidence } from '../../domain/value-objects/Confidence';
+import { MoodScore } from '../../domain/value-objects/MoodScore';
+
+export interface DraftInput {
+  readonly id: string;
+  readonly createdAt: Date;
+  readonly source: EntrySource;
+  readonly rawTranscript: string;
+  readonly confidence: Confidence;
+  readonly proposal: ReflectionProposal;
+  readonly vocabulary: EmotionVocabulary;
+}
+
+/**
+ * The one place a model proposal becomes a draft, so a spoken entry and a
+ * typed one cannot drift apart in how strictly they are read.
+ */
+export function draftFromProposal(input: DraftInput): MoodEntry {
+  const cleaned = input.proposal.cleanTranscript.trim();
+
+  return MoodEntry.create({
+    id: input.id,
+    createdAt: input.createdAt,
+    source: input.source,
+    rawTranscript: input.rawTranscript,
+    // A model that returns an empty cleanup must not cost the user the entry.
+    cleanTranscript: cleaned.length > 0 ? cleaned : input.rawTranscript,
+    mood: MoodScore.clamped(input.proposal.mood),
+    emotionIds: input.vocabulary.normalizeAiProposal(input.proposal.emotionIds, {
+      maxDepth: input.confidence.maxEmotionDepth,
+      limit: MoodEntry.MAX_EMOTIONS,
+    }),
+    contextTags: input.proposal.contextTags,
+    observation: input.proposal.observation,
+    confidence: input.confidence,
+    safetyFlag: input.proposal.safetyFlag,
+  });
+}

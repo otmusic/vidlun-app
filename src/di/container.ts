@@ -3,11 +3,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync } from 'expo-audio';
 
 import { ConfirmEntry } from '../application/use-cases/ConfirmEntry';
+import { CreateTextEntry } from '../application/use-cases/CreateTextEntry';
 import { CreateVoiceEntry } from '../application/use-cases/CreateVoiceEntry';
+import { GetHomeView } from '../application/use-cases/GetHomeView';
 import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
 import { ReviseEntry } from '../application/use-cases/ReviseEntry';
 import type { EmotionVocabulary } from '../domain/entities/EmotionVocabulary';
 import type { IAudioRecorder } from '../domain/ports/IAudioRecorder';
+import type { IHaptics } from '../domain/ports/IHaptics';
 import type { IMicrophonePermission } from '../domain/ports/IMicrophonePermission';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
 import { ClaudeNarrativeGenerator } from '../infrastructure/analysis/ClaudeNarrativeGenerator';
@@ -17,6 +20,7 @@ import { ExpoAudioRecorder, type NativeRecorder } from '../infrastructure/audio/
 import { ExpoMicrophonePermission } from '../infrastructure/audio/ExpoMicrophonePermission';
 import { AsyncStorageMoodEntryRepository } from '../infrastructure/persistence/AsyncStorageMoodEntryRepository';
 import { AsyncStorageRevisionLog } from '../infrastructure/persistence/AsyncStorageRevisionLog';
+import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { SystemClock } from '../infrastructure/system/SystemClock';
 import { UuidGenerator } from '../infrastructure/system/UuidGenerator';
@@ -24,10 +28,13 @@ import { readAnthropicApiKey } from './config';
 
 export interface Container {
   readonly createVoiceEntry: CreateVoiceEntry;
+  readonly createTextEntry: CreateTextEntry;
   readonly confirmEntry: ConfirmEntry;
   readonly reviseEntry: ReviseEntry;
+  readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
   readonly microphonePermission: IMicrophonePermission;
+  readonly haptics: IHaptics;
   readonly vocabulary: EmotionVocabulary;
   /**
    * expo-audio hands out recorders through a React hook, so the screen creates
@@ -55,20 +62,24 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     dangerouslyAllowBrowser: true,
   });
 
+  const analyzer = new ClaudeReflectionAnalyzer(anthropic.messages, vocabulary);
   const repository = new AsyncStorageMoodEntryRepository(AsyncStorage);
   const revisionLog = new AsyncStorageRevisionLog(AsyncStorage);
 
   return {
     vocabulary,
+    haptics: new ExpoHaptics(),
     createVoiceEntry: new CreateVoiceEntry(
       dependencies.transcription,
-      new ClaudeReflectionAnalyzer(anthropic.messages, vocabulary),
+      analyzer,
       vocabulary,
       clock,
       idGenerator,
     ),
+    createTextEntry: new CreateTextEntry(analyzer, vocabulary, clock, idGenerator),
     confirmEntry: new ConfirmEntry(repository, revisionLog, clock),
     reviseEntry: new ReviseEntry(vocabulary),
+    getHomeView: new GetHomeView(repository, clock),
     getWeekSummary: new GetWeekSummary(
       repository,
       new ClaudeNarrativeGenerator(anthropic.messages),

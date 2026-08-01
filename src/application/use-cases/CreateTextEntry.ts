@@ -1,47 +1,39 @@
 import type { EmotionVocabulary } from '../../domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import { NothingWasSaidError } from '../../domain/errors/MoodEntryErrors';
-import type { AudioRecording } from '../../domain/ports/IAudioRecorder';
 import type { IClock } from '../../domain/ports/IClock';
 import type { IIdGenerator } from '../../domain/ports/IIdGenerator';
 import type { IReflectionAnalyzer } from '../../domain/ports/IReflectionAnalyzer';
-import type { ITranscriptionService } from '../../domain/ports/ITranscriptionService';
 import { Confidence } from '../../domain/value-objects/Confidence';
 import { draftFromProposal } from './draftFromProposal';
 
 /**
- * Turns a finished recording into a draft. Nothing is stored: the reflection
- * card is a proposal, and only `ConfirmEntry` writes.
- *
- * The recording itself is started and stopped by the screen, because auto-stop
- * on silence is a capture-speed decision rather than a product rule.
+ * The fallback for someone who cannot speak right now. Confidence is full:
+ * a human typed the words, so nothing was heard and nothing was misheard,
+ * and Luna may be as specific as the wheel allows.
  */
-export class CreateVoiceEntry {
+export class CreateTextEntry {
   constructor(
-    private readonly transcription: ITranscriptionService,
     private readonly analyzer: IReflectionAnalyzer,
     private readonly vocabulary: EmotionVocabulary,
     private readonly clock: IClock,
     private readonly idGenerator: IIdGenerator,
   ) {}
 
-  async execute(recording: AudioRecording): Promise<MoodEntry> {
-    const transcription = await this.transcription.transcribe(recording);
-    const spoken = transcription.text.trim();
+  async execute(text: string): Promise<MoodEntry> {
+    const typed = text.trim();
 
-    if (spoken.length === 0) {
+    if (typed.length === 0) {
       throw new NothingWasSaidError();
     }
-
-    const confidence = Confidence.clamped(transcription.confidence);
 
     return draftFromProposal({
       id: this.idGenerator.next(),
       createdAt: this.clock.now(),
-      source: 'voice',
-      rawTranscript: spoken,
-      confidence,
-      proposal: await this.analyzer.analyze(spoken),
+      source: 'text',
+      rawTranscript: typed,
+      confidence: Confidence.of(1),
+      proposal: await this.analyzer.analyze(typed),
       vocabulary: this.vocabulary,
     });
   }

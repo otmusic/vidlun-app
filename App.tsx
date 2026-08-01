@@ -1,14 +1,14 @@
 import { StatusBar } from 'expo-status-bar';
 import { RecordingPresets, useAudioRecorder } from 'expo-audio';
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-
 import { createContainer, type Container } from '@/di/container';
-import { createTranslator, DEFAULT_LOCALE } from '@/i18n';
+import { createTranslator, type Locale } from '@/i18n';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
-import { DiagnosticsScreen } from '@/presentation/screens/DiagnosticsScreen';
-
-const t = createTranslator(DEFAULT_LOCALE);
+import { AppText } from '@/presentation/components/AppText';
+import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
+import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
+import { Screen } from '@/presentation/screens/Screen';
+import { ThemeProvider } from '@/presentation/theme/ThemeProvider';
 
 interface Wiring {
   readonly container?: Container;
@@ -32,46 +32,63 @@ export default function App() {
     }
   }, [transcription]);
 
-  const recorder = useMemo(
-    () => wiring.container?.createAudioRecorder(nativeRecorder),
-    [nativeRecorder, wiring.container],
-  );
-
-  if (wiring.container === undefined || recorder === undefined) {
-    return (
-      <View style={styles.setup}>
-        <Text style={styles.setupText}>{t('dev.missingKey')}</Text>
-        <Text style={styles.setupDetail}>{wiring.failure ?? ''}</Text>
-        <StatusBar style="auto" />
-      </View>
-    );
-  }
-
   return (
-    <>
-      <DiagnosticsScreen
-        microphonePermission={wiring.container.microphonePermission}
-        recorder={recorder}
-        setTranscript={(text) => {
-          transcription.setTranscript(text);
-        }}
-        createVoiceEntry={wiring.container.createVoiceEntry}
-        confirmEntry={wiring.container.confirmEntry}
-      />
+    <ThemeProvider>
+      {wiring.container === undefined ? (
+        <SetupNeeded detail={wiring.failure ?? ''} />
+      ) : (
+        <Luna container={wiring.container} nativeRecorder={nativeRecorder} />
+      )}
       <StatusBar style="auto" />
-    </>
+    </ThemeProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  setup: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-    gap: 16,
-    backgroundColor: '#EDF2F1',
-  },
-  setupText: { fontSize: 16, lineHeight: 25.6, textAlign: 'center', color: '#26302F' },
-  setupDetail: { fontSize: 14, textAlign: 'center', color: '#61706E' },
-});
+function Luna(props: {
+  readonly container: Container;
+  readonly nativeRecorder: Parameters<Container['createAudioRecorder']>[0];
+}): React.JSX.Element {
+  const { container } = props;
+  const locale = useDeviceLocale();
+  const t = useMemo(() => createTranslator(locale), [locale]);
+  const recorder = useMemo(
+    () => container.createAudioRecorder(props.nativeRecorder),
+    [container, props.nativeRecorder],
+  );
+
+  const flow = useCaptureFlow({
+    recorder,
+    haptics: container.haptics,
+    createVoiceEntry: container.createVoiceEntry,
+    createTextEntry: container.createTextEntry,
+    confirmEntry: container.confirmEntry,
+    reviseEntry: container.reviseEntry,
+    getHomeView: container.getHomeView,
+  });
+
+  return (
+    <CaptureFlowScreen flow={flow} vocabulary={container.vocabulary} locale={locale} t={t} />
+  );
+}
+
+/**
+ * Pinned rather than detected. Reading the device language needs
+ * expo-localization, and the iOS-only native alternative is exactly the kind of
+ * fork §2 forbids. The audience speaks Ukrainian, so that is the honest default
+ * until a settings picker lands; `en` stays the source locale everything falls
+ * back to.
+ */
+function useDeviceLocale(): Locale {
+  return 'uk';
+}
+
+/** Shown when the api key is missing, which is a developer state, not a user one. */
+function SetupNeeded(props: { readonly detail: string }): React.JSX.Element {
+  return (
+    <Screen centered>
+      <AppText variant="body" align="center">
+        {props.detail}
+      </AppText>
+    </Screen>
+  );
+}
