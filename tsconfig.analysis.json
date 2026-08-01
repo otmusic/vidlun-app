@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "customConditions": null,
+    "module": "commonjs",
+    "moduleResolution": "bundler",
+    "rootDir": "./src",
+    "outDir": "./.analysis-build",
+    "types": ["jest"],
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["src/domain/**/*", "src/application/**/*", "src/infrastructure/**/*"]
+}

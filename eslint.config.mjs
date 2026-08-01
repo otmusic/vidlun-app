@@ -31,6 +31,8 @@ export default tseslint.config(
       'dist/',
       'coverage/',
       'assets/',
+      // Compiled output of tsconfig.analysis.json, not source.
+      '.analysis-build/',
       'babel.config.js',
       'metro.config.js',
     ],
