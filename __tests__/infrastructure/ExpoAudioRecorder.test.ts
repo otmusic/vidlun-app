@@ -1,0 +1,189 @@
+import { NoRecordingProducedError, RecordingCancelledError } from '@/domain/errors/RecordingErrors';
+import { ExpoAudioRecorder, type SilenceOptions } from '@/infrastructure/audio/ExpoAudioRecorder';
+import { FakeNativeRecorder, ManualScheduler } from './fakes';
+
+const OPTIONS: SilenceOptions = {
+  silenceThresholdDb: -45,
+  silenceDurationMs: 300,
+  maxDurationMs: 1000,
+  pollIntervalMs: 100,
+};
+
+const SPEECH = -20;
+const SILENCE = -60;
+
+function setup() {
+  const recorder = new FakeNativeRecorder();
+  const scheduler = new ManualScheduler();
+
+  return {
+    recorder,
+    scheduler,
+    subject: new ExpoAudioRecorder(recorder, scheduler, OPTIONS),
+  };
+}
+
+/** Drives the take forward one poll at a time at the given loudness. */
+function play(
+  recorder: FakeNativeRecorder,
+  scheduler: ManualScheduler,
+  metering: number | undefined,
+  polls: number,
+): void {
+  for (let count = 0; count < polls; count += 1) {
+    recorder.emit(metering, OPTIONS.pollIntervalMs);
+    scheduler.advance();
+  }
+}
+
+describe('ExpoAudioRecorder', () => {
+  it('enables metering, because silence detection has nothing to listen to without it', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await Promise.resolve();
+    expect(recorder.prepareCalls).toBe(1);
+
+    subject.stop();
+    await take;
+    expect(scheduler.watching).toBe(0);
+  });
+
+  it('ends the take by itself once the speaker falls quiet', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await Promise.resolve();
+    play(recorder, scheduler, SPEECH, 2);
+    play(recorder, scheduler, SILENCE, 3);
+
+    await expect(take).resolves.toEqual({ uri: 'file:///take.m4a', durationMs: 500 });
+  });
+
+  it('waits through the pause before the first word', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await Promise.resolve();
+    play(recorder, scheduler, SILENCE, 5);
+
+    expect(recorder.stopCalls).toBe(0);
+
+    play(recorder, scheduler, SPEECH, 1);
+    play(recorder, scheduler, SILENCE, 3);
+
+    await expect(take).resolves.toMatchObject({ uri: 'file:///take.m4a' });
+  });
+
+  it('restarts the count when the speaker pauses mid-sentence and carries on', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await Promise.resolve();
+    play(recorder, scheduler, SPEECH, 1);
+    play(recorder, scheduler, SILENCE, 2);
+    play(recorder, scheduler, SPEECH, 1);
+
+    expect(recorder.stopCalls).toBe(0);
+
+    play(recorder, scheduler, SILENCE, 3);
+
+    await expect(take).resolves.toMatchObject({ durationMs: 700 });
+  });
+
+  it('stops at the ceiling so a forgotten recording cannot run all day', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await Promise.resolve();
+    play(recorder, scheduler, SPEECH, 10);
+
+    await expect(take).resolves.toMatchObject({ durationMs: 1000 });
+  });
+
+  it('runs to the ceiling when the device reports no metering at all', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await Promise.resolve();
+    play(recorder, scheduler, undefined, 5);
+
+    expect(recorder.stopCalls).toBe(0);
+
+    play(recorder, scheduler, undefined, 5);
+
+    await expect(take).resolves.toMatchObject({ durationMs: 1000 });
+  });
+
+  it('ends the take when the user taps stop', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await Promise.resolve();
+    play(recorder, scheduler, SPEECH, 2);
+    subject.stop();
+
+    await expect(take).resolves.toMatchObject({ durationMs: 200 });
+    expect(recorder.stopCalls).toBe(1);
+  });
+
+  it('throws the take away when the user cancels', async () => {
+    const { scheduler, subject } = setup();
+    const take = subject.start();
+
+    await Promise.resolve();
+    subject.cancel();
+
+    await expect(take).rejects.toThrow(RecordingCancelledError);
+    expect(scheduler.watching).toBe(0);
+  });
+
+  it('reports a take that produced no file', async () => {
+    const { recorder, subject } = setup();
+
+    recorder.uri = null;
+
+    const take = subject.start();
+
+    await Promise.resolve();
+    subject.stop();
+
+    await expect(take).rejects.toThrow(NoRecordingProducedError);
+  });
+
+  it('surfaces a failure from the native recorder', async () => {
+    const { recorder, subject } = setup();
+
+    recorder.stopFailure = new Error('microphone was taken by a call');
+
+    const take = subject.start();
+
+    await Promise.resolve();
+    subject.stop();
+
+    await expect(take).rejects.toThrow('microphone was taken by a call');
+  });
+
+  it('settles a take once, even when silence and a tap arrive together', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await Promise.resolve();
+    play(recorder, scheduler, SPEECH, 1);
+    play(recorder, scheduler, SILENCE, 3);
+    subject.stop();
+    subject.cancel();
+
+    await expect(take).resolves.toMatchObject({ uri: 'file:///take.m4a' });
+    expect(recorder.stopCalls).toBe(1);
+  });
+
+  it('does nothing when stopped before a take was ever started', () => {
+    const { recorder, subject } = setup();
+
+    subject.stop();
+    subject.cancel();
+
+    expect(recorder.stopCalls).toBe(0);
+  });
+});

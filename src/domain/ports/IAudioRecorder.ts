@@ -4,9 +4,14 @@ export interface AudioRecording {
 }
 
 export interface IAudioRecorder {
-  start(): Promise<void>;
-  /** Resolves when the user stops or the recorder auto-stops on silence. */
-  stop(): Promise<AudioRecording>;
-  /** Discards the take without producing a recording. */
-  cancel(): Promise<void>;
+  /**
+   * Starts a take and resolves with it when the user stops it or the recorder
+   * auto-stops on silence. One promise per take, because both endings are the
+   * same event to the screen waiting on it.
+   */
+  start(): Promise<AudioRecording>;
+  /** Ends the current take early. The promise from `start` resolves. */
+  stop(): void;
+  /** Throws the take away. The promise from `start` rejects. */
+  cancel(): void;
 }

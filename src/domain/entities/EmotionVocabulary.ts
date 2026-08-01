@@ -68,6 +68,10 @@ export class EmotionVocabulary {
     return this.rootEmotions;
   }
 
+  all(): readonly Emotion[] {
+    return [...this.byId.values()];
+  }
+
   childrenOf(id: string): readonly Emotion[] {
     return this.childrenByParentId.get(id) ?? [];
   }
