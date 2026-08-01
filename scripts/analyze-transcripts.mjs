@@ -11,10 +11,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
-const BUILD = './.analysis-build';
+// Relative to this file, not the working directory: `require` inside an .mjs
+// resolves against the module, and scripts/ is not the project root.
+const BUILD = join(dirname(fileURLToPath(import.meta.url)), '..', '.analysis-build');
 
 const { CreateTextEntry } = require(`${BUILD}/application/use-cases/CreateTextEntry.js`);
 const { ClaudeReflectionAnalyzer } = require(`${BUILD}/infrastructure/analysis/ClaudeReflectionAnalyzer.js`);
