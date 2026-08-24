@@ -61,6 +61,7 @@ refuses to launch, that is what happened — rebuild to reissue them.
 | 1.3 | Act on the §10 result: large-v3-turbo is required, and it ships at 1.5 GB. Decide how the model reaches the phone, and what the onboarding privacy copy promises. | 1.2 |
 | 1.4 | Remove `ManualTranscriptionService` from the production path once Whisper lands; keep it as the text fallback. | 1.1 |
 | 1.5 | **The recorder writes a format Whisper cannot read.** Settle this before 1.1, not during it. | — (decide now, implement with 1.1) |
+| 1.6 | **Feed Whisper the user's own language instead of letting it guess on short audio.** Measured, not theoretical — see §1b. Needs a real language setting, which is debt 4.3. | 1.1, and 4.3 for the setting |
 
 **On 1.5, the audio format.** `App.tsx` creates the recorder with
 `RecordingPresets.HIGH_QUALITY`, which on iOS is m4a/AAC at 44.1 kHz. whisper.cpp,
@@ -115,6 +116,39 @@ What follows from it:
   особенного" into "нічого особинного". §1 says rewriting the mix rewrites the
   person, and commit 8b3aea7 forbids Claude from doing exactly this — but it
   happens one step earlier, where the prompt cannot reach.
+
+### Pinning the language: measured, 2026-08-24
+
+`scripts/whisper-experiment.mjs` now takes `--language`. Auto stays the
+default, because that is the position the app is in. Pinning is for measuring
+what the guessing costs. Run in `~/luna-whisper/run-2026-08-24-real-v3-pinned-uk.txt`.
+
+`-l uk` changed exactly two takes out of sixteen:
+
+| Take | Length | Reference language | auto | -l uk |
+|---|---|---|---|---|
+| take-03 "Норм." | 1.5 s | uk | 1.000 | 0.000 |
+| take-07 | 4.4 s | ru | 0.167 | 0.500 |
+
+The other fourteen came back byte-identical. Auto-detection was already right
+almost everywhere; it fails only when there is too little audio to decide on,
+and then it fails completely — "Норм." was read as English and returned
+"Normal.". The group averages move (uk 0.330 to 0.219, ru 0.282 to 0.394) but
+each of those swings is one take, so the behaviour is the finding, not the
+number.
+
+Note what pinning did **not** fix. take-02, "Приготував вечерю" at 2.4 s,
+stayed at 1.000 either way. Short takes break for two independent reasons —
+the wrong language is picked, and the words are simply misheard. Pinning
+addresses the first only, which moves the under-4-second bucket from 1.000 to
+0.500 and no further.
+
+**So do not pin globally** — that is what cost take-07. The app will know the
+user's language from settings, which turns a guess into a fact: trust
+auto-detection when there is enough audio to detect from, and fall back to the
+user's own language when there is not. That is 1.6, and it needs the language
+setting that 4.3 describes, which puts M5 and transcription closer together
+than they looked.
 
 **How much to trust this.** One speaker, one room, 16 takes, and only 2 in the
 under-4-second bucket that produced the worst number. Takes 01–11 were read
