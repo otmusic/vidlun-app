@@ -10,6 +10,10 @@
 // Usage:
 //   node scripts/whisper-experiment.mjs --recordings <dir> --models <dir>
 //
+// --language defaults to auto, which is what the app will have to do. Pin it
+// to uk or ru to measure what detection itself is costing: on very short takes
+// whisper guesses wrong, and "Норм." came back as "Normal.".
+//
 // The recordings directory needs one audio file per take plus a transcripts.tsv:
 //   filename <TAB> language <TAB> what was actually said
 // Language is uk, ru or mix.
@@ -64,7 +68,7 @@ async function main() {
       let hypothesis;
 
       try {
-        hypothesis = await transcribe(wav, join(options.models, model.file));
+        hypothesis = await transcribe(wav, join(options.models, model.file), options.language);
       } catch (failure) {
         fail(`whisper-cli failed on ${file} with ${model.id}:\n${failure.stderr ?? failure.message}`);
       }
@@ -88,13 +92,14 @@ async function main() {
   report(rows);
 }
 
-async function transcribe(wavPath, modelPath) {
-  // Language is auto-detected on purpose: the app cannot know in advance which
-  // of the two languages a sentence will be in, or whether it mixes both.
+async function transcribe(wavPath, modelPath, language) {
+  // Auto is the honest default: the app cannot know in advance which of the two
+  // languages a sentence will be in, or whether it mixes both. Pinning is for
+  // measuring what that freedom costs, not for shipping.
   const { stdout } = await run('whisper-cli', [
     '-m', modelPath,
     '-f', wavPath,
-    '-l', 'auto',
+    '-l', language,
     '--no-timestamps',
     '--output-txt', 'false',
   ]);
@@ -233,7 +238,7 @@ function report(rows) {
 }
 
 function readOptions(argv) {
-  const options = { recordings: null, models: null };
+  const options = { recordings: null, models: null, language: 'auto' };
 
   for (let index = 0; index < argv.length; index += 2) {
     if (argv[index] === '--recordings') {
@@ -243,10 +248,16 @@ function readOptions(argv) {
     if (argv[index] === '--models') {
       options.models = resolve(argv[index + 1] ?? '');
     }
+
+    if (argv[index] === '--language') {
+      options.language = argv[index + 1] ?? 'auto';
+    }
   }
 
   if (options.recordings === null || options.models === null) {
-    fail('Usage: node scripts/whisper-experiment.mjs --recordings <dir> --models <dir>');
+    fail(
+      'Usage: node scripts/whisper-experiment.mjs --recordings <dir> --models <dir> [--language auto|uk|ru]',
+    );
   }
 
   return options;
