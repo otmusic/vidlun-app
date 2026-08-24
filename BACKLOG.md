@@ -57,8 +57,8 @@ refuses to launch, that is what happened — rebuild to reissue them.
 | # | Item | Depends on |
 |---|---|---|
 | 1.1 | `WhisperTranscriptionService` — the only M3 adapter still missing. | 0.1 / 0.3 (whisper.rn is a custom native module and needs a development build) |
-| 1.2 | **The §10 experiment — not run.** `scripts/whisper-experiment.mjs` is written and ready. Nothing has been measured. | Recordings from the owner, plus `ffmpeg` and `whisper-cli` (neither installed) and the two ggml models. |
-| 1.3 | Act on the §10 result. A poor outcome changes the free-tier limits and the onboarding privacy copy, and may reopen the whole STT approach. | 1.2 |
+| 1.2 | **The §10 experiment — desktop half done on 2026-08-24.** See §1b. Word error rate measured on 16 real recordings. Processing time, battery and model download on a phone are still unmeasured. | Device work for the remaining half. |
+| 1.3 | Act on the §10 result: large-v3-turbo is required, and it ships at 1.5 GB. Decide how the model reaches the phone, and what the onboarding privacy copy promises. | 1.2 |
 | 1.4 | Remove `ManualTranscriptionService` from the production path once Whisper lands; keep it as the text fallback. | 1.1 |
 | 1.5 | **The recorder writes a format Whisper cannot read.** Settle this before 1.1, not during it. | — (decide now, implement with 1.1) |
 
@@ -79,6 +79,56 @@ depends on both.
 `{ uri, durationMs }`, the ports do not move, and the change is local to the
 infrastructure layer.
 
+---
+
+## 1b. §10 first result — 2026-08-24
+
+16 recordings by one speaker in one room: 9 Ukrainian, 3 Russian, 4 mixed.
+Raw output in `~/luna-whisper/run-2026-08-24-real-v2.txt`.
+
+**Utterance length decides the outcome, not language.**
+
+| Length | Takes | large-v3-turbo | small |
+|---|---|---|---|
+| under 4 s | 2 | 1.000 | 0.500 |
+| 4–8 s | 7 | 0.231 | 0.468 |
+| over 8 s | 7 | 0.120 | 0.395 |
+
+Grouped by language the differences are mostly noise from which takes happened
+to be longer. For Ukrainian on the large model the mean is 0.330 but the median
+is 0.143 — a handful of very short takes drag the average, and a third of all
+takes came back near perfect (0.00, 0.06, 0.08).
+
+What follows from it:
+
+- **`small` is not a candidate.** Two to four times worse in every bucket. On
+  one take it scored 1.143 — worse than returning nothing at all.
+- **`large-v3-turbo` is usable on normal entries and broken on very short
+  ones.** That matters more than it sounds: §5's second regression case is
+  "Cooked dinner", and at 2.4 s it came back as "Прогутового вечера". The
+  shortest entries are both the most common and the least survivable.
+- **Language auto-detection misfires when there is too little audio.** "Норм."
+  was transcribed "Normal." — detected as English. Pinning `-l uk` fixes that
+  particular class of error but not the acoustic ones: "Приготував вечерю"
+  stays wrong either way. Worth testing as a cheap lever before anything else.
+- **Whisper rewrites mixed speech.** On a synthetic take it turned "ничего
+  особенного" into "нічого особинного". §1 says rewriting the mix rewrites the
+  person, and commit 8b3aea7 forbids Claude from doing exactly this — but it
+  happens one step earlier, where the prompt cannot reach.
+
+**How much to trust this.** One speaker, one room, 16 takes, and only 2 in the
+under-4-second bucket that produced the worst number. Takes 01–11 were read
+from a script, 12–16 were spontaneous; the spontaneous ones scored best, but
+they were also the longest, so the two effects are confounded. A first run
+against `~/luna-whisper/run-2026-08-24-real-v1.txt` scored worse purely because
+the references came from the script rather than from what was actually said —
+about a sixth of the measured error was that mistake, not the model's.
+
+**Still unmeasured, and device-only:** processing time on a phone, battery
+cost, and how a 1.5 GB model gets onto the device in the first place.
+
+---
+
 **§10 can be split, and the cheap half is unblocked.** Word error rate is a
 property of the model, not the hardware, and whisper.rn wraps the same
 whisper.cpp that runs on a desktop, so quality can be measured on this Mac now.
@@ -86,10 +136,12 @@ Processing time and battery are device properties and must wait. Mobile builds
 sometimes use quantised weights, so a desktop number is a strong signal rather
 than a final one.
 
-**§10 is overdue against its own gate.** The brief says "verify before M4", and
-M4 is built. The risk is not abstract: a poor result rewrites the free-tier
-limits and the onboarding privacy copy, both of which M5 is about to depend on.
-This is the highest-value next step, ahead of M5.
+**§10 was overdue against its own gate** — the brief says "verify before M4",
+and M4 was built first. The desktop half is now done (§1b) and the answer is
+the brief's middle outcome: good enough only on the large model, so app size
+against accuracy is now an explicit decision rather than an assumption. The
+onboarding privacy copy and the free-tier limits depend on how that lands, so
+settle 1.3 before writing M5.
 
 ---
 
