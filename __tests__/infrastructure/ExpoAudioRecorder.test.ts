@@ -15,12 +15,31 @@ const SILENCE = -60;
 function setup() {
   const recorder = new FakeNativeRecorder();
   const scheduler = new ManualScheduler();
+  const audioSession: string[] = [];
+
+  const enableRecordingMode = (): Promise<void> => {
+    audioSession.push('enabled');
+
+    return Promise.resolve();
+  };
 
   return {
     recorder,
     scheduler,
-    subject: new ExpoAudioRecorder(recorder, scheduler, OPTIONS),
+    audioSession,
+    subject: new ExpoAudioRecorder(recorder, enableRecordingMode, scheduler, OPTIONS),
   };
+}
+
+/**
+ * Lets `start()` finish its awaits so the take is live and the scheduler is
+ * subscribed. Drains several ticks rather than one, so adding an await inside
+ * `start()` does not silently break every test in this file.
+ */
+async function live(): Promise<void> {
+  for (let tick = 0; tick < 5; tick += 1) {
+    await Promise.resolve();
+  }
 }
 
 /** Drives the take forward one poll at a time at the given loudness. */
@@ -41,7 +60,7 @@ describe('ExpoAudioRecorder', () => {
     const { recorder, scheduler, subject } = setup();
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     expect(recorder.prepareCalls).toBe(1);
 
     subject.stop();
@@ -53,7 +72,7 @@ describe('ExpoAudioRecorder', () => {
     const { recorder, scheduler, subject } = setup();
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     play(recorder, scheduler, SPEECH, 2);
     play(recorder, scheduler, SILENCE, 3);
 
@@ -64,7 +83,7 @@ describe('ExpoAudioRecorder', () => {
     const { recorder, scheduler, subject } = setup();
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     play(recorder, scheduler, SILENCE, 5);
 
     expect(recorder.stopCalls).toBe(0);
@@ -79,7 +98,7 @@ describe('ExpoAudioRecorder', () => {
     const { recorder, scheduler, subject } = setup();
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     play(recorder, scheduler, SPEECH, 1);
     play(recorder, scheduler, SILENCE, 2);
     play(recorder, scheduler, SPEECH, 1);
@@ -95,7 +114,7 @@ describe('ExpoAudioRecorder', () => {
     const { recorder, scheduler, subject } = setup();
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     play(recorder, scheduler, SPEECH, 10);
 
     await expect(take).resolves.toMatchObject({ durationMs: 1000 });
@@ -105,7 +124,7 @@ describe('ExpoAudioRecorder', () => {
     const { recorder, scheduler, subject } = setup();
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     play(recorder, scheduler, undefined, 5);
 
     expect(recorder.stopCalls).toBe(0);
@@ -119,7 +138,7 @@ describe('ExpoAudioRecorder', () => {
     const { recorder, scheduler, subject } = setup();
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     play(recorder, scheduler, SPEECH, 2);
     subject.stop();
 
@@ -131,7 +150,7 @@ describe('ExpoAudioRecorder', () => {
     const { scheduler, subject } = setup();
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     subject.cancel();
 
     await expect(take).rejects.toThrow(RecordingCancelledError);
@@ -145,7 +164,7 @@ describe('ExpoAudioRecorder', () => {
 
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     subject.stop();
 
     await expect(take).rejects.toThrow(NoRecordingProducedError);
@@ -158,7 +177,7 @@ describe('ExpoAudioRecorder', () => {
 
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     subject.stop();
 
     await expect(take).rejects.toThrow('microphone was taken by a call');
@@ -168,7 +187,7 @@ describe('ExpoAudioRecorder', () => {
     const { recorder, scheduler, subject } = setup();
     const take = subject.start();
 
-    await Promise.resolve();
+    await live();
     play(recorder, scheduler, SPEECH, 1);
     play(recorder, scheduler, SILENCE, 3);
     subject.stop();
@@ -185,5 +204,34 @@ describe('ExpoAudioRecorder', () => {
     subject.cancel();
 
     expect(recorder.stopCalls).toBe(0);
+  });
+});
+
+describe('the iOS audio session', () => {
+  it('opens the session for recording before touching the recorder', async () => {
+    const { recorder, subject, audioSession } = setup();
+    const order: string[] = [];
+
+    recorder.onPrepare = () => order.push('prepare');
+
+    const take = subject.start();
+
+    await live();
+
+    expect(audioSession).toEqual(['enabled']);
+    expect(order).toEqual(['prepare']);
+
+    subject.cancel();
+    await expect(take).rejects.toThrow(RecordingCancelledError);
+  });
+
+  it('gives up the take when the session refuses to open', async () => {
+    const recorder = new FakeNativeRecorder();
+    const scheduler = new ManualScheduler();
+    const refused = new Error('Recording not allowed on iOS');
+    const subject = new ExpoAudioRecorder(recorder, () => Promise.reject(refused), scheduler, OPTIONS);
+
+    await expect(subject.start()).rejects.toThrow(refused);
+    expect(recorder.prepareCalls).toBe(0);
   });
 });

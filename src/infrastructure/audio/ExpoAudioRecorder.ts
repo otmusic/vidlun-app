@@ -15,6 +15,13 @@ export interface NativeRecorder {
   };
 }
 
+/**
+ * iOS refuses to record until the audio session is switched to a category that
+ * permits it, and expo-audio leaves `allowsRecording` false by default. Passed
+ * in rather than imported so this adapter stays testable without a device.
+ */
+export type EnableRecordingMode = () => Promise<void>;
+
 export interface SilenceOptions {
   /** dBFS below which the microphone counts as hearing nothing. */
   readonly silenceThresholdDb: number;
@@ -50,11 +57,15 @@ export class ExpoAudioRecorder implements IAudioRecorder {
 
   constructor(
     private readonly recorder: NativeRecorder,
+    private readonly enableRecordingMode: EnableRecordingMode,
     private readonly scheduler: IScheduler,
     private readonly options: SilenceOptions = DEFAULT_SILENCE_OPTIONS,
   ) {}
 
   async start(): Promise<AudioRecording> {
+    // Before preparing, not after: on iOS both `prepareToRecordAsync` and
+    // `record` throw while the session still forbids recording.
+    await this.enableRecordingMode();
     await this.recorder.prepareToRecordAsync({ isMeteringEnabled: true });
 
     this.silentForMs = 0;

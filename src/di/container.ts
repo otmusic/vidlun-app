@@ -1,6 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync } from 'expo-audio';
+import {
+  getRecordingPermissionsAsync,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+} from 'expo-audio';
 
 import { ConfirmEntry } from '../application/use-cases/ConfirmEntry';
 import { CreateTextEntry } from '../application/use-cases/CreateTextEntry';
@@ -48,6 +52,18 @@ export interface ContainerDependencies {
   readonly transcription: ITranscriptionService;
 }
 
+/**
+ * iOS puts recording behind the `playAndRecord` category, which by definition
+ * ignores the silent switch — so expo-audio rejects `allowsRecording` unless
+ * `playsInSilentMode` comes with it. Both have to be sent together; sending
+ * only the first leaves the other at whatever it already was and throws.
+ *
+ * Luna never plays audio back, so the silent switch has nothing to suppress
+ * here. This only widens the audio session, it does not make the app noisy.
+ */
+const enableRecordingMode = (): Promise<void> =>
+  setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+
 /** The only place concrete classes are wired. */
 export function createContainer(dependencies: ContainerDependencies): Container {
   const clock = new SystemClock();
@@ -89,6 +105,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
       getRecordingPermissionsAsync,
       requestRecordingPermissionsAsync,
     }),
-    createAudioRecorder: (native) => new ExpoAudioRecorder(native, scheduler),
+    createAudioRecorder: (native) =>
+      new ExpoAudioRecorder(native, enableRecordingMode, scheduler),
   };
 }

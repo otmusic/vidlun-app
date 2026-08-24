@@ -66,6 +66,8 @@ export class FakeNativeRecorder implements NativeRecorder {
   prepareCalls = 0;
   stopCalls = 0;
   stopFailure: Error | null = null;
+  /** Lets a test observe when preparing happens relative to the audio session. */
+  onPrepare: (() => void) | null = null;
 
   private durationMillis = 0;
   private isRecording = false;
@@ -73,6 +75,7 @@ export class FakeNativeRecorder implements NativeRecorder {
 
   prepareToRecordAsync(): Promise<void> {
     this.prepareCalls += 1;
+    this.onPrepare?.();
 
     return Promise.resolve();
   }
