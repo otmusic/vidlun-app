@@ -23,6 +23,8 @@ unbuilt, and each one requires validation with real people before any code.
 | The capture path is a state machine, not a navigation library. | The flow is linear, and §2 forbids a state library until a milestone needs one. |
 | **`proposedEmotionIds` lives on `MoodEntry`, not only in the revision log.** | The log only records corrected entries. M6 has to render *any* entry without revealing the analysis, so the proposal is needed on every one. |
 | **npm advisories are held off with `overrides`, not `audit fix --force`.** | The forced fix downgrades Expo 57 to 46. `metro@0.84.5` drops `image-size` (which has no patched release at all), and `xcode` only calls `uuid.v4()`, so uuid 11 is safe. |
+| **The speech model is `large-v3-turbo-q5_0` and arrives during onboarding.** | `small` is unusable on Ukrainian and full turbo is 1.5 GB. Quantising to 547 MB cost nothing measurable. Too large to bundle, so it downloads — and onboarding is the one moment where waiting is expected rather than resented. |
+| **Transcription confidence is derived from take duration.** | whisper.rn reports none, and a constant would be a lie the domain acts on: §6 ties emotion depth to confidence. Duration is the only predictor the §10 run supported. |
 
 ---
 
@@ -58,7 +60,7 @@ refuses to launch, that is what happened — rebuild to reissue them.
 |---|---|---|
 | 1.1 | `WhisperTranscriptionService` — the only M3 adapter still missing. | 0.1 / 0.3 (whisper.rn is a custom native module and needs a development build) |
 | 1.2 | **The §10 experiment — desktop half done on 2026-08-24.** See §1b. Word error rate measured on 16 real recordings. Processing time, battery and model download on a phone are still unmeasured. | Device work for the remaining half. |
-| 1.3 | Act on the §10 result: large-v3-turbo is required, and it ships at 1.5 GB. Decide how the model reaches the phone, and what the onboarding privacy copy promises. | 1.2 |
+| 1.3 | **Decided 2026-08-24: ship `large-v3-turbo-q5_0` (547 MB), downloaded during onboarding.** Quantising cost nothing measurable (§1b). What remains is building it: the download itself, where the file lives, and what onboarding says while it runs. | Onboarding is M5 |
 | 1.4 | Remove `ManualTranscriptionService` from the production path once Whisper lands; keep it as the text fallback. | 1.1 |
 | 1.5 | **The recorder writes a format Whisper cannot read.** Settle this before 1.1, not during it. | — (decide now, implement with 1.1) |
 | 1.6 | **Feed Whisper the user's own language instead of letting it guess on short audio.** Measured, not theoretical — see §1b. Needs a real language setting, which is debt 4.3. | 1.1, and 4.3 for the setting |
@@ -208,6 +210,26 @@ Re-run it whenever the prompt changes. It needs 0.2.
 ---
 
 ## 3. M5 — not started
+
+**Onboarding now carries the model download.** 547 MB arrives while the user is
+being told what the app does and why the microphone is needed. That is the one
+moment where waiting reads as setup rather than as the app being slow, and it
+lands before the ten-second promise is ever made.
+
+Three things that decision drags in:
+
+- **The wait must not be a wall.** The text path needs no model at all, so
+  someone who wants to write their first entry now should be able to, with the
+  download continuing behind them. Blocking onboarding on 547 MB over a phone
+  connection would lose people at the worst possible moment.
+- **Say what is being downloaded and why.** "Luna is downloading the model that
+  understands you, so your voice never leaves this phone" is the privacy
+  promise and the progress bar in one. §10 is what made that promise true;
+  onboarding is where it gets said.
+- **A failed or abandoned download is a state, not an error.** Poor connection,
+  backgrounded app, no space. The app has to work without the model — text
+  only — and pick the download up later.
+
 
 - Insights screen: free daily trend, paywalled weekly narrative
 - Onboarding, with the privacy screen **before** the microphone request
