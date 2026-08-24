@@ -199,7 +199,8 @@ always pass:**
 id, createdAt, source: 'voice' | 'text',
 rawTranscript, cleanTranscript,
 mood: MoodScore,
-emotionIds: readonly string[],   // max 4
+emotionIds: readonly string[],           // max 4, what the user kept
+proposedEmotionIds: readonly string[],   // max 4, what Luna proposed
 contextTags: readonly string[],
 observation: string | null,
 confidence: Confidence,
@@ -236,6 +237,7 @@ Seven roots: `happy`, `surprised`, `bad`, `fearful`, `angry`, `disgusted`,
 | **Choosing a heavy emotion is not itself a crisis signal.** The flag comes from content analysis only. | People are allowed to feel bad without the product reacting. |
 | **Drafts are not persisted.** `CreateVoiceEntry` returns an entry; only `ConfirmEntry` writes it. | The card is a proposal. |
 | **Every user revision is logged** (proposed ids vs final ids). | Training data for v2 personalization; must be collected from day one. |
+| **`proposedEmotionIds` is set once, at creation, and never changes.** It defaults to `emotionIds`, because a fresh draft is entirely Luna's; the two diverge only when the user corrects the card. | M6 has to render an entry without revealing the analysis, and every entry needs the proposal — not just the corrected ones the revision log covers. |
 
 ---
 

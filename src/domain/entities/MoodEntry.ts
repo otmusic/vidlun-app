@@ -18,6 +18,8 @@ export interface MoodEntryProps {
   readonly cleanTranscript: string;
   readonly mood: MoodScore;
   readonly emotionIds?: readonly string[];
+  /** Defaults to `emotionIds`, which is what a fresh draft's proposal is. */
+  readonly proposedEmotionIds?: readonly string[];
   readonly contextTags?: readonly string[];
   readonly observation?: string | null;
   readonly confidence: Confidence;
@@ -47,6 +49,7 @@ export class MoodEntry {
     readonly cleanTranscript: string,
     readonly mood: MoodScore,
     readonly emotionIds: readonly string[],
+    readonly proposedEmotionIds: readonly string[],
     readonly contextTags: readonly string[],
     readonly observation: string | null,
     readonly confidence: Confidence,
@@ -63,11 +66,11 @@ export class MoodEntry {
       throw new EmptyTranscriptError();
     }
 
-    const emotionIds = unique(props.emotionIds ?? []);
+    const emotionIds = withinLimit(unique(props.emotionIds ?? []));
 
-    if (emotionIds.length > MAX_EMOTIONS) {
-      throw new TooManyEmotionsError(emotionIds.length, MAX_EMOTIONS);
-    }
+    // Luna's own answer, kept whatever the user does next. On a fresh draft it
+    // is the same list; the two only diverge once the user corrects the card.
+    const proposedEmotionIds = withinLimit(unique(props.proposedEmotionIds ?? emotionIds));
 
     const contextTags = unique((props.contextTags ?? []).map((tag) => tag.trim()).filter((tag) => tag.length > 0));
     const safetyFlag = props.safetyFlag ?? 'none';
@@ -84,6 +87,7 @@ export class MoodEntry {
       props.cleanTranscript,
       props.mood,
       Object.freeze(emotionIds),
+      Object.freeze(proposedEmotionIds),
       Object.freeze(contextTags),
       observation,
       props.confidence,
@@ -138,6 +142,7 @@ export class MoodEntry {
       cleanTranscript: this.cleanTranscript,
       mood: this.mood,
       emotionIds: this.emotionIds,
+      proposedEmotionIds: this.proposedEmotionIds,
       contextTags: this.contextTags,
       observation: this.observation,
       confidence: this.confidence,
@@ -153,4 +158,12 @@ export class MoodEntry {
 
 function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
+}
+
+function withinLimit(emotionIds: readonly string[]): readonly string[] {
+  if (emotionIds.length > MAX_EMOTIONS) {
+    throw new TooManyEmotionsError(emotionIds.length, MAX_EMOTIONS);
+  }
+
+  return emotionIds;
 }

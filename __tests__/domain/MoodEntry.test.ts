@@ -190,3 +190,66 @@ describe('user revisions', () => {
     );
   });
 });
+
+describe('the AI proposal, kept apart from the user\'s own labels', () => {
+  it('starts out as whatever Luna proposed, because a fresh draft is all hers', () => {
+    expect(entry().proposedEmotionIds).toEqual(['happy.proud', 'bad.tired']);
+  });
+
+  it('survives the correction that replaces the emotions', () => {
+    const kept = entry().reviseWith({ emotionIds: ['sad.lonely'] });
+
+    expect(kept.emotionIds).toEqual(['sad.lonely']);
+    expect(kept.proposedEmotionIds).toEqual(['happy.proud', 'bad.tired']);
+  });
+
+  it('survives a correction that empties the emotions entirely', () => {
+    const kept = entry().reviseWith({ emotionIds: [] });
+
+    expect(kept.emotionIds).toEqual([]);
+    expect(kept.proposedEmotionIds).toEqual(['happy.proud', 'bad.tired']);
+  });
+
+  it('records that Luna proposed nothing, rather than losing the fact', () => {
+    const mundane = entry({ emotionIds: [], cleanTranscript: 'Cooked dinner.' });
+
+    expect(mundane.proposedEmotionIds).toEqual([]);
+    expect(mundane.reviseWith({ emotionIds: ['happy'] }).proposedEmotionIds).toEqual([]);
+  });
+
+  it('is not disturbed by any later adjustment to the entry', () => {
+    const adjusted = entry().withEmotionIds(['sad']).withMood(MoodScore.of(1)).withObservation(null);
+
+    expect(adjusted.proposedEmotionIds).toEqual(['happy.proud', 'bad.tired']);
+  });
+
+  it('holds its own list when the two differ from the start', () => {
+    const restored = entry({ emotionIds: ['sad.lonely'], proposedEmotionIds: ['happy.proud'] });
+
+    expect(restored.emotionIds).toEqual(['sad.lonely']);
+    expect(restored.proposedEmotionIds).toEqual(['happy.proud']);
+  });
+
+  it('counts a repeated proposed emotion once', () => {
+    expect(entry({ proposedEmotionIds: ['a', 'b', 'a'] }).proposedEmotionIds).toEqual(['a', 'b']);
+  });
+
+  it('refuses a fifth proposed emotion, the same as it refuses a fifth kept one', () => {
+    expect(() => entry({ proposedEmotionIds: ['a', 'b', 'c', 'd', 'e'] })).toThrow(
+      TooManyEmotionsError,
+    );
+  });
+
+  it('freezes the proposal too', () => {
+    expect(Object.isFrozen(entry().proposedEmotionIds)).toBe(true);
+  });
+
+  it('carries the proposal through its own props', () => {
+    const subject = entry().reviseWith({ emotionIds: ['sad.lonely'] });
+
+    expect(MoodEntry.create(subject.toProps()).proposedEmotionIds).toEqual([
+      'happy.proud',
+      'bad.tired',
+    ]);
+  });
+});

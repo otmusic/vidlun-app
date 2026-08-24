@@ -47,6 +47,27 @@ describe('mood entry mapper', () => {
     expect(restored.contextTags).toEqual([]);
   });
 
+  it('keeps the proposal and the correction apart across a save and a load', () => {
+    const corrected = entry().reviseWith({ emotionIds: ['sad.lonely'] });
+    const restored = fromStored(toStored(corrected));
+
+    expect(restored.emotionIds).toEqual(['sad.lonely']);
+    expect(restored.proposedEmotionIds).toEqual(['happy.proud', 'bad.tired']);
+  });
+
+  it('reads a record written before the proposal had its own field', () => {
+    const legacy: Record<string, unknown> = { ...toStored(entry()) };
+    delete legacy.proposedEmotionIds;
+
+    expect(fromStored(legacy).proposedEmotionIds).toEqual(['happy.proud', 'bad.tired']);
+  });
+
+  it('still refuses a stored proposal that is not a list of strings', () => {
+    expect(() => fromStored({ ...toStored(entry()), proposedEmotionIds: [7] })).toThrow(
+      CorruptStoredEntryError,
+    );
+  });
+
   it.each([
     ['not an object', 42],
     ['an array', []],

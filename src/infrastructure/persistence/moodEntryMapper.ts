@@ -17,6 +17,7 @@ export interface StoredMoodEntry {
   readonly cleanTranscript: string;
   readonly mood: number;
   readonly emotionIds: readonly string[];
+  readonly proposedEmotionIds: readonly string[];
   readonly contextTags: readonly string[];
   readonly observation: string | null;
   readonly confidence: number;
@@ -36,6 +37,7 @@ export function toStored(entry: MoodEntry): StoredMoodEntry {
     cleanTranscript: entry.cleanTranscript,
     mood: entry.mood.value,
     emotionIds: [...entry.emotionIds],
+    proposedEmotionIds: [...entry.proposedEmotionIds],
     contextTags: [...entry.contextTags],
     observation: entry.observation,
     confidence: entry.confidence.value,
@@ -65,6 +67,10 @@ export function fromStored(raw: unknown): MoodEntry {
     cleanTranscript: readString(record, 'cleanTranscript'),
     mood: MoodScore.of(readNumber(record, 'mood')),
     emotionIds: readStringArray(record, 'emotionIds'),
+    // Written since the proposal was split from the user's own labels. Older
+    // records fall back to the entry's emotions, which is exact for an entry
+    // nobody corrected; for a corrected one the revision log holds the truth.
+    proposedEmotionIds: readOptionalStringArray(record, 'proposedEmotionIds'),
     contextTags: readStringArray(record, 'contextTags'),
     observation: readNullableString(record, 'observation'),
     confidence: Confidence.of(readNumber(record, 'confidence')),
@@ -133,6 +139,13 @@ function readStringArray(record: Record<string, unknown>, key: string): readonly
   }
 
   return value;
+}
+
+function readOptionalStringArray(
+  record: Record<string, unknown>,
+  key: string,
+): readonly string[] | undefined {
+  return record[key] === undefined ? undefined : readStringArray(record, key);
 }
 
 function readOneOf<T extends string>(
