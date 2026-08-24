@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
-import { RecordingPresets, useAudioRecorder } from 'expo-audio';
+import { useAudioRecorder } from 'expo-audio';
 import { useMemo } from 'react';
 import { createContainer, type Container } from '@/di/container';
 import { createTranslator, type Locale } from '@/i18n';
+import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
 import { AppText } from '@/presentation/components/AppText';
 import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
@@ -22,7 +23,7 @@ interface Wiring {
  */
 export default function App() {
   const transcription = useMemo(() => new ManualTranscriptionService(), []);
-  const nativeRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const nativeRecorder = useAudioRecorder(SPEECH_RECORDING_OPTIONS);
 
   const wiring = useMemo<Wiring>(() => {
     try {
