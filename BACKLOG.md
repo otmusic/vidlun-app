@@ -16,8 +16,8 @@ unbuilt, and each one requires validation with real people before any code.
 
 | Decision | Reasoning |
 |---|---|
-| **Stay on Expo SDK 57.** Do not downgrade to 54. | A newer Mac is coming, which removes the Xcode ceiling. Downgrading would cost a version migration now and be reverted later. |
-| Expo Go on the App Store (54.0.2) cannot run this project. | It is frozen at SDK 54; the current Expo route for iOS is a self-built Expo Go via `eas-cli go` and TestFlight. |
+| **Stay on Expo SDK 57.** Do not downgrade to 54. | Held. The new Mac removed the Xcode ceiling, and the device build works — a downgrade would have been reverted. |
+| Expo Go is not used at all. | It is frozen at SDK 54 while the project is 57. Moot now: a local development build installs straight onto the device. |
 | Fonts load through `expo-font` + `@expo-google-fonts`, imported per weight. | The package root requires every weight, which put 36 font files in the bundle instead of 6. |
 | Haptics sit behind `IHaptics`. | §2 names haptics platform-sensitive; the Android build must be a new adapter. |
 | The capture path is a state machine, not a navigation library. | The flow is linear, and §2 forbids a state library until a milestone needs one. |
@@ -26,13 +26,29 @@ unbuilt, and each one requires validation with real people before any code.
 
 ---
 
-## 0. Blockers
+## 0. Blockers — all cleared on 2026-08-24
 
-| # | Item | Resolved by |
+| # | Was | How it went away |
 |---|---|---|
-| 0.1 | **The app cannot run on a device.** Expo Go is 54.0.2, the project is SDK 57. | The new Mac: Xcode 26 → `expo prebuild` → local development build. Until then there is no way to run on hardware. |
-| 0.2 | **`.env` is absent from this working copy.** It is gitignored, so the 2026-08-22 clone did not carry it. Without it neither the app nor `analyze-transcripts.mjs` runs. | Owner recreates it from `.env.example` with `EXPO_PUBLIC_ANTHROPIC_API_KEY`. Restart with `--clear`; the value is inlined at build time. |
-| 0.3 | This Mac (Intel 2018, macOS Sequoia ceiling) maxes out at Xcode 16.4; SDK 57 needs Xcode 26.4. | The new Mac. |
+| 0.1 | The app cannot run on a device. | **Done.** `expo prebuild` → `xcodebuild` → installed and launched on a physical iPhone (iPhone 14 Pro, iOS 26.5.2). Expo Go was never needed; a development build replaces it. |
+| 0.2 | `.env` absent from the clone. | **Done.** Owner recreated it. |
+| 0.3 | Intel 2018 Mac capped at Xcode 16.4. | **Done.** Now an M1 Pro on macOS 26.5.2 with Xcode 26.6. |
+
+Nothing blocks development on hardware any more. Three environment traps cost
+real time getting there, and will bite again on a fresh machine:
+
+- **`pod` is shadowed.** `~/.fundomate/bin/pod` is a `kubectl` wrapper that
+  masks CocoaPods at `/opt/homebrew/bin/pod`. Prepend Homebrew to PATH for any
+  iOS build, or `pod install` fails with `kubectl: command not found`.
+- **`LANG` is empty and `LC_CTYPE=C`**, so Ruby reads paths as ASCII-8BIT and
+  CocoaPods dies in `unicode_normalize`. Export `LANG=en_US.UTF-8`.
+- **`expo run:ios --device` refuses to build with no certificate in the
+  keychain**, checking locally before it ever contacts Apple. `xcodebuild
+  -allowProvisioningUpdates ... DEVELOPMENT_TEAM=M3K99W5FFQ` issues the
+  certificate and profile itself and gets past it.
+
+The development certificate and its profile expire. When the app suddenly
+refuses to launch, that is what happened — rebuild to reissue them.
 
 ---
 
@@ -44,6 +60,24 @@ unbuilt, and each one requires validation with real people before any code.
 | 1.2 | **The §10 experiment — not run.** `scripts/whisper-experiment.mjs` is written and ready. Nothing has been measured. | Recordings from the owner, plus `ffmpeg` and `whisper-cli` (neither installed) and the two ggml models. |
 | 1.3 | Act on the §10 result. A poor outcome changes the free-tier limits and the onboarding privacy copy, and may reopen the whole STT approach. | 1.2 |
 | 1.4 | Remove `ManualTranscriptionService` from the production path once Whisper lands; keep it as the text fallback. | 1.1 |
+| 1.5 | **The recorder writes a format Whisper cannot read.** Settle this before 1.1, not during it. | — (decide now, implement with 1.1) |
+
+**On 1.5, the audio format.** `App.tsx` creates the recorder with
+`RecordingPresets.HIGH_QUALITY`, which on iOS is m4a/AAC at 44.1 kHz. whisper.cpp,
+which whisper.rn wraps, wants 16 kHz mono WAV — exactly what
+`scripts/whisper-experiment.mjs` produces with an `ffmpeg` call before every run.
+There is no ffmpeg on the phone to do that conversion, so the app has to arrive
+at 16 kHz mono by itself: either record straight into it with a custom preset,
+or transcode inside the transcription adapter.
+
+Recording at 16 kHz mono is the better default anyway — it is what the model
+consumes, and it makes the file several times smaller. Check first that metering
+and silence auto-stop still behave at that sample rate, since `ExpoAudioRecorder`
+depends on both.
+
+`IAudioRecorder` is unaffected either way: `AudioRecording` stays
+`{ uri, durationMs }`, the ports do not move, and the change is local to the
+infrastructure layer.
 
 **§10 can be split, and the cheap half is unblocked.** Word error rate is a
 property of the model, not the hardware, and whisper.rn wraps the same
@@ -81,7 +115,7 @@ Re-run it whenever the prompt changes. It needs 0.2.
 
 | # | Item | Who |
 |---|---|---|
-| 2.1 | **Measure capture-to-save under ten seconds.** This is M4's completion criterion and it is unverified. | Owner, on hardware |
+| 2.1 | **Measure capture-to-save under ten seconds.** M4's completion criterion, still unverified — but no longer blocked: the app runs on the phone. | Owner, on hardware |
 | 2.2 | Check the dark theme on a real screen. §7.10 warns the green confirmation and the teal accent sit close in tone. | Owner |
 | 2.3 | **Decide what a crisis entry shows.** The domain nulls `observation` correctly, but §6 says what appears instead is a product decision. The card currently shows nothing. | Owner |
 
