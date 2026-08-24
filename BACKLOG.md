@@ -1,10 +1,14 @@
 # Luna — remaining work
 
-Status as of 2026-08-01. Milestones M0 through M4 are complete and committed
-(`8ce4926`): 233 tests, 98% lines, `npm run verify` green.
+Status as of 2026-08-24. Milestones M0 through M4 are complete and committed:
+246 tests, 98% lines, `npm run verify` green.
 
 This file is the running list of what is left. It is not a replacement for
 CLAUDE.md, which stays the source of truth for how the product should behave.
+
+The brief now carries nine milestones. M0–M5 are the MVP; M6 (reflection mode),
+M7 (scaffolding fade) and M8 (voice grounding) are designed but deliberately
+unbuilt, and each one requires validation with real people before any code.
 
 ---
 
@@ -17,6 +21,8 @@ CLAUDE.md, which stays the source of truth for how the product should behave.
 | Fonts load through `expo-font` + `@expo-google-fonts`, imported per weight. | The package root requires every weight, which put 36 font files in the bundle instead of 6. |
 | Haptics sit behind `IHaptics`. | §2 names haptics platform-sensitive; the Android build must be a new adapter. |
 | The capture path is a state machine, not a navigation library. | The flow is linear, and §2 forbids a state library until a milestone needs one. |
+| **`proposedEmotionIds` lives on `MoodEntry`, not only in the revision log.** | The log only records corrected entries. M6 has to render *any* entry without revealing the analysis, so the proposal is needed on every one. |
+| **npm advisories are held off with `overrides`, not `audit fix --force`.** | The forced fix downgrades Expo 57 to 46. `metro@0.84.5` drops `image-size` (which has no patched release at all), and `xcode` only calls `uuid.v4()`, so uuid 11 is safe. |
 
 ---
 
@@ -25,7 +31,7 @@ CLAUDE.md, which stays the source of truth for how the product should behave.
 | # | Item | Resolved by |
 |---|---|---|
 | 0.1 | **The app cannot run on a device.** Expo Go is 54.0.2, the project is SDK 57. | The new Mac: Xcode 26 → `expo prebuild` → local development build. Until then there is no way to run on hardware. |
-| 0.2 | `EXPO_PUBLIC_ANTHROPIC_API_KEY` is empty in `.env`. | Owner fills it. Restart with `--clear`; the value is inlined at build time. |
+| 0.2 | **`.env` is absent from this working copy.** It is gitignored, so the 2026-08-22 clone did not carry it. Without it neither the app nor `analyze-transcripts.mjs` runs. | Owner recreates it from `.env.example` with `EXPO_PUBLIC_ANTHROPIC_API_KEY`. Restart with `--clear`; the value is inlined at build time. |
 | 0.3 | This Mac (Intel 2018, macOS Sequoia ceiling) maxes out at Xcode 16.4; SDK 57 needs Xcode 26.4. | The new Mac. |
 
 ---
@@ -35,15 +41,39 @@ CLAUDE.md, which stays the source of truth for how the product should behave.
 | # | Item | Depends on |
 |---|---|---|
 | 1.1 | `WhisperTranscriptionService` — the only M3 adapter still missing. | 0.1 / 0.3 (whisper.rn is a custom native module and needs a development build) |
-| 1.2 | **The §10 experiment.** 15–20 real recordings in Ukrainian, Russian and mixed speech through `large-v3-turbo` and `small`; compare word error rate, processing time on a mid-range device, model download size, battery impact. | Recordings from the owner. Quality can be measured on a desktop ahead of the device work — see below. |
+| 1.2 | **The §10 experiment — not run.** `scripts/whisper-experiment.mjs` is written and ready. Nothing has been measured. | Recordings from the owner, plus `ffmpeg` and `whisper-cli` (neither installed) and the two ggml models. |
 | 1.3 | Act on the §10 result. A poor outcome changes the free-tier limits and the onboarding privacy copy, and may reopen the whole STT approach. | 1.2 |
 | 1.4 | Remove `ManualTranscriptionService` from the production path once Whisper lands; keep it as the text fallback. | 1.1 |
 
-**§10 can be split.** Word error rate is a property of the model, not the
-hardware, and whisper.rn wraps the same whisper.cpp that runs on a desktop, so
-quality can be measured on the Mac now. Processing time and battery are device
-properties and must wait. Mobile builds sometimes use quantised weights, so a
-desktop number is a strong signal rather than a final one.
+**§10 can be split, and the cheap half is unblocked.** Word error rate is a
+property of the model, not the hardware, and whisper.rn wraps the same
+whisper.cpp that runs on a desktop, so quality can be measured on this Mac now.
+Processing time and battery are device properties and must wait. Mobile builds
+sometimes use quantised weights, so a desktop number is a strong signal rather
+than a final one.
+
+**§10 is overdue against its own gate.** The brief says "verify before M4", and
+M4 is built. The risk is not abstract: a poor result rewrites the free-tier
+limits and the onboarding privacy copy, both of which M5 is about to depend on.
+This is the highest-value next step, ahead of M5.
+
+---
+
+## 1a. The reflection pipeline has been tested end to end
+
+`scripts/analyze-transcripts.mjs` runs written transcripts through the real
+analyzer, vocabulary and use case — no device, no microphone. It has been run
+against the live API and it earned its keep: it exposed two prompt bugs, fixed
+in `8b3aea7`.
+
+- Luna answered Ukrainian sentences with English observations. The prompt set
+  the language of the cleaned transcript and said nothing about the
+  observation, which is the only text Luna actually says out loud.
+- Mixed Ukrainian and Russian speech was normalised into one language. §1 says
+  the audience mixes both inside a sentence, so rewriting the mix rewrites the
+  person.
+
+Re-run it whenever the prompt changes. It needs 0.2.
 
 ---
 
@@ -69,6 +99,9 @@ desktop number is a strong signal rather than a final one.
 `GetWeekSummary` and `ClaudeNarrativeGenerator` already exist from M2 and M3.
 What is missing is the screen and the entitlement check.
 
+The onboarding privacy copy depends on 1.3. Writing it before the §10 result is
+known risks writing a promise the STT cannot keep.
+
 ---
 
 ## 4. Deliberate debt
@@ -82,9 +115,10 @@ What is missing is the screen and the entitlement check.
 | 4.5 | Streak plurals are simplified (`{{count}} дн.`); Ukrainian plural rules are not implemented. | Cosmetic. |
 | 4.6 | Icons are hand-drawn from `View`s. §7.4 wants a real set that scales with Dynamic Type. | Sizing is already token-driven, so the swap is local. |
 | 4.7 | `warm` and `tension` resolve to the same value in the dark palette (inherited from §7.10). | The rule holds — honey marks achievements only — but they should be separated if a conflict shows. |
-| 4.8 | **No component tests.** Jest runs in plain Node; React components would need `jest-expo` and a testing library. The capture state machine is untested. | The largest coverage gap. |
+| 4.8 | **No component tests.** Jest runs in plain Node; React components would need `jest-expo` and a testing library. `useCaptureFlow.ts` is 179 lines of untested state machine. | The largest coverage gap. |
 | 4.9 | No navigation library. Fine for a linear capture path; M5 adds insights and settings. | Re-evaluate at the start of M5. |
-| 4.10 | `.env` carries `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`, which has nothing to do with this project. | Remove. |
+| 4.10 | `ConfirmEntry` logs `proposed.emotionIds`, which is now the same value as `confirmed.proposedEmotionIds`. | Harmless duplication; a candidate for simplification when M6 lands. |
+| 4.11 | `fromStored` reads `proposedEmotionIds` leniently and falls back to `emotionIds`. Exact for an entry nobody corrected; a guess for a corrected one, where the revision log holds the truth. | Only affects records written before the field existed. Can be dropped once no such records can exist. |
 
 ---
 
@@ -100,5 +134,8 @@ What is missing is the screen and the entitlement check.
 ## 6. Explicitly out of scope (§9)
 
 Pattern detection, voice-topic analysis, health data, personalisation,
-appending to an entry, analytics and crash SDKs before M5, and any extra step,
-confirmation or optional field in the capture path.
+appending to an entry, analytics and crash SDKs before M5, breathing exercises
+or a library of techniques, a text input anywhere in the grounding exercise,
+and any extra step, confirmation or optional field in the capture path.
+
+M6 and M7 must not be built before M5 ships.
