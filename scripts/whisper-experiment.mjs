@@ -26,6 +26,9 @@ const run = promisify(execFile);
 
 const MODELS = [
   { id: 'large-v3-turbo', file: 'ggml-large-v3-turbo.bin' },
+  // Quantised turbo: a third of the size of the model above. Whether it keeps
+  // that model's quality decides what has to reach the phone, and how.
+  { id: 'turbo-q5_0', file: 'ggml-large-v3-turbo-q5_0.bin' },
   { id: 'small', file: 'ggml-small.bin' },
 ];
 
