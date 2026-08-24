@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Луна — дизайн-система</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#EDF2F1; --paper:#FAFBFB; --ink:#26302F; --ink-soft:#61706E; --ink-faint:#93A09D;
+  --line:#E2E6E6; --line-soft:#ECF0EF; --line-strong:#D6DCDB;
+  --accent:#3E7C82; --accent-soft:#E2EDEE; --accent-ink:#2F6167; --on-accent:#FFFFFF;
+  --warm:#D9A05B; --warm-soft:#F7EBD8; --warm-ink:#8A5E22;
+  --calm:#3FA88A; --calm-soft:#E2F2EC; --calm-ink:#1F6B54;
+  --tension:#D8A268; --tension-soft:#F8EEDF; --tension-ink:#8A5D12;
+  --low:#C77B62; --low-soft:#F7E6DF; --low-ink:#8F4530;
+  --shadow-a:rgba(38,48,47,.16);
+}
+:root[data-theme="dark"]{
+  --canvas:#101615; --paper:#19211F; --ink:#E7EBE8; --ink-soft:#A3B0AC; --ink-faint:#71807C;
+  --line:#2A3432; --line-soft:#232C2B; --line-strong:#3A4644;
+  --accent:#6FB8BC; --accent-soft:#1E2E30; --accent-ink:#9AD3D6; --on-accent:#0C1413;
+  --warm:#E0B77E; --warm-soft:#2E2519; --warm-ink:#EBC894;
+  --calm:#5FC7A6; --calm-soft:#162C26; --calm-ink:#8ADCBF;
+  --tension:#E0B77E; --tension-soft:#2E2519; --tension-ink:#EBC894;
+  --low:#D8907A; --low-soft:#2E1F1A; --low-ink:#E9AC97;
+  --shadow-a:rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--canvas);color:var(--ink);
+  -webkit-font-smoothing:antialiased;padding:32px 20px 64px;line-height:1.6}
+.wrap{max-width:760px;margin:0 auto}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .dot{width:12px;height:12px;border-radius:50%;background:var(--accent)}
+.brand h1{font-family:'Fraunces',serif;font-weight:500;font-size:26px;letter-spacing:-.01em}
+.lede{font-size:15px;color:var(--ink-soft);margin-bottom:36px;max-width:60ch}
+.tbtn{font-family:inherit;font-size:13px;color:var(--ink-soft);background:var(--paper);
+  border:0.5px solid var(--line);padding:9px 16px;border-radius:20px;cursor:pointer;
+  display:flex;align-items:center;gap:7px;min-height:40px}
+.tbtn:hover{border-color:var(--accent);color:var(--accent-ink)}
+
+h2{font-family:'Fraunces',serif;font-weight:500;font-size:21px;letter-spacing:-.01em;
+  margin:44px 0 6px;padding-top:22px;border-top:0.5px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0}
+h3{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-faint);margin:26px 0 12px}
+p.note{font-size:14.5px;color:var(--ink-soft);margin-bottom:18px;max-width:62ch}
+.card{background:var(--paper);border:0.5px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+
+/* swatch grid */
+.sw-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.sw{border:0.5px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper)}
+.sw .chip{height:56px}
+.sw .meta{padding:9px 11px}
+.sw .nm{font-size:13px;font-weight:500;display:block}
+.sw .hex{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);display:block;margin-top:2px}
+
+/* scale rows */
+.row{display:flex;align-items:baseline;gap:14px;padding:11px 0;border-bottom:0.5px solid var(--line-soft);flex-wrap:wrap}
+.row:last-child{border-bottom:none}
+.row .spec{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-faint);margin-left:auto;white-space:nowrap}
+
+/* do / dont */
+.dd{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:14px}
+.dd>div{border-radius:12px;padding:14px;border:0.5px solid var(--line);background:var(--paper)}
+.dd .tag{font-size:11.5px;font-weight:600;letter-spacing:.04em;margin-bottom:9px;display:block}
+.yes .tag{color:var(--calm-ink)}
+.no .tag{color:var(--low-ink)}
+.dd p{font-size:13.5px;color:var(--ink-soft)}
+
+/* components */
+.btn{font-family:inherit;font-size:15px;font-weight:500;border:none;border-radius:14px;
+  padding:15px;min-height:48px;cursor:pointer;width:100%}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-sec{background:transparent;color:var(--ink-soft);border:0.5px solid var(--line-strong)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;
+  padding:8px 13px;border-radius:20px}
+.setrow{display:flex;align-items:center;gap:12px;padding:12px 14px;min-height:52px;
+  border-bottom:0.5px solid var(--line-soft)}
+.setrow:last-child{border-bottom:none}
+.setrow .ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;background:var(--accent-soft);color:var(--accent-ink);font-size:17px}
+.setrow .lbl{flex:1;font-size:15px}
+.setrow .val{font-size:13.5px;color:var(--ink-soft)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:var(--line-soft);
+  padding:2px 6px;border-radius:5px;color:var(--ink)}
+ul{margin:0 0 16px 20px}
+li{font-size:14.5px;color:var(--ink-soft);margin-bottom:7px;max-width:62ch}
+li b{color:var(--ink);font-weight:500}
+.rule{background:var(--accent-soft);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.rule p{font-size:14px;color:var(--accent-ink);margin:0}
+.rule b{font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="top">
+  <div class="brand"><span class="dot"></span><h1>Луна · дизайн-система</h1></div>
+  <button class="tbtn" onclick="flip()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 15a6 6 0 1 1-7-8 5 5 0 0 0 7 8z"/></svg>
+    <span id="lbl">Темна тема</span>
+  </button>
+</div>
+<p class="lede">Голосовий щоденник емоцій. Візуальна мова будується на трьох засадах: контент важливіший за інтерфейс, жоден колір не «кричить», і кожен колір означає рівно одну річ. Перемкни тему — усі токени нижче живі.</p>
+
+<h2>Принципи</h2>
+<ul>
+  <li><b>Тихо за замовчуванням.</b> Насиченість — це гучність. Приглушені тони — візуальний еквівалент спокійного голосу.</li>
+  <li><b>Контент понад хром.</b> Скляні/напівпрозорі ефекти — лише для навігаційного шару, ніколи на картках із текстом про почуття.</li>
+  <li><b>Жодне почуття не є помилкою.</b> У шкалі настрою немає сигнального червоного. Важкі стани — теплі й людські.</li>
+  <li><b>Один колір — одне значення.</b> Якщо колір починає означати дві речі, мова зламана.</li>
+</ul>
+
+<h2>Кольори</h2>
+<p class="note">Основа — «Морський туман»: teal як голос продукту, серпанкове полотно. Шкала настрою взята з палітри «Сутінки» — вона соковитіша й читається на відстані витягнутої руки.</p>
+
+<h3>Полотно й текст</h3>
+<div class="sw-grid">
+  <div class="sw"><div class="chip" style="background:var(--canvas)"></div><div class="meta"><span class="nm">canvas</span><span class="hex" data-l="#EDF2F1" data-d="#101615">#EDF2F1</span></div></div>
+  <div class="sw"><div class="chip" style="background:var(--paper);border-bottom:0.5px solid var(--line)"></div><div class="meta"><span class="nm">paper</span><span class="hex" data-l="#FAFBFB" data-d="#19211F">#FAFBFB</span></div></div>
+  <div class="sw"><div class="chip" style="background:var(--ink)"></div><div class="meta"><span class="nm">ink</span><span class="hex" data-l="#26302F" data-d="#E7EBE8">#26302F</span></div></div>
+  <div class="sw"><div class="chip" style="background:var(--ink-soft)"></div><div class="meta"><span class="nm">ink-soft</span><span class="hex" data-l="#61706E" data-d="#A3B0AC">#61706E</span></div></div>
+  <div class="sw"><div class="chip" style="background:var(--ink-faint)"></div><div class="meta"><span class="nm">ink-faint</span><span class="hex" data-l="#93A09D" data-d="#71807C">#93A09D</span></div></div>
+  <div class="sw"><div class="chip" style="background:var(--line)"></div><div class="meta"><span class="nm">line</span><span class="hex" data-l="#E2E6E6" data-d="#2A3432">#E2E6E6</span></div></div>
+</div>
+
+<h3>Голос продукту й тепло</h3>
+<div class="sw-grid">
+  <div class="sw"><div class="chip" style="background:var(--accent)"></div><div class="meta"><span class="nm">accent</span><span class="hex" data-l="#3E7C82" data-d="#6FB8BC">#3E7C82</span></div></div>
+  <div class="sw"><div class="chip" style="background:var(--accent-soft)"></div><div class="meta"><span class="nm">accent-soft</span><span class="hex" data-l="#E2EDEE" data-d="#1E2E30">#E2EDEE</span></div></div>
+  <div class="sw"><div class="chip" style="background:var(--accent-ink)"></div><div class="meta"><span class="nm">accent-ink</span><span class="hex" data-l="#2F6167" data-d="#9AD3D6">#2F6167</span></div></div>
+  <div class="sw"><div class="chip" style="background:var(--warm)"></div><div class="meta"><span class="nm">warm</span><span class="hex" data-l="#D9A05B" data-d="#E0B77E">#D9A05B</span></div></div>
+</div>
+
+<h3>Шкала настрою</h3>
+<div class="sw-grid">
+  <div class="sw"><div class="chip" style="background:var(--low)"></div><div class="meta"><span class="nm">low · важко</span><span class="hex" data-l="#C77B62" data-d="#D8907A">#C77B62</span></div></div>
+  <div class="sw"><div class="chip" style="background:var(--tension)"></div><div class="meta"><span class="nm">tension · напруга</span><span class="hex" data-l="#D8A268" data-d="#E0B77E">#D8A268</span></div></div>
+  <div class="sw"><div class="chip" style="background:var(--calm)"></div><div class="meta"><span class="nm">calm · добре</span><span class="hex" data-l="#3FA88A" data-d="#5FC7A6">#3FA88A</span></div></div>
+</div>
+
+<div class="rule" style="margin-top:16px"><p><b>Правило розділення.</b> Акцент ніколи не бере участі у шкалі настрою. Teal = «Луна говорить / це керування». Шкала = «це твоє почуття». Мед — тільки досягнення (streak), ніколи стан настрою.</p></div>
+
+<h2>Типографіка</h2>
+<p class="note">Два шрифти з чітким розподілом ролей: серифний Fraunces звучить там, де говорить Луна; Inter — весь інтерфейс. Мінімум для читабельного тексту — 14 px, для основного — 16 px.</p>
+<div class="card">
+  <div class="row"><span style="font-family:'Fraunces',serif;font-size:25px;font-weight:500;line-height:1.2">Як ти зараз?</span><span class="spec">Fraunces 25 / 500 / 1.2</span></div>
+  <div class="row"><span style="font-family:'Fraunces',serif;font-size:15.5px;line-height:1.65">AI-наратив і транскрипт запису</span><span class="spec">Fraunces 15.5–16 / 400 / 1.65</span></div>
+  <div class="row"><span style="font-size:16px;line-height:1.6">Основний текст інтерфейсу</span><span class="spec">Inter 16 / 400 / 1.6</span></div>
+  <div class="row"><span style="font-size:15px;font-weight:500">Мітка рядка, кнопка</span><span class="spec">Inter 15 / 500</span></div>
+  <div class="row"><span style="font-size:14px;color:var(--ink-soft)">Другорядний, підказки</span><span class="spec">Inter 14 / 400</span></div>
+  <div class="row"><span style="font-size:11.5px;color:var(--ink-faint);letter-spacing:.04em;text-transform:uppercase">Службова мітка</span><span class="spec">Inter 11.5 / 500 / +4%</span></div>
+</div>
+<div class="rule"><p><b>Dynamic Type обовʼязковий.</b> Люди читають власні записи ввечері втомленими очима. Жодних фіксованих висот у текстових контейнерів — усе тягнеться за системним розміром шрифту.</p></div>
+
+<h2>Сітка й дотик</h2>
+<ul>
+  <li><b>Сітка 8.</b> Усі відступи кратні 8 (8/16/24/32), внутрішні дрібні — 4. Випадкових 13 і 19 px не буває.</li>
+  <li><b>Мінімум 44×44 pt</b> на будь-що клікабельне. Іконка може лишатись візуально маленькою — зона дотику навколо неї невидимо розширюється.</li>
+  <li><b>Рядки списків — 52 pt</b> висоти (налаштування, записи): у них тицяють не цілячись.</li>
+  <li><b>Головна дія — у нижній третині</b>, зона великого пальця. Орб і первинні кнопки ніколи не вгорі.</li>
+  <li><b>Радіуси:</b> <span class="mono">14px</span> контроли, <span class="mono">12–16px</span> картки, <span class="mono">20px</span> пігулки, <span class="mono">50%</span> орб.</li>
+</ul>
+
+<h2>Іконки</h2>
+<div class="dd">
+  <div class="yes"><span class="tag">ТАК</span><p>Одна іконка-якір на блок — вона каже, <i>що це за блок</i>: нагадування, патерн, streak, тег. Око впізнає тип, не читаючи.</p></div>
+  <div class="no"><span class="tag">НІ</span><p>Іконки всередині абзацу. Око спотикається на кожній, читання сповільнюється, текст розсипається на список.</p></div>
+</div>
+<ul>
+  <li><b>SF Symbols</b> (у продакшені) — вони самі тягнуться за Dynamic Type й вагою шрифту.</li>
+  <li><b>Тонка вага</b> — light/regular. Жирні іконки кричать.</li>
+  <li><b>Колір приглушений</b> — <span class="mono">ink-soft</span>, крім активного стану чи ролі блока.</li>
+  <li><b>Розмір</b> — 16–20 px інлайн, 24 px максимум декоративно.</li>
+</ul>
+
+<h2>Рух і тактильність</h2>
+<ul>
+  <li><b>Spring, не лінійно.</b> <span class="mono">cubic-bezier(.2,.9,.3,1.2)</span> — передбачувано й живо, без відскоків і паралаксів.</li>
+  <li><b>Орб дихає</b> у спокої (3.6 s), пульсує під час запису. Це єдиний елемент, якому дозволено рухатись безперервно.</li>
+  <li><b>Haptic</b> на старті запису, авто-стопі й збереженні — людина часто не дивиться на екран, поки говорить.</li>
+  <li><b>Reduce Motion</b> вимикає всі анімації, не ламаючи макет.</li>
+</ul>
+
+<h2>Компоненти</h2>
+
+<h3>Кнопки</h3>
+<div class="card" style="display:flex;flex-direction:column;gap:10px">
+  <button class="btn btn-primary">Так, зберегти</button>
+  <button class="btn btn-sec">Не зараз</button>
+</div>
+<p class="note">Одна первинна кнопка на екран. Решта — вторинні або текстові.</p>
+
+<h3>Чипи емоцій і тегів</h3>
+<div class="card" style="display:flex;flex-wrap:wrap;gap:8px">
+  <span class="pill" style="background:var(--tension-soft);color:var(--tension-ink)">Виснаження</span>
+  <span class="pill" style="background:var(--calm-soft);color:var(--calm-ink)">Гордість</span>
+  <span class="pill" style="background:var(--low-soft);color:var(--low-ink)">Фінансова тривога</span>
+  <span class="pill" style="background:var(--line-soft);color:var(--ink-soft)">робота</span>
+  <span class="pill" style="background:var(--warm-soft);color:var(--warm-ink)">12 днів</span>
+</div>
+
+<h3>Рядок списку</h3>
+<div class="card" style="padding:0">
+  <div class="setrow"><span class="ic">◔</span><span class="lbl">Час нагадування</span><span class="val">21:00</span></div>
+  <div class="setrow"><span class="ic" style="background:var(--warm-soft);color:var(--warm-ink)">✦</span><span class="lbl">Streak і досягнення</span><span class="val">12</span></div>
+</div>
+
+<h3>Картка AI-наративу</h3>
+<div class="card" style="background:var(--accent-soft);border-color:transparent">
+  <p style="font-size:11.5px;font-weight:600;letter-spacing:.04em;color:var(--accent-ink);margin-bottom:8px">✦ ТВІЙ ТИЖДЕНЬ</p>
+  <p style="font-family:'Fraunces',serif;font-size:15.5px;line-height:1.65">Спокій цього тижня частіше приходив зранку, а напруга — у робочі вечори. Вихідні звучали помітно легше.</p>
+</div>
+
+<h2>Темна тема</h2>
+<ul>
+  <li><b>Фон не чорний.</b> Глибокий морський <span class="mono">#101615</span> — чистий чорний із світлим текстом ріже очі й читається холодно.</li>
+  <li><b>Текст не білий.</b> <span class="mono">#E7EBE8</span> — контраст у нормі, без ефекту «світло в очі».</li>
+  <li><b>Глибина через підйом поверхні</b>, не через тіні: картка світліша за фон.</li>
+  <li><b>Акцент інвертується.</b> Теal світлішає, а текст на ньому стає темним — <span class="mono">on-accent</span> перевертається разом із темою.</li>
+  <li><b>Шкала настрою тепліє.</b> Теплі кольори на темному тьмяніють, тому в темній темі вони світліші й трохи насиченіші.</li>
+  <li><b>Орб не світиться.</b> Вночі яскраве кільце било б по очах — підкладка приглушена, світла лише іконка.</li>
+</ul>
+
+<h2>Доступність</h2>
+<ul>
+  <li>Контраст тексту — мінімум <b>4.5:1</b> в обох темах.</li>
+  <li>Колір ніколи не єдиний носій сенсу: шкала настрою завжди дублюється підписом або позицією.</li>
+  <li>Кожна іконка-кнопка має <span class="mono">aria-label</span>; декоративні — <span class="mono">aria-hidden</span>.</li>
+  <li>Фокус видимий: кільце 2 px кольору акценту з відступом 2 px.</li>
+</ul>
+
+<h2>Відкриті питання</h2>
+<ul>
+  <li><b>Мед і напруга близькі за тоном</b> (<span class="mono">#D9A05B</span> vs <span class="mono">#D8A268</span>), а в темній темі зливаються в один токен. Розвести хоча б на пів тону.</li>
+  <li><b>Зелене підтвердження й teal-акцент</b> тонально сусідять — перевірити на реальному екрані, чи «Збережено» достатньо відрізняється від кнопки.</li>
+  <li><b>Екран інсайтів після збільшення шрифтів</b> скролиться на малих телефонах — перевірити, щоб наратив влазив на перший екран без скролу.</li>
+</ul>
+
+</div>
+<script>
+function flip(){
+  var r=document.documentElement, dark=r.getAttribute('data-theme')==='dark';
+  r.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('lbl').textContent=dark?'Темна тема':'Світла тема';
+  document.querySelectorAll('.hex').forEach(function(el){
+    el.textContent=dark?el.dataset.l:el.dataset.d;
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Луна — прототип</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#EDF2F1;
+  --paper:#FAFBFB;
+  --ink:#26302F;
+  --ink-soft:#61706E;
+  --ink-faint:#93A09D;
+  --line:#E2E6E6;
+  --line-soft:#ECF0EF;
+  --accent:#3E7C82;
+  --accent-soft:#E2EDEE;
+  --accent-ink:#2F6167;
+  --warm:#D9A05B;
+  --warm-soft:#F7EBD8;
+  --warm-ink:#8A5E22;
+  --calm:#3FA88A;
+  --calm-soft:#E2F2EC;
+  --calm-ink:#1F6B54;
+  --tension:#D8A268;
+  --tension-soft:#F8EEDF;
+  --tension-ink:#8A5D12;
+  --low:#C77B62;
+  --low-soft:#F7E6DF;
+  --low-ink:#8F4530;
+  --focus:#3E7C82;
+  --br-calm:#C9E5DB;
+  --br-tension:#F0DDB6;
+  --br-low:#EDC9BB;
+  --br-accent:#CFE0E1;
+  --br-dash:#C4CECC;
+  --br-rec:#E8C7B8;
+  --line-strong:#D6DCDB;
+  --auth-dark:#1A2322;
+  --auth-dark-fg:#FAFBFB;
+  --on-accent:#FFFFFF;
+  --shadow-a:rgba(38,48,47,.28);
+  --shadow-b:rgba(38,48,47,.14);
+}
+:root[data-theme="dark"]{
+  --canvas:#101615;
+  --paper:#19211F;
+  --ink:#E7EBE8;
+  --ink-soft:#A3B0AC;
+  --ink-faint:#71807C;
+  --line:#2A3432;
+  --line-soft:#232C2B;
+  --line-strong:#3A4644;
+  --accent:#6FB8BC;
+  --accent-soft:#1E2E30;
+  --accent-ink:#9AD3D6;
+  --warm:#E0B77E;
+  --warm-soft:#2E2519;
+  --warm-ink:#EBC894;
+  --calm:#5FC7A6;
+  --calm-soft:#162C26;
+  --calm-ink:#8ADCBF;
+  --tension:#E0B77E;
+  --tension-soft:#2E2519;
+  --tension-ink:#EBC894;
+  --low:#D8907A;
+  --low-soft:#2E1F1A;
+  --low-ink:#E9AC97;
+  --focus:#6FB8BC;
+  --br-calm:#2C4A40;
+  --br-tension:#4A3C24;
+  --br-low:#4A322A;
+  --br-accent:#2E4548;
+  --br-dash:#3A4644;
+  --br-rec:#4A322A;
+  --auth-dark:#E7EBE8;
+  --auth-dark-fg:#101615;
+  --on-accent:#0C1413;
+  --shadow-a:rgba(0,0,0,.5);
+  --shadow-b:rgba(0,0,0,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--canvas);
+  color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;
+  min-height:100vh;padding:24px 16px 48px;
+  -webkit-font-smoothing:antialiased;
+}
+.wordmark{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.wordmark .dot{width:11px;height:11px;border-radius:50%;background:var(--accent)}
+.wordmark h1{font-family:'Fraunces',serif;font-weight:500;font-size:21px;letter-spacing:-0.01em}
+.tagline{font-size:12.5px;color:var(--ink-soft);margin-bottom:20px}
+
+/* screen navigator */
+.nav{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-width:420px;margin-bottom:22px}
+.nav button{
+  font-family:inherit;font-size:11.5px;color:var(--ink-soft);
+  background:var(--paper);border:0.5px solid var(--line);
+  padding:5px 10px;border-radius:20px;cursor:pointer;transition:all .15s;
+}
+.nav button:hover{border-color:var(--accent);color:var(--accent-ink)}
+.nav button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.nav button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* phone */
+.phone{
+  width:334px;height:660px;background:var(--paper);
+  border-radius:38px;border:0.5px solid var(--line);
+  box-shadow:0 24px 60px -28px var(--shadow-a),0 4px 14px -8px var(--shadow-b);
+  position:relative;overflow:hidden;
+}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:118px;height:26px;background:var(--paper);border-radius:0 0 16px 16px;z-index:40}
+.statusbar{position:absolute;top:0;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:12px;font-weight:500;color:var(--ink);z-index:30}
+.statusbar .r{display:flex;gap:5px;align-items:center;font-size:11px}
+
+.screen{position:absolute;inset:0;padding:56px 24px 24px;display:none;flex-direction:column;opacity:0;transition:opacity .28s ease}
+.screen.active{display:flex;opacity:1}
+.screen.scroll{overflow-y:auto}
+
+/* generic */
+.spring{flex:1}
+.eyebrow{font-size:11.5px;color:var(--ink-faint);letter-spacing:.04em;text-transform:uppercase}
+.h-em{font-family:'Fraunces',serif;font-weight:500;font-size:25px;line-height:1.2;letter-spacing:-0.01em}
+.sub{font-size:14px;color:var(--ink-soft);line-height:1.6}
+.btn{font-family:inherit;font-size:15px;font-weight:500;border:none;border-radius:14px;padding:15px;min-height:48px;cursor:pointer;transition:transform .14s cubic-bezier(.2,.9,.3,1.2),filter .15s;width:100%}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-primary:hover{filter:brightness(1.06)}
+.btn-ghost{background:transparent;color:var(--ink-soft);font-size:14px;min-height:44px}
+.btn-ghost:hover{color:var(--ink)}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:16px}
+.dots span{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.dots span.on{background:var(--accent);width:18px;border-radius:3px;transition:all .2s}
+
+/* orb */
+.orb-wrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.orb{position:relative;width:128px;height:128px;border-radius:50%;background:var(--accent-soft);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;border:0.5px solid var(--br-accent);
+  transition:transform .22s cubic-bezier(.2,.9,.3,1.2)}
+.orb:active{transform:scale(.96)}
+.orb:focus-visible{outline:2px solid var(--focus);outline-offset:4px}
+.orb svg{width:46px;height:46px;stroke:var(--accent);fill:none;stroke-width:1.6}
+.orb::before{content:"";position:absolute;inset:-10px;border-radius:50%;border:1px solid var(--accent-soft);animation:breathe 3.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.14);opacity:0}}
+.kbd{position:absolute;bottom:-6px;right:-6px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.kbd::after{content:"";position:absolute;width:36px;height:36px;border-radius:50%;background:var(--paper);border:0.5px solid var(--line)}
+.kbd svg{position:relative;z-index:1;width:17px;height:17px;stroke:var(--ink-soft);fill:none;stroke-width:1.6}
+.orb-hint{font-size:12.5px;color:var(--ink-faint)}
+
+.orb.rec{background:var(--low-soft);border-color:var(--br-rec)}
+.orb.rec::before{animation:pulse 1.5s ease-out infinite}
+.orb.rec svg{stroke:none;fill:var(--low)}
+@keyframes pulse{0%{transform:scale(1);opacity:.6;border-color:var(--low)}100%{transform:scale(1.35);opacity:0;border-color:var(--low)}}
+
+/* waveform */
+.wave{display:flex;align-items:center;gap:4px;height:36px}
+.wave span{width:4px;border-radius:2px;background:var(--accent);animation:w 1s ease-in-out infinite}
+@keyframes w{0%,100%{height:8px}50%{height:30px}}
+
+/* home header */
+.home-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.streak{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:var(--warm-ink);background:var(--warm-soft);padding:4px 10px;border-radius:20px}
+.streak svg{width:13px;height:13px;stroke:var(--warm-ink);fill:none;stroke-width:1.6}
+
+/* recent list */
+.recent{border-top:0.5px solid var(--line);padding-top:8px;display:flex;flex-direction:column}
+.rec-row{display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer}
+.rec-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rec-txt{font-size:14px;color:var(--ink-soft);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rec-time{font-size:12px;color:var(--ink-faint)}
+
+/* reflect */
+.quote{background:var(--line-soft);border-radius:14px;padding:16px;font-family:'Fraunces',serif;font-size:16px;font-style:italic;line-height:1.65;color:var(--ink);}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:13.5px;font-weight:500;padding:8px 13px;border-radius:20px}
+.chip svg{width:12px;height:12px;vertical-align:-1px;margin-right:3px;stroke-width:1.6;fill:none}
+.chip.calm{background:var(--calm-soft);color:var(--calm-ink)}
+.chip.tension{background:var(--tension-soft);color:var(--tension-ink)}
+.chip.tag{background:var(--line-soft);color:var(--ink-soft)}
+.chip.tag svg{stroke:var(--ink-soft)}
+.reflect-actions{display:flex;gap:9px}
+.icon-btn{background:transparent;border:0.5px solid var(--line);border-radius:14px;min-width:52px;min-height:48px;padding:0 16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink-soft)}
+.icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* saved */
+.check{width:76px;height:76px;border-radius:50%;background:var(--calm-soft);display:flex;align-items:center;justify-content:center;animation:pop .4s cubic-bezier(.2,1.2,.4,1)}
+.check svg{width:36px;height:36px;stroke:var(--calm);fill:none;stroke-width:2}
+@keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* insights */
+.week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.week-nav .t{font-size:16px;font-weight:600}
+.week-nav .d{font-size:12px;color:var(--ink-faint)}
+.narr{background:var(--accent-soft);border-radius:15px;padding:15px}
+.narr .lbl{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11.5px;font-weight:600;color:var(--accent-ink);letter-spacing:.03em}
+.narr .lbl svg{width:14px;height:14px;stroke:var(--accent-ink);fill:none;stroke-width:1.6}
+.narr p{font-family:'Fraunces',serif;font-size:15.5px;line-height:1.65;color:var(--ink)}
+.section-lbl{font-size:13.5px;color:var(--ink-soft);margin-bottom:10px}
+.bars{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;height:78px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
+.bar{width:100%;border-radius:5px}
+.bar-lbl{font-size:10.5px;color:var(--ink-faint)}
+.pattern{background:var(--calm-soft);border-radius:15px;padding:14px;display:flex;gap:11px;align-items:flex-start}
+.pattern svg{width:19px;height:19px;stroke:var(--calm-ink);fill:none;stroke-width:1.6;flex-shrink:0;margin-top:1px}
+.pattern .pt{font-size:13px;font-weight:600;color:var(--calm-ink);margin-bottom:3px}
+.pattern .pd{font-size:12.5px;line-height:1.5;color:var(--calm-ink)}
+.theme-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.theme-name{font-size:13px;width:58px;flex-shrink:0}
+.theme-track{flex:1;height:8px;background:var(--line-soft);border-radius:4px;overflow:hidden}
+.theme-fill{height:100%;border-radius:4px}
+.theme-n{font-size:12px;color:var(--ink-faint);width:16px;text-align:right}
+
+/* locked */
+.locked{border:0.5px solid var(--br-accent);border-radius:15px;overflow:hidden}
+.locked-top{background:var(--accent-soft);padding:14px}
+.locked-top .lbl{display:flex;align-items:center;gap:6px;margin-bottom:7px;font-size:11.5px;font-weight:600;color:var(--accent-ink)}
+.locked-top .lbl svg{width:14px;height:14px;stroke:var(--accent-ink);fill:none;stroke-width:1.6}
+.locked-top p{font-family:'Fraunces',serif;font-size:14.5px;line-height:1.55;color:var(--ink)}
+.locked-body{padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:11px;text-align:center;border-top:0.5px solid var(--line)}
+.lock-ic{width:36px;height:36px;border-radius:50%;background:var(--line-soft);display:flex;align-items:center;justify-content:center}
+.lock-ic svg{width:17px;height:17px;stroke:var(--ink-soft);fill:none;stroke-width:1.6}
+.locked-body p{font-size:13px;color:var(--ink-soft);line-height:1.5}
+.locked-body b{font-weight:600;color:var(--ink)}
+.trial-line{font-size:12px;color:var(--ink-faint)}
+
+/* paywall */
+.plan{border:0.5px solid var(--line);border-radius:16px;padding:15px;cursor:pointer;transition:border-color .15s;position:relative}
+.plan:hover{border-color:var(--accent)}
+.plan.pick{border:1.5px solid var(--accent)}
+.plan-top{display:flex;justify-content:space-between;align-items:baseline}
+.plan-name{font-size:14.5px;font-weight:600}
+.plan-price{font-size:14.5px;font-weight:600;color:var(--accent-ink)}
+.plan-sub{font-size:12px;color:var(--ink-soft);margin-top:3px}
+.badge{position:absolute;top:-9px;left:14px;font-size:10.5px;font-weight:600;color:var(--on-accent);background:var(--accent);padding:2px 9px;border-radius:20px}
+.pay-feat{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-soft);margin-bottom:8px}
+.pay-feat svg{width:16px;height:16px;stroke:var(--calm);fill:none;stroke-width:1.8;flex-shrink:0}
+
+/* auth */
+.auth-btn{display:flex;align-items:center;justify-content:center;gap:9px;font-family:inherit;font-size:14.5px;font-weight:500;border-radius:14px;padding:14px;cursor:pointer;width:100%;transition:filter .15s,border-color .15s}
+.auth-btn svg{width:18px;height:18px}
+.auth-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.privacy-note{text-align:center;font-size:11px;color:var(--ink-faint);margin-top:8px;line-height:1.5}
+
+/* settings */
+.set-cap{font-size:11px;color:var(--ink-faint);letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px 4px}
+.set-group{background:var(--paper);border:0.5px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:18px}
+.set-row{display:flex;align-items:center;gap:12px;padding:12px 14px;min-height:52px;border-bottom:0.5px solid var(--line-soft);cursor:pointer}
+.set-row:last-child{border-bottom:none}
+.set-row .ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.set-row .ic svg{width:17px;height:17px;fill:none;stroke-width:1.7}
+.set-row .lbl{flex:1;font-size:15px}
+.set-row .val{font-size:13.5px;color:var(--ink-soft);display:flex;align-items:center;gap:4px}
+.set-row .val svg{width:15px;height:15px;stroke:var(--ink-faint);fill:none;stroke-width:1.6}
+.toggle{width:44px;height:26px;border-radius:20px;position:relative;flex-shrink:0;transition:background .18s;cursor:pointer;border:none}
+.toggle.on{background:var(--accent)}
+.toggle.off{background:var(--line)}
+.toggle b{position:absolute;top:2px;width:22px;height:22px;border-radius:50%;background:var(--paper);transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle.on b{left:20px}.toggle.off b{left:2px}
+.timecol{text-align:center;font-variant-numeric:tabular-nums;font-family:'Inter',sans-serif}
+.timecol .dim{font-size:15px;color:var(--ink-faint);opacity:.45;padding:2px 0}
+.timecol .sel{font-size:24px;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);border-radius:11px;padding:5px 16px;margin:3px 0}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wordmark"><span class="dot"></span><h1>Луна</h1></div>
+<p class="tagline">клікабельний прототип · робоча назва</p>
+
+<button id="themeBtn" onclick="flipTheme()" style="font-family:inherit;font-size:12px;color:var(--ink-soft);background:var(--paper);border:0.5px solid var(--line);padding:7px 14px;border-radius:20px;cursor:pointer;margin-bottom:14px;display:flex;align-items:center;gap:6px">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 15a6 6 0 1 1-7-8 5 5 0 0 0 7 8z"/></svg>
+  <span id="themeLbl">Темна тема</span>
+</button>
+
+<div class="nav" id="nav"></div>
+
+<div class="phone" role="application" aria-label="Прототип застосунку Луна">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span class="r">●●● ▮</span></div>
+
+  <!-- 0 splash -->
+  <section class="screen" data-screen="splash">
+    <div class="spring"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+      <div style="position:relative;width:66px;height:66px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center">
+        <span style="width:16px;height:16px;border-radius:50%;background:var(--accent)"></span>
+        <span style="position:absolute;inset:0;border-radius:50%;border:1px solid var(--accent-soft);animation:breathe 3.6s ease-in-out infinite"></span>
+      </div>
+      <h2 style="font-family:'Fraunces',serif;font-weight:500;font-size:31px;letter-spacing:-.01em">Луна</h2>
+      <p class="sub">говори, як почуваєшся</p>
+    </div>
+    <div class="spring"></div>
+    <p class="orb-hint" style="text-align:center">завантаження…</p>
+  </section>
+
+  <!-- 0b auth -->
+  <section class="screen scroll" data-screen="auth">
+    <button class="icon-btn" style="border:none;padding:0;align-self:flex-start;width:auto" onclick="go('splash')" aria-label="Назад"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ink-soft)" stroke-width="1.6"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <div class="spring"></div>
+    <div style="text-align:center;margin-bottom:26px">
+      <h2 class="h-em">З поверненням</h2>
+      <p class="sub" style="margin-top:10px">Увійди, щоб синхронізувати<br>записи між пристроями</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="auth-btn" style="background:var(--auth-dark);color:var(--auth-dark-fg)" onclick="go('home')"><svg viewBox="0 0 24 24" fill="var(--auth-dark-fg)"><path d="M16 3c.1 1-.3 2-1 2.7-.6.7-1.7 1.3-2.7 1.2-.1-1 .4-2 1-2.6C14 3.5 15 3 16 3zM19 17c-.4 1-.6 1.4-1.1 2.3-.7 1.2-1.7 2.7-2.9 2.7-1 0-1.3-.7-2.7-.7s-1.8.7-2.8.7c-1.2 0-2.1-1.3-2.8-2.5-2-3.2-2.2-7 -1-9 .7-1.2 1.9-2 3.2-2 1.2 0 2 .8 3 .8.9 0 1.5-.8 3-.8 1.1 0 2.3.6 3.1 1.6-2.7 1.6-2.3 5.5.7 6.6z"/></svg>Продовжити з Apple</button>
+      <button class="auth-btn" style="background:var(--paper);color:var(--ink);border:0.5px solid var(--line-strong)" onclick="go('home')"><svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22 12c0-.7-.1-1.4-.2-2H12v4h5.6c-.2 1.3-1 2.4-2 3.1v2.6h3.3C20.8 18 22 15.3 22 12z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.3-2.6c-.9.6-2 1-3.3 1-2.6 0-4.7-1.7-5.5-4.1H3.2v2.6C4.8 19.9 8.1 22 12 22z"/><path fill="#FBBC05" d="M6.5 13.9c-.2-.6-.3-1.2-.3-1.9s.1-1.3.3-1.9V7.5H3.2C2.4 8.9 2 10.4 2 12s.4 3.1 1.2 4.5l3.3-2.6z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.7 2 12 2 8.1 2 4.8 4.1 3.2 7.5l3.3 2.6C7.3 7.7 9.4 5.9 12 5.9z"/></svg>Продовжити з Google</button>
+      <button class="auth-btn" style="background:var(--accent-soft);color:var(--accent-ink)" onclick="go('home')"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Продовжити з поштою</button>
+    </div>
+    <div class="spring"></div>
+    <button class="btn btn-ghost" onclick="go('welcome')" style="margin-top:8px">Продовжити без акаунта</button>
+    <p class="privacy-note">Без акаунта записи лишаються лише<br>на цьому пристрої й нікуди не йдуть</p>
+  </section>
+
+  <!-- 1 welcome -->
+  <section class="screen" data-screen="welcome">
+    <button class="btn btn-ghost" onclick="go('auth')" style="align-self:flex-end;width:auto;padding:4px 2px">Вже маєш акаунт? Увійти</button>
+    <div class="spring"></div>
+    <div class="orb-wrap" style="margin-bottom:26px">
+      <div style="width:62px;height:62px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </div>
+    </div>
+    <h2 class="h-em" style="text-align:center">Говори,<br>як почуваєшся</h2>
+    <p class="sub" style="text-align:center;margin-top:12px">Одне речення на день.<br>Решту зробить Луна.</p>
+    <div class="spring"></div>
+    <button class="btn btn-primary" onclick="go('privacy')">Почати</button>
+    <div class="dots"><span class="on"></span><span></span><span></span><span></span></div>
+  </section>
+
+  <!-- 2 privacy -->
+  <section class="screen" data-screen="privacy">
+    <div style="width:48px;height:48px;border-radius:50%;background:var(--calm-soft);display:flex;align-items:center;justify-content:center;margin-bottom:16px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--calm-ink)" stroke-width="1.6"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+    </div>
+    <h2 class="h-em">Твої слова<br>лишаються твоїми</h2>
+    <div style="display:flex;flex-direction:column;gap:13px;margin-top:22px">
+      <div class="pay-feat"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg><span style="color:var(--ink)">Аудіо обробляється на пристрої</span></div>
+      <div class="pay-feat"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg><span style="color:var(--ink)">Ми нічого не продаємо</span></div>
+      <div class="pay-feat"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg><span style="color:var(--ink)">Видаляєш будь-що будь-коли</span></div>
+    </div>
+    <div class="spring"></div>
+    <button class="btn btn-primary" onclick="go('permission')">Зрозуміло</button>
+    <div class="dots"><span></span><span class="on"></span><span></span><span></span></div>
+  </section>
+
+  <!-- 3 permission -->
+  <section class="screen" data-screen="permission">
+    <div class="spring"></div>
+    <div class="orb-wrap" style="margin-bottom:22px">
+      <div style="width:58px;height:58px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </div>
+    </div>
+    <h2 class="h-em" style="text-align:center">Доступ<br>до мікрофона</h2>
+    <p class="sub" style="text-align:center;margin-top:12px">Щоб ти міг просто говорити,<br>а не друкувати</p>
+    <div class="spring"></div>
+    <button class="btn btn-primary" onclick="go('first')">Дозволити</button>
+    <button class="btn btn-ghost" onclick="go('first')" style="margin-top:4px">Пізніше, я друкуватиму</button>
+    <div class="dots"><span></span><span></span><span class="on"></span><span></span></div>
+  </section>
+
+  <!-- 4 first entry -->
+  <section class="screen" data-screen="first">
+    <p class="eyebrow" style="text-align:center;margin-bottom:auto">твій перший запис</p>
+    <div class="orb-wrap">
+      <button class="orb" onclick="go('listening')" aria-label="Записати">
+        <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </button>
+      <p class="sub" style="text-align:center;margin-top:6px">Спробуй прямо зараз:<br><span style="font-family:'Fraunces',serif;font-style:italic;color:var(--ink)">«Як пройшов твій день?»</span></p>
+    </div>
+    <p class="orb-hint" style="text-align:center;margin-top:auto">натисни й скажи одне речення</p>
+    <div class="dots" style="margin-top:14px"><span></span><span></span><span></span><span class="on"></span></div>
+  </section>
+
+  <!-- 5 home -->
+  <section class="screen" data-screen="home">
+    <div class="home-top">
+      <p class="eyebrow" style="text-transform:none;font-size:12.5px;color:var(--ink-soft)">Вівторок, 21 лип</p>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="streak"><svg viewBox="0 0 24 24"><path d="M12 3c1 3 4 4 4 8a4 4 0 0 1-8 0c0-2 2-3 2-5 1 1 2 1 2 2"/></svg>12 днів</span>
+        <button onclick="go('settings')" aria-label="Налаштування" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--ink-soft);display:flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></button>
+      </div>
+    </div>
+    <h2 class="h-em" style="margin-top:14px">Як ти зараз?</h2>
+    <p class="sub" style="margin-top:4px">Просто скажи одне речення</p>
+    <div class="orb-wrap" style="margin:auto 0">
+      <button class="orb" onclick="go('listening')" aria-label="Записати настрій">
+        <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        <span class="kbd" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 11h0M11 11h0M15 11h0M8 14h8"/></svg></span>
+      </button>
+      <p class="orb-hint">натисни, щоб говорити</p>
+    </div>
+    <div class="recent">
+      <div class="rec-row"><span class="rec-dot" style="background:var(--calm)"></span><span class="rec-txt">Спокій · ранкова кава, тиша</span><span class="rec-time">8:20</span></div>
+      <div class="rec-row"><span class="rec-dot" style="background:var(--tension)"></span><span class="rec-txt">Тривога · дедлайн по проєкту</span><span class="rec-time">учора</span></div>
+    </div>
+    <button class="btn btn-ghost" onclick="go('insights')" style="margin-top:10px">Подивитись тиждень →</button>
+    <button class="btn btn-ghost" onclick="go('reflect-invite')" style="margin-top:0;color:var(--accent-ink)">Є хвилина подумати? →</button>
+  </section>
+
+  <!-- 6 listening -->
+  <section class="screen" data-screen="listening">
+    <p class="eyebrow" style="text-align:center;margin-bottom:auto">слухаю</p>
+    <div class="orb-wrap">
+      <button class="orb rec" onclick="go('thinking')" aria-label="Зупинити запис">
+        <svg viewBox="0 0 24 24" fill="var(--low)" stroke="none"><rect x="7" y="7" width="10" height="10" rx="2.5"/></svg>
+      </button>
+      <div class="wave" aria-hidden="true">
+        <span style="animation-delay:0s"></span><span style="animation-delay:.15s"></span><span style="animation-delay:.3s"></span><span style="animation-delay:.1s"></span><span style="animation-delay:.25s"></span><span style="animation-delay:.05s"></span><span style="animation-delay:.2s"></span>
+      </div>
+    </div>
+    <p class="orb-hint" style="text-align:center;margin-top:auto">авто-стоп по тиші · або тап, щоб зупинити</p>
+  </section>
+
+  <!-- 7 thinking -->
+  <section class="screen" data-screen="thinking">
+    <div class="spring"></div>
+    <div class="orb-wrap">
+      <div style="width:126px;height:126px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center">
+        <div class="wave" aria-hidden="true"><span style="animation-delay:0s"></span><span style="animation-delay:.15s"></span><span style="animation-delay:.3s"></span><span style="animation-delay:.1s"></span></div>
+      </div>
+      <p class="h-em" style="font-size:18px">Слухаю тебе…</p>
+    </div>
+    <div class="spring"></div>
+  </section>
+
+  <!-- 8 reflect -->
+  <section class="screen scroll" data-screen="reflect">
+    <p class="eyebrow" style="margin-bottom:12px">рефлексія</p>
+    <div class="quote">«Знову засиділась до ночі над завданням, трохи вигоріла, але загалом задоволена, що дотягнула…»</div>
+    <p class="section-lbl" style="margin:16px 0 9px">я почула:</p>
+    <div class="chips" style="margin-bottom:18px">
+      <span class="chip tension">Виснаження</span>
+      <span class="chip calm">Гордість</span>
+      <span class="chip tag"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="13" rx="2"/><path d="M9 6V4h6v2"/></svg>робота</span>
+      <span class="chip tag"><svg viewBox="0 0 24 24"><path d="M18 15a6 6 0 1 1-7-8 5 5 0 0 0 7 8z"/></svg>пізно</span>
+    </div>
+    <div class="spring"></div>
+    <div class="reflect-actions">
+      <button class="btn btn-primary" onclick="go('saved')" style="flex:1">Так, зберегти</button>
+      <button class="icon-btn" aria-label="Виправити" onclick="go('edit')"><svg viewBox="0 0 24 24"><path d="M4 20h4L18 10l-4-4L4 16v4zM14 6l4 4"/></svg></button>
+    </div>
+  </section>
+
+  <!-- 8b edit reflection -->
+  <section class="screen scroll" data-screen="edit">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <button class="btn btn-ghost" style="width:auto;padding:0;display:flex;align-items:center;gap:4px" onclick="go('reflect')"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M15 6l-6 6 6 6"/></svg>Виправити</button>
+      <button class="btn btn-primary" style="width:auto;padding:8px 16px;font-size:13px" onclick="go('reflect')">Готово</button>
+    </div>
+
+    <div class="quote" style="position:relative;padding-right:34px">«Знову засиділась до ночі над завданням, трохи вигоріла, але загалом задоволена, що дотягнула…»<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--ink-faint)" stroke-width="1.6" style="position:absolute;top:13px;right:13px"><path d="M4 20h4L18 10l-4-4L4 16v4zM14 6l4 4"/></svg></div>
+
+    <p class="section-lbl" style="margin:16px 0 10px">Настрій</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px">
+      <span style="width:20px;height:20px;border-radius:50%;background:var(--low);opacity:.4"></span>
+      <span style="width:20px;height:20px;border-radius:50%;background:var(--tension);opacity:.4"></span>
+      <span style="width:27px;height:27px;border-radius:50%;background:var(--tension);box-shadow:0 0 0 3px var(--tension-soft)"></span>
+      <span style="width:20px;height:20px;border-radius:50%;background:var(--calm);opacity:.4"></span>
+      <span style="width:20px;height:20px;border-radius:50%;background:var(--calm);opacity:.4"></span>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;padding:0 2px"><span style="font-size:10.5px;color:var(--ink-faint)">важко</span><span style="font-size:10.5px;color:var(--ink-faint)">добре</span></div>
+
+    <p class="section-lbl" style="margin:18px 0 8px">Обрані емоції <span style="color:var(--ink-faint)">· тап, щоб зняти</span></p>
+    <div class="chips">
+      <span class="chip tension">Виснаження <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      <span class="chip calm">Гордість <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+    </div>
+
+    <p class="section-lbl" style="margin:18px 0 11px;border-top:0.5px solid var(--line-soft);padding-top:14px">Додати емоцію</p>
+
+    <p class="eyebrow" style="margin-bottom:7px">приємні, спокійні</p>
+    <div class="chips" style="margin-bottom:12px">
+      <span class="chip" style="border:0.5px solid var(--br-calm);color:var(--calm-ink)">спокій</span>
+      <span class="chip" style="border:0.5px solid var(--br-calm);color:var(--calm-ink)">вдячність</span>
+      <span class="chip" style="border:0.5px solid var(--br-calm);color:var(--calm-ink)">полегшення</span>
+    </div>
+    <p class="eyebrow" style="margin-bottom:7px">приємні, енергійні</p>
+    <div class="chips" style="margin-bottom:12px">
+      <span class="chip" style="border:0.5px solid var(--br-calm);color:var(--calm-ink)">радість</span>
+      <span class="chip calm" style="border:1.5px solid var(--calm)">гордість <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><path d="M5 12l4 4L19 6"/></svg></span>
+      <span class="chip" style="border:0.5px solid var(--br-calm);color:var(--calm-ink)">натхнення</span>
+    </div>
+    <p class="eyebrow" style="margin-bottom:7px">напружені</p>
+    <div class="chips" style="margin-bottom:12px">
+      <span class="chip" style="border:0.5px solid var(--br-tension);color:var(--tension-ink)">тривога</span>
+      <span class="chip" style="border:0.5px solid var(--br-tension);color:var(--tension-ink)">роздратування</span>
+      <span class="chip" style="border:0.5px solid var(--br-tension);color:var(--tension-ink)">стрес</span>
+    </div>
+    <p class="eyebrow" style="margin-bottom:7px">важкі</p>
+    <div class="chips">
+      <span class="chip tension" style="border:1.5px solid var(--low);background:var(--low-soft);color:var(--low-ink)">виснаження <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><path d="M5 12l4 4L19 6"/></svg></span>
+      <span class="chip" style="border:0.5px solid var(--br-low);color:var(--low-ink)">сум</span>
+      <span class="chip" style="border:0.5px solid var(--br-low);color:var(--low-ink)">апатія</span>
+      <span class="chip" style="border:0.5px dashed var(--br-dash);color:var(--ink-faint)">більше…</span>
+    </div>
+
+    <p class="section-lbl" style="margin:18px 0 9px;border-top:0.5px solid var(--line-soft);padding-top:14px">Контекст</p>
+    <div class="chips">
+      <span class="chip tag"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="13" rx="2"/><path d="M9 6V4h6v2"/></svg>робота <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      <span class="chip tag"><svg viewBox="0 0 24 24"><path d="M18 15a6 6 0 1 1-7-8 5 5 0 0 0 7 8z"/></svg>пізно <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      <span class="chip" style="border:0.5px dashed var(--br-dash);color:var(--ink-faint)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-2px"><path d="M12 5v14M5 12h14"/></svg> додати</span>
+    </div>
+  </section>
+
+  <!-- 9 saved -->
+  <section class="screen" data-screen="saved">
+    <div class="spring"></div>
+    <div class="orb-wrap">
+      <div class="check"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></div>
+      <p class="h-em" style="font-size:20px">Збережено</p>
+      <span class="streak" style="margin-top:2px"><svg viewBox="0 0 24 24"><path d="M12 3c1 3 4 4 4 8a4 4 0 0 1-8 0c0-2 2-3 2-5 1 1 2 1 2 2"/></svg>13 днів поспіль</span>
+    </div>
+    <div class="spring"></div>
+    <button class="btn btn-primary" onclick="go('insights')">Подивитись тиждень</button>
+    <button class="btn btn-ghost" onclick="go('ground-offer')" style="margin-top:4px">Після важкого запису →</button>
+  </section>
+
+  <!-- 10 insights full -->
+  <section class="screen scroll" data-screen="insights">
+    <div class="week-nav">
+      <span class="t">Цей тиждень</span><span class="d">14–20 лип</span>
+    </div>
+    <div class="narr" style="margin-top:14px">
+      <div class="lbl"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>ТВІЙ ТИЖДЕНЬ</div>
+      <p>Спокій цього тижня частіше приходив зранку, а напруга — у робочі вечори. Ти згадувала роботу у 6 записах, і поруч майже завжди звучало виснаження. Вихідні звучали помітно легше.</p>
+    </div>
+    <p class="section-lbl" style="margin:18px 0 10px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" style="vertical-align:-2px;margin-right:6px"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Настрій по днях</p>
+    <div class="bars">
+      <div class="bar-col"><span class="bar" style="height:50px;background:var(--calm)"></span><span class="bar-lbl">пн</span></div>
+      <div class="bar-col"><span class="bar" style="height:32px;background:var(--tension)"></span><span class="bar-lbl">вт</span></div>
+      <div class="bar-col"><span class="bar" style="height:26px;background:var(--low)"></span><span class="bar-lbl">ср</span></div>
+      <div class="bar-col"><span class="bar" style="height:38px;background:var(--tension)"></span><span class="bar-lbl">чт</span></div>
+      <div class="bar-col"><span class="bar" style="height:28px;background:var(--tension)"></span><span class="bar-lbl">пт</span></div>
+      <div class="bar-col"><span class="bar" style="height:64px;background:var(--calm)"></span><span class="bar-lbl">сб</span></div>
+      <div class="bar-col"><span class="bar" style="height:58px;background:var(--calm)"></span><span class="bar-lbl">нд</span></div>
+    </div>
+    <div class="pattern" style="margin:18px 0">
+      <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 1 4 10c-1 1-1 2-1 3H9c0-1 0-2-1-3a6 6 0 0 1 4-10zM9 20h6"/></svg>
+      <div><div class="pt">Помічений патерн</div><div class="pd">У дні, коли ти згадувала прогулянки, настрій був вищим. Трапилось 3 рази цього місяця.</div></div>
+    </div>
+    <p class="section-lbl" style="margin-bottom:12px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" style="vertical-align:-2px;margin-right:6px"><path d="M20 12a8 8 0 0 1-11.4 7.2L4 20l.9-4.4A8 8 0 1 1 20 12z"/></svg>Про що ти говорила</p>
+    <div class="theme-row"><span class="theme-name">робота</span><span class="theme-track"><span class="theme-fill" style="width:100%;background:var(--tension)"></span></span><span class="theme-n">6</span></div>
+    <div class="theme-row"><span class="theme-name">сімʼя</span><span class="theme-track"><span class="theme-fill" style="width:66%;background:var(--calm)"></span></span><span class="theme-n">4</span></div>
+    <div class="theme-row"><span class="theme-name">сон</span><span class="theme-track"><span class="theme-fill" style="width:50%;background:var(--accent)"></span></span><span class="theme-n">3</span></div>
+    <button class="btn btn-ghost" onclick="go('locked')" style="margin-top:14px">↔ побачити версію без преміуму</button>
+  </section>
+
+  <!-- 11 insights locked -->
+  <section class="screen scroll" data-screen="locked">
+    <div class="week-nav"><span class="t">Цей тиждень</span><span class="d">14–20 лип</span></div>
+    <p class="section-lbl" style="margin:16px 0 10px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" style="vertical-align:-2px;margin-right:6px"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Настрій по днях · безкоштовно</p>
+    <div class="bars">
+      <div class="bar-col"><span class="bar" style="height:46px;background:var(--calm)"></span><span class="bar-lbl">пн</span></div>
+      <div class="bar-col"><span class="bar" style="height:30px;background:var(--tension)"></span><span class="bar-lbl">вт</span></div>
+      <div class="bar-col"><span class="bar" style="height:24px;background:var(--low)"></span><span class="bar-lbl">ср</span></div>
+      <div class="bar-col"><span class="bar" style="height:36px;background:var(--tension)"></span><span class="bar-lbl">чт</span></div>
+      <div class="bar-col"><span class="bar" style="height:26px;background:var(--tension)"></span><span class="bar-lbl">пт</span></div>
+      <div class="bar-col"><span class="bar" style="height:56px;background:var(--calm)"></span><span class="bar-lbl">сб</span></div>
+      <div class="bar-col"><span class="bar" style="height:52px;background:var(--calm)"></span><span class="bar-lbl">нд</span></div>
+    </div>
+    <div class="locked" style="margin-top:20px">
+      <div class="locked-top">
+        <div class="lbl"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>ТВІЙ ТИЖДЕНЬ</div>
+        <p>Спокій цього тижня частіше приходив зранку, а напруга — у робочі вечори.</p>
+      </div>
+      <div class="locked-body">
+        <div class="lock-ic"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+        <p>Ми помітили <b>2 патерни</b> й <b>3 теми</b> у твоїх записах цього тижня</p>
+        <button class="btn btn-primary" onclick="go('paywall')">Розблокувати інсайти</button>
+        <span class="trial-line">7 днів безкоштовно · далі 149 ₴/міс</span>
+      </div>
+    </div>
+    <button class="btn btn-ghost" onclick="go('insights')" style="margin-top:14px">↔ побачити преміум-версію</button>
+  </section>
+
+  <!-- 12 paywall -->
+  <section class="screen scroll" data-screen="paywall">
+    <div style="display:flex;justify-content:flex-end"><button class="icon-btn" style="border:none;padding:0" onclick="go('locked')" aria-label="Закрити"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <h2 class="h-em" style="margin-top:4px">Луна, що<br>розуміє тебе</h2>
+    <div style="margin:20px 0 22px">
+      <div class="pay-feat"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg>AI-наратив кожного тижня</div>
+      <div class="pay-feat"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg>Патерни й кореляції настрою</div>
+      <div class="pay-feat"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg>Теми з твоїх записів</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="plan pick" onclick="pickPlan(this)">
+        <span class="badge">7 днів безкоштовно</span>
+        <div class="plan-top"><span class="plan-name">Щомісяця</span><span class="plan-price">149 ₴</span></div>
+        <div class="plan-sub">далі 149 ₴/міс, скасуєш будь-коли</div>
+      </div>
+      <div class="plan" onclick="pickPlan(this)">
+        <div class="plan-top"><span class="plan-name">Назавжди</span><span class="plan-price">1590 ₴</span></div>
+        <div class="plan-sub">одна оплата, без підписки</div>
+      </div>
+    </div>
+    <div class="spring" style="min-height:16px"></div>
+    <button class="btn btn-primary" onclick="go('insights')">Спробувати 7 днів безкоштовно</button>
+    <button class="btn btn-ghost" onclick="go('locked')" style="margin-top:4px">Не зараз</button>
+  </section>
+
+  <!-- 13a reflection invite -->
+  <section class="screen" data-screen="reflect-invite">
+    <p class="eyebrow" style="margin-bottom:auto">режим рефлексії</p>
+    <div style="display:flex;flex-direction:column;gap:14px;margin:auto 0">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M12 3a6 6 0 0 1 4 10c-1 1-1 2-1 3H9c0-1 0-2-1-3a6 6 0 0 1 4-10zM9 20h6"/></svg>
+      </div>
+      <h2 class="h-em">Є хвилина<br>подумати?</h2>
+      <p class="sub">Три записи цього тижня чекають,<br>щоб ти назвала їх сама.</p>
+      <div style="background:var(--line-soft);border-radius:14px;padding:13px 14px;margin-top:4px">
+        <p style="font-size:13.5px;color:var(--ink-soft);line-height:1.6;margin:0">Луна вже має свою версію — але спершу твоя. Так ти вчишся розрізняти власні почуття, а не звіряти їх із чужими.</p>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:auto" onclick="go('guess')">Почати</button>
+    <button class="btn btn-ghost" onclick="go('home')">Не зараз</button>
+  </section>
+
+  <!-- 13b guess first -->
+  <section class="screen scroll" data-screen="guess">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font-size:13px;color:var(--ink-faint)">Вівторок, 20:40</span>
+      <span style="font-size:12px;color:var(--ink-faint)">1 / 3</span>
+    </div>
+
+    <div class="quote">«Знову засиділась до ночі над завданням, трохи вигоріла, але загалом задоволена, що дотягнула…»</div>
+
+    <p class="h-em" style="font-size:19px;margin:20px 0 6px">Як би ти це назвала?</p>
+    <p class="sub" style="font-size:13.5px;margin-bottom:14px">Обери одну-дві емоції. Правильної відповіді немає.</p>
+
+    <div class="chips" style="margin-bottom:16px">
+      <span class="chip" style="border:0.5px dashed var(--br-dash);color:var(--ink-faint)">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-2px"><path d="M12 5v14M5 12h14"/></svg> обрати емоцію
+      </span>
+    </div>
+
+    <div style="border-top:0.5px solid var(--line-soft);padding-top:13px;display:flex;align-items:center;gap:9px;margin-bottom:16px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-faint)" stroke-width="1.5"><path d="M3 3l18 18M10.6 5.1A9.9 9.9 0 0 1 12 5c5 0 9 4.5 9 7a11 11 0 0 1-2.2 3.2M6.6 6.7C4.4 8.1 3 10.3 3 12c0 2.5 4 7 9 7 1.4 0 2.7-.3 3.8-.9"/></svg>
+      <span style="font-size:13px;color:var(--ink-faint)">що почула Луна — після твого вибору</span>
+    </div>
+
+    <div class="spring"></div>
+    <button class="btn btn-primary" onclick="go('reveal')">Далі</button>
+    <button class="btn btn-ghost" onclick="go('reveal')">Не знаю — покажи одразу</button>
+  </section>
+
+  <!-- 13c reveal -->
+  <section class="screen scroll" data-screen="reveal">
+    <p class="eyebrow" style="margin-bottom:14px">порівняння</p>
+
+    <div style="background:var(--paper);border:0.5px solid var(--line);border-radius:15px;padding:14px;margin-bottom:10px">
+      <p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:9px">ти назвала</p>
+      <div class="chips"><span class="chip tension">Виснаження</span></div>
+    </div>
+
+    <div style="background:var(--accent-soft);border-radius:15px;padding:14px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:9px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="1.6"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>
+        <span style="font-size:11.5px;font-weight:600;color:var(--accent-ink)">ЛУНА ПОЧУЛА</span>
+      </div>
+      <div class="chips"><span class="chip tension">Виснаження</span><span class="chip calm">Гордість</span></div>
+    </div>
+
+    <div class="pattern" style="margin-bottom:16px">
+      <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 1 4 10c-1 1-1 2-1 3H9c0-1 0-2-1-3a6 6 0 0 1 4-10zM9 20h6"/></svg>
+      <div>
+        <div class="pt">Різниця</div>
+        <div class="pd">Ти помітила втому. Луна почула ще й гордість — у словах «задоволена, що дотягнула».</div>
+      </div>
+    </div>
+
+    <div class="spring"></div>
+    <button class="btn btn-primary" onclick="go('growth')">Додати «Гордість»</button>
+    <button class="btn btn-ghost" onclick="go('growth')">Ні, я знаю, що відчувала</button>
+  </section>
+
+  <!-- 13d growth -->
+  <section class="screen scroll" data-screen="growth">
+    <p class="eyebrow" style="margin-bottom:6px">твій словник</p>
+    <h2 class="h-em" style="font-size:21px;margin-bottom:16px">Ти стала точніша</h2>
+
+    <div class="narr" style="margin-bottom:18px">
+      <div class="lbl">
+        <svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>
+        ЗА ТРИ МІСЯЦІ
+      </div>
+      <p>У травні ти писала просто «погано». Зараз розрізняєш виснаження, досаду й тривожне очікування — це різні речі, і ти їх бачиш.</p>
+    </div>
+
+    <p class="section-lbl">Різних емоцій на місяць</p>
+    <div class="bars" style="height:86px;margin-bottom:20px">
+      <div class="bar-col"><span class="bar" style="height:22px;background:var(--accent-soft)"></span><span class="bar-lbl">трав</span></div>
+      <div class="bar-col"><span class="bar" style="height:38px;background:var(--accent-soft)"></span><span class="bar-lbl">черв</span></div>
+      <div class="bar-col"><span class="bar" style="height:54px;background:var(--accent)"></span><span class="bar-lbl">лип</span></div>
+    </div>
+
+    <p class="section-lbl">Глибина</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:13px;width:72px;flex-shrink:0;color:var(--ink-soft)">базові</span>
+        <span class="theme-track"><span class="theme-fill" style="width:30%;background:var(--ink-faint)"></span></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:13px;width:72px;flex-shrink:0;color:var(--ink-soft)">уточнення</span>
+        <span class="theme-track"><span class="theme-fill" style="width:78%;background:var(--accent)"></span></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:13px;width:72px;flex-shrink:0;color:var(--ink-soft)">конкретика</span>
+        <span class="theme-track"><span class="theme-fill" style="width:42%;background:var(--calm)"></span></span>
+      </div>
+    </div>
+
+    <div style="background:var(--line-soft);border-radius:14px;padding:13px 14px">
+      <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin:0">Луна поступово підказуватиме менше — ти вже впораєшся сама.</p>
+    </div>
+
+    <button class="btn btn-ghost" style="margin-top:16px" onclick="go('home')">На головну</button>
+  </section>
+
+  <!-- 14a grounding offer -->
+  <section class="screen" data-screen="ground-offer">
+    <div class="spring"></div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="width:48px;height:48px;border-radius:50%;background:var(--calm-soft);display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--calm-ink)" stroke-width="1.5"><path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>
+      </div>
+      <h2 class="h-em" style="font-size:22px">Схоже, зараз<br>непросто</h2>
+      <p class="sub">Хочеш на хвилину заземлитись?<br>Просто назвати вголос те, що навколо.</p>
+    </div>
+    <div class="spring"></div>
+    <button class="btn btn-primary" onclick="go('ground-see')">Давай</button>
+    <button class="btn btn-ghost" onclick="go('home')">Не зараз</button>
+  </section>
+
+  <!-- 14b grounding · sight -->
+  <section class="screen" data-screen="ground-see" style="padding:56px 24px 32px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span class="eyebrow" style="color:var(--accent-ink)">очі</span>
+      <button class="btn btn-ghost" style="width:auto;padding:4px;font-size:13px" onclick="go('ground-hear')">далі →</button>
+    </div>
+
+    <div class="spring"></div>
+
+    <h2 class="h-em" style="font-size:27px;line-height:1.25">Назви п'ять<br>речей, які бачиш</h2>
+
+    <div style="display:flex;gap:11px;margin:26px 0 22px">
+      <span style="width:15px;height:15px;border-radius:50%;background:var(--accent)"></span>
+      <span style="width:15px;height:15px;border-radius:50%;background:var(--accent)"></span>
+      <span style="width:15px;height:15px;border-radius:50%;background:var(--accent)"></span>
+      <span style="width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line-strong)"></span>
+      <span style="width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line-strong)"></span>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <span style="font-size:15px;color:var(--ink-soft);font-family:'Fraunces',serif">стіл</span>
+      <span style="font-size:15px;color:var(--ink-faint)">·</span>
+      <span style="font-size:15px;color:var(--ink-soft);font-family:'Fraunces',serif">вікно</span>
+      <span style="font-size:15px;color:var(--ink-faint)">·</span>
+      <span style="font-size:15px;color:var(--ink-soft);font-family:'Fraunces',serif">чашка</span>
+    </div>
+
+    <div class="spring"></div>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px">
+      <div class="wave" style="height:22px" aria-hidden="true">
+        <span style="animation-delay:0s;height:8px"></span>
+        <span style="animation-delay:.2s;height:16px"></span>
+        <span style="animation-delay:.1s;height:12px"></span>
+      </div>
+      <span style="font-size:13px;color:var(--ink-faint)">слухаю</span>
+    </div>
+  </section>
+
+  <!-- 14c grounding · hearing -->
+  <section class="screen" data-screen="ground-hear" style="padding:56px 24px 32px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span class="eyebrow" style="color:var(--accent-ink)">слух</span>
+      <button class="btn btn-ghost" style="width:auto;padding:4px;font-size:13px" onclick="go('ground-touch')">далі →</button>
+    </div>
+
+    <div class="spring"></div>
+
+    <h2 class="h-em" style="font-size:27px;line-height:1.25">Чотири звуки,<br>які чуєш</h2>
+
+    <div style="display:flex;gap:11px;margin:26px 0 22px">
+      <span style="width:15px;height:15px;border-radius:50%;background:var(--accent)"></span>
+      <span style="width:15px;height:15px;border-radius:50%;background:var(--accent)"></span>
+      <span style="width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line-strong)"></span>
+      <span style="width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line-strong)"></span>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <span style="font-size:15px;color:var(--ink-soft);font-family:'Fraunces',serif">холодильник</span>
+      <span style="font-size:15px;color:var(--ink-faint)">·</span>
+      <span style="font-size:15px;color:var(--ink-soft);font-family:'Fraunces',serif">машина за вікном</span>
+    </div>
+
+    <div class="spring"></div>
+
+    <p style="font-size:13px;color:var(--ink-faint);text-align:center;line-height:1.6">Не поспішай. Можна пошепки —<br>я все одно почую.</p>
+  </section>
+
+  <!-- 14d grounding · touch -->
+  <section class="screen" data-screen="ground-touch" style="padding:56px 24px 32px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span class="eyebrow" style="color:var(--accent-ink)">дотик</span>
+      <button class="btn btn-ghost" style="width:auto;padding:4px;font-size:13px" onclick="go('ground-done')">далі →</button>
+    </div>
+
+    <div class="spring"></div>
+
+    <h2 class="h-em" style="font-size:27px;line-height:1.25">Три речі, які<br>відчуваєш шкірою</h2>
+
+    <div style="display:flex;gap:11px;margin:26px 0 22px">
+      <span style="width:15px;height:15px;border-radius:50%;background:var(--accent)"></span>
+      <span style="width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line-strong)"></span>
+      <span style="width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line-strong)"></span>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <span style="font-size:15px;color:var(--ink-soft);font-family:'Fraunces',serif">тепла кружка в долоні</span>
+    </div>
+
+    <div class="spring"></div>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px">
+      <div class="wave" style="height:22px" aria-hidden="true">
+        <span style="animation-delay:0s;height:10px"></span>
+        <span style="animation-delay:.2s;height:18px"></span>
+        <span style="animation-delay:.1s;height:12px"></span>
+      </div>
+      <span style="font-size:13px;color:var(--ink-faint)">слухаю</span>
+    </div>
+  </section>
+
+  <!-- 14e grounding done -->
+  <section class="screen" data-screen="ground-done" style="padding:56px 24px 32px">
+    <div class="spring"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+      <div style="width:66px;height:66px;border-radius:50%;background:var(--calm-soft);display:flex;align-items:center;justify-content:center">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--calm)" stroke-width="1.5"><path d="M4 13c3 0 3-2 6-2s3 2 6 2 4-2 4-2M4 18c3 0 3-2 6-2s3 2 6 2 4-2 4-2"/></svg>
+      </div>
+      <h2 class="h-em" style="font-size:23px">Ти тут</h2>
+      <p class="sub" style="max-width:230px">Нічого з цього не збережено.<br>Це було просто для тебе.</p>
+    </div>
+    <div class="spring"></div>
+    <button class="btn btn-ghost" onclick="go('home')">На головну</button>
+  </section>
+
+  <!-- 13 settings -->
+  <section class="screen scroll" data-screen="settings">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <button class="btn btn-ghost" style="width:auto;padding:0;display:flex" onclick="go('home')" aria-label="Назад"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <h2 style="font-family:'Fraunces',serif;font-weight:500;font-size:22px">Налаштування</h2>
+    </div>
+
+    <p class="set-cap">Нагадування</p>
+    <div class="set-group">
+      <div class="set-row" onclick="toggle(this)">
+        <span class="ic" style="background:var(--accent-soft)"><svg viewBox="0 0 24 24" stroke="var(--accent-ink)"><path d="M18 16v-5a6 6 0 0 0-12 0v5l-2 2h16l-2-2zM10 21h4"/></svg></span>
+        <span class="lbl">Щоденне нагадування</span>
+        <button class="toggle on" aria-label="Нагадування увімкнено"><b></b></button>
+      </div>
+      <div class="set-row" style="flex-direction:column;align-items:stretch;gap:0;cursor:default">
+        <div style="display:flex;align-items:center;gap:12px;width:100%">
+          <span class="ic" style="background:var(--accent-soft)"><svg viewBox="0 0 24 24" stroke="var(--accent-ink)"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+          <span class="lbl">Час нагадування</span>
+          <span class="val" style="color:var(--accent-ink);font-weight:500">21:00</span>
+        </div>
+        <div style="display:flex;justify-content:center;align-items:center;gap:8px;padding:10px 0 4px">
+          <div class="timecol"><div class="dim">20</div><div class="sel">21</div><div class="dim">22</div></div>
+          <span style="font-size:24px;font-weight:600;color:var(--accent-ink)">:</span>
+          <div class="timecol"><div class="dim">45</div><div class="sel">00</div><div class="dim">15</div></div>
+        </div>
+      </div>
+      <div class="set-row" style="cursor:default">
+        <span class="ic" style="background:var(--line-soft)"><svg viewBox="0 0 24 24" stroke="var(--ink-soft)"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <span class="lbl">Тон</span>
+        <span class="val">Мʼякий <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+    </div>
+
+    <p class="set-cap">Приватність та дані</p>
+    <div class="set-group">
+      <div class="set-row" onclick="toggle(this)">
+        <span class="ic" style="background:var(--calm-soft)"><svg viewBox="0 0 24 24" stroke="var(--calm-ink)"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+        <span class="lbl">Блокування Face ID</span>
+        <button class="toggle on" aria-label="Face ID увімкнено"><b></b></button>
+      </div>
+      <div class="set-row">
+        <span class="ic" style="background:var(--line-soft)"><svg viewBox="0 0 24 24" stroke="var(--ink-soft)"><path d="M12 3v12M8 11l4 4 4-4M5 21h14"/></svg></span>
+        <span class="lbl">Експортувати записи</span>
+        <span class="val"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+      <div class="set-row">
+        <span class="ic" style="background:var(--low-soft)"><svg viewBox="0 0 24 24" stroke="var(--low-ink)"><path d="M5 7h14M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></span>
+        <span class="lbl" style="color:var(--low-ink)">Видалити всі дані</span>
+        <span class="val"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+    </div>
+
+    <p class="set-cap">Акаунт</p>
+    <div class="set-group">
+      <div class="set-row" onclick="go('auth')">
+        <span class="ic" style="background:var(--accent-soft)"><svg viewBox="0 0 24 24" stroke="var(--accent-ink)"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>
+        <span class="lbl">Резервна копія</span>
+        <span class="val">Локально · увійти <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+      <div class="set-row" onclick="go('paywall')">
+        <span class="ic" style="background:var(--accent-soft)"><svg viewBox="0 0 24 24" stroke="var(--accent-ink)"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.5-.8z"/></svg></span>
+        <span class="lbl">Луна Преміум</span>
+        <span class="val">Спробувати <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+    </div>
+
+    <p style="text-align:center;font-size:11px;color:var(--ink-faint);margin-top:4px">Луна · версія 0.1 · прототип</p>
+  </section>
+
+</div>
+
+<script>
+var screens=[
+  ['splash','Сплеш'],['auth','Вхід'],['welcome','Вітання'],['privacy','Приватність'],['permission','Дозвіл'],['first','Перший запис'],
+  ['home','Головна'],['listening','Слухаю'],['thinking','Обробка'],['reflect','Рефлексія'],['edit','Редагування'],['saved','Збережено'],
+  ['insights','Інсайти'],['locked','Апсел'],['paywall','Пейвол'],
+  ['reflect-invite','Рефлексія'],['guess','Вгадай сам'],['reveal','Порівняння'],['growth','Зростання'],
+  ['ground-offer','Заземлення'],['ground-see','Очі'],['ground-hear','Слух'],['ground-touch','Дотик'],['ground-done','Завершення'],
+  ['settings','Налаштування']
+];
+var nav=document.getElementById('nav');
+screens.forEach(function(s){
+  var b=document.createElement('button');
+  b.textContent=s[1];b.dataset.k=s[0];
+  b.onclick=function(){go(s[0])};
+  nav.appendChild(b);
+});
+function go(k){
+  document.querySelectorAll('.screen').forEach(function(el){el.classList.toggle('active',el.dataset.screen===k)});
+  document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.k===k)});
+  var ph=document.querySelector('.phone');if(ph)ph.scrollTop=0;
+  var sc=document.querySelector('.screen[data-screen="'+k+'"]');if(sc)sc.scrollTop=0;
+  if(k==='thinking'){setTimeout(function(){if(document.querySelector('.screen[data-screen="thinking"]').classList.contains('active'))go('reflect')},1400)}
+  if(k==='splash'){setTimeout(function(){if(document.querySelector('.screen[data-screen="splash"]').classList.contains('active'))go('welcome')},1700)}
+}
+function pickPlan(el){document.querySelectorAll('.plan').forEach(function(p){p.classList.remove('pick')});el.classList.add('pick')}
+function toggle(row){var t=row.querySelector('.toggle');if(!t)return;t.classList.toggle('on');t.classList.toggle('off')}
+function flipTheme(){
+  var r=document.documentElement;
+  var dark=r.getAttribute('data-theme')==='dark';
+  r.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('themeLbl').textContent=dark?'Темна тема':'Світла тема';
+}
+go('splash');
+</script>
+</body>
+</html>

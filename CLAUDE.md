@@ -394,10 +394,16 @@ Inherited from the design system; do not treat these as settled:
 
 ### 7.11 Reference
 
-A clickable HTML prototype exists covering 16 screens in both themes (splash,
-auth, onboarding, home, recording, processing, reflection, edit, saved,
-insights, upsell, paywall, settings). Use it as the source of truth for layout
-and flow. Ask the developer for `luna-prototype.html` and `luna-design-system.html` if it is not in the repo.
+A clickable HTML prototype exists covering 25 screens in both themes. Capture
+path: splash, auth, welcome, privacy, permission, first, home, listening,
+thinking, reflect, edit, saved. Retention: insights, growth, settings, locked,
+paywall. Reflection mode (M6): reflect-invite, guess, reveal. Grounding (M8):
+ground-offer, ground-see, ground-hear, ground-touch, ground-done. Use it as the
+source of truth for layout and flow. Both files live in `design/`:
+`luna-prototype.html` covers screens and flow, `luna-design-system.html` covers
+tokens and components. They are self-contained — open them in a browser. Their
+UI copy is Ukrainian because it mirrors the shipping locale; that is reference
+data, and absolute rule 1 still applies to everything under `src/`.
 
 ---
 
@@ -440,6 +446,102 @@ reminder time picker, local notifications.
 **Done when:** the free/paid boundary matches §6 and nothing in the capture
 path got slower.
 
+### M6 — Reflection mode (post-MVP, but architect for it now)
+The capture flow teaches nothing: AI names the feeling, the user taps yes. The
+therapeutic value of an emotion journal comes from *affect labeling* — the act
+of finding the word yourself. We currently take that work away, so after two
+months a user has clean statistics and zero growth in self-understanding.
+
+Reflection mode separates capture from reflection **in time**, so learning never
+slows the ten-second path.
+
+- **Entry point:** an invitation on Home, always dismissible. Never blocking,
+  never a nagging badge.
+- **Guess first:** the entry is shown with its transcript but **no tags**.
+  "What would you call this?" The user chooses. An escape hatch —
+  "I don't know, show me" — is mandatory.
+- **Reveal:** the user's answer and Luna's are shown as **two separate cards**,
+  never merged. A third card names the difference and quotes the user's own
+  words as evidence.
+- **Disagreement is a first-class action.** "No, I know what I felt" must be as
+  prominent as accepting. Luna is not an authority on someone else's feelings.
+  Log disagreements separately: they are either model errors or genuine
+  self-knowledge, and both are valuable.
+- **Growth view:** distinct emotions used per month, and distribution across
+  vocabulary depth.
+
+Introduces the metric that becomes the product's core value signal:
+**emotional granularity** — how many distinct emotions the user employs and at
+what depth of the wheel. It also answers "why keep paying in month three"
+better than mood charts do.
+
+**Architectural requirement that applies to the MVP right now:** store the AI
+proposal separately from the user's own labels from day one
+(`proposedEmotionIds` alongside `emotionIds`). Reflection mode needs to render
+an entry *without* revealing the analysis. Without this split, M6 means
+rewriting the capture flow.
+
+**Done when:** reflection mode is entirely optional, and disabling it leaves
+capture exactly as fast as before.
+
+### M7 — Scaffolding fade (design before building)
+Assistance decreases as competence grows: week 1 full tags, week 3 root branch
+only, week 6 confirmation only. The product should make itself unnecessary.
+
+**Risk:** users may read this as "the app got worse" or "the AI got dumber".
+Never silently reduce help on a timer. Make it explicit and opt-in — "ready to
+try without hints?". Requires user testing before implementation.
+
+### M8 — Voice grounding (post-MVP, validate before building)
+A 5-4-3 sensory grounding exercise the user speaks aloud: name five things you
+see, four sounds you hear, three things you feel on your skin. Voice is what
+makes this ours — meditation apps can only narrate or ask you to type.
+
+**This is regulation, not journaling.** The distinction drives every rule below.
+
+- **Triggered by content, never by a timer.** Offered after an entry the
+  analyzer flagged as difficult. Apple Watch prompts blindly on biometrics and
+  gets dismissed; we know the person just said they are anxious about tomorrow.
+- **Nothing is saved.** No transcript, no analysis, no entry created. Say so on
+  the closing screen — people need to know it is safe to mumble into the app.
+- **No gamification.** No streak, no points, no "well done". Completion is a
+  state, not an achievement; celebrating it cheapens it.
+- **Skip is always available** on every step. Not finding all five things must
+  never block progress — getting stuck inside an anxiety exercise makes anxiety
+  worse.
+- **Classic 5-4-3-2-1 is cut to 5-4-3.** Smell and taste are where people stall
+  indoors. Three reliable senses beat five with two that irritate.
+- **Whisper support.** Anxiety often strikes where speaking aloud is awkward.
+  Say this in the UI copy.
+
+**Manual tap fallback — required, not optional.** Speech recognition of a single
+whispered word in a noisy room is the worst case for STT, and a dot that fails
+to fill is infuriating at exactly the moment the user is most fragile. Tapping a
+dot marks it complete.
+
+**Tapping counts the item only. It never opens a text field.** The value of the
+exercise is noticing and naming aloud; the word itself is data we do not keep.
+A keyboard would pull the user's eyes to the screen and away from the room,
+which is the opposite of grounding. Recognised items display the heard word;
+manually tapped dots fill silently with no word — we show only what we actually
+heard and never fabricate.
+
+**Screen design:** one instruction at a time, large type, generous space. The
+user is looking around the room, not at the phone. The filling dots are the
+entire feedback loop — they prove the app is with you.
+
+**Do not make claims about effect.** "Try naming a few things around you", never
+"this reduces anxiety by 30%". 5-4-3-2-1 is a recognised technique for anxiety
+and panic, so people may open it in a genuinely bad state: have the copy
+reviewed by a mental health professional.
+
+**Validate first, cheaply.** In the concierge test, simply message after a
+difficult entry: "want me to walk you through a minute of grounding?" and count
+how many accept. If almost nobody does, this is not worth building.
+
+**Done when:** the exercise is fully optional, saves nothing, and works
+end-to-end with speech recognition disabled.
+
 ---
 
 ## 9. Do not
@@ -460,6 +562,13 @@ path got slower.
 - Do not write iOS-only code without an interface behind it — Android is next,
   not hypothetical.
 - Do not reply to the developer in English.
+- Do not add a text input anywhere in the grounding exercise, and do not
+  persist anything the user says during it.
+- Do not add breathing exercises, meditations, or a library of techniques —
+  that is a different product category with far better funded competitors.
+- Do not build reflection mode or scaffolding fade before M5 ships — but do
+  keep `proposedEmotionIds` separate from `emotionIds` from the very first
+  entity, or M6 becomes a rewrite.
 
 ---
 
