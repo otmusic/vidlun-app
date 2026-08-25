@@ -1,7 +1,10 @@
 # Luna — remaining work
 
-Status as of 2026-08-24. Milestones M0 through M4 are complete and committed:
-246 tests, 98% lines, `npm run verify` green.
+Status as of 2026-08-25. Milestones M0 through M4 are complete and committed:
+274 tests, `npm run verify` green.
+
+**M3 is finished.** The voice path runs end to end on a physical iPhone —
+record, transcribe on the device, analyse, reflection card.
 
 This file is the running list of what is left. It is not a replacement for
 CLAUDE.md, which stays the source of truth for how the product should behave.
@@ -25,6 +28,7 @@ unbuilt, and each one requires validation with real people before any code.
 | **npm advisories are held off with `overrides`, not `audit fix --force`.** | The forced fix downgrades Expo 57 to 46. `metro@0.84.5` drops `image-size` (which has no patched release at all), and `xcode` only calls `uuid.v4()`, so uuid 11 is safe. |
 | **The speech model is `large-v3-turbo-q5_0` and arrives during onboarding.** | `small` is unusable on Ukrainian and full turbo is 1.5 GB. Quantising to 547 MB cost nothing measurable. Too large to bundle, so it downloads — and onboarding is the one moment where waiting is expected rather than resented. |
 | **Transcription confidence is derived from take duration.** | whisper.rn reports none, and a constant would be a lie the domain acts on: §6 ties emotion depth to confidence. Duration is the only predictor the §10 run supported. |
+| **The observation is written by Sonnet; the rest of the entry stays on Haiku.** Sent in parallel, so the wait is the slower call and not the sum. | This departs from §2, which put the whole entry on Haiku. Measured on 2026-08-25: Haiku produced a sentence that did not parse, clinical labels §7.9 forbids, and feelings nobody had named. The observation is the only field read as prose — everything else is an id, a number, or the speaker's own words — so the risk sits in one sentence, and §7.9 calls it a design surface. |
 
 ---
 
@@ -54,16 +58,23 @@ refuses to launch, that is what happened — rebuild to reissue them.
 
 ---
 
-## 1. M3 — unfinished tail
+## 1. M3 — done, with one piece waiting on M5
 
-| # | Item | Depends on |
+| # | Item | State |
 |---|---|---|
-| 1.1 | `WhisperTranscriptionService` — the only M3 adapter still missing. | 0.1 / 0.3 (whisper.rn is a custom native module and needs a development build) |
-| 1.2 | **The §10 experiment — desktop half done on 2026-08-24.** See §1b. Word error rate measured on 16 real recordings. Processing time, battery and model download on a phone are still unmeasured. | Device work for the remaining half. |
-| 1.3 | **Decided 2026-08-24: ship `large-v3-turbo-q5_0` (547 MB), downloaded during onboarding.** Quantising cost nothing measurable (§1b). What remains is building it: the download itself, where the file lives, and what onboarding says while it runs. | Onboarding is M5 |
-| 1.4 | Remove `ManualTranscriptionService` from the production path once Whisper lands; keep it as the text fallback. | 1.1 |
-| 1.5 | **The recorder writes a format Whisper cannot read.** Settle this before 1.1, not during it. | — (decide now, implement with 1.1) |
-| 1.6 | **Feed Whisper the user's own language instead of letting it guess on short audio.** Measured, not theoretical — see §1b. Needs a real language setting, which is debt 4.3. | 1.1, and 4.3 for the setting |
+| 1.1 | `WhisperTranscriptionService`. | **Done.** Runs on the device. Opened on the first take, not at startup, and held between takes. Falls back to the typed service when no model is on disk, so the app works without one. |
+| 1.2 | The §10 experiment. | **Desktop half done**, see §1b. Processing time on a phone, battery, and the real download are still unmeasured. |
+| 1.3 | Which model ships and how it arrives. | **Decided and half built.** `large-v3-turbo-q5_0`, 547 MB, downloaded during onboarding. `SpeechModelStore` does the fetching; the onboarding screen that calls it is M5. |
+| 1.4 | Remove `ManualTranscriptionService` from the production path. | **Not doing it.** It earned a permanent place: the text fallback §2 asks for, and what the app runs on before the model lands. |
+| 1.5 | Record in a format Whisper can read. | **Done.** 16 kHz mono, linear PCM on iOS. |
+| 1.6 | Give Whisper the user's language instead of letting it guess. | **Done inside the adapter.** Detection above four seconds, the known language below it. Reads a locale that is still pinned — debt 4.3 makes it real. |
+
+**Transcription confidence is derived, not reported.** whisper.rn returns none,
+and a constant would be a lie the domain acts on, since §6 ties emotion depth
+to it. It comes from take duration, the one predictor §1b supported, and the
+bands land on `Confidence`'s own thresholds — so a short mumble lifts emotions
+to level 1 and flags the entry for review, which is §5's third regression case
+finally doing something.
 
 **On 1.5, the audio format.** `App.tsx` creates the recorder with
 `RecordingPresets.HIGH_QUALITY`, which on iOS is m4a/AAC at 44.1 kHz. whisper.cpp,
@@ -203,7 +214,7 @@ Re-run it whenever the prompt changes. It needs 0.2.
 
 | # | Item | Who |
 |---|---|---|
-| 2.1 | **Measure capture-to-save under ten seconds.** M4's completion criterion, still unverified — but no longer blocked: the app runs on the phone. | Owner, on hardware |
+| 2.1 | **Measure capture-to-save under ten seconds.** M4's completion criterion, still unverified, and now the most overdue thing on this list. Nothing blocks it: the whole path runs on the phone. Two things changed underneath it since the criterion was written — transcription now happens on-device against a 547 MB model, and analysis is two API calls instead of one. Both were designed not to cost time; neither has been timed. | Owner, on hardware |
 | 2.2 | Check the dark theme on a real screen. §7.10 warns the green confirmation and the teal accent sit close in tone. | Owner |
 | 2.3 | **Decide what a crisis entry shows.** The domain nulls `observation` correctly, but §6 says what appears instead is a product decision. The card currently shows nothing. | Owner |
 
@@ -238,6 +249,11 @@ Three things that decision drags in:
 - Paywall and the free/paid boundary
 - **Done when:** the boundary matches §6 and nothing in the capture path got slower
 
+**The economics moved.** An entry now costs two calls rather than one, and the
+second goes to a dearer model. The observation prompt carries no vocabulary, so
+it is far from double — but the free-tier limits have to be drawn against the
+real number, not the old one.
+
 `GetWeekSummary` and `ClaudeNarrativeGenerator` already exist from M2 and M3.
 What is missing is the screen and the entitlement check.
 
@@ -254,6 +270,8 @@ known risks writing a promise the STT cannot keep.
 | 4.2 | Metro resolves `node:*` to an empty module so the Anthropic SDK can bundle. A Node built-in reaching a live code path would become a confusing runtime error instead of a build error. | Goes away with 4.1. |
 | 4.3 | Locale is pinned to `uk`. Detecting it needs `expo-localization`; the iOS-only native alternative is the kind of fork §2 forbids. | M5, alongside settings. |
 | 4.4 | Safe area is a fixed 64pt top pad rather than a measured inset. | Visible on notched devices. |
+| 4.12 | `whisper.rn` must be imported as `whisper.rn/index`. Its exports map declares only `./*` and has no root entry, so Metro resolves the short path but TypeScript does not. | Looks like a typo and is not. Commented at the import; shortening it breaks typecheck. |
+| 4.13 | The `buffer` polyfill exists only because `whisper.rn` pulls `safe-buffer`, which the bundle cannot resolve without it. | Reached only by `transcribeData`, which nothing calls yet. Streaming transcription will. |
 | 4.5 | Streak plurals are simplified (`{{count}} дн.`); Ukrainian plural rules are not implemented. | Cosmetic. |
 | 4.6 | Icons are hand-drawn from `View`s. §7.4 wants a real set that scales with Dynamic Type. | Sizing is already token-driven, so the swap is local. |
 | 4.7 | `warm` and `tension` resolve to the same value in the dark palette (inherited from §7.10). | The rule holds — honey marks achievements only — but they should be separated if a conflict shows. |
