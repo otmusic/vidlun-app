@@ -1,7 +1,7 @@
 # Luna — remaining work
 
 Status as of 2026-08-25. Milestones M0 through M4 are complete and committed:
-274 tests, `npm run verify` green.
+308 tests, `npm run verify` green.
 
 **M3 is finished.** The voice path runs end to end on a physical iPhone —
 record, transcribe on the device, analyse, reflection card.
@@ -359,24 +359,30 @@ territory, so the wording is the owner's call.
 
 ---
 
-## 2b. Keeping the audio — decided 2026-08-25, unbuilt
+## 2b. Keeping the audio — built 2026-08-25, one piece left
 
 Journal recordings are kept on the device for one year, then the audio file is
 deleted and the entry stays whole. The grounding exercise is untouched by this
 and still saves nothing.
 
-What has to exist before it works:
+| # | Item | State |
+|---|---|---|
+| 2b.1 | Somewhere that is not the cache. | **Done.** `Documents/recordings`, written by `FileRecordingStore`. |
+| 2b.2 | A way to reach an entry's recording. | **Done.** Keyed by entry id inside the store; `MoodEntry` never gained a file path, and the take is held in the capture flow until it is confirmed or abandoned. |
+| 2b.3 | The sweep. | **Done.** `ForgetOldRecordings` runs when the app opens rather than on a schedule — a recording a few days past its year harms nobody, and a background job would be a thing to maintain and no way to test. |
+| 2b.4 | Entry deletion. | **Done.** Hold a row, confirm. Takes the recording and the revision log with it. |
+| 2b.5 | Playback. | **Done.** On the detail screen. A finished track rewinds before replaying, or the second tap reads as broken. |
+| 2b.8 | An entry detail screen. | **Done.** Reached by tapping a row in history. Same chips as the reflection card, from a shared component, so an entry looks the same a month later as the day it was saved. |
+| 2b.6 | The setting. | **Done.** In settings, not at onboarding. Defaults to keeping. Switching it off deletes what is already kept, and says so first. |
+| 2b.7 | **Onboarding copy.** "Your voice never leaves this phone" stays true; "nothing is kept" does not. | **Open.** Onboarding does not exist yet — M5. |
 
-| # | Item |
-|---|---|
-| 2b.1 | Somewhere for the audio to live that is not the cache — the recorder writes to `Library/Caches/ExpoAudio`, which iOS empties under pressure. |
-| 2b.2 | A way to reach an entry's recording. The entry itself should not gain a file path; `MoodEntry` is about what someone felt, not about disk. |
-| 2b.3 | The sweep. Anything older than a year goes, and the entry it belonged to does not notice. |
-| 2b.4 | **Entry deletion, which does not exist at all yet.** Removing an entry has to remove its recording — a voice left behind after someone deleted the entry is the sort of thing a journal never recovers from. |
-| 2b.5 | Playback, or the audio is stored for nothing. Needs 2b.8 first — there is nowhere to put a play button. |
-| 2b.8 | **An entry detail screen.** History is a list and nothing else: tapping an entry does nothing, so its emotions, tags and observation are unreachable once it scrolls off Home. That is a gap on its own, and it is also where playback has to live. |
-| 2b.6 | The setting, in settings. Not a question at onboarding. |
-| 2b.7 | Onboarding copy: "your voice never leaves this phone" stays true, "nothing is kept" does not. |
+**Kept as WAV, deliberately.** Roughly 32 KB a second, so a daily habit
+approaches 360 MB before the sweep starts reclaiming. Compressing would mean
+adding something that transcodes, and the year bounds the total either way.
+Revisit when the number starts mattering, not before.
+
+**Untested on hardware:** the sweep has never had a year-old file to delete.
+Its arithmetic is covered; its effect on real files is not.
 
 **Two open questions worth answering before building.**
 
@@ -416,9 +422,10 @@ Three things that decision drags in:
 
 
 - Insights screen: free daily trend, paywalled weekly narrative
-- Onboarding, with the privacy screen **before** the microphone request
-- Settings, with a reminder time picker
-- Local notifications
+- Onboarding, with the privacy screen **before** the microphone request, and
+  copy that says recordings are kept for a year (2b.7)
+- Local notifications and the reminder picker — the settings screen exists
+  (§3a) and has room for the row
 - Paywall and the free/paid boundary
 - **Done when:** the boundary matches §6 and nothing in the capture path got slower
 
@@ -435,13 +442,34 @@ known risks writing a promise the STT cannot keep.
 
 ---
 
+## 3a. Built ahead of M5 — 2026-08-25
+
+Three screens that were not on the milestone list, each pulled in by the
+decision to keep recordings.
+
+- **History.** Deletion could only reach the handful of entries Home shows,
+  which becomes a hole the moment insights start counting months a person
+  cannot reach into. Grouped by day in the use case, because local midnight is
+  the same boundary the streak counts against and a use case can be tested in
+  plain Node while a component cannot.
+- **Entry detail.** Emotions, tags and observation were unreachable once an
+  entry scrolled off Home, and the audio had nowhere to be played.
+- **Settings.** Carries the recordings switch and the language choice. No
+  reminder row: notifications are not built, and an empty setting is worse than
+  a missing one.
+
+What M5 still owes: insights, onboarding, notifications, the reminder picker,
+the paywall and the free/paid boundary.
+
+---
+
 ## 4. Deliberate debt
 
 | # | Debt | Why it matters |
 |---|---|---|
 | 4.1 | **The Claude api key ships inside the bundle.** `EXPO_PUBLIC_*` is inlined and can be extracted from the app. | Release blocker. The fix is a thin proxy; only the adapter's base URL changes. |
 | 4.2 | Metro resolves `node:*` to an empty module so the Anthropic SDK can bundle. A Node built-in reaching a live code path would become a confusing runtime error instead of a build error. | Goes away with 4.1. |
-| 4.3 | Locale is pinned to `uk`. Detecting it needs `expo-localization`; the iOS-only native alternative is the kind of fork §2 forbids. | M5, alongside settings. |
+| 4.3 | Locale is chosen in settings and remembered, so it is no longer pinned — but it is still not *detected*. A first-time Ukrainian speaker gets Ukrainian by luck of the default rather than because the phone said so, and an English speaker has to go and find the setting. Detection needs `expo-localization`. | Smaller than it was, and now a first-run problem rather than a permanent one. |
 | 4.4 | Safe area is a fixed 64pt top pad rather than a measured inset. | Visible on notched devices. |
 | 4.12 | `whisper.rn` must be imported as `whisper.rn/index`. Its exports map declares only `./*` and has no root entry, so Metro resolves the short path but TypeScript does not. | Looks like a typo and is not. Commented at the import; shortening it breaks typecheck. |
 | 4.13 | The `buffer` polyfill exists only because `whisper.rn` pulls `safe-buffer`, which the bundle cannot resolve without it. | Reached only by `transcribeData`, which nothing calls yet. Streaming transcription will. |
