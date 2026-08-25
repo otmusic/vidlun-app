@@ -5,7 +5,7 @@ import type {
 } from '../../domain/ports/ITranscriptionService';
 
 /** The part of whisper.rn's context this adapter drives. */
-export interface WhisperEngine {
+export interface SpeechEngine {
   transcribe(
     filePath: string,
     options?: { readonly language?: string },
@@ -22,7 +22,7 @@ export interface WhisperEngine {
  * half a gigabyte of memory and seconds of work, and someone who only ever
  * types should never pay for it.
  */
-export type OpenWhisperEngine = () => Promise<WhisperEngine>;
+export type OpenSpeechEngine = () => Promise<SpeechEngine>;
 
 /** The language the user speaks, for takes too short to detect one from. */
 export type PreferredLanguage = () => string;
@@ -50,11 +50,11 @@ export const DEFAULT_SPEECH_THRESHOLDS: SpeechThresholds = {
  */
 const NOISE_MARKER = /[[(][^\])]*[\])]/g;
 
-export class WhisperTranscriptionService implements ITranscriptionService {
-  private engine: Promise<WhisperEngine> | null = null;
+export class OnDeviceTranscriptionService implements ITranscriptionService {
+  private engine: Promise<SpeechEngine> | null = null;
 
   constructor(
-    private readonly open: OpenWhisperEngine,
+    private readonly open: OpenSpeechEngine,
     private readonly preferredLanguage: PreferredLanguage,
     private readonly thresholds: SpeechThresholds = DEFAULT_SPEECH_THRESHOLDS,
   ) {}

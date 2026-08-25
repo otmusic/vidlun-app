@@ -68,7 +68,9 @@ refuses to launch, that is what happened — rebuild to reissue them.
 | 1.3 | Which model ships and how it arrives. | **Decided and half built.** `large-v3-turbo-q5_0`, 547 MB, downloaded during onboarding. `SpeechModelStore` does the fetching; the onboarding screen that calls it is M5. |
 | 1.4 | Remove `ManualTranscriptionService` from the production path. | **Not doing it.** It earned a permanent place: the text fallback §2 asks for, and what the app runs on before the model lands. |
 | 1.5 | Record in a format Whisper can read. | **Done.** 16 kHz mono, linear PCM on iOS. |
-| 1.6 | Give Whisper the user's language instead of letting it guess. | **Done inside the adapter.** Detection above four seconds, the known language below it. Reads a locale that is still pinned — debt 4.3 makes it real. |
+| 1.6 | Give the recogniser the user's language instead of letting it guess. | **Moot.** Built for Whisper, then Parakeet replaced it and takes no language hint. The code still chooses and nothing reads it — remove, or keep only if Whisper ever returns. |
+| 1.7 | **Recalibrate confidence against Parakeet.** The duration bands come from Whisper's error curve and §6 ties emotion depth to them, so a wrong curve makes Luna vaguer than it needs to be. | §1c |
+| 1.8 | **Re-measure whether the transcript repair still earns its risk.** It bought 0.034 against nonsense; against clean transcripts it may only be a licence to change someone's words. | §1c |
 
 **Transcription confidence is derived, not reported.** whisper.rn returns none,
 and a constant would be a lie the domain acts on, since §6 ties emotion depth
@@ -264,10 +266,42 @@ written reference had left out, and WER charged it for that.
 drops from 7.9 s to under two, which with the card no longer waiting for the
 observation puts stop-to-card inside M4's two to three seconds.
 
-**Next:** confirm the reading with a native speaker, then try it on the device
-with q4_0 as well. Cloud recognition stays the untried lever if on-device
-accuracy is still not good enough — §9 forbids it and §10 explicitly allows
-revisiting that, at the price of rewriting the privacy promise.
+### Parakeet on the phone — chosen, same day
+
+```
+whisper  (21.0 s of audio)   7872 ms
+parakeet (28.7 s of audio)   2121 ms
+```
+
+3.7x faster on a longer recording, and the owner — a native speaker — reports
+the transcripts came back clean, with the mangling gone. Both axes, so the
+question is closed: **Parakeet TDT 0.6B v3 q8_0 is what the app transcribes
+with.** Whisper stays in the file as a comparison, one constant away.
+
+Stop to card went from 10.4 s to 4.0 s (2121 transcribe + 1849 Haiku; Sonnet's
+4010 no longer blocks). M4 asks for two to three, so the remainder is split
+almost evenly between transcription and classification.
+
+Cloud recognition is off the table for now. §9 forbade it, §10 would have
+allowed revisiting at the price of the privacy promise, and on-device accuracy
+turned out to be good enough that the price never had to be paid.
+
+**Three things this invalidates**, all cheap and none done:
+
+- **Confidence is calibrated on the wrong model.** The duration bands in
+  `OnDeviceTranscriptionService` come from Whisper's error rate by take length
+  — 1.000 under four seconds, 0.120 above eight. Parakeet's curve is unmeasured
+  and probably flatter, so short takes may be marked low-confidence for no
+  reason, lifting emotions to level 1 when the transcript was fine.
+- **The language hint (1.6) is inert.** Parakeet is multilingual without one.
+  The code still chooses; nothing reads the choice.
+- **The transcript repair earns less now.** It was worth 0.034 against a
+  recogniser that produced nonsense. Against clean transcripts it is mostly a
+  licence to alter someone's words, and the invention risk in §1c stays. Worth
+  measuring again before keeping.
+
+**Still untried:** q4_0 at 356 MB, which would nearly halve what onboarding has
+to download.
 
 ---
 

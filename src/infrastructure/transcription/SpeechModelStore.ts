@@ -32,6 +32,8 @@ export type SpeechModelState =
 export interface SpeechModelDescriptor {
   readonly url: string;
   readonly fileName: string;
+  /** Which of whisper.rn's two engines reads these weights. */
+  readonly engine: 'whisper' | 'parakeet';
   /**
    * Anything smaller than this is not the model. Catches both halves of a
    * truncated download and the case where a server answers 200 with an error
@@ -42,14 +44,30 @@ export interface SpeechModelDescriptor {
 }
 
 /**
- * Quantised turbo. §10 measured it as equivalent to the full model within the
- * noise of the sample, at a third of the size. See BACKLOG §1b.
+ * Whisper, kept for comparison rather than use. Its Ukrainian was the reason
+ * §10 nearly stopped the project; see BACKLOG §1b and §1c.
  */
 export const TURBO_Q5_0: SpeechModelDescriptor = {
   url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin',
   fileName: 'ggml-large-v3-turbo-q5_0.bin',
+  engine: 'whisper',
   leastPlausibleBytes: 500 * 1024 * 1024,
 };
+
+/**
+ * What the app runs. Faster than Whisper by 3.7x on the phone and markedly
+ * more accurate on Ukrainian in practice, which is what §10 had been asking
+ * for since the start. See BACKLOG §1c.
+ */
+export const PARAKEET_TDT_Q8: SpeechModelDescriptor = {
+  url: 'https://huggingface.co/ggml-org/parakeet-GGUF/resolve/main/ggml-parakeet-tdt-0.6b-v3-q8_0.bin',
+  fileName: 'ggml-parakeet-tdt-0.6b-v3-q8_0.bin',
+  engine: 'parakeet',
+  leastPlausibleBytes: 600 * 1024 * 1024,
+};
+
+/** The one the app downloads and runs. Swapping engines is this line. */
+export const SPEECH_MODEL: SpeechModelDescriptor = PARAKEET_TDT_Q8;
 
 const PARTIAL_SUFFIX = '.part';
 
@@ -65,7 +83,7 @@ export class SpeechModelStore {
 
   constructor(
     private readonly storage: ModelStorage,
-    private readonly model: SpeechModelDescriptor = TURBO_Q5_0,
+    private readonly model: SpeechModelDescriptor = SPEECH_MODEL,
   ) {}
 
   async state(): Promise<SpeechModelState> {

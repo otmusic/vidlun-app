@@ -7,9 +7,10 @@ import { createTranslator, type Locale } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
-import { SpeechModelStore } from '@/infrastructure/transcription/SpeechModelStore';
-import { WhisperTranscriptionService } from '@/infrastructure/transcription/WhisperTranscriptionService';
-import { openWhisperEngine } from '@/infrastructure/transcription/whisperEngine';
+import { SPEECH_MODEL, SpeechModelStore } from '@/infrastructure/transcription/SpeechModelStore';
+import { OnDeviceTranscriptionService } from '@/infrastructure/transcription/OnDeviceTranscriptionService';
+import { openParakeetEngine } from '@/infrastructure/transcription/parakeetEngine';
+import { openSpeechEngine } from '@/infrastructure/transcription/whisperEngine';
 import { AppText } from '@/presentation/components/AppText';
 import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
 import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
@@ -97,7 +98,12 @@ function useTranscription(locale: Locale): ITranscriptionService {
         return;
       }
 
-      setSpoken(new WhisperTranscriptionService(openWhisperEngine(state.uri), () => locale));
+      const open =
+        SPEECH_MODEL.engine === 'parakeet'
+          ? openParakeetEngine(state.uri)
+          : openSpeechEngine(state.uri);
+
+      setSpoken(new OnDeviceTranscriptionService(open, () => locale));
     });
 
     return () => {

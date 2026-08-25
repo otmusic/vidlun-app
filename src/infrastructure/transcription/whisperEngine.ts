@@ -5,20 +5,20 @@
  */
 import { initWhisper } from 'whisper.rn/index';
 
-import type { OpenWhisperEngine, WhisperEngine } from './WhisperTranscriptionService';
+import type { OpenSpeechEngine, SpeechEngine } from './OnDeviceTranscriptionService';
 
 /**
  * expo-file-system hands out `file:///` URIs; whisper.rn wants a plain path.
  * Passing the URI through produces a file-not-found from inside native code,
  * a long way from the mistake.
  */
-function toNativePath(uri: string): string {
+export function toNativePath(uri: string): string {
   return uri.startsWith('file://') ? decodeURIComponent(uri.replace('file://', '')) : uri;
 }
 
 /** Loads the model once, on the first take that needs it. */
-export function openWhisperEngine(modelUri: string): OpenWhisperEngine {
-  return async (): Promise<WhisperEngine> => {
+export function openSpeechEngine(modelUri: string): OpenSpeechEngine {
+  return async (): Promise<SpeechEngine> => {
     const context = await initWhisper({ filePath: toNativePath(modelUri) });
 
     return {

@@ -1,12 +1,12 @@
 import {
+  SPEECH_MODEL,
   SpeechModelStore,
-  TURBO_Q5_0,
   type ModelStorage,
   type SpeechModelState,
 } from '@/infrastructure/transcription/SpeechModelStore';
 
-const WHOLE = TURBO_Q5_0.leastPlausibleBytes + 1;
-const PARTIAL_NAME = `${TURBO_Q5_0.fileName}.part`;
+const WHOLE = SPEECH_MODEL.leastPlausibleBytes + 1;
+const PARTIAL_NAME = `${SPEECH_MODEL.fileName}.part`;
 
 class FakeStorage implements ModelStorage {
   files = new Map<string, number>();
@@ -76,17 +76,17 @@ describe('knowing whether the model is there', () => {
 
   it('reports ready once the whole file is in place', async () => {
     const { storage, subject } = setup();
-    storage.files.set(TURBO_Q5_0.fileName, WHOLE);
+    storage.files.set(SPEECH_MODEL.fileName, WHOLE);
 
     expect(await subject.state()).toEqual({
       kind: 'ready',
-      uri: `file:///models/${TURBO_Q5_0.fileName}`,
+      uri: `file:///models/${SPEECH_MODEL.fileName}`,
     });
   });
 
   it('refuses to call a short file the model', async () => {
     const { storage, subject } = setup();
-    storage.files.set(TURBO_Q5_0.fileName, 4_096);
+    storage.files.set(SPEECH_MODEL.fileName, 4_096);
 
     expect(await subject.state()).toEqual({ kind: 'absent' });
   });
@@ -98,7 +98,7 @@ describe('fetching it', () => {
 
     expect(await subject.fetch()).toEqual({
       kind: 'ready',
-      uri: `file:///models/${TURBO_Q5_0.fileName}`,
+      uri: `file:///models/${SPEECH_MODEL.fileName}`,
     });
   });
 
@@ -109,8 +109,8 @@ describe('fetching it', () => {
 
     await subject.fetch();
 
-    expect(namesDuringDownload).not.toContain(TURBO_Q5_0.fileName);
-    expect(storage.files.has(TURBO_Q5_0.fileName)).toBe(true);
+    expect(namesDuringDownload).not.toContain(SPEECH_MODEL.fileName);
+    expect(storage.files.has(SPEECH_MODEL.fileName)).toBe(true);
   });
 
   it('reports progress while it runs', async () => {
@@ -127,7 +127,7 @@ describe('fetching it', () => {
 
   it('does nothing when the model is already there', async () => {
     const { storage, subject } = setup();
-    storage.files.set(TURBO_Q5_0.fileName, WHOLE);
+    storage.files.set(SPEECH_MODEL.fileName, WHOLE);
     let downloads = 0;
     storage.onDownload = () => (downloads += 1);
 
@@ -141,7 +141,7 @@ describe('fetching it', () => {
     storage.failure = new Error('offline');
 
     expect(await subject.fetch()).toEqual({ kind: 'failed', reason: 'unreachable' });
-    expect(storage.files.has(TURBO_Q5_0.fileName)).toBe(false);
+    expect(storage.files.has(SPEECH_MODEL.fileName)).toBe(false);
     expect(storage.removed).toContain(PARTIAL_NAME);
   });
 
@@ -150,7 +150,7 @@ describe('fetching it', () => {
     storage.arriving = 8_192;
 
     expect(await subject.fetch()).toEqual({ kind: 'failed', reason: 'truncated' });
-    expect(storage.files.has(TURBO_Q5_0.fileName)).toBe(false);
+    expect(storage.files.has(SPEECH_MODEL.fileName)).toBe(false);
   });
 
   it('clears a leftover part file rather than resuming into it', async () => {
