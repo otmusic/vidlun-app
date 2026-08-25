@@ -380,12 +380,13 @@ What has to exist before it works:
 
 **Two open questions worth answering before building.**
 
-*Format.* Transcription needs 16 kHz mono WAV, which is about 32 KB per second
-— a 30-second entry is nearly a megabyte, and a daily habit reaches roughly
-360 MB before the one-year sweep starts reclaiming any of it. AAC at the same
-sample rate would be a fraction of that, but nothing in the project transcodes,
-and adding something that does is a dependency question. Keeping WAV is the
-simpler answer and the more expensive one.
+*Format — decided: keep the WAV.* Transcription needs 16 kHz mono WAV, about
+32 KB per second, so a 30-second entry is nearly a megabyte and a daily habit
+reaches roughly 360 MB before the one-year sweep reclaims anything. AAC would
+be a fraction of that, but nothing here transcodes and adding something that
+does is a dependency decision. Storing what the recorder already produced costs
+no new moving parts; compression is an optimisation to make when the number
+starts mattering, and the sweep bounds it either way.
 
 *Backups.* §9 says backups are never paywalled. Audio makes a backup two orders
 of magnitude larger than the entries, which turns a settled decision into an

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ConfirmEntry } from '@/application/use-cases/ConfirmEntry';
 import type { CreateTextEntry } from '@/application/use-cases/CreateTextEntry';
 import type { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
 import type { GetHomeView, HomeView } from '@/application/use-cases/GetHomeView';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
+import type { ForgetOldRecordings } from '@/application/use-cases/ForgetOldRecordings';
 import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory';
 import type { ReviseEntry } from '@/application/use-cases/ReviseEntry';
 import type { WriteObservation } from '@/application/use-cases/WriteObservation';
@@ -34,6 +35,7 @@ export interface CaptureDependencies {
   readonly writeObservation: WriteObservation;
   readonly deleteEntry: DeleteEntry;
   readonly getHistory: GetHistory;
+  readonly forgetOldRecordings: ForgetOldRecordings;
   readonly getHomeView: GetHomeView;
 }
 
@@ -110,6 +112,12 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [stage, setStage] = useState<CaptureStage>({ kind: 'idle' });
   const [home, setHome] = useState<HomeView | null>(null);
   const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
+  /*
+   * The take behind the draft on screen, held only until it is confirmed or
+   * abandoned. Not on the entry: MoodEntry is about what someone felt, and a
+   * path on disk is not that.
+   */
+  const takeUri = useRef<string | null>(null);
 
   const { getHomeView } = dependencies;
 
@@ -124,6 +132,12 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   }, [getHomeView]);
 
   useEffect(reloadHome, [reloadHome]);
+
+  useEffect(() => {
+    // A year-old recording going a few days late harms nobody, so this runs on
+    // open rather than on a schedule there would be no way to test.
+    void dependencies.forgetOldRecordings.execute().catch(() => undefined);
+  }, [dependencies.forgetOldRecordings]);
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof RecordingCancelledError) {
@@ -173,6 +187,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       .then((take) => {
         // Fires for a tap and for silence alike: the person may not be looking.
         dependencies.haptics.settle();
+        takeUri.current = take.uri;
         analyze(() => dependencies.createVoiceEntry.execute(take));
       })
       .catch(fail);
@@ -188,9 +203,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     setStage({ kind: 'processing' });
 
     dependencies.confirmEntry
-      .execute({ proposed, confirmed: draft })
+      .execute({ proposed, confirmed: draft, recordingUri: takeUri.current ?? undefined })
       .then(async () => {
         dependencies.haptics.success();
+
+        takeUri.current = null;
 
         const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
 
@@ -216,6 +233,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, []),
     submitText: useCallback(
       (text: string) => {
+        takeUri.current = null;
         analyze(() => dependencies.createTextEntry.execute(text));
       },
       [analyze, dependencies.createTextEntry],

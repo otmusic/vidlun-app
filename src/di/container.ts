@@ -12,6 +12,7 @@ import { CreateVoiceEntry } from '../application/use-cases/CreateVoiceEntry';
 import { GetHomeView } from '../application/use-cases/GetHomeView';
 import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
+import { ForgetOldRecordings } from '../application/use-cases/ForgetOldRecordings';
 import { GetHistory } from '../application/use-cases/GetHistory';
 import { ReviseEntry } from '../application/use-cases/ReviseEntry';
 import { WriteObservation } from '../application/use-cases/WriteObservation';
@@ -28,6 +29,7 @@ import { ExpoAudioRecorder, type NativeRecorder } from '../infrastructure/audio/
 import { ExpoMicrophonePermission } from '../infrastructure/audio/ExpoMicrophonePermission';
 import { AsyncStorageMoodEntryRepository } from '../infrastructure/persistence/AsyncStorageMoodEntryRepository';
 import { AsyncStorageRevisionLog } from '../infrastructure/persistence/AsyncStorageRevisionLog';
+import { FileRecordingStore } from '../infrastructure/persistence/FileRecordingStore';
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { SystemClock } from '../infrastructure/system/SystemClock';
@@ -45,6 +47,7 @@ export interface Container {
   readonly reviseEntry: ReviseEntry;
   readonly deleteEntry: DeleteEntry;
   readonly getHistory: GetHistory;
+  readonly forgetOldRecordings: ForgetOldRecordings;
   readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
@@ -102,6 +105,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     : dependencies.transcription;
   const repository = new AsyncStorageMoodEntryRepository(AsyncStorage);
   const revisionLog = new AsyncStorageRevisionLog(AsyncStorage);
+  const recordings = new FileRecordingStore();
 
   return {
     vocabulary,
@@ -114,10 +118,11 @@ export function createContainer(dependencies: ContainerDependencies): Container 
       idGenerator,
     ),
     createTextEntry: new CreateTextEntry(analyzer, vocabulary, clock, idGenerator),
-    confirmEntry: new ConfirmEntry(repository, revisionLog, clock),
+    confirmEntry: new ConfirmEntry(repository, revisionLog, clock, recordings),
     reviseEntry: new ReviseEntry(vocabulary),
-    deleteEntry: new DeleteEntry(repository, revisionLog),
+    deleteEntry: new DeleteEntry(repository, revisionLog, recordings),
     getHistory: new GetHistory(repository),
+    forgetOldRecordings: new ForgetOldRecordings(recordings, clock),
     writeObservation: new WriteObservation(observationWriter),
     getHomeView: new GetHomeView(repository, clock),
     getWeekSummary: new GetWeekSummary(

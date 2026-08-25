@@ -4,7 +4,7 @@ import { MismatchedDraftError } from '@/domain/errors/MoodEntryErrors';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
 import { InMemoryMoodEntryRepository } from '@/infrastructure/persistence/InMemoryMoodEntryRepository';
-import { FixedClock, RecordingRevisionLog } from './fakes';
+import { FixedClock, InMemoryRecordingStore, RecordingRevisionLog } from './fakes';
 
 const NOW = new Date('2026-07-31T20:15:00.000Z');
 
@@ -26,12 +26,47 @@ function setup() {
   const repository = new InMemoryMoodEntryRepository();
   const revisionLog = new RecordingRevisionLog();
 
+  const recordings = new InMemoryRecordingStore();
+
   return {
     repository,
     revisionLog,
-    useCase: new ConfirmEntry(repository, revisionLog, new FixedClock(NOW)),
+    recordings,
+    useCase: new ConfirmEntry(repository, revisionLog, new FixedClock(NOW), recordings),
   };
 }
+
+describe('keeping the recording', () => {
+  it('keeps the take under the entry it became', async () => {
+    const { useCase, recordings } = setup();
+    const saved = draft();
+
+    await useCase.execute({ proposed: saved, confirmed: saved, recordingUri: 'file:///take.wav' });
+
+    expect(recordings.kept.get(saved.id)).toBe('file:///take.wav');
+  });
+
+  it('keeps nothing for an entry that was typed', async () => {
+    const { useCase, recordings } = setup();
+    const saved = draft();
+
+    await useCase.execute({ proposed: saved, confirmed: saved });
+
+    expect(recordings.kept.size).toBe(0);
+  });
+
+  it('still saves the entry when the recording cannot be kept', async () => {
+    const { useCase, repository, recordings } = setup();
+    recordings.failOnKeep = true;
+    const saved = draft();
+
+    await useCase.execute({ proposed: saved, confirmed: saved, recordingUri: 'file:///take.wav' });
+
+    // An entry without its audio is complete. An entry lost to a failed file
+    // move is not.
+    expect(await repository.findById(saved.id)).not.toBeNull();
+  });
+});
 
 describe('ConfirmEntry', () => {
   it('is the step that actually writes the entry', async () => {

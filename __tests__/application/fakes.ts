@@ -1,3 +1,4 @@
+import type { IRecordingStore } from '@/domain/ports/IRecordingStore';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { AudioRecording } from '@/domain/ports/IAudioRecorder';
 import type { IClock } from '@/domain/ports/IClock';
@@ -99,4 +100,38 @@ export function proposal(overrides: Partial<ReflectionProposal> = {}): Reflectio
     safetyFlag: 'none',
     ...overrides,
   };
+}
+
+export class InMemoryRecordingStore implements IRecordingStore {
+  readonly kept = new Map<string, string>();
+  readonly discarded: string[] = [];
+  sweptBefore: Date | null = null;
+  failOnKeep = false;
+
+  keep(entryId: string, sourceUri: string): Promise<void> {
+    if (this.failOnKeep) {
+      return Promise.reject(new Error('no space'));
+    }
+
+    this.kept.set(entryId, sourceUri);
+
+    return Promise.resolve();
+  }
+
+  discard(entryId: string): Promise<void> {
+    this.discarded.push(entryId);
+    this.kept.delete(entryId);
+
+    return Promise.resolve();
+  }
+
+  discardBefore(cutoff: Date): Promise<void> {
+    this.sweptBefore = cutoff;
+
+    return Promise.resolve();
+  }
+
+  find(entryId: string): Promise<string | null> {
+    return Promise.resolve(this.kept.get(entryId) ?? null);
+  }
 }
