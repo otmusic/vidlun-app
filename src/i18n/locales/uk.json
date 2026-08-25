@@ -62,5 +62,20 @@
   "settings.forgetCancel": "Скасувати",
   "language.uk": "Українська",
   "language.en": "English",
-  "common.back": "Назад"
+  "common.back": "Назад",
+  "onboarding.welcomeTitle": "Говори, як почуваєшся",
+  "onboarding.welcomeBody": "Скажи, як минув день. Решту зробить Luna.",
+  "onboarding.welcomeAction": "Почати",
+  "onboarding.privacyTitle": "Твої слова лишаються твоїми",
+  "onboarding.privacyOnDevice": "Мова розпізнається на самому телефоні. Голос нікуди не надсилається.",
+  "onboarding.privacyKeep": "Запис голосу лишається на телефоні рік, потім зникає сам. Текст запису лишається назавжди.",
+  "onboarding.privacyDelete": "Будь-який запис можна видалити, і голос зникне разом із ним.",
+  "onboarding.privacyAction": "Зрозуміло",
+  "onboarding.micTitle": "Доступ до мікрофона",
+  "onboarding.micBody": "Щоб можна було просто сказати, а не друкувати.",
+  "onboarding.micAllow": "Дозволити",
+  "onboarding.micLater": "Пізніше, я друкуватиму",
+  "onboarding.downloading": "Luna завантажує те, чим слухає — {{done}} з {{total}} МБ",
+  "onboarding.downloadReady": "Готово до роботи офлайн",
+  "onboarding.downloadLater": "Завантаження продовжиться у фоні. Писати текстом можна вже зараз."
 }

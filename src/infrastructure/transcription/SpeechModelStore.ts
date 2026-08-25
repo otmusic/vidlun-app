@@ -1,3 +1,5 @@
+import type { SpeechModelState } from '../../domain/ports/ISpeechModel';
+
 /** What the store needs from a filesystem, and nothing more. */
 export interface ModelStorage {
   /** Bytes on disk, or null when there is no such file. */
@@ -11,23 +13,6 @@ export interface ModelStorage {
   remove(name: string): Promise<void>;
   uriFor(name: string): string;
 }
-
-export type SpeechModelFailure =
-  /** The download did not finish: no connection, or it was cut off. */
-  | 'unreachable'
-  /** It finished, but what arrived is too small to be the model. */
-  | 'truncated';
-
-export type SpeechModelState =
-  | { readonly kind: 'absent' }
-  | {
-      readonly kind: 'fetching';
-      readonly writtenBytes: number;
-      /** Null when the server sent no Content-Length. */
-      readonly totalBytes: number | null;
-    }
-  | { readonly kind: 'ready'; readonly uri: string }
-  | { readonly kind: 'failed'; readonly reason: SpeechModelFailure };
 
 export interface SpeechModelDescriptor {
   readonly url: string;

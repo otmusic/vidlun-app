@@ -19,9 +19,9 @@ describe('SettingsStore', () => {
   it('reads back what it wrote', async () => {
     const { subject } = setup();
 
-    await subject.write({ keepRecordings: false, locale: 'en' });
+    await subject.write({ keepRecordings: false, locale: 'en', hasOnboarded: true });
 
-    expect(await subject.read()).toEqual({ keepRecordings: false, locale: 'en' });
+    expect(await subject.read()).toEqual({ keepRecordings: false, locale: 'en', hasOnboarded: true });
   });
 
   it('falls back to defaults rather than failing on an unreadable file', async () => {
@@ -35,7 +35,13 @@ describe('SettingsStore', () => {
     const { store, subject } = setup();
     await store.setItem('luna.settings', JSON.stringify({ locale: 'en' }));
 
-    expect(await subject.read()).toEqual({ keepRecordings: true, locale: 'en' });
+    expect(await subject.read()).toEqual({ keepRecordings: true, locale: 'en', hasOnboarded: false });
+  });
+
+  it('has not onboarded anyone on a fresh install', async () => {
+    const { subject } = setup();
+
+    expect((await subject.read()).hasOnboarded).toBe(false);
   });
 
   it('refuses a locale it does not have', async () => {

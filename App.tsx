@@ -9,6 +9,7 @@ import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOption
 import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
 import { DEFAULT_SETTINGS, type Settings } from '@/domain/ports/ISettings';
+import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import { SPEECH_MODEL, SpeechModelStore } from '@/infrastructure/transcription/SpeechModelStore';
 import { OnDeviceTranscriptionService } from '@/infrastructure/transcription/OnDeviceTranscriptionService';
 import { openParakeetEngine } from '@/infrastructure/transcription/parakeetEngine';
@@ -16,6 +17,7 @@ import { openSpeechEngine } from '@/infrastructure/transcription/whisperEngine';
 import { AppText } from '@/presentation/components/AppText';
 import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
 import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
+import { OnboardingScreen } from '@/presentation/screens/OnboardingScreen';
 import { Screen } from '@/presentation/screens/Screen';
 import { ThemeProvider } from '@/presentation/theme/ThemeProvider';
 
@@ -32,7 +34,8 @@ interface Wiring {
 export default function App() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const locale = settings.locale;
-  const transcription = useTranscription(locale);
+  const model = useSpeechModel();
+  const transcription = useTranscription(locale, model.state);
   const nativeRecorder = useAudioRecorder(SPEECH_RECORDING_OPTIONS);
 
   const wiring = useMemo<Wiring>(() => {
@@ -56,6 +59,7 @@ export default function App() {
           locale={locale}
           settings={settings}
           onSettingsChange={setSettings}
+          model={model}
         />
       )}
         <StatusBar style="auto" />
@@ -70,6 +74,7 @@ function Luna(props: {
   readonly locale: Locale;
   readonly settings: Settings;
   readonly onSettingsChange: (settings: Settings) => void;
+  readonly model: { readonly state: SpeechModelState; readonly fetch: () => void };
 }): React.JSX.Element {
   const { container, locale } = props;
   const t = useMemo(() => createTranslator(locale), [locale]);
@@ -78,6 +83,14 @@ function Luna(props: {
   useEffect(() => {
     void container.settings.read().then(onSettingsChange);
   }, [container.settings, onSettingsChange]);
+
+  const { fetch: fetchModel } = props.model;
+
+  useEffect(() => {
+    // Starts as soon as the app opens, onboarding or not. Nothing waits on it,
+    // and the sooner it begins the sooner voice works.
+    fetchModel();
+  }, [fetchModel]);
 
   const changeSettings = useCallback(
     (next: Settings) => {
@@ -116,6 +129,17 @@ function Luna(props: {
     getHomeView: container.getHomeView,
   });
 
+  if (!props.settings.hasOnboarded) {
+    return (
+      <OnboardingScreen
+        t={t}
+        model={props.model.state}
+        onAskMicrophone={() => container.microphonePermission.request()}
+        onDone={() => changeSettings({ ...props.settings, hasOnboarded: true })}
+      />
+    );
+  }
+
   return (
     <CaptureFlowScreen
       flow={flow}
@@ -133,33 +157,46 @@ function Luna(props: {
  * a working text journal rather than a broken voice one, which is the whole
  * reason half a gigabyte is not allowed to block anything.
  */
-function useTranscription(locale: Locale): ITranscriptionService {
-  const typed = useMemo(() => new ManualTranscriptionService(), []);
-  const [spoken, setSpoken] = useState<ITranscriptionService | null>(null);
+/**
+ * One store for the whole app: onboarding fetches the model, transcription
+ * reads the same state. Two of them would mean two downloads of half a
+ * gigabyte, one of them silent.
+ */
+function useSpeechModel(): { readonly state: SpeechModelState; readonly fetch: () => void } {
+  const store = useMemo(() => new SpeechModelStore(new ExpoModelStorage()), []);
+  const [state, setState] = useState<SpeechModelState>({ kind: 'absent' });
 
   useEffect(() => {
-    let abandoned = false;
-    const store = new SpeechModelStore(new ExpoModelStorage());
+    void store.state().then(setState);
+  }, [store]);
 
-    void store.state().then((state) => {
-      if (abandoned || state.kind !== 'ready') {
-        return;
-      }
+  const fetch = useCallback(() => {
+    void store.fetch(setState).then(setState);
+  }, [store]);
 
-      const open =
-        SPEECH_MODEL.engine === 'parakeet'
-          ? openParakeetEngine(state.uri)
-          : openSpeechEngine(state.uri);
+  return { state, fetch };
+}
 
-      setSpoken(new OnDeviceTranscriptionService(open, () => locale));
-    });
+/**
+ * Voice needs the model on disk; text never does. Until it arrives the app is
+ * a working text journal rather than a broken voice one, which is the whole
+ * reason half a gigabyte is not allowed to block anything.
+ */
+function useTranscription(locale: Locale, model: SpeechModelState): ITranscriptionService {
+  const typed = useMemo(() => new ManualTranscriptionService(), []);
 
-    return () => {
-      abandoned = true;
-    };
-  }, [locale]);
+  return useMemo(() => {
+    if (model.kind !== 'ready') {
+      return typed;
+    }
 
-  return spoken ?? typed;
+    const open =
+      SPEECH_MODEL.engine === 'parakeet'
+        ? openParakeetEngine(model.uri)
+        : openSpeechEngine(model.uri);
+
+    return new OnDeviceTranscriptionService(open, () => locale);
+  }, [locale, model, typed]);
 }
 
 /** Shown when the api key is missing, which is a developer state, not a user one. */

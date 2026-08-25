@@ -62,5 +62,20 @@
   "settings.forgetCancel": "Cancel",
   "language.uk": "Українська",
   "language.en": "English",
-  "common.back": "Back"
+  "common.back": "Back",
+  "onboarding.welcomeTitle": "Say how you feel",
+  "onboarding.welcomeBody": "Tell it how the day went. Luna does the rest.",
+  "onboarding.welcomeAction": "Start",
+  "onboarding.privacyTitle": "Your words stay yours",
+  "onboarding.privacyOnDevice": "Speech is recognised on this phone. Your voice is never sent anywhere.",
+  "onboarding.privacyKeep": "Recordings stay on this phone for a year, then go on their own. The written entry stays for good.",
+  "onboarding.privacyDelete": "Any entry can be deleted, and its recording goes with it.",
+  "onboarding.privacyAction": "Understood",
+  "onboarding.micTitle": "Microphone access",
+  "onboarding.micBody": "So you can just say it instead of typing.",
+  "onboarding.micAllow": "Allow",
+  "onboarding.micLater": "Later, I will type",
+  "onboarding.downloading": "Luna is downloading what it listens with — {{done}} of {{total}} MB",
+  "onboarding.downloadReady": "Ready to work offline",
+  "onboarding.downloadLater": "The download carries on in the background. You can write an entry now."
 }

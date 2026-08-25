@@ -1,8 +1,8 @@
+import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import {
   SPEECH_MODEL,
   SpeechModelStore,
   type ModelStorage,
-  type SpeechModelState,
 } from '@/infrastructure/transcription/SpeechModelStore';
 
 const WHOLE = SPEECH_MODEL.leastPlausibleBytes + 1;

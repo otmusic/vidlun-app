@@ -2,6 +2,8 @@ export interface Settings {
   /** Whether a confirmed entry keeps the take it came from. */
   readonly keepRecordings: boolean;
   readonly locale: 'uk' | 'en';
+  /** False until someone has been told what the app does with their voice. */
+  readonly hasOnboarded: boolean;
 }
 
 /**
@@ -10,7 +12,11 @@ export interface Settings {
  * product work; the setting exists for people who want it off, not as a
  * question everyone has to answer.
  */
-export const DEFAULT_SETTINGS: Settings = { keepRecordings: true, locale: 'uk' };
+export const DEFAULT_SETTINGS: Settings = {
+  keepRecordings: true,
+  locale: 'uk',
+  hasOnboarded: false,
+};
 
 /**
  * A port with no use case behind it, which is unusual here and deliberate: the

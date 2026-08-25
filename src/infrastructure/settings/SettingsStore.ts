@@ -48,5 +48,9 @@ function merge(parsed: unknown): Settings {
         ? record['keepRecordings']
         : DEFAULT_SETTINGS.keepRecordings,
     locale: locale === 'en' || locale === 'uk' ? locale : DEFAULT_SETTINGS.locale,
+    hasOnboarded:
+      typeof record['hasOnboarded'] === 'boolean'
+        ? record['hasOnboarded']
+        : DEFAULT_SETTINGS.hasOnboarded,
   };
 }
