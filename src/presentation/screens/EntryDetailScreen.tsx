@@ -1,11 +1,12 @@
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, ScrollView } from 'react-native';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { Locale, Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
+import { BackButton } from '../components/BackButton';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { EntryChips } from '../components/EntryChips';
@@ -33,6 +34,7 @@ export function EntryDetailScreen(props: {
 
   return (
     <Screen>
+      <BackButton t={t} onPress={props.onBack} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ gap: theme.spacing.md, paddingBottom: theme.spacing.lg }}
@@ -59,10 +61,7 @@ export function EntryDetailScreen(props: {
         ) : null}
       </ScrollView>
 
-      <View style={{ gap: theme.spacing.sm }}>
-        <Button label={t('detail.back')} onPress={props.onBack} />
-        <Button label={t('detail.delete')} variant="ghost" onPress={confirmDelete} />
-      </View>
+      <Button label={t('detail.delete')} variant="ghost" onPress={confirmDelete} />
     </Screen>
   );
 }

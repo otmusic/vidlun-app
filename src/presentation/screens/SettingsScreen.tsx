@@ -4,7 +4,8 @@ import { LOCALES, type Translate } from '@/i18n';
 import type { Settings } from '@/domain/ports/ISettings';
 
 import { AppText } from '../components/AppText';
-import { Button, TapTarget } from '../components/Button';
+import { BackButton } from '../components/BackButton';
+import { TapTarget } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { useTheme } from '../theme/ThemeProvider';
 import { Screen } from './Screen';
@@ -43,6 +44,7 @@ export function SettingsScreen(props: {
 
   return (
     <Screen>
+      <BackButton t={t} onPress={props.onBack} />
       <AppText variant="display">{t('settings.title')}</AppText>
 
       <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
@@ -89,7 +91,6 @@ export function SettingsScreen(props: {
       </View>
 
       <View style={{ flex: 1 }} />
-      <Button label={t('settings.back')} onPress={props.onBack} />
     </Screen>
   );
 }

@@ -1,17 +1,16 @@
-import { Alert, Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { Locale, Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
-import { moodTone } from '../components/emotionTone';
 import { TapTarget } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { Orb } from '../components/Orb';
+import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { useTheme } from '../theme/ThemeProvider';
-import { LIST_ROW_HEIGHT } from '../theme/tokens';
 import { Screen } from './Screen';
 
 export interface HomeScreenProps {
@@ -20,6 +19,7 @@ export interface HomeScreenProps {
   readonly onDelete: (id: string) => void;
   readonly onOpenHistory: () => void;
   readonly onOpenSettings: () => void;
+  readonly onOpen: (entry: MoodEntry) => void;
   readonly t: Translate;
   readonly onRecord: () => void;
   readonly onWrite: () => void;
@@ -77,13 +77,13 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             {props.t('home.emptyState')}
           </AppText>
         ) : (
-          <>
+          <SwipeGroup>
             {recent.map((entry) => (
-              <RecentRow
+              <EntryRow
                 key={entry.id}
                 entry={entry}
-                locale={props.locale}
                 t={props.t}
+                onOpen={props.onOpen}
                 onDelete={props.onDelete}
               />
             ))}
@@ -92,58 +92,10 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
               * a gesture people make by accident while scrolling their own
               * journal is the wrong one for that.
               */}
-            <AppText variant="caption" color="inkFaint" style={{ marginTop: theme.spacing.sm }}>
-              {props.t('home.deleteHint')}
-            </AppText>
-          </>
+          </SwipeGroup>
         )}
       </View>
     </Screen>
-  );
-}
-
-function RecentRow(props: {
-  readonly entry: MoodEntry;
-  readonly locale: Locale;
-  readonly t: Translate;
-  readonly onDelete: (id: string) => void;
-}): React.JSX.Element {
-  const theme = useTheme();
-  const { entry, t, onDelete } = props;
-
-  const confirm = (): void => {
-    Alert.alert(t('delete.title'), t('delete.body'), [
-      { text: t('delete.cancel'), style: 'cancel' },
-      { text: t('delete.confirm'), style: 'destructive', onPress: () => onDelete(entry.id) },
-    ]);
-  };
-
-  return (
-    <Pressable
-      onLongPress={confirm}
-      accessibilityLabel={t('delete.title')}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        minHeight: LIST_ROW_HEIGHT,
-      }}
-    >
-      <View
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: 4,
-          backgroundColor: theme.palette[moodTone(props.entry.mood.value)],
-        }}
-      />
-      <AppText variant="secondary" color="inkSoft" numberOfLines={1} style={{ flex: 1 }}>
-        {props.entry.cleanTranscript}
-      </AppText>
-      <AppText variant="caption" color="inkFaint">
-        {formatTime(props.entry.createdAt, props.locale)}
-      </AppText>
-    </Pressable>
   );
 }
 
@@ -151,6 +103,3 @@ function formatToday(locale: Locale): string {
   return new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short' });
 }
 
-function formatTime(date: Date, locale: Locale): string {
-  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-}

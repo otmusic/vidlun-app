@@ -122,6 +122,7 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
           onDelete={flow.deleteEntry}
           onOpenHistory={flow.openHistory}
           onOpenSettings={flow.openSettings}
+          onOpen={flow.openEntry}
         />
       );
   }
