@@ -5,7 +5,11 @@ import type { IScheduler } from '../system/IScheduler';
 /** The part of expo-audio's `AudioRecorder` this adapter drives. */
 export interface NativeRecorder {
   readonly uri: string | null;
-  prepareToRecordAsync(options?: { isMeteringEnabled?: boolean }): Promise<void>;
+  /**
+   * Called with nothing on purpose. Anything passed here replaces the options
+   * the recorder was built with, format and all.
+   */
+  prepareToRecordAsync(): Promise<void>;
   record(): void;
   stop(): Promise<void>;
   getStatus(): {
@@ -66,7 +70,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     // Before preparing, not after: on iOS both `prepareToRecordAsync` and
     // `record` throw while the session still forbids recording.
     await this.enableRecordingMode();
-    await this.recorder.prepareToRecordAsync({ isMeteringEnabled: true });
+    await this.recorder.prepareToRecordAsync();
 
     this.silentForMs = 0;
     this.hasHeardAnything = false;

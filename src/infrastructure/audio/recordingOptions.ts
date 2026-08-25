@@ -12,6 +12,17 @@ import { AudioQuality, IOSOutputFormat, type RecordingOptions } from 'expo-audio
  * roughly two.
  */
 export const SPEECH_RECORDING_OPTIONS: RecordingOptions = {
+  /*
+   * Belongs here rather than at `prepareToRecordAsync`, and that is not a
+   * style choice: expo-audio runs whatever is passed there through
+   * `createRecordingOptions`, so a partial object replaces this whole record
+   * and the recorder silently falls back to native defaults — 8 kHz in a CAF
+   * container, which whisper rejects outright.
+   *
+   * Silence auto-stop reads the metering level, so without this the take never
+   * ends by itself.
+   */
+  isMeteringEnabled: true,
   extension: '.wav',
   sampleRate: 16_000,
   numberOfChannels: 1,
