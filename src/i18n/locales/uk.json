@@ -4,7 +4,7 @@
   "home.recordHint": "Натисни, щоб говорити",
   "home.streak": "{{count}} дн.",
   "home.recentTitle": "Нещодавні",
-  "home.emptyState": "Тут поки порожньо. Перший запис займе десять секунд.",
+  "home.emptyState": "Тут з'являтимуться твої записи. Говори стільки, скільки треба.",
   "home.writeInstead": "Написати замість цього",
   "recording.listening": "Слухаю",
   "recording.hint": "Зупиниться сама, коли ти замовкнеш, або тапни",

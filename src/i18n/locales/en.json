@@ -4,7 +4,7 @@
   "home.recordHint": "Tap to speak",
   "home.streak": "{{count}} days",
   "home.recentTitle": "Recent",
-  "home.emptyState": "Nothing here yet. Your first entry takes ten seconds.",
+  "home.emptyState": "Your entries will appear here. Take as long as you need.",
   "home.writeInstead": "Write instead",
   "recording.listening": "Listening",
   "recording.hint": "Stops on its own when you go quiet, or tap to stop",
