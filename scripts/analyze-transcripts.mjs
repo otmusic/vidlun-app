@@ -36,7 +36,7 @@ async function main() {
 
   const vocabulary = createEmotionVocabulary();
   const anthropic = new Anthropic({ apiKey });
-  const analyzer = new ClaudeReflectionAnalyzer(anthropic.messages, vocabulary);
+  const analyzer = new ClaudeReflectionAnalyzer(anthropic.messages, vocabulary, options.model);
   const useCase = new CreateTextEntry(analyzer, vocabulary, new WallClock(), new CountingIds());
 
   const results = [];
@@ -173,10 +173,16 @@ function readOptions(argv) {
   const index = argv.indexOf('--transcripts');
 
   if (index === -1 || argv[index + 1] === undefined) {
-    fail('Usage: node scripts/analyze-transcripts.mjs --transcripts <file>');
+    fail('Usage: node scripts/analyze-transcripts.mjs --transcripts <file> [--model <id>]');
   }
 
-  return { transcripts: resolve(argv[index + 1]) };
+  const model = argv.indexOf('--model');
+
+  return {
+    transcripts: resolve(argv[index + 1]),
+    // Undefined keeps whatever the analyzer ships with.
+    model: model === -1 ? undefined : argv[model + 1],
+  };
 }
 
 function fail(message) {

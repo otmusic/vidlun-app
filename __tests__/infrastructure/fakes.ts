@@ -109,7 +109,20 @@ export class FakeNativeRecorder implements NativeRecorder {
 export class FakeMessagesClient implements MessagesClient {
   readonly requests: Anthropic.MessageCreateParamsNonStreaming[] = [];
 
+  private readonly byModel = new Map<string, Partial<Anthropic.Message>>();
+
   constructor(private readonly reply: Partial<Anthropic.Message>) {}
+
+  /** Lets a test answer the classification and the observation differently. */
+  answering(model: string, reply: Partial<Anthropic.Message>): this {
+    this.byModel.set(model, reply);
+
+    return this;
+  }
+
+  requestTo(model: string): Anthropic.MessageCreateParamsNonStreaming | undefined {
+    return this.requests.find((request) => request.model === model);
+  }
 
   create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message> {
     this.requests.push(params);
@@ -123,7 +136,7 @@ export class FakeMessagesClient implements MessagesClient {
       stop_reason: 'end_turn',
       stop_sequence: null,
       usage: { input_tokens: 1, output_tokens: 1 },
-      ...this.reply,
+      ...(this.byModel.get(params.model) ?? this.reply),
     } as Anthropic.Message);
   }
 }
