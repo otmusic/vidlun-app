@@ -32,15 +32,29 @@
 
 ## 1. What we are building
 
-Luna is a voice-first emotion journal for iOS. The user taps one button, says a
-single sentence about how they feel, and AI turns it into a structured entry:
-cleaned transcript, mood score, emotions, context tags, and one short
-observation. The user confirms with one tap or corrects with one more.
+Luna is a voice-first emotion journal for iOS. The user taps one button, says
+how they feel, and AI turns it into a structured entry: cleaned transcript,
+mood score, emotions, context tags, and one short observation. The user
+confirms with one tap or corrects with one more.
 
-**The product thesis is speed.** Every competitor makes you fill a form. If
-capturing an entry takes more than ten seconds, people quit within two weeks.
-Any change that adds friction to the capture path is wrong by default, even if
-it adds a nice feature.
+**The product thesis is the absence of friction, which is not the same as
+brevity.** Every competitor makes you fill a form. Filling a form is friction:
+time spent on mechanics rather than on what you meant to say. Waiting for the
+app is friction too. Talking is not — that is the time the person chose to
+spend, and it is the product working.
+
+So the budget is on everything except the speaking. Tap to recording, stop to
+card, confirm to saved: those must be short and must stay short however long
+the person spoke. Any change that adds friction to the capture path is wrong by
+default, even if it adds a nice feature.
+
+**How long is an entry?** Observed at about twenty seconds across two people's
+real recordings — thin evidence, and the only evidence there is. Assume that
+shape rather than a single terse sentence. Short entries stay entirely valid:
+§5's second regression case is "Cooked dinner." and §6 insists that zero
+emotions is a complete entry. They are just not what performance is designed
+around, and an entry that takes longer to speak must never take longer to
+process.
 
 **The AI proposes, it never decides.** The reflection card is a draft. Nothing
 is written to storage until the user confirms it.
@@ -64,7 +78,11 @@ speech pipeline must handle that. The codebase must not.
   unavoidable later.
 - Jest + ts-jest for tests
 - On-device speech-to-text via `whisper.rn` (works on both platforms — a
-  second reason to prefer it over Apple's framework)
+  second reason to prefer it over Apple's framework). **Transcribe while the
+  person is still speaking, not after they stop.** Measured on 2026-08-25:
+  post-hoc transcription costs 265 ms per second of audio, so the wait grows
+  with how much someone had to say — the app would charge most for its best
+  entries. Streaming makes the wait after the stop a constant.
 - Cloud LLM for analysis (Claude Haiku for per-entry, Sonnet for weekly summary)
 - Local-first storage; no backend in the MVP
 - No state management library until a milestone actually needs one
@@ -438,8 +456,13 @@ lifting, immutability, and the 4-emotion limit at ≥95% lines.
 ### M4 — Capture flow
 Screens: Home (orb, streak, recent entries), Recording, Processing, Reflection
 card, Edit. Text input fallback. Theme provider with light/dark.
-**Done when:** capture-to-save takes under ten seconds on a real phone, and no
-component contains an iOS-only assumption that would need an `.android.tsx` twin.
+**Done when:** the wait from stop to reflection card is two to three seconds on
+a real phone and does not grow with how long the person spoke, and no component
+contains an iOS-only assumption that would need an `.android.tsx` twin.
+
+The old wording — "capture-to-save under ten seconds" — counted the speaking as
+part of the cost and so measured the wrong thing. Time spent talking is not a
+cost to reduce.
 
 ### M5 — Retention and monetization
 Insights screen (free daily trend + paywalled weekly narrative), onboarding
@@ -455,7 +478,7 @@ of finding the word yourself. We currently take that work away, so after two
 months a user has clean statistics and zero growth in self-understanding.
 
 Reflection mode separates capture from reflection **in time**, so learning never
-slows the ten-second path.
+slows the capture path.
 
 - **Entry point:** an invitation on Home, always dismissible. Never blocking,
   never a nagging badge.

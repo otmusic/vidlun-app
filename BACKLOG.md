@@ -28,6 +28,7 @@ unbuilt, and each one requires validation with real people before any code.
 | **npm advisories are held off with `overrides`, not `audit fix --force`.** | The forced fix downgrades Expo 57 to 46. `metro@0.84.5` drops `image-size` (which has no patched release at all), and `xcode` only calls `uuid.v4()`, so uuid 11 is safe. |
 | **The speech model is `large-v3-turbo-q5_0` and arrives during onboarding.** | `small` is unusable on Ukrainian and full turbo is 1.5 GB. Quantising to 547 MB cost nothing measurable. Too large to bundle, so it downloads — and onboarding is the one moment where waiting is expected rather than resented. |
 | **Transcription confidence is derived from take duration.** | whisper.rn reports none, and a constant would be a lie the domain acts on: §6 ties emotion depth to confidence. Duration is the only predictor the §10 run supported. |
+| **The wait is measured from stop to card, not from tap to save.** Talking is not friction; waiting is. | The old criterion counted the speaking as a cost to reduce, which is backwards for a journal. See §2a. |
 | **The observation is written by Sonnet; the rest of the entry stays on Haiku.** Sent in parallel, so the wait is the slower call and not the sum. | This departs from §2, which put the whole entry on Haiku. Measured on 2026-08-25: Haiku produced a sentence that did not parse, clinical labels §7.9 forbids, and feelings nobody had named. The observation is the only field read as prose — everything else is an id, a number, or the speaker's own words — so the risk sits in one sentence, and §7.9 calls it a design surface. |
 
 ---
@@ -214,9 +215,51 @@ Re-run it whenever the prompt changes. It needs 0.2.
 
 | # | Item | Who |
 |---|---|---|
-| 2.1 | **Measure capture-to-save under ten seconds.** M4's completion criterion, still unverified, and now the most overdue thing on this list. Nothing blocks it: the whole path runs on the phone. Two things changed underneath it since the criterion was written — transcription now happens on-device against a 547 MB model, and analysis is two API calls instead of one. Both were designed not to cost time; neither has been timed. | Owner, on hardware |
+| 2.1 | **Measured on 2026-08-25, and the criterion was wrong.** See §2a. The wait is now defined as stop-to-card and must not grow with how long the person spoke. | Reopened as 2.4–2.6 |
+| 2.4 | **Transcribe while recording, not after.** The single change that makes the wait constant. `whisper.rn` supports it; `transcribeData` is why the `buffer` polyfill is there. | — |
+| 2.5 | **Do not hold the card for the observation.** Emotions and mood arrive from Haiku in 2.0 s, the sentence from Sonnet in 3.9 s, and the card needs neither the sentence to render nor to save. Slot it in when it lands. | — |
+| 2.6 | **Raise the 60-second recording ceiling.** If a typical entry is twenty seconds, a bad day runs forty or fifty, and cutting someone off mid-thought is the worst thing the app could do at that moment. | — |
 | 2.2 | Check the dark theme on a real screen. §7.10 warns the green confirmation and the teal accent sit close in tone. | Owner |
 | 2.3 | **Decide what a crisis entry shows.** The domain nulls `observation` correctly, but §6 says what appears instead is a product decision. The card currently shows nothing. | Owner |
+
+---
+
+## 2a. Where the wait actually goes — 2026-08-25
+
+Measured on the phone, second take of the session, so the model was already
+loaded:
+
+```
+transcribe (29.7 s of audio)   7861 ms
+claude-haiku-4-5               1955 ms
+claude-sonnet-5                3875 ms
+```
+
+The two model calls run together, so analysis costs 3.9 s rather than 5.8.
+Total to the card, about 11.8 s.
+
+**Transcription scales with speech: 265 ms per second of audio.** That is the
+finding. A twenty-second entry pays 5.3 s before analysis even starts, and the
+60-second ceiling would pay 15.9 s. The app charges most for the entries where
+someone had the most to say, which is backwards for a product whose point is
+teaching people to name what they feel.
+
+**The old criterion measured the wrong thing.** "Capture-to-save under ten
+seconds" counted the speaking as part of the cost. Talking is not friction —
+it is the person using the product. The brief now budgets everything except the
+speaking, and M4 asks for two to three seconds from stop to card, constant
+regardless of length.
+
+**Entry length: about twenty seconds**, observed across two people's real
+recordings. Two people is not evidence, but it is the only evidence there is,
+and it matches what an emotion journal entry sounds like. Short entries stay
+valid — §5's second regression case is "Cooked dinner." — they are simply not
+what performance is designed around.
+
+**A consequence not yet acted on:** `home.emptyState` still promises "your
+first entry takes ten seconds" in both locales. That promise now contradicts
+the brief, and it is the first sentence a new user reads. Copy is §7.9's
+territory, so the wording is the owner's call.
 
 ---
 

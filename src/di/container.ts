@@ -28,6 +28,10 @@ import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { SystemClock } from '../infrastructure/system/SystemClock';
 import { UuidGenerator } from '../infrastructure/system/UuidGenerator';
+import {
+  TimedMessagesClient,
+  TimedTranscriptionService,
+} from '../infrastructure/diagnostics/timed';
 import { readAnthropicApiKey } from './config';
 
 export interface Container {
@@ -78,7 +82,16 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     dangerouslyAllowBrowser: true,
   });
 
-  const analyzer = new ClaudeReflectionAnalyzer(anthropic.messages, vocabulary);
+  /*
+   * Stage timings in development only. M4 asks for capture-to-save under ten
+   * seconds and the phone came in at thirteen after the stop, so the breakdown
+   * needs to be visible while that is worked on.
+   */
+  const messages = __DEV__ ? new TimedMessagesClient(anthropic.messages) : anthropic.messages;
+  const analyzer = new ClaudeReflectionAnalyzer(messages, vocabulary);
+  const transcription = __DEV__
+    ? new TimedTranscriptionService(dependencies.transcription)
+    : dependencies.transcription;
   const repository = new AsyncStorageMoodEntryRepository(AsyncStorage);
   const revisionLog = new AsyncStorageRevisionLog(AsyncStorage);
 
@@ -86,7 +99,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     vocabulary,
     haptics: new ExpoHaptics(),
     createVoiceEntry: new CreateVoiceEntry(
-      dependencies.transcription,
+      transcription,
       analyzer,
       vocabulary,
       clock,
