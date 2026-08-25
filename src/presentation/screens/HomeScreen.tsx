@@ -9,7 +9,7 @@ import { moodTone } from '../components/emotionTone';
 import { TapTarget } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { Orb } from '../components/Orb';
-import { KeyboardShape } from '../components/Shapes';
+import { Icon, ICON_SIZE } from '../components/Icon';
 import { useTheme } from '../theme/ThemeProvider';
 import { LIST_ROW_HEIGHT } from '../theme/tokens';
 import { Screen } from './Screen';
@@ -39,9 +39,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
           {streak > 0 ? <Chip label={props.t('home.streak', { count: streak })} tone="warm" /> : null}
           <TapTarget onPress={props.onOpenSettings} accessibilityLabel={props.t('home.openSettings')}>
-            <AppText variant="caption" color="inkFaint">
-              {props.t('home.openSettings')}
-            </AppText>
+            <Icon name="settings" size={ICON_SIZE.action} />
           </TapTarget>
         </View>
       </View>
@@ -57,7 +55,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           {props.t('home.recordHint')}
         </AppText>
         <TapTarget onPress={props.onWrite} accessibilityLabel={props.t('home.writeInstead')}>
-          <KeyboardShape color={theme.palette.inkSoft} size={26} />
+          <Icon name="edit-3" size={ICON_SIZE.glyph} />
         </TapTarget>
       </View>
 

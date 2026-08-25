@@ -1,4 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAudioRecorder } from 'expo-audio';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService';
@@ -43,7 +44,9 @@ export default function App() {
   }, [transcription]);
 
   return (
-    <ThemeProvider>
+    /* Gesture handler needs a root of its own, or a swipe never reaches a row. */
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
       {wiring.container === undefined ? (
         <SetupNeeded detail={wiring.failure ?? ''} />
       ) : (
@@ -55,8 +58,9 @@ export default function App() {
           onSettingsChange={setSettings}
         />
       )}
-      <StatusBar style="auto" />
-    </ThemeProvider>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 

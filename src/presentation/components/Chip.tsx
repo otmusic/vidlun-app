@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import type { Palette } from '../theme/tokens';
 import { AppText } from './AppText';
-import { CheckShape, CloseShape } from './Shapes';
+import { Icon } from './Icon';
 
 /**
  * Tone carries meaning, so it is never the only carrier: every chip also shows
@@ -52,9 +52,9 @@ export function Chip(props: ChipProps): React.JSX.Element {
       <AppText variant="label" color={tone.ink}>
         {props.label}
       </AppText>
-      {props.action === 'remove' ? <CloseShape color={theme.palette[tone.ink]} size={12} /> : null}
+      {props.action === 'remove' ? <Icon name="x" size={12} color={tone.ink} /> : null}
       {props.action === 'add' && props.selected === true ? (
-        <CheckShape color={theme.palette[tone.ink]} size={12} />
+        <Icon name="check" size={12} color={tone.ink} />
       ) : null}
     </View>
   );

@@ -1,4 +1,10 @@
 import { Alert, Pressable, ScrollView, View } from 'react-native';
+/*
+ * The legacy Swipeable, on React Native's own Animated. The Reanimated one is
+ * the newer path but pulls in react-native-reanimated, a second native
+ * dependency and a babel plugin, for a single row animation.
+ */
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 
 import type { HistoryDay } from '@/application/use-cases/GetHistory';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
@@ -6,6 +12,7 @@ import type { Locale, Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { Icon, ICON_SIZE } from '../components/Icon';
 import { moodTone } from '../components/emotionTone';
 import { useTheme } from '../theme/ThemeProvider';
 import { Screen } from './Screen';
@@ -78,28 +85,56 @@ function HistoryRow(props: {
   };
 
   return (
-    <Pressable
-      onPress={() => onOpen(entry)}
-      onLongPress={confirm}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        minHeight: ROW_HEIGHT,
-      }}
+    /*
+     * The swipe reveals rather than deletes, and the button behind it still
+     * asks. Three deliberate acts for something with no undo — a single swipe
+     * that removed an entry would be the wrong gesture for a journal people
+     * scroll through.
+     */
+    <Swipeable
+      friction={2}
+      rightThreshold={40}
+      renderRightActions={() => (
+        <Pressable
+          onPress={confirm}
+          accessibilityLabel={t('delete.confirm')}
+          style={{
+            width: 76,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.palette.low,
+            borderRadius: theme.radii.card,
+            marginLeft: theme.spacing.sm,
+          }}
+        >
+          <Icon name="trash-2" size={ICON_SIZE.action} color="onAccent" />
+        </Pressable>
+      )}
     >
-      <View
+      <Pressable
+        onPress={() => onOpen(entry)}
+        onLongPress={confirm}
         style={{
-          width: 8,
-          height: 8,
-          borderRadius: 4,
-          backgroundColor: theme.palette[moodTone(entry.mood.value)],
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.md,
+          minHeight: ROW_HEIGHT,
+          backgroundColor: theme.palette.canvas,
         }}
-      />
-      <AppText variant="secondary" color="inkSoft" numberOfLines={2} style={{ flex: 1 }}>
-        {entry.cleanTranscript}
-      </AppText>
-    </Pressable>
+      >
+        <View
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: theme.palette[moodTone(entry.mood.value)],
+          }}
+        />
+        <AppText variant="secondary" color="inkSoft" numberOfLines={2} style={{ flex: 1 }}>
+          {entry.cleanTranscript}
+        </AppText>
+      </Pressable>
+    </Swipeable>
   );
 }
 
