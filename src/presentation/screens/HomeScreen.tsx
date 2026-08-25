@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 
 import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
@@ -16,6 +16,7 @@ import { Screen } from './Screen';
 export interface HomeScreenProps {
   readonly home: HomeView | null;
   readonly locale: Locale;
+  readonly onDelete: (id: string) => void;
   readonly t: Translate;
   readonly onRecord: () => void;
   readonly onWrite: () => void;
@@ -59,18 +60,51 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             {props.t('home.emptyState')}
           </AppText>
         ) : (
-          recent.map((entry) => <RecentRow key={entry.id} entry={entry} locale={props.locale} />)
+          <>
+            {recent.map((entry) => (
+              <RecentRow
+                key={entry.id}
+                entry={entry}
+                locale={props.locale}
+                t={props.t}
+                onDelete={props.onDelete}
+              />
+            ))}
+            {/*
+              * Hold rather than swipe. Deleting an entry cannot be undone, and
+              * a gesture people make by accident while scrolling their own
+              * journal is the wrong one for that.
+              */}
+            <AppText variant="caption" color="inkFaint" style={{ marginTop: theme.spacing.sm }}>
+              {props.t('home.deleteHint')}
+            </AppText>
+          </>
         )}
       </View>
     </Screen>
   );
 }
 
-function RecentRow(props: { readonly entry: MoodEntry; readonly locale: Locale }): React.JSX.Element {
+function RecentRow(props: {
+  readonly entry: MoodEntry;
+  readonly locale: Locale;
+  readonly t: Translate;
+  readonly onDelete: (id: string) => void;
+}): React.JSX.Element {
   const theme = useTheme();
+  const { entry, t, onDelete } = props;
+
+  const confirm = (): void => {
+    Alert.alert(t('delete.title'), t('delete.body'), [
+      { text: t('delete.cancel'), style: 'cancel' },
+      { text: t('delete.confirm'), style: 'destructive', onPress: () => onDelete(entry.id) },
+    ]);
+  };
 
   return (
-    <View
+    <Pressable
+      onLongPress={confirm}
+      accessibilityLabel={t('delete.title')}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -92,7 +126,7 @@ function RecentRow(props: { readonly entry: MoodEntry; readonly locale: Locale }
       <AppText variant="caption" color="inkFaint">
         {formatTime(props.entry.createdAt, props.locale)}
       </AppText>
-    </View>
+    </Pressable>
   );
 }
 

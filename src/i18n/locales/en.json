@@ -5,6 +5,7 @@
   "home.streak": "{{count}} days",
   "home.recentTitle": "Recent",
   "home.emptyState": "Your entries will appear here. Take as long as you need.",
+  "home.deleteHint": "Hold an entry to delete it",
   "home.writeInstead": "Write instead",
   "recording.listening": "Listening",
   "recording.hint": "Stops on its own when you go quiet, or tap to stop",
@@ -38,5 +39,9 @@
   "saved.home": "Back home",
   "failure.title": "That did not go through",
   "failure.retry": "Try again",
-  "common.cancel": "Cancel"
+  "common.cancel": "Cancel",
+  "delete.title": "Delete this entry?",
+  "delete.body": "What you said and what Luna heard both go. This cannot be undone.",
+  "delete.confirm": "Delete",
+  "delete.cancel": "Keep"
 }

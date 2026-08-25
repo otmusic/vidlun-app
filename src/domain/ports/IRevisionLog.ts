@@ -13,4 +13,10 @@ export interface EntryRevisionRecord {
  */
 export interface IRevisionLog {
   record(revision: EntryRevisionRecord): Promise<void>;
+  /**
+   * Drops everything held about one entry. The diff is made out of what the
+   * person said, so it does not get to outlive the entry they removed —
+   * training data is not a reason to keep something they deleted.
+   */
+  forget(entryId: string): Promise<void>;
 }

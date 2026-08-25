@@ -72,6 +72,7 @@ function Luna(props: {
     confirmEntry: container.confirmEntry,
     reviseEntry: container.reviseEntry,
     writeObservation: container.writeObservation,
+    deleteEntry: container.deleteEntry,
     getHomeView: container.getHomeView,
   });
 

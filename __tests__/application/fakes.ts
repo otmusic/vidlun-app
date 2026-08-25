@@ -69,9 +69,22 @@ export class StubNarrativeGenerator implements INarrativeGenerator {
 
 export class RecordingRevisionLog implements IRevisionLog {
   readonly records: EntryRevisionRecord[] = [];
+  readonly forgotten: string[] = [];
 
   record(revision: EntryRevisionRecord): Promise<void> {
     this.records.push(revision);
+
+    return Promise.resolve();
+  }
+
+  forget(entryId: string): Promise<void> {
+    this.forgotten.push(entryId);
+
+    for (let i = this.records.length - 1; i >= 0; i -= 1) {
+      if (this.records[i]?.entryId === entryId) {
+        this.records.splice(i, 1);
+      }
+    }
 
     return Promise.resolve();
   }

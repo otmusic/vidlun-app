@@ -16,6 +16,10 @@ export class AsyncStorageMoodEntryRepository implements IMoodEntryRepository {
     await this.store.setItem(keyFor(entry.id), JSON.stringify(toStored(entry)));
   }
 
+  async delete(id: string): Promise<void> {
+    await this.store.removeItem(keyFor(id));
+  }
+
   async findById(id: string): Promise<MoodEntry | null> {
     return readEntry(await this.store.getItem(keyFor(id)));
   }

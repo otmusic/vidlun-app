@@ -14,6 +14,12 @@ export class InMemoryMoodEntryRepository implements IMoodEntryRepository {
     return Promise.resolve();
   }
 
+  delete(id: string): Promise<void> {
+    this.entriesById.delete(id);
+
+    return Promise.resolve();
+  }
+
   findById(id: string): Promise<MoodEntry | null> {
     return Promise.resolve(this.entriesById.get(id) ?? null);
   }

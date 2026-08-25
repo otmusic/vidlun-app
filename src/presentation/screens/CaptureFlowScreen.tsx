@@ -78,6 +78,7 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
           t={t}
           onRecord={flow.startRecording}
           onWrite={flow.startWriting}
+          onDelete={flow.deleteEntry}
         />
       );
   }

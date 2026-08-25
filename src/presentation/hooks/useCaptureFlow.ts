@@ -4,6 +4,7 @@ import type { ConfirmEntry } from '@/application/use-cases/ConfirmEntry';
 import type { CreateTextEntry } from '@/application/use-cases/CreateTextEntry';
 import type { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
 import type { GetHomeView, HomeView } from '@/application/use-cases/GetHomeView';
+import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
 import type { ReviseEntry } from '@/application/use-cases/ReviseEntry';
 import type { WriteObservation } from '@/application/use-cases/WriteObservation';
 import type { EntryEdits, MoodEntry } from '@/domain/entities/MoodEntry';
@@ -29,6 +30,7 @@ export interface CaptureDependencies {
   readonly confirmEntry: ConfirmEntry;
   readonly reviseEntry: ReviseEntry;
   readonly writeObservation: WriteObservation;
+  readonly deleteEntry: DeleteEntry;
   readonly getHomeView: GetHomeView;
 }
 
@@ -44,6 +46,7 @@ export interface CaptureFlow {
   readonly applyEdits: (edits: EntryEdits) => void;
   readonly confirm: () => void;
   readonly backHome: () => void;
+  readonly deleteEntry: (id: string) => void;
 }
 
 const RECENT_LIMIT = 3;
@@ -239,5 +242,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       setStage({ kind: 'idle' });
       reloadHome();
     }, [reloadHome]),
+    deleteEntry: useCallback(
+      (id: string) => {
+        // Reloading rather than dropping the row locally: the streak is
+        // counted from what is stored, and it may have just changed.
+        void dependencies.deleteEntry.execute(id).then(reloadHome).catch(fail);
+      },
+      [dependencies.deleteEntry, reloadHome, fail],
+    ),
   };
 }

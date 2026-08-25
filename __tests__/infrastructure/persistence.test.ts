@@ -203,6 +203,22 @@ describe('AsyncStorageMoodEntryRepository', () => {
     expect((await repository.findBetween(monday, friday)).map((each) => each.id)).toEqual(['monday']);
   });
 
+  it('removes an entry from disk', async () => {
+    const store = new InMemoryKeyValueStore();
+    const repository = new AsyncStorageMoodEntryRepository(store);
+    await repository.save(entry());
+
+    await repository.delete('entry-1');
+
+    expect(await repository.findById('entry-1')).toBeNull();
+  });
+
+  it('deletes an entry that was never stored without complaining', async () => {
+    const repository = new AsyncStorageMoodEntryRepository(new InMemoryKeyValueStore());
+
+    await expect(repository.delete('never-existed')).resolves.toBeUndefined();
+  });
+
   it('reads an empty store without reaching for values', async () => {
     const repository = new AsyncStorageMoodEntryRepository(new InMemoryKeyValueStore());
 
@@ -234,6 +250,28 @@ describe('AsyncStorageRevisionLog', () => {
     });
 
     expect(await store.getAllKeys()).toHaveLength(2);
+  });
+
+  it('sweeps every revision an entry left behind, not just the last', async () => {
+    const store = new InMemoryKeyValueStore();
+    const log = new AsyncStorageRevisionLog(store);
+    const revision = {
+      entryId: 'entry-1',
+      proposedMood: 4,
+      finalMood: 5,
+      proposedEmotionIds: ['happy.proud'],
+      finalEmotionIds: ['happy'],
+    };
+    await log.record({ ...revision, revisedAt: new Date('2026-08-25T10:00:00.000Z') });
+    await log.record({ ...revision, revisedAt: new Date('2026-08-25T11:00:00.000Z') });
+    await log.record({ ...revision, entryId: 'entry-2', revisedAt: new Date('2026-08-25T12:00:00.000Z') });
+
+    await log.forget('entry-1');
+
+    const left = (await store.getAllKeys()).filter((k) => k.startsWith('luna.revision.'));
+
+    expect(left).toHaveLength(1);
+    expect(left[0]).toContain('entry-2');
   });
 
   it('writes the diff a future model would need to learn from', async () => {
