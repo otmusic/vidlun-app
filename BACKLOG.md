@@ -28,6 +28,7 @@ unbuilt, and each one requires validation with real people before any code.
 | **npm advisories are held off with `overrides`, not `audit fix --force`.** | The forced fix downgrades Expo 57 to 46. `metro@0.84.5` drops `image-size` (which has no patched release at all), and `xcode` only calls `uuid.v4()`, so uuid 11 is safe. |
 | **The speech model is `large-v3-turbo-q5_0` and arrives during onboarding.** | `small` is unusable on Ukrainian and full turbo is 1.5 GB. Quantising to 547 MB cost nothing measurable. Too large to bundle, so it downloads — and onboarding is the one moment where waiting is expected rather than resented. |
 | **Transcription confidence is derived from take duration.** | whisper.rn reports none, and a constant would be a lie the domain acts on: §6 ties emotion depth to confidence. Duration is the only predictor the §10 run supported. |
+| **Recordings are kept for a year, then the audio alone is deleted.** | A transcript loses tone, and tone is what a voice journal was for. Suggested by someone who uses emotion journals seriously; the entry survives the audio so history is never thinned. |
 | **The wait is measured from stop to card, not from tap to save.** Talking is not friction; waiting is. | The old criterion counted the speaking as a cost to reduce, which is backwards for a journal. See §2a. |
 | **The observation is written by Sonnet; the rest of the entry stays on Haiku.** Sent in parallel, so the wait is the slower call and not the sum. | This departs from §2, which put the whole entry on Haiku. Measured on 2026-08-25: Haiku produced a sentence that did not parse, clinical labels §7.9 forbids, and feelings nobody had named. The observation is the only field read as prose — everything else is an id, a number, or the speaker's own words — so the risk sits in one sentence, and §7.9 calls it a design surface. |
 
@@ -356,6 +357,38 @@ first entry takes ten seconds" in both locales. That promise now contradicts
 the brief, and it is the first sentence a new user reads. Copy is §7.9's
 territory, so the wording is the owner's call.
 
+---
+
+## 2b. Keeping the audio — decided 2026-08-25, unbuilt
+
+Journal recordings are kept on the device for one year, then the audio file is
+deleted and the entry stays whole. The grounding exercise is untouched by this
+and still saves nothing.
+
+What has to exist before it works:
+
+| # | Item |
+|---|---|
+| 2b.1 | Somewhere for the audio to live that is not the cache — the recorder writes to `Library/Caches/ExpoAudio`, which iOS empties under pressure. |
+| 2b.2 | A way to reach an entry's recording. The entry itself should not gain a file path; `MoodEntry` is about what someone felt, not about disk. |
+| 2b.3 | The sweep. Anything older than a year goes, and the entry it belonged to does not notice. |
+| 2b.4 | **Entry deletion, which does not exist at all yet.** Removing an entry has to remove its recording — a voice left behind after someone deleted the entry is the sort of thing a journal never recovers from. |
+| 2b.5 | Playback, or the audio is stored for nothing. |
+| 2b.6 | The setting, in settings. Not a question at onboarding. |
+| 2b.7 | Onboarding copy: "your voice never leaves this phone" stays true, "nothing is kept" does not. |
+
+**Two open questions worth answering before building.**
+
+*Format.* Transcription needs 16 kHz mono WAV, which is about 32 KB per second
+— a 30-second entry is nearly a megabyte, and a daily habit reaches roughly
+360 MB before the one-year sweep starts reclaiming any of it. AAC at the same
+sample rate would be a fraction of that, but nothing in the project transcodes,
+and adding something that does is a dependency question. Keeping WAV is the
+simpler answer and the more expensive one.
+
+*Backups.* §9 says backups are never paywalled. Audio makes a backup two orders
+of magnitude larger than the entries, which turns a settled decision into an
+open one.
 ---
 
 ## 3. M5 — not started

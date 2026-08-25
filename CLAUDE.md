@@ -59,6 +59,19 @@ process.
 **The AI proposes, it never decides.** The reflection card is a draft. Nothing
 is written to storage until the user confirms it.
 
+**The recording is kept for a year, then only the audio is deleted.** A
+transcript loses the thing a voice journal was for: "I'm fine" said evenly and
+said barely holding together read identically on the page. Hearing yourself six
+months back is worth more than reading yourself, and it is the same argument as
+M6 — the product is for learning to recognise your own states, and tone is part
+of the evidence. After a year the audio goes and the entry stays whole: mood,
+emotions, transcript, everything the history is made of.
+
+This is the journal, and only the journal. The grounding exercise (M8) still
+saves nothing at all, and the difference has to be visible in the copy — a
+person who knows the app keeps their voice will not mumble into an exercise
+meant to calm them.
+
 Target audience speaks Ukrainian and Russian, often mixed in one sentence. The
 speech pipeline must handle that. The codebase must not.
 
@@ -255,6 +268,7 @@ Seven roots: `happy`, `surprised`, `bad`, `fearful`, `angry`, `disgusted`,
 | **Choosing a heavy emotion is not itself a crisis signal.** The flag comes from content analysis only. | People are allowed to feel bad without the product reacting. |
 | **Drafts are not persisted.** `CreateVoiceEntry` returns an entry; only `ConfirmEntry` writes it. | The card is a proposal. |
 | **Every user revision is logged** (proposed ids vs final ids). | Training data for v2 personalization; must be collected from day one. |
+| **Audio belongs to the entry and outlives neither it nor a year.** Deleting an entry deletes its recording; a recording older than a year is deleted on its own. | Keeping a voice after someone removed the entry it belonged to is the kind of thing that ends trust in a journal permanently. |
 | **`proposedEmotionIds` is set once, at creation, and never changes.** It defaults to `emotionIds`, because a fresh draft is entirely Luna's; the two diverge only when the user corrects the card. | M6 has to render an entry without revealing the analysis, and every entry needs the proposal — not just the corrected ones the revision log covers. |
 
 ---
@@ -467,7 +481,13 @@ cost to reduce.
 ### M5 — Retention and monetization
 Insights screen (free daily trend + paywalled weekly narrative), onboarding
 (privacy screen before the microphone permission request), settings with
-reminder time picker, local notifications.
+reminder time picker, local notifications, playback of a kept recording, and
+the year-old-audio sweep.
+
+Keeping recordings is a setting, not a question at onboarding. Asking someone
+where their voice goes before they have said anything into the app is the worst
+possible moment to ask, and whatever the default is will decide it for almost
+everyone regardless.
 **Done when:** the free/paid boundary matches §6 and nothing in the capture
 path got slower.
 
