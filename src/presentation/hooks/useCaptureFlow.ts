@@ -50,6 +50,34 @@ const RECENT_LIMIT = 3;
  * The capture path as one state machine. Every transition here is on the ten
  * second budget, so nothing in it asks the user a question it could answer.
  */
+/**
+ * Native modules reject with plain objects as often as with Errors, and
+ * `String({})` turns those into "[object Object]" — the one message that says
+ * nothing at all. Whatever the layer below throws, something readable has to
+ * survive it.
+ */
+function describe(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const message: unknown = (error as { message?: unknown }).message;
+
+    if (typeof message === 'string' && message.length > 0) {
+      return message;
+    }
+
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return Object.prototype.toString.call(error);
+    }
+  }
+
+  return String(error);
+}
+
 export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [stage, setStage] = useState<CaptureStage>({ kind: 'idle' });
   const [home, setHome] = useState<HomeView | null>(null);
@@ -75,7 +103,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       return;
     }
 
-    setStage({ kind: 'failed', message: error instanceof Error ? error.message : String(error) });
+    setStage({ kind: 'failed', message: describe(error) });
   }, []);
 
   const analyze = useCallback(
