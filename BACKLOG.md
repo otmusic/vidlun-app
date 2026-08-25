@@ -373,7 +373,8 @@ What has to exist before it works:
 | 2b.2 | A way to reach an entry's recording. The entry itself should not gain a file path; `MoodEntry` is about what someone felt, not about disk. |
 | 2b.3 | The sweep. Anything older than a year goes, and the entry it belonged to does not notice. |
 | 2b.4 | **Entry deletion, which does not exist at all yet.** Removing an entry has to remove its recording — a voice left behind after someone deleted the entry is the sort of thing a journal never recovers from. |
-| 2b.5 | Playback, or the audio is stored for nothing. |
+| 2b.5 | Playback, or the audio is stored for nothing. Needs 2b.8 first — there is nowhere to put a play button. |
+| 2b.8 | **An entry detail screen.** History is a list and nothing else: tapping an entry does nothing, so its emotions, tags and observation are unreachable once it scrolls off Home. That is a gap on its own, and it is also where playback has to live. |
 | 2b.6 | The setting, in settings. Not a question at onboarding. |
 | 2b.7 | Onboarding copy: "your voice never leaves this phone" stays true, "nothing is kept" does not. |
 
@@ -443,6 +444,7 @@ known risks writing a promise the STT cannot keep.
 | 4.4 | Safe area is a fixed 64pt top pad rather than a measured inset. | Visible on notched devices. |
 | 4.12 | `whisper.rn` must be imported as `whisper.rn/index`. Its exports map declares only `./*` and has no root entry, so Metro resolves the short path but TypeScript does not. | Looks like a typo and is not. Commented at the import; shortening it breaks typecheck. |
 | 4.13 | The `buffer` polyfill exists only because `whisper.rn` pulls `safe-buffer`, which the bundle cannot resolve without it. | Reached only by `transcribeData`, which nothing calls yet. Streaming transcription will. |
+| 4.14 | **History reads the whole journal in one query.** No worse than what `findRecent` already did — the stored repository always read everything — but a person with a year of daily entries is several hundred records parsed on every open. | Fine now, and the first thing to feel slow. Paging when it does, not before. |
 | 4.5 | Streak plurals are simplified (`{{count}} дн.`); Ukrainian plural rules are not implemented. | Cosmetic. |
 | 4.6 | Icons are hand-drawn from `View`s. §7.4 wants a real set that scales with Dynamic Type. | Sizing is already token-driven, so the swap is local. |
 | 4.7 | `warm` and `tension` resolve to the same value in the dark palette (inherited from §7.10). | The rule holds — honey marks achievements only — but they should be separated if a conflict shows. |
