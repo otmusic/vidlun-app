@@ -8,13 +8,20 @@ import type { IKeyValueStore } from '../persistence/IKeyValueStore';
 const KEY = 'luna.settings';
 
 export class SettingsStore implements ISettingsStore {
-  constructor(private readonly store: IKeyValueStore) {}
+  constructor(
+    private readonly store: IKeyValueStore,
+    /**
+     * Only consulted on a first run. Once someone has settings of their own,
+     * changing the phone's language must not silently change theirs back.
+     */
+    private readonly detect: () => Settings['locale'] = () => DEFAULT_SETTINGS.locale,
+  ) {}
 
   async read(): Promise<Settings> {
     const raw = await this.store.getItem(KEY);
 
     if (raw === null) {
-      return DEFAULT_SETTINGS;
+      return { ...DEFAULT_SETTINGS, locale: this.detect() };
     }
 
     try {
