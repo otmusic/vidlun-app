@@ -211,13 +211,74 @@ Re-run it whenever the prompt changes. It needs 0.2.
 
 ---
 
+## 1c. Recognition quality is the real problem — 2026-08-25
+
+Used on the phone, the transcripts are visibly wrong. "Схвильований" came back
+as "Осквильований", "нічого не встиг" as "нічойний стих". This is §1b's
+measured 0.33 word error rate showing up as an experience rather than a table.
+
+**Everything cheap was tried and nothing moved it.** The full 1.5 GB model
+makes the same mistakes as the 547 MB quantised one. An initial prompt changes
+nothing. Beam search rescued one take in four. Whisper is weak at Ukrainian and
+no setting fixes that.
+
+**Claude repairing the transcript helps a little and safely.** 0.368 to 0.334,
+no take made worse, and the mixing of Ukrainian and Russian survives — the rule
+had to be narrowed to "only replace a run of letters that is not a word in
+either language" before that was true, because the first version happily turned
+Russian words into Ukrainian ones.
+
+**One risk it introduced.** Where a mishearing is not recoverable, the entry
+still reads as fluent nonsense, and Luna answers it: "нічойний стих" produced
+an observation about insomnia. One in twelve. For a product where a single
+invented feeling costs trust in every later one, that is not a rounding error.
+
+**WER is the wrong metric here and should not be trusted alone.** It weighs
+every word the same, and this product does not: "закінчує" for "закінчив"
+costs nothing, while "халюваний" for "схвильований" destroys the entry. Read
+the transcripts as well as the number.
+
+### Parakeet, measured the same day
+
+`whisper.rn` also runs NVIDIA Parakeet TDT 0.6B v3 — same library, same API
+shape, GGUF weights from `ggml-org/parakeet-GGUF` at 356 MB (q4_0) to 638 MB
+(q8_0). Our adapter sits behind `OpenWhisperEngine`, so swapping the engine
+does not reach the domain.
+
+| | whisper turbo q5_0 | parakeet q8_0 |
+|---|---|---|
+| mean WER | 0.368 | 0.346 |
+| median WER | 0.352 | 0.277 |
+| Ukrainian mean | 0.364 | 0.390 |
+| desktop seconds per take | ~2.4 | **0.52** |
+| size | 547 MB | 638 MB (356 MB at q4_0) |
+
+**On the numbers it is a wash. On reading it is not.** Four of five transcripts
+inspected by hand came back exactly right under Parakeet where Whisper mangled
+them, including the "нічойний стих" take that made Luna invent insomnia, and a
+Russian take Whisper got wrong. The losses look like reference drift rather
+than errors — Parakeet transcribed a "Так," at the start of one entry that the
+written reference had left out, and WER charged it for that.
+
+**And it is 4.6 times faster.** If that ratio holds on the phone, transcription
+drops from 7.9 s to under two, which with the card no longer waiting for the
+observation puts stop-to-card inside M4's two to three seconds.
+
+**Next:** confirm the reading with a native speaker, then try it on the device
+with q4_0 as well. Cloud recognition stays the untried lever if on-device
+accuracy is still not good enough — §9 forbids it and §10 explicitly allows
+revisiting that, at the price of rewriting the privacy promise.
+
+---
+
 ## 2. M4 — built, not verified
 
 | # | Item | Who |
 |---|---|---|
 | 2.1 | **Measured on 2026-08-25, and the criterion was wrong.** See §2a. The wait is now defined as stop-to-card and must not grow with how long the person spoke. | Reopened as 2.4–2.6 |
-| 2.4 | **Transcribe while recording, not after.** The single change that makes the wait constant. `whisper.rn` supports it; `transcribeData` is why the `buffer` polyfill is there. | — |
-| 2.5 | **Do not hold the card for the observation.** Emotions and mood arrive from Haiku in 2.0 s, the sentence from Sonnet in 3.9 s, and the card needs neither the sentence to render nor to save. Slot it in when it lands. | — |
+| 2.4 | **Transcribe while recording, not after.** Worth less than it looked: transcription turned out to cost about the same for 21 s and 29.7 s of audio, so it is a fixed cost rather than one that grows. Whisper pads every clip to a 30-second window. Still the right shape eventually; no longer urgent if Parakeet lands. | §1c first |
+| 2.7 | **Try Parakeet on the device.** 4.6x faster on the desktop and reads better by hand. Same library, same adapter seam. | §1c |
+| 2.5 | Do not hold the card for the observation. | **Done.** On the measured take that was 2.5 s instead of 7.3 s. |
 | 2.6 | **Raise the 60-second recording ceiling.** If a typical entry is twenty seconds, a bad day runs forty or fifty, and cutting someone off mid-thought is the worst thing the app could do at that moment. | — |
 | 2.2 | Check the dark theme on a real screen. §7.10 warns the green confirmation and the teal accent sit close in tone. | Owner |
 | 2.3 | **Decide what a crisis entry shows.** The domain nulls `observation` correctly, but §6 says what appears instead is a product decision. The card currently shows nothing. | Owner |
