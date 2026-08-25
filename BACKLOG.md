@@ -1,7 +1,7 @@
 # Luna — remaining work
 
-Status as of 2026-08-25. Milestones M0 through M4 are complete and committed:
-308 tests, `npm run verify` green.
+Status as of 2026-08-25. Milestones M0 through M4 are complete and committed,
+and M5 has begun: 311 tests, `npm run verify` green.
 
 **M3 is finished.** The voice path runs end to end on a physical iPhone —
 record, transcribe on the device, analyse, reflection card.
@@ -374,7 +374,7 @@ and still saves nothing.
 | 2b.5 | Playback. | **Done.** On the detail screen. A finished track rewinds before replaying, or the second tap reads as broken. |
 | 2b.8 | An entry detail screen. | **Done.** Reached by tapping a row in history. Same chips as the reflection card, from a shared component, so an entry looks the same a month later as the day it was saved. |
 | 2b.6 | The setting. | **Done.** In settings, not at onboarding. Defaults to keeping. Switching it off deletes what is already kept, and says so first. |
-| 2b.7 | **Onboarding copy.** "Your voice never leaves this phone" stays true; "nothing is kept" does not. | **Open.** Onboarding does not exist yet — M5. |
+| 2b.7 | Onboarding copy. | **Done.** The privacy screen says recordings stay a year and the written entry stays for good. "Nothing is kept" stopped being true when we decided to keep the audio, and this is where that gets said rather than discovered. |
 
 **Kept as WAV, deliberately.** Roughly 32 KB a second, so a daily habit
 approaches 360 MB before the sweep starts reclaiming. Compressing would mean
@@ -399,35 +399,32 @@ of magnitude larger than the entries, which turns a settled decision into an
 open one.
 ---
 
-## 3. M5 — not started
+## 3. M5 — begun
 
-**Onboarding now carries the model download.** 547 MB arrives while the user is
-being told what the app does and why the microphone is needed. That is the one
-moment where waiting reads as setup rather than as the app being slow, and it
-lands before the ten-second promise is ever made.
+**Onboarding is built.** Three screens in §8's order: what this is, what
+becomes of your voice, and only then the microphone. Asking for a microphone
+before saying where the recording goes is the moment people decide an app
+cannot be trusted.
 
-Three things that decision drags in:
+Nothing in it gates anything. The model download shows its progress in
+megabytes and blocks nobody — the text path needs no model, and half a gigabyte
+over a phone connection is the wrong thing to make someone wait for before
+their first entry. The microphone answer does not gate either: declining leaves
+a working text journal, and asking twice would be worse than either outcome.
 
-- **The wait must not be a wall.** The text path needs no model at all, so
-  someone who wants to write their first entry now should be able to, with the
-  download continuing behind them. Blocking onboarding on 547 MB over a phone
-  connection would lose people at the worst possible moment.
-- **Say what is being downloaded and why.** "Luna is downloading the model that
-  understands you, so your voice never leaves this phone" is the privacy
-  promise and the progress bar in one. §10 is what made that promise true;
-  onboarding is where it gets said.
-- **A failed or abandoned download is a state, not an error.** Poor connection,
-  backgrounded app, no space. The app has to work without the model — text
-  only — and pick the download up later.
-
+**Still owed:**
 
 - Insights screen: free daily trend, paywalled weekly narrative
-- Onboarding, with the privacy screen **before** the microphone request, and
-  copy that says recordings are kept for a year (2b.7)
 - Local notifications and the reminder picker — the settings screen exists
   (§3a) and has room for the row
 - Paywall and the free/paid boundary
 - **Done when:** the boundary matches §6 and nothing in the capture path got slower
+
+**Not yet seen working:** a download from nothing. The model was pushed to the
+device by hand before onboarding existed, so the progress line has never had
+real bytes behind it, and a failed or abandoned download — poor connection,
+backgrounded app, no space — has never happened on hardware. Uninstalling and
+reinstalling is the only way to find out.
 
 **The economics moved.** An entry now costs two calls rather than one, and the
 second goes to a dearer model. The observation prompt carries no vocabulary, so
@@ -469,7 +466,7 @@ the paywall and the free/paid boundary.
 |---|---|---|
 | 4.1 | **The Claude api key ships inside the bundle.** `EXPO_PUBLIC_*` is inlined and can be extracted from the app. | Release blocker. The fix is a thin proxy; only the adapter's base URL changes. |
 | 4.2 | Metro resolves `node:*` to an empty module so the Anthropic SDK can bundle. A Node built-in reaching a live code path would become a confusing runtime error instead of a build error. | Goes away with 4.1. |
-| 4.3 | Locale is chosen in settings and remembered, so it is no longer pinned — but it is still not *detected*. A first-time Ukrainian speaker gets Ukrainian by luck of the default rather than because the phone said so, and an English speaker has to go and find the setting. Detection needs `expo-localization`. | Smaller than it was, and now a first-run problem rather than a permanent one. |
+| ~~4.3~~ | **Closed.** The locale is detected from the phone on a first run, chosen in settings, and remembered. Detection is consulted once: changing the phone's language later must not undo a choice someone made. | |
 | 4.4 | Safe area is a fixed 64pt top pad rather than a measured inset. | Visible on notched devices. |
 | 4.12 | `whisper.rn` must be imported as `whisper.rn/index`. Its exports map declares only `./*` and has no root entry, so Metro resolves the short path but TypeScript does not. | Looks like a typo and is not. Commented at the import; shortening it breaks typecheck. |
 | 4.13 | The `buffer` polyfill exists only because `whisper.rn` pulls `safe-buffer`, which the bundle cannot resolve without it. | Reached only by `transcribeData`, which nothing calls yet. Streaming transcription will. |
