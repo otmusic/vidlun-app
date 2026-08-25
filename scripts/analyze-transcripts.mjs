@@ -21,6 +21,8 @@ const BUILD = join(dirname(fileURLToPath(import.meta.url)), '..', '.analysis-bui
 
 const { CreateTextEntry } = require(`${BUILD}/application/use-cases/CreateTextEntry.js`);
 const { ClaudeReflectionAnalyzer } = require(`${BUILD}/infrastructure/analysis/ClaudeReflectionAnalyzer.js`);
+const { ClaudeObservationWriter } = require(`${BUILD}/infrastructure/analysis/ClaudeObservationWriter.js`);
+const { WriteObservation } = require(`${BUILD}/application/use-cases/WriteObservation.js`);
 const { createEmotionVocabulary } = require(`${BUILD}/infrastructure/analysis/emotionVocabularyData.js`);
 
 const LANGUAGES = new Set(['uk', 'ua', 'ru', 'mix']);
@@ -38,6 +40,9 @@ async function main() {
   const anthropic = new Anthropic({ apiKey });
   const analyzer = new ClaudeReflectionAnalyzer(anthropic.messages, vocabulary, options.model);
   const useCase = new CreateTextEntry(analyzer, vocabulary, new WallClock(), new CountingIds());
+  // The observation lives behind its own port now; without this the harness
+  // reports every entry as silent and measures nothing.
+  const writeObservation = new WriteObservation(new ClaudeObservationWriter(anthropic.messages));
 
   const results = [];
 
@@ -48,7 +53,7 @@ async function main() {
     let entry;
 
     try {
-      entry = await useCase.execute(take.text);
+      entry = await writeObservation.execute(await useCase.execute(take.text));
     } catch (failure) {
       console.log(`  FAILED: ${failure.message}`);
       continue;
