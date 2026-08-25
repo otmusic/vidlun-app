@@ -5,6 +5,7 @@ import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import type { CaptureFlow } from '../hooks/useCaptureFlow';
 import { EditScreen } from './EditScreen';
+import { EntryDetailScreen } from './EntryDetailScreen';
 import { HistoryScreen } from './HistoryScreen';
 import { HomeScreen } from './HomeScreen';
 import { ProcessingScreen } from './ProcessingScreen';
@@ -77,8 +78,22 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
           days={flow.history}
           locale={props.locale}
           t={t}
+          onOpen={flow.openEntry}
           onDelete={flow.deleteEntry}
           onBack={flow.backHome}
+        />
+      );
+
+    case 'detail':
+      return (
+        <EntryDetailScreen
+          entry={flow.stage.entry}
+          recordingUri={flow.stage.recordingUri}
+          vocabulary={props.vocabulary}
+          locale={props.locale}
+          t={t}
+          onDelete={flow.deleteEntry}
+          onBack={flow.openHistory}
         />
       );
 

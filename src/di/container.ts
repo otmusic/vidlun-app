@@ -12,6 +12,7 @@ import { CreateVoiceEntry } from '../application/use-cases/CreateVoiceEntry';
 import { GetHomeView } from '../application/use-cases/GetHomeView';
 import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
+import { FindRecording } from '../application/use-cases/FindRecording';
 import { ForgetOldRecordings } from '../application/use-cases/ForgetOldRecordings';
 import { GetHistory } from '../application/use-cases/GetHistory';
 import { ReviseEntry } from '../application/use-cases/ReviseEntry';
@@ -48,6 +49,7 @@ export interface Container {
   readonly deleteEntry: DeleteEntry;
   readonly getHistory: GetHistory;
   readonly forgetOldRecordings: ForgetOldRecordings;
+  readonly findRecording: FindRecording;
   readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
@@ -123,6 +125,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     deleteEntry: new DeleteEntry(repository, revisionLog, recordings),
     getHistory: new GetHistory(repository),
     forgetOldRecordings: new ForgetOldRecordings(recordings, clock),
+    findRecording: new FindRecording(recordings),
     writeObservation: new WriteObservation(observationWriter),
     getHomeView: new GetHomeView(repository, clock),
     getWeekSummary: new GetWeekSummary(

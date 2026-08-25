@@ -5,6 +5,7 @@ import type { CreateTextEntry } from '@/application/use-cases/CreateTextEntry';
 import type { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
 import type { GetHomeView, HomeView } from '@/application/use-cases/GetHomeView';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
+import type { FindRecording } from '@/application/use-cases/FindRecording';
 import type { ForgetOldRecordings } from '@/application/use-cases/ForgetOldRecordings';
 import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory';
 import type { ReviseEntry } from '@/application/use-cases/ReviseEntry';
@@ -23,6 +24,12 @@ export type CaptureStage =
   | { readonly kind: 'editing'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
   | { readonly kind: 'saved'; readonly streakDays: number }
   | { readonly kind: 'history' }
+  | {
+      readonly kind: 'detail';
+      readonly entry: MoodEntry;
+      /** Null while it is being looked up, and if there is none. */
+      readonly recordingUri: string | null;
+    }
   | { readonly kind: 'failed'; readonly message: string };
 
 export interface CaptureDependencies {
@@ -36,6 +43,7 @@ export interface CaptureDependencies {
   readonly deleteEntry: DeleteEntry;
   readonly getHistory: GetHistory;
   readonly forgetOldRecordings: ForgetOldRecordings;
+  readonly findRecording: FindRecording;
   readonly getHomeView: GetHomeView;
 }
 
@@ -54,6 +62,7 @@ export interface CaptureFlow {
   readonly deleteEntry: (id: string) => void;
   readonly history: readonly HistoryDay[] | null;
   readonly openHistory: () => void;
+  readonly openEntry: (entry: MoodEntry) => void;
 }
 
 const RECENT_LIMIT = 3;
@@ -267,6 +276,25 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       reloadHome();
     }, [reloadHome]),
     history,
+    openEntry: useCallback(
+      (entry: MoodEntry) => {
+        setStage({ kind: 'detail', entry, recordingUri: null });
+
+        void dependencies.findRecording
+          .execute(entry.id)
+          .then((uri) => {
+            // Only if the same entry is still open: the lookup is quick, but
+            // quick is not instant and people tap on.
+            setStage((current) =>
+              current.kind === 'detail' && current.entry.id === entry.id
+                ? { ...current, recordingUri: uri }
+                : current,
+            );
+          })
+          .catch(() => undefined);
+      },
+      [dependencies.findRecording],
+    ),
     openHistory: useCallback(() => {
       setStage({ kind: 'history' });
       void dependencies.getHistory.execute().then(setHistory).catch(fail);

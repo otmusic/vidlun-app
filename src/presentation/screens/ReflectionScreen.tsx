@@ -2,13 +2,12 @@ import { ScrollView, View } from 'react-native';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
-import { emotionKey, type Translate } from '@/i18n';
+import type { Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
-import { Chip } from '../components/Chip';
-import { toneOf } from '../components/emotionTone';
+import { EntryChips } from '../components/EntryChips';
 import { useTheme } from '../theme/ThemeProvider';
 
 export interface ReflectionScreenProps {
@@ -44,28 +43,7 @@ export function ReflectionScreen(props: ReflectionScreenProps): React.JSX.Elemen
           {props.t('reflection.heard')}
         </AppText>
 
-        {props.draft.hasEmotions ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-            {props.draft.emotionIds.map((id) => {
-              const emotion = props.vocabulary.find(id);
-
-              return (
-                <Chip
-                  key={id}
-                  label={props.t(emotionKey(id))}
-                  tone={emotion === undefined ? 'neutral' : toneOf(emotion)}
-                />
-              );
-            })}
-            {props.draft.contextTags.map((tag) => (
-              <Chip key={tag} label={tag} tone="neutral" />
-            ))}
-          </View>
-        ) : (
-          <AppText variant="secondary" color="inkFaint">
-            {props.t('reflection.noEmotions')}
-          </AppText>
-        )}
+        <EntryChips entry={props.draft} vocabulary={props.vocabulary} t={props.t} />
 
         {/* A crisis entry carries no observation at all — the domain nulls it,
             and what the app shows instead is still an open product decision. */}

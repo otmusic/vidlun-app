@@ -49,5 +49,9 @@
   "history.empty": "Your entries will appear here.",
   "history.back": "Back",
   "history.today": "Today",
-  "history.yesterday": "Yesterday"
+  "history.yesterday": "Yesterday",
+  "detail.play": "Listen",
+  "detail.pause": "Pause",
+  "detail.delete": "Delete entry",
+  "detail.back": "Back"
 }

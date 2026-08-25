@@ -17,6 +17,7 @@ export function HistoryScreen(props: {
   readonly days: readonly HistoryDay[] | null;
   readonly locale: Locale;
   readonly t: Translate;
+  readonly onOpen: (entry: MoodEntry) => void;
   readonly onDelete: (id: string) => void;
   readonly onBack: () => void;
 }): React.JSX.Element {
@@ -42,7 +43,13 @@ export function HistoryScreen(props: {
                 {dayLabel(day.day, props.locale, props.t)}
               </AppText>
               {day.entries.map((entry) => (
-                <HistoryRow key={entry.id} entry={entry} t={props.t} onDelete={props.onDelete} />
+                <HistoryRow
+                  key={entry.id}
+                  entry={entry}
+                  t={props.t}
+                  onOpen={props.onOpen}
+                  onDelete={props.onDelete}
+                />
               ))}
             </View>
           ))}
@@ -57,10 +64,11 @@ export function HistoryScreen(props: {
 function HistoryRow(props: {
   readonly entry: MoodEntry;
   readonly t: Translate;
+  readonly onOpen: (entry: MoodEntry) => void;
   readonly onDelete: (id: string) => void;
 }): React.JSX.Element {
   const theme = useTheme();
-  const { entry, t, onDelete } = props;
+  const { entry, t, onOpen, onDelete } = props;
 
   const confirm = (): void => {
     Alert.alert(t('delete.title'), t('delete.body'), [
@@ -71,8 +79,8 @@ function HistoryRow(props: {
 
   return (
     <Pressable
+      onPress={() => onOpen(entry)}
       onLongPress={confirm}
-      accessibilityLabel={t('delete.title')}
       style={{
         flexDirection: 'row',
         alignItems: 'center',

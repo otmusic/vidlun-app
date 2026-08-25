@@ -49,5 +49,9 @@
   "history.empty": "Тут з'являтимуться твої записи.",
   "history.back": "Назад",
   "history.today": "Сьогодні",
-  "history.yesterday": "Учора"
+  "history.yesterday": "Учора",
+  "detail.play": "Послухати",
+  "detail.pause": "Пауза",
+  "detail.delete": "Видалити запис",
+  "detail.back": "Назад"
 }
