@@ -1,12 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
 import { useAudioRecorder } from 'expo-audio';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService';
 import { createContainer, type Container } from '@/di/container';
 import { createTranslator, type Locale } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
+import { DEFAULT_SETTINGS, type Settings } from '@/domain/ports/ISettings';
 import { SPEECH_MODEL, SpeechModelStore } from '@/infrastructure/transcription/SpeechModelStore';
 import { OnDeviceTranscriptionService } from '@/infrastructure/transcription/OnDeviceTranscriptionService';
 import { openParakeetEngine } from '@/infrastructure/transcription/parakeetEngine';
@@ -28,7 +29,8 @@ interface Wiring {
  * also keeps `src/presentation` free of any import from `src/infrastructure`.
  */
 export default function App() {
-  const locale = useDeviceLocale();
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const locale = settings.locale;
   const transcription = useTranscription(locale);
   const nativeRecorder = useAudioRecorder(SPEECH_RECORDING_OPTIONS);
 
@@ -45,7 +47,13 @@ export default function App() {
       {wiring.container === undefined ? (
         <SetupNeeded detail={wiring.failure ?? ''} />
       ) : (
-        <Luna container={wiring.container} nativeRecorder={nativeRecorder} locale={locale} />
+        <Luna
+          container={wiring.container}
+          nativeRecorder={nativeRecorder}
+          locale={locale}
+          settings={settings}
+          onSettingsChange={setSettings}
+        />
       )}
       <StatusBar style="auto" />
     </ThemeProvider>
@@ -56,9 +64,33 @@ function Luna(props: {
   readonly container: Container;
   readonly nativeRecorder: Parameters<Container['createAudioRecorder']>[0];
   readonly locale: Locale;
+  readonly settings: Settings;
+  readonly onSettingsChange: (settings: Settings) => void;
 }): React.JSX.Element {
   const { container, locale } = props;
   const t = useMemo(() => createTranslator(locale), [locale]);
+  const { onSettingsChange } = props;
+
+  useEffect(() => {
+    void container.settings.read().then(onSettingsChange);
+  }, [container.settings, onSettingsChange]);
+
+  const changeSettings = useCallback(
+    (next: Settings) => {
+      onSettingsChange(next);
+      void container.settings.write(next);
+
+      /*
+       * Switching this off is a request to be rid of the voice, not only to
+       * stop adding to it. The screen said so before asking; this is where it
+       * happens.
+       */
+      if (!next.keepRecordings) {
+        void container.forgetAllRecordings();
+      }
+    },
+    [container, onSettingsChange],
+  );
   const recorder = useMemo(
     () => container.createAudioRecorder(props.nativeRecorder),
     [container, props.nativeRecorder],
@@ -76,11 +108,19 @@ function Luna(props: {
     getHistory: container.getHistory,
     forgetOldRecordings: container.forgetOldRecordings,
     findRecording: container.findRecording,
+    keepRecordings: props.settings.keepRecordings,
     getHomeView: container.getHomeView,
   });
 
   return (
-    <CaptureFlowScreen flow={flow} vocabulary={container.vocabulary} locale={locale} t={t} />
+    <CaptureFlowScreen
+      flow={flow}
+      vocabulary={container.vocabulary}
+      locale={locale}
+      t={t}
+      settings={props.settings}
+      onSettingsChange={changeSettings}
+    />
   );
 }
 
@@ -116,17 +156,6 @@ function useTranscription(locale: Locale): ITranscriptionService {
   }, [locale]);
 
   return spoken ?? typed;
-}
-
-/**
- * Pinned rather than detected. Reading the device language needs
- * expo-localization, and the iOS-only native alternative is exactly the kind of
- * fork §2 forbids. The audience speaks Ukrainian, so that is the honest default
- * until a settings picker lands; `en` stays the source locale everything falls
- * back to.
- */
-function useDeviceLocale(): Locale {
-  return 'uk';
 }
 
 /** Shown when the api key is missing, which is a developer state, not a user one. */

@@ -24,6 +24,7 @@ export type CaptureStage =
   | { readonly kind: 'editing'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
   | { readonly kind: 'saved'; readonly streakDays: number }
   | { readonly kind: 'history' }
+  | { readonly kind: 'settings' }
   | {
       readonly kind: 'detail';
       readonly entry: MoodEntry;
@@ -44,6 +45,8 @@ export interface CaptureDependencies {
   readonly getHistory: GetHistory;
   readonly forgetOldRecordings: ForgetOldRecordings;
   readonly findRecording: FindRecording;
+  /** False stops a confirmed take from being kept at all. */
+  readonly keepRecordings: boolean;
   readonly getHomeView: GetHomeView;
 }
 
@@ -63,6 +66,7 @@ export interface CaptureFlow {
   readonly history: readonly HistoryDay[] | null;
   readonly openHistory: () => void;
   readonly openEntry: (entry: MoodEntry) => void;
+  readonly openSettings: () => void;
 }
 
 const RECENT_LIMIT = 3;
@@ -212,7 +216,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     setStage({ kind: 'processing' });
 
     dependencies.confirmEntry
-      .execute({ proposed, confirmed: draft, recordingUri: takeUri.current ?? undefined })
+      .execute({
+        proposed,
+        confirmed: draft,
+        recordingUri: dependencies.keepRecordings ? (takeUri.current ?? undefined) : undefined,
+      })
       .then(async () => {
         dependencies.haptics.success();
 
@@ -295,6 +303,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       },
       [dependencies.findRecording],
     ),
+    openSettings: useCallback(() => {
+      setStage({ kind: 'settings' });
+    }, []),
     openHistory: useCallback(() => {
       setStage({ kind: 'history' });
       void dependencies.getHistory.execute().then(setHistory).catch(fail);

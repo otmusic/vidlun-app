@@ -19,6 +19,7 @@ export interface HomeScreenProps {
   readonly locale: Locale;
   readonly onDelete: (id: string) => void;
   readonly onOpenHistory: () => void;
+  readonly onOpenSettings: () => void;
   readonly t: Translate;
   readonly onRecord: () => void;
   readonly onWrite: () => void;
@@ -35,7 +36,14 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         <AppText variant="secondary" color="inkSoft">
           {formatToday(props.locale)}
         </AppText>
-        {streak > 0 ? <Chip label={props.t('home.streak', { count: streak })} tone="warm" /> : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+          {streak > 0 ? <Chip label={props.t('home.streak', { count: streak })} tone="warm" /> : null}
+          <TapTarget onPress={props.onOpenSettings} accessibilityLabel={props.t('home.openSettings')}>
+            <AppText variant="caption" color="inkFaint">
+              {props.t('home.openSettings')}
+            </AppText>
+          </TapTarget>
+        </View>
       </View>
 
       <AppText variant="display" style={{ marginTop: theme.spacing.md }}>

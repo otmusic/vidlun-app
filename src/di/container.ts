@@ -31,6 +31,7 @@ import { ExpoMicrophonePermission } from '../infrastructure/audio/ExpoMicrophone
 import { AsyncStorageMoodEntryRepository } from '../infrastructure/persistence/AsyncStorageMoodEntryRepository';
 import { AsyncStorageRevisionLog } from '../infrastructure/persistence/AsyncStorageRevisionLog';
 import { FileRecordingStore } from '../infrastructure/persistence/FileRecordingStore';
+import { SettingsStore } from '../infrastructure/settings/SettingsStore';
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { SystemClock } from '../infrastructure/system/SystemClock';
@@ -50,6 +51,8 @@ export interface Container {
   readonly getHistory: GetHistory;
   readonly forgetOldRecordings: ForgetOldRecordings;
   readonly findRecording: FindRecording;
+  readonly settings: SettingsStore;
+  readonly forgetAllRecordings: () => Promise<void>;
   readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
@@ -126,6 +129,10 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     getHistory: new GetHistory(repository),
     forgetOldRecordings: new ForgetOldRecordings(recordings, clock),
     findRecording: new FindRecording(recordings),
+    settings: new SettingsStore(AsyncStorage),
+    // Everything up to now, which is everything: turning the setting off is a
+    // request to be rid of the voice, not only to stop adding to it.
+    forgetAllRecordings: () => recordings.discardBefore(clock.now()),
     writeObservation: new WriteObservation(observationWriter),
     getHomeView: new GetHomeView(repository, clock),
     getWeekSummary: new GetWeekSummary(

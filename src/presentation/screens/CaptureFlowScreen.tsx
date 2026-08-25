@@ -1,4 +1,5 @@
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
+import type { Settings } from '@/domain/ports/ISettings';
 import type { Locale, Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
@@ -7,6 +8,7 @@ import type { CaptureFlow } from '../hooks/useCaptureFlow';
 import { EditScreen } from './EditScreen';
 import { EntryDetailScreen } from './EntryDetailScreen';
 import { HistoryScreen } from './HistoryScreen';
+import { SettingsScreen } from './SettingsScreen';
 import { HomeScreen } from './HomeScreen';
 import { ProcessingScreen } from './ProcessingScreen';
 import { RecordingScreen } from './RecordingScreen';
@@ -18,6 +20,8 @@ import { TextEntryScreen } from './TextEntryScreen';
 export interface CaptureFlowScreenProps {
   readonly flow: CaptureFlow;
   readonly vocabulary: EmotionVocabulary;
+  readonly settings: Settings;
+  readonly onSettingsChange: (settings: Settings) => void;
   readonly locale: Locale;
   readonly t: Translate;
 }
@@ -72,6 +76,16 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
         </Screen>
       );
 
+    case 'settings':
+      return (
+        <SettingsScreen
+          settings={props.settings}
+          t={t}
+          onChange={props.onSettingsChange}
+          onBack={flow.backHome}
+        />
+      );
+
     case 'history':
       return (
         <HistoryScreen
@@ -107,6 +121,7 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
           onWrite={flow.startWriting}
           onDelete={flow.deleteEntry}
           onOpenHistory={flow.openHistory}
+          onOpenSettings={flow.openSettings}
         />
       );
   }

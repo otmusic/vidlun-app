@@ -53,5 +53,17 @@
   "detail.play": "Listen",
   "detail.pause": "Pause",
   "detail.delete": "Delete entry",
-  "detail.back": "Back"
+  "detail.back": "Back",
+  "home.openSettings": "Settings",
+  "settings.title": "Settings",
+  "settings.keepRecordings": "Keep your voice",
+  "settings.keepRecordingsHint": "Recordings stay on this phone for a year, then go. The written entry stays for good.",
+  "settings.language": "Language",
+  "settings.back": "Back",
+  "settings.forgetTitle": "Delete the recordings you have?",
+  "settings.forgetBody": "Every kept recording goes. The entries themselves stay.",
+  "settings.forgetConfirm": "Delete",
+  "settings.forgetCancel": "Cancel",
+  "language.uk": "Українська",
+  "language.en": "English"
 }
