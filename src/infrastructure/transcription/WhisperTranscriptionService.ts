@@ -17,6 +17,13 @@ export interface WhisperEngine {
   };
 }
 
+/**
+ * Opened on the first take rather than at startup: loading the model costs
+ * half a gigabyte of memory and seconds of work, and someone who only ever
+ * types should never pay for it.
+ */
+export type OpenWhisperEngine = () => Promise<WhisperEngine>;
+
 /** The language the user speaks, for takes too short to detect one from. */
 export type PreferredLanguage = () => string;
 
@@ -44,14 +51,21 @@ export const DEFAULT_SPEECH_THRESHOLDS: SpeechThresholds = {
 const NOISE_MARKER = /[[(][^\])]*[\])]/g;
 
 export class WhisperTranscriptionService implements ITranscriptionService {
+  private engine: Promise<WhisperEngine> | null = null;
+
   constructor(
-    private readonly engine: WhisperEngine,
+    private readonly open: OpenWhisperEngine,
     private readonly preferredLanguage: PreferredLanguage,
     private readonly thresholds: SpeechThresholds = DEFAULT_SPEECH_THRESHOLDS,
   ) {}
 
   async transcribe(recording: AudioRecording): Promise<TranscriptionResult> {
-    const { promise } = this.engine.transcribe(recording.uri, {
+    // Held, not re-opened: the model stays loaded between takes, which is what
+    // keeps the second entry of a session fast.
+    this.engine ??= this.open();
+
+    const engine = await this.engine;
+    const { promise } = engine.transcribe(recording.uri, {
       language: this.languageFor(recording.durationMs),
     });
 

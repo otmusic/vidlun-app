@@ -1,10 +1,15 @@
 import { StatusBar } from 'expo-status-bar';
 import { useAudioRecorder } from 'expo-audio';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService';
 import { createContainer, type Container } from '@/di/container';
 import { createTranslator, type Locale } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
+import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
+import { SpeechModelStore } from '@/infrastructure/transcription/SpeechModelStore';
+import { WhisperTranscriptionService } from '@/infrastructure/transcription/WhisperTranscriptionService';
+import { openWhisperEngine } from '@/infrastructure/transcription/whisperEngine';
 import { AppText } from '@/presentation/components/AppText';
 import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
 import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
@@ -22,7 +27,8 @@ interface Wiring {
  * also keeps `src/presentation` free of any import from `src/infrastructure`.
  */
 export default function App() {
-  const transcription = useMemo(() => new ManualTranscriptionService(), []);
+  const locale = useDeviceLocale();
+  const transcription = useTranscription(locale);
   const nativeRecorder = useAudioRecorder(SPEECH_RECORDING_OPTIONS);
 
   const wiring = useMemo<Wiring>(() => {
@@ -38,7 +44,7 @@ export default function App() {
       {wiring.container === undefined ? (
         <SetupNeeded detail={wiring.failure ?? ''} />
       ) : (
-        <Luna container={wiring.container} nativeRecorder={nativeRecorder} />
+        <Luna container={wiring.container} nativeRecorder={nativeRecorder} locale={locale} />
       )}
       <StatusBar style="auto" />
     </ThemeProvider>
@@ -48,9 +54,9 @@ export default function App() {
 function Luna(props: {
   readonly container: Container;
   readonly nativeRecorder: Parameters<Container['createAudioRecorder']>[0];
+  readonly locale: Locale;
 }): React.JSX.Element {
-  const { container } = props;
-  const locale = useDeviceLocale();
+  const { container, locale } = props;
   const t = useMemo(() => createTranslator(locale), [locale]);
   const recorder = useMemo(
     () => container.createAudioRecorder(props.nativeRecorder),
@@ -70,6 +76,35 @@ function Luna(props: {
   return (
     <CaptureFlowScreen flow={flow} vocabulary={container.vocabulary} locale={locale} t={t} />
   );
+}
+
+/**
+ * Voice needs the model on disk; text never does. Until it arrives the app is
+ * a working text journal rather than a broken voice one, which is the whole
+ * reason half a gigabyte is not allowed to block anything.
+ */
+function useTranscription(locale: Locale): ITranscriptionService {
+  const typed = useMemo(() => new ManualTranscriptionService(), []);
+  const [spoken, setSpoken] = useState<ITranscriptionService | null>(null);
+
+  useEffect(() => {
+    let abandoned = false;
+    const store = new SpeechModelStore(new ExpoModelStorage());
+
+    void store.state().then((state) => {
+      if (abandoned || state.kind !== 'ready') {
+        return;
+      }
+
+      setSpoken(new WhisperTranscriptionService(openWhisperEngine(state.uri), () => locale));
+    });
+
+    return () => {
+      abandoned = true;
+    };
+  }, [locale]);
+
+  return spoken ?? typed;
 }
 
 /**

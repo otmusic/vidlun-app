@@ -24,7 +24,7 @@ function take(durationMs: number): AudioRecording {
 function setup(language = 'uk') {
   const engine = new FakeEngine();
 
-  return { engine, subject: new WhisperTranscriptionService(engine, () => language) };
+  return { engine, subject: new WhisperTranscriptionService(() => Promise.resolve(engine), () => language) };
 }
 
 describe('choosing a language for the model', () => {
@@ -47,7 +47,7 @@ describe('choosing a language for the model', () => {
   it('follows the user rather than a value fixed at construction', async () => {
     const engine = new FakeEngine();
     let language = 'uk';
-    const subject = new WhisperTranscriptionService(engine, () => language);
+    const subject = new WhisperTranscriptionService(() => Promise.resolve(engine), () => language);
 
     await subject.transcribe(take(1_000));
     language = 'ru';
