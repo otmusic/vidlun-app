@@ -73,6 +73,7 @@ function Luna(props: {
     reviseEntry: container.reviseEntry,
     writeObservation: container.writeObservation,
     deleteEntry: container.deleteEntry,
+    getHistory: container.getHistory,
     getHomeView: container.getHomeView,
   });
 

@@ -6,6 +6,7 @@
   "home.recentTitle": "Recent",
   "home.emptyState": "Your entries will appear here. Take as long as you need.",
   "home.deleteHint": "Hold an entry to delete it",
+  "home.openHistory": "All entries",
   "home.writeInstead": "Write instead",
   "recording.listening": "Listening",
   "recording.hint": "Stops on its own when you go quiet, or tap to stop",
@@ -43,5 +44,10 @@
   "delete.title": "Delete this entry?",
   "delete.body": "What you said and what Luna heard both go. This cannot be undone.",
   "delete.confirm": "Delete",
-  "delete.cancel": "Keep"
+  "delete.cancel": "Keep",
+  "history.title": "History",
+  "history.empty": "Your entries will appear here.",
+  "history.back": "Back",
+  "history.today": "Today",
+  "history.yesterday": "Yesterday"
 }

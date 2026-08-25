@@ -34,6 +34,10 @@ export class AsyncStorageMoodEntryRepository implements IMoodEntryRepository {
     return (await this.readAll()).slice(0, limit);
   }
 
+  findAll(): Promise<readonly MoodEntry[]> {
+    return this.readAll();
+  }
+
   /** Newest first. */
   private async readAll(): Promise<readonly MoodEntry[]> {
     const keys = (await this.store.getAllKeys()).filter((key) => key.startsWith(ENTRY_KEY_PREFIX));

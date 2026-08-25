@@ -12,6 +12,7 @@ import { CreateVoiceEntry } from '../application/use-cases/CreateVoiceEntry';
 import { GetHomeView } from '../application/use-cases/GetHomeView';
 import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
+import { GetHistory } from '../application/use-cases/GetHistory';
 import { ReviseEntry } from '../application/use-cases/ReviseEntry';
 import { WriteObservation } from '../application/use-cases/WriteObservation';
 import type { EmotionVocabulary } from '../domain/entities/EmotionVocabulary';
@@ -43,6 +44,7 @@ export interface Container {
   readonly confirmEntry: ConfirmEntry;
   readonly reviseEntry: ReviseEntry;
   readonly deleteEntry: DeleteEntry;
+  readonly getHistory: GetHistory;
   readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
@@ -115,6 +117,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     confirmEntry: new ConfirmEntry(repository, revisionLog, clock),
     reviseEntry: new ReviseEntry(vocabulary),
     deleteEntry: new DeleteEntry(repository, revisionLog),
+    getHistory: new GetHistory(repository),
     writeObservation: new WriteObservation(observationWriter),
     getHomeView: new GetHomeView(repository, clock),
     getWeekSummary: new GetWeekSummary(

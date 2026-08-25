@@ -5,6 +5,7 @@ import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import type { CaptureFlow } from '../hooks/useCaptureFlow';
 import { EditScreen } from './EditScreen';
+import { HistoryScreen } from './HistoryScreen';
 import { HomeScreen } from './HomeScreen';
 import { ProcessingScreen } from './ProcessingScreen';
 import { RecordingScreen } from './RecordingScreen';
@@ -70,6 +71,17 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
         </Screen>
       );
 
+    case 'history':
+      return (
+        <HistoryScreen
+          days={flow.history}
+          locale={props.locale}
+          t={t}
+          onDelete={flow.deleteEntry}
+          onBack={flow.backHome}
+        />
+      );
+
     case 'idle':
       return (
         <HomeScreen
@@ -79,6 +91,7 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
           onRecord={flow.startRecording}
           onWrite={flow.startWriting}
           onDelete={flow.deleteEntry}
+          onOpenHistory={flow.openHistory}
         />
       );
   }

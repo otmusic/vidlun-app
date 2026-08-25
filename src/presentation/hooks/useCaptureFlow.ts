@@ -5,6 +5,7 @@ import type { CreateTextEntry } from '@/application/use-cases/CreateTextEntry';
 import type { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
 import type { GetHomeView, HomeView } from '@/application/use-cases/GetHomeView';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
+import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory';
 import type { ReviseEntry } from '@/application/use-cases/ReviseEntry';
 import type { WriteObservation } from '@/application/use-cases/WriteObservation';
 import type { EntryEdits, MoodEntry } from '@/domain/entities/MoodEntry';
@@ -20,6 +21,7 @@ export type CaptureStage =
   | { readonly kind: 'reflecting'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
   | { readonly kind: 'editing'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
   | { readonly kind: 'saved'; readonly streakDays: number }
+  | { readonly kind: 'history' }
   | { readonly kind: 'failed'; readonly message: string };
 
 export interface CaptureDependencies {
@@ -31,6 +33,7 @@ export interface CaptureDependencies {
   readonly reviseEntry: ReviseEntry;
   readonly writeObservation: WriteObservation;
   readonly deleteEntry: DeleteEntry;
+  readonly getHistory: GetHistory;
   readonly getHomeView: GetHomeView;
 }
 
@@ -47,6 +50,8 @@ export interface CaptureFlow {
   readonly confirm: () => void;
   readonly backHome: () => void;
   readonly deleteEntry: (id: string) => void;
+  readonly history: readonly HistoryDay[] | null;
+  readonly openHistory: () => void;
 }
 
 const RECENT_LIMIT = 3;
@@ -104,6 +109,7 @@ function addObservation(current: CaptureStage, spoken: MoodEntry): CaptureStage 
 export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [stage, setStage] = useState<CaptureStage>({ kind: 'idle' });
   const [home, setHome] = useState<HomeView | null>(null);
+  const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
 
   const { getHomeView } = dependencies;
 
@@ -242,13 +248,25 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       setStage({ kind: 'idle' });
       reloadHome();
     }, [reloadHome]),
+    history,
+    openHistory: useCallback(() => {
+      setStage({ kind: 'history' });
+      void dependencies.getHistory.execute().then(setHistory).catch(fail);
+    }, [dependencies.getHistory, fail]),
     deleteEntry: useCallback(
       (id: string) => {
         // Reloading rather than dropping the row locally: the streak is
-        // counted from what is stored, and it may have just changed.
-        void dependencies.deleteEntry.execute(id).then(reloadHome).catch(fail);
+        // counted from what is stored, and it may have just changed. History
+        // is refreshed too, since the row may have been deleted from there.
+        void dependencies.deleteEntry
+          .execute(id)
+          .then(async () => {
+            reloadHome();
+            setHistory(await dependencies.getHistory.execute());
+          })
+          .catch(fail);
       },
-      [dependencies.deleteEntry, reloadHome, fail],
+      [dependencies.deleteEntry, dependencies.getHistory, reloadHome, fail],
     ),
   };
 }

@@ -6,6 +6,8 @@ export interface IMoodEntryRepository {
   /** `from` inclusive, `to` exclusive. Newest first. */
   findBetween(from: Date, to: Date): Promise<readonly MoodEntry[]>;
   findRecent(limit: number): Promise<readonly MoodEntry[]>;
+  /** Every entry, newest first. The whole journal is what history shows. */
+  findAll(): Promise<readonly MoodEntry[]>;
   /** Silent when there is no such entry: deleting twice is not an error. */
   delete(id: string): Promise<void>;
 }

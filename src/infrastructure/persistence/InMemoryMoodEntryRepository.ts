@@ -20,6 +20,10 @@ export class InMemoryMoodEntryRepository implements IMoodEntryRepository {
     return Promise.resolve();
   }
 
+  findAll(): Promise<readonly MoodEntry[]> {
+    return Promise.resolve(this.newestFirst());
+  }
+
   findById(id: string): Promise<MoodEntry | null> {
     return Promise.resolve(this.entriesById.get(id) ?? null);
   }

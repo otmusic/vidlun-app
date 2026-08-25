@@ -1,3 +1,4 @@
+import type { Palette } from '../theme/tokens';
 import type { Emotion } from '@/domain/entities/Emotion';
 
 import type { ChipTone } from './Chip';
@@ -32,4 +33,17 @@ export function toneOf(emotion: Emotion): ChipTone {
   }
 
   return group === 'tense' ? 'tension' : 'low';
+}
+
+/**
+ * §7.1 maps the scale, and the accent never appears in it: value 1 is the warm
+ * terracotta, 2 and 3 the tension amber, 4 and up the calm green. A person
+ * logging a hard day must not meet the colour of a fire alarm.
+ */
+export function moodTone(mood: number): keyof Palette {
+  if (mood <= 1) {
+    return 'low';
+  }
+
+  return mood <= 3 ? 'tension' : 'calm';
 }

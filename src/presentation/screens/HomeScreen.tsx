@@ -5,18 +5,20 @@ import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { Locale, Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
+import { moodTone } from '../components/emotionTone';
 import { TapTarget } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { Orb } from '../components/Orb';
 import { KeyboardShape } from '../components/Shapes';
 import { useTheme } from '../theme/ThemeProvider';
-import { LIST_ROW_HEIGHT, type Palette } from '../theme/tokens';
+import { LIST_ROW_HEIGHT } from '../theme/tokens';
 import { Screen } from './Screen';
 
 export interface HomeScreenProps {
   readonly home: HomeView | null;
   readonly locale: Locale;
   readonly onDelete: (id: string) => void;
+  readonly onOpenHistory: () => void;
   readonly t: Translate;
   readonly onRecord: () => void;
   readonly onWrite: () => void;
@@ -52,9 +54,18 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
       </View>
 
       <View style={{ borderTopWidth: 1, borderTopColor: theme.palette.line, paddingTop: theme.spacing.sm }}>
-        <AppText variant="caption" color="inkFaint">
-          {props.t('home.recentTitle')}
-        </AppText>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <AppText variant="caption" color="inkFaint">
+            {props.t('home.recentTitle')}
+          </AppText>
+          {recent.length > 0 ? (
+            <TapTarget onPress={props.onOpenHistory} accessibilityLabel={props.t('home.openHistory')}>
+              <AppText variant="caption" color="accent">
+                {props.t('home.openHistory')}
+              </AppText>
+            </TapTarget>
+          ) : null}
+        </View>
         {recent.length === 0 ? (
           <AppText variant="secondary" color="inkFaint" style={{ marginTop: theme.spacing.sm }}>
             {props.t('home.emptyState')}
@@ -128,14 +139,6 @@ function RecentRow(props: {
       </AppText>
     </Pressable>
   );
-}
-
-function moodTone(mood: number): keyof Palette {
-  if (mood <= 1) {
-    return 'low';
-  }
-
-  return mood <= 3 ? 'tension' : 'calm';
 }
 
 function formatToday(locale: Locale): string {
