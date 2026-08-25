@@ -34,7 +34,9 @@ export function draftFromProposal(input: DraftInput): MoodEntry {
       limit: MoodEntry.MAX_EMOTIONS,
     }),
     contextTags: input.proposal.contextTags,
-    observation: input.proposal.observation,
+    // Written by a different model and arriving after the card is already on
+    // screen, so a fresh draft never carries one.
+    observation: null,
     confidence: input.confidence,
     safetyFlag: input.proposal.safetyFlag,
   });

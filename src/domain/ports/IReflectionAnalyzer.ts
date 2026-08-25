@@ -9,11 +9,13 @@ export interface ReflectionProposal {
   readonly mood: number;
   readonly emotionIds: readonly string[];
   readonly contextTags: readonly string[];
-  readonly observation: string | null;
   readonly safetyFlag: SafetyFlag;
 }
 
-/** Per-entry analysis. Separate from narrative: different model, different cadence. */
+/**
+ * Per-entry analysis. Separate from narrative and from the observation:
+ * different models, different cadences, different reasons to change.
+ */
 export interface IReflectionAnalyzer {
   analyze(transcript: string): Promise<ReflectionProposal>;
 }

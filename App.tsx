@@ -70,6 +70,7 @@ function Luna(props: {
     createTextEntry: container.createTextEntry,
     confirmEntry: container.confirmEntry,
     reviseEntry: container.reviseEntry,
+    writeObservation: container.writeObservation,
     getHomeView: container.getHomeView,
   });
 

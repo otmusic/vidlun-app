@@ -5,6 +5,7 @@ import type { CreateTextEntry } from '@/application/use-cases/CreateTextEntry';
 import type { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
 import type { GetHomeView, HomeView } from '@/application/use-cases/GetHomeView';
 import type { ReviseEntry } from '@/application/use-cases/ReviseEntry';
+import type { WriteObservation } from '@/application/use-cases/WriteObservation';
 import type { EntryEdits, MoodEntry } from '@/domain/entities/MoodEntry';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
@@ -27,6 +28,7 @@ export interface CaptureDependencies {
   readonly createTextEntry: CreateTextEntry;
   readonly confirmEntry: ConfirmEntry;
   readonly reviseEntry: ReviseEntry;
+  readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
 }
 
@@ -78,6 +80,24 @@ function describe(error: unknown): string {
   return String(error);
 }
 
+/**
+ * Only touches the draft that was waiting for it. By the time the sentence
+ * lands the user may have edited the entry, confirmed it, or started another —
+ * in every one of those cases the observation is stale and dropping it is
+ * correct.
+ */
+function addObservation(current: CaptureStage, spoken: MoodEntry): CaptureStage {
+  if (current.kind !== 'reflecting' || current.draft.id !== spoken.id) {
+    return current;
+  }
+
+  if (current.draft.wasRevisedByUser) {
+    return current;
+  }
+
+  return { kind: 'reflecting', proposed: spoken, draft: spoken };
+}
+
 export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [stage, setStage] = useState<CaptureStage>({ kind: 'idle' });
   const [home, setHome] = useState<HomeView | null>(null);
@@ -113,10 +133,26 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       build()
         .then((draft) => {
           setStage({ kind: 'reflecting', proposed: draft, draft });
+
+          /*
+           * The card is already on screen. Luna's sentence comes from a slower
+           * model and the entry needs it neither to render nor to save, so it
+           * is written in afterwards rather than waited for — the difference
+           * between two seconds of waiting and four.
+           */
+          void dependencies.writeObservation
+            .execute(draft)
+            .then((spoken) => {
+              setStage((current) => addObservation(current, spoken));
+            })
+            .catch(() => {
+              // The entry is complete without it. Failing here must not take
+              // down a card the user is already reading.
+            });
         })
         .catch(fail);
     },
-    [fail],
+    [dependencies.writeObservation, fail],
   );
 
   const startRecording = useCallback(() => {

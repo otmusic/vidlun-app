@@ -14,7 +14,6 @@ const PROPOSAL = {
   mood: 4,
   emotionIds: ['happy.proud.successful', 'bad.tired.drained'],
   contextTags: ['work'],
-  observation: 'Sounds like the good kind of tired.',
   safetyFlag: 'none',
 };
 
@@ -38,48 +37,6 @@ describe('ClaudeReflectionAnalyzer', () => {
     expect(request?.output_config?.format?.type).toBe('json_schema');
     // Haiku rejects the effort parameter outright.
     expect(request?.output_config?.effort).toBeUndefined();
-  });
-
-  it('asks the better model for the one sentence a person actually reads', async () => {
-    const client = new FakeMessagesClient(textReply(JSON.stringify(PROPOSAL)))
-      .answering('claude-sonnet-5', textReply(JSON.stringify({ observation: 'Quietly done.' })));
-
-    const proposal = await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words');
-
-    expect(proposal.observation).toBe('Quietly done.');
-    expect(proposal.mood).toBe(PROPOSAL.mood);
-    expect(proposal.emotionIds).toEqual(PROPOSAL.emotionIds);
-  });
-
-  it('sends both calls rather than waiting for one to answer the other', async () => {
-    const client = new FakeMessagesClient(textReply(JSON.stringify(PROPOSAL)))
-      .answering('claude-sonnet-5', textReply(JSON.stringify({ observation: null })));
-
-    await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words');
-
-    expect(client.requests).toHaveLength(2);
-    expect(client.requestTo('claude-haiku-4-5')).toBeDefined();
-    expect(client.requestTo('claude-sonnet-5')).toBeDefined();
-  });
-
-  it('keeps the vocabulary out of the observation call, which names nothing from it', async () => {
-    const client = new FakeMessagesClient(textReply(JSON.stringify(PROPOSAL)))
-      .answering('claude-sonnet-5', textReply(JSON.stringify({ observation: null })));
-
-    await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words');
-
-    const observationPrompt = JSON.stringify(client.requestTo('claude-sonnet-5')?.system);
-
-    expect(observationPrompt).not.toContain('happy.proud.successful');
-  });
-
-  it('carries a silent observation through as no observation', async () => {
-    const client = new FakeMessagesClient(textReply(JSON.stringify(PROPOSAL)))
-      .answering('claude-sonnet-5', textReply(JSON.stringify({ observation: null })));
-
-    const proposal = await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words');
-
-    expect(proposal.observation).toBeNull();
   });
 
   it('offers the model no sensitive emotion to choose from', async () => {
@@ -141,16 +98,6 @@ describe('ClaudeReflectionAnalyzer', () => {
     expect(proposal.safetyFlag).toBe('none');
   });
 
-  it('accepts a draft with nothing to observe', async () => {
-    const client = new FakeMessagesClient(
-      textReply(JSON.stringify({ ...PROPOSAL, observation: null, emotionIds: [] })),
-    );
-
-    const proposal = await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('Cooked dinner.');
-
-    expect(proposal.observation).toBeNull();
-    expect(proposal.emotionIds).toEqual([]);
-  });
 });
 
 describe('ClaudeNarrativeGenerator', () => {

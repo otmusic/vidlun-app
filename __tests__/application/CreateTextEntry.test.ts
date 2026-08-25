@@ -56,7 +56,7 @@ describe('CreateTextEntry', () => {
 
   it('applies the same rules a spoken entry gets', async () => {
     const { subject } = useCase(
-      proposal({ mood: 9, emotionIds: ['fearful.weak.worthless', 'not_real'], safetyFlag: 'crisis', observation: 'Nice!' }),
+      proposal({ mood: 9, emotionIds: ['fearful.weak.worthless', 'not_real'], safetyFlag: 'crisis' }),
     );
 
     const entry = await subject.execute('Something heavy.');

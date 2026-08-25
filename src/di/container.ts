@@ -12,12 +12,14 @@ import { CreateVoiceEntry } from '../application/use-cases/CreateVoiceEntry';
 import { GetHomeView } from '../application/use-cases/GetHomeView';
 import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
 import { ReviseEntry } from '../application/use-cases/ReviseEntry';
+import { WriteObservation } from '../application/use-cases/WriteObservation';
 import type { EmotionVocabulary } from '../domain/entities/EmotionVocabulary';
 import type { IAudioRecorder } from '../domain/ports/IAudioRecorder';
 import type { IHaptics } from '../domain/ports/IHaptics';
 import type { IMicrophonePermission } from '../domain/ports/IMicrophonePermission';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
 import { ClaudeNarrativeGenerator } from '../infrastructure/analysis/ClaudeNarrativeGenerator';
+import { ClaudeObservationWriter } from '../infrastructure/analysis/ClaudeObservationWriter';
 import { ClaudeReflectionAnalyzer } from '../infrastructure/analysis/ClaudeReflectionAnalyzer';
 import { createEmotionVocabulary } from '../infrastructure/analysis/emotionVocabularyData';
 import { ExpoAudioRecorder, type NativeRecorder } from '../infrastructure/audio/ExpoAudioRecorder';
@@ -39,6 +41,7 @@ export interface Container {
   readonly createTextEntry: CreateTextEntry;
   readonly confirmEntry: ConfirmEntry;
   readonly reviseEntry: ReviseEntry;
+  readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
   readonly microphonePermission: IMicrophonePermission;
@@ -89,6 +92,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
    */
   const messages = __DEV__ ? new TimedMessagesClient(anthropic.messages) : anthropic.messages;
   const analyzer = new ClaudeReflectionAnalyzer(messages, vocabulary);
+  const observationWriter = new ClaudeObservationWriter(messages);
   const transcription = __DEV__
     ? new TimedTranscriptionService(dependencies.transcription)
     : dependencies.transcription;
@@ -108,6 +112,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     createTextEntry: new CreateTextEntry(analyzer, vocabulary, clock, idGenerator),
     confirmEntry: new ConfirmEntry(repository, revisionLog, clock),
     reviseEntry: new ReviseEntry(vocabulary),
+    writeObservation: new WriteObservation(observationWriter),
     getHomeView: new GetHomeView(repository, clock),
     getWeekSummary: new GetWeekSummary(
       repository,

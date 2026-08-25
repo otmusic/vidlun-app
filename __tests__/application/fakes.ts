@@ -83,7 +83,6 @@ export function proposal(overrides: Partial<ReflectionProposal> = {}): Reflectio
     mood: 4,
     emotionIds: [],
     contextTags: [],
-    observation: null,
     safetyFlag: 'none',
     ...overrides,
   };

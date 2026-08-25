@@ -117,15 +117,13 @@ describe('CreateVoiceEntry', () => {
     expect((await run()).emotionIds).toEqual(['happy', 'sad', 'bad', 'angry']);
   });
 
-  it('drops the observation when the entry reads as a crisis', async () => {
-    const { run } = capture(
-      CLEARLY_HEARD,
-      proposal({ safetyFlag: 'crisis', observation: 'What a productive day!' }),
-    );
+  it('hands back a draft with nothing said yet, whatever the entry is', async () => {
+    const { run } = capture(CLEARLY_HEARD, proposal({ safetyFlag: 'crisis' }));
 
     const entry = await run();
 
     expect(entry.safetyFlag).toBe('crisis');
+    // Luna's sentence is written by WriteObservation once the card is showing.
     expect(entry.observation).toBeNull();
   });
 
