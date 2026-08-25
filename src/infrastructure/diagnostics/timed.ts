@@ -12,9 +12,14 @@ import type { MessagesClient } from '../analysis/claudeModels';
 export type ReportTiming = (stage: string, ms: number) => void;
 
 export const logTiming: ReportTiming = (stage, ms) => {
-  // warn rather than log because that is what the lint rule allows, and these
-  // lines only exist in development anyway.
-  console.warn(`[luna] ${stage} ${Math.round(ms)}ms`);
+  /*
+   * log, not warn. React Native routes warnings into LogBox, which swallows
+   * them once its overlay appears — the timings simply stopped reaching Metro
+   * halfway through a measuring session. The lint rule prefers warn; a timing
+   * line is not a warning, and being readable is the whole point of it.
+   */
+  // eslint-disable-next-line no-console
+  console.log(`[luna] ${stage} ${Math.round(ms)}ms`);
 };
 
 async function timed<T>(
