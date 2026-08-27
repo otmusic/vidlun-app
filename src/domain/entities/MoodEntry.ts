@@ -18,6 +18,12 @@ export interface MoodEntryProps {
   readonly cleanTranscript: string;
   readonly mood: MoodScore;
   readonly emotionIds?: readonly string[];
+  /**
+   * What the person named before seeing any answer. Empty is a real value:
+   * naming nothing is an answer, and it must not be confused with never having
+   * been asked.
+   */
+  readonly selfEmotionIds?: readonly string[];
   /** Defaults to `emotionIds`, which is what a fresh draft's proposal is. */
   readonly proposedEmotionIds?: readonly string[];
   readonly contextTags?: readonly string[];
@@ -49,6 +55,7 @@ export class MoodEntry {
     readonly cleanTranscript: string,
     readonly mood: MoodScore,
     readonly emotionIds: readonly string[],
+    readonly selfEmotionIds: readonly string[],
     readonly proposedEmotionIds: readonly string[],
     readonly contextTags: readonly string[],
     readonly observation: string | null,
@@ -72,6 +79,14 @@ export class MoodEntry {
     // is the same list; the two only diverge once the user corrects the card.
     const proposedEmotionIds = withinLimit(unique(props.proposedEmotionIds ?? emotionIds));
 
+    /*
+     * The only unaided measurement the entry carries. It defaults to empty
+     * rather than to either of the others: an entry made with the question
+     * switched off has no unaided answer at all, and filling it in from what
+     * was kept would count Vidlun's vocabulary as the person's.
+     */
+    const selfEmotionIds = withinLimit(unique(props.selfEmotionIds ?? []));
+
     const contextTags = unique((props.contextTags ?? []).map((tag) => tag.trim()).filter((tag) => tag.length > 0));
     const safetyFlag = props.safetyFlag ?? 'none';
 
@@ -87,6 +102,7 @@ export class MoodEntry {
       props.cleanTranscript,
       props.mood,
       Object.freeze(emotionIds),
+      Object.freeze(selfEmotionIds),
       Object.freeze(proposedEmotionIds),
       Object.freeze(contextTags),
       observation,
@@ -142,6 +158,7 @@ export class MoodEntry {
       cleanTranscript: this.cleanTranscript,
       mood: this.mood,
       emotionIds: this.emotionIds,
+      selfEmotionIds: this.selfEmotionIds,
       proposedEmotionIds: this.proposedEmotionIds,
       contextTags: this.contextTags,
       observation: this.observation,

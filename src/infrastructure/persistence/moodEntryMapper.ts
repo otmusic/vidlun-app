@@ -17,6 +17,7 @@ export interface StoredMoodEntry {
   readonly cleanTranscript: string;
   readonly mood: number;
   readonly emotionIds: readonly string[];
+  readonly selfEmotionIds: readonly string[];
   readonly proposedEmotionIds: readonly string[];
   readonly contextTags: readonly string[];
   readonly observation: string | null;
@@ -37,6 +38,7 @@ export function toStored(entry: MoodEntry): StoredMoodEntry {
     cleanTranscript: entry.cleanTranscript,
     mood: entry.mood.value,
     emotionIds: [...entry.emotionIds],
+    selfEmotionIds: [...entry.selfEmotionIds],
     proposedEmotionIds: [...entry.proposedEmotionIds],
     contextTags: [...entry.contextTags],
     observation: entry.observation,
@@ -67,6 +69,11 @@ export function fromStored(raw: unknown): MoodEntry {
     cleanTranscript: readString(record, 'cleanTranscript'),
     mood: MoodScore.of(readNumber(record, 'mood')),
     emotionIds: readStringArray(record, 'emotionIds'),
+    // Absent on every entry made before the card started asking. Empty is the
+    // honest reading of that: those people were never asked, so they never
+    // gave an unaided answer, and inventing one would corrupt the only
+    // measurement of their own vocabulary we have.
+    selfEmotionIds: readOptionalStringArray(record, 'selfEmotionIds') ?? [],
     // Written since the proposal was split from the user's own labels. Older
     // records fall back to the entry's emotions, which is exact for an entry
     // nobody corrected; for a corrected one the revision log holds the truth.

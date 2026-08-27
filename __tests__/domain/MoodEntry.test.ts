@@ -253,3 +253,40 @@ describe('the AI proposal, kept apart from the user\'s own labels', () => {
     ]);
   });
 });
+
+describe('the unaided answer', () => {
+  it('is empty on an entry nobody was asked about', () => {
+    const unasked = entry({ emotionIds: ['happy.proud'] });
+
+    expect(unasked.selfEmotionIds).toEqual([]);
+  });
+
+  it('is not filled in from what was kept, which would count Vidlun as the person', () => {
+    const kept = entry({
+      emotionIds: ['happy.proud', 'bad.tired'],
+      proposedEmotionIds: ['happy.proud', 'bad.tired'],
+    });
+
+    expect(kept.selfEmotionIds).toEqual([]);
+  });
+
+  it('keeps an empty answer apart from a missing one only by being asked', () => {
+    const named = entry({ selfEmotionIds: ['bad.tired'] });
+
+    expect(named.selfEmotionIds).toEqual(['bad.tired']);
+  });
+
+  it('survives a revision, because it is what the person said before any of it', () => {
+    const named = entry({ selfEmotionIds: ['bad.tired'] });
+
+    const revised = named.withEmotionIds(['happy.proud']);
+
+    expect(revised.selfEmotionIds).toEqual(['bad.tired']);
+    expect(revised.emotionIds).toEqual(['happy.proud']);
+  });
+
+  it('holds no more than the card can show', () => {
+    expect(() => entry({ selfEmotionIds: ['a', 'b', 'c', 'd', 'e'] })).toThrow(TooManyEmotionsError);
+  });
+});
+
