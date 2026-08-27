@@ -1,7 +1,7 @@
 import { Alert, Switch, View } from 'react-native';
 
-import { LOCALES, type Translate } from '@/i18n';
-import type { Settings } from '@/domain/ports/ISettings';
+import { LOCALES, type Translate, type TranslationKey } from '@/i18n';
+import type { Settings, ThemeChoice } from '@/domain/ports/ISettings';
 
 import { AppText } from '../components/AppText';
 import { BackButton } from '../components/BackButton';
@@ -9,6 +9,14 @@ import { TapTarget } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { useTheme } from '../theme/ThemeProvider';
 import { Screen } from './Screen';
+
+const THEME_CHOICES: readonly ThemeChoice[] = ['system', 'light', 'dark'];
+
+const THEME_LABELS: Record<ThemeChoice, TranslationKey> = {
+  system: 'settings.themeSystem',
+  light: 'settings.themeLight',
+  dark: 'settings.themeDark',
+};
 
 export function SettingsScreen(props: {
   readonly settings: Settings;
@@ -88,6 +96,27 @@ export function SettingsScreen(props: {
             </TapTarget>
           ))}
         </View>
+      </View>
+
+      <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.lg }}>
+        <AppText variant="label">{t('settings.theme')}</AppText>
+        <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+          {THEME_CHOICES.map((choice) => (
+            <TapTarget
+              key={choice}
+              onPress={() => props.onChange({ ...settings, theme: choice })}
+              accessibilityLabel={t(THEME_LABELS[choice])}
+            >
+              <Chip
+                label={t(THEME_LABELS[choice])}
+                tone={settings.theme === choice ? 'calm' : 'neutral'}
+              />
+            </TapTarget>
+          ))}
+        </View>
+        <AppText variant="secondary" color="inkFaint">
+          {t('settings.themeHint')}
+        </AppText>
       </View>
 
       <View style={{ flex: 1 }} />

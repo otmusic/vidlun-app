@@ -49,7 +49,7 @@ export default function App() {
   return (
     /* Gesture handler needs a root of its own, or a swipe never reaches a row. */
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
+      <ThemeProvider choice={settings.theme}>
       {wiring.container === undefined ? (
         <SetupNeeded detail={wiring.failure ?? ''} />
       ) : (
