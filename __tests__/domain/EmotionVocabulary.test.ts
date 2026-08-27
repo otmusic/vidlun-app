@@ -7,18 +7,18 @@ import { DuplicateEmotionIdError, MissingParentEmotionError } from '@/domain/err
  * which is the only shape that exercises the guard after depth lifting.
  */
 const DEFINITIONS: readonly EmotionDefinition[] = [
-  { id: 'happy', valence: 5, energy: 'high', tier: 'core' },
-  { id: 'sad', valence: 1, energy: 'low', tier: 'core' },
-  { id: 'bad', valence: 2, energy: 'low', tier: 'core' },
-  { id: 'happy.proud', valence: 5, energy: 'high', tier: 'core' },
-  { id: 'happy.proud.confident', valence: 5, energy: 'high', tier: 'extended' },
-  { id: 'happy.proud.successful', valence: 5, energy: 'high', tier: 'extended' },
-  { id: 'sad.lonely', valence: 1, energy: 'low', tier: 'core' },
-  { id: 'sad.lonely.abandoned', valence: 1, energy: 'low', tier: 'sensitive' },
-  { id: 'sad.depressed', valence: 1, energy: 'low', tier: 'sensitive' },
-  { id: 'sad.depressed.restless', valence: 2, energy: 'high', tier: 'extended' },
-  { id: 'bad.tired', valence: 2, energy: 'low', tier: 'core' },
-  { id: 'bad.tired.drained', valence: 1, energy: 'low', tier: 'extended' },
+  { id: 'happy', valence: 5, energy: 4, tier: 'core' },
+  { id: 'sad', valence: 1, energy: 2, tier: 'core' },
+  { id: 'bad', valence: 2, energy: 2, tier: 'core' },
+  { id: 'happy.proud', valence: 5, energy: 4, tier: 'core' },
+  { id: 'happy.proud.confident', valence: 5, energy: 4, tier: 'extended' },
+  { id: 'happy.proud.successful', valence: 5, energy: 4, tier: 'extended' },
+  { id: 'sad.lonely', valence: 1, energy: 2, tier: 'core' },
+  { id: 'sad.lonely.abandoned', valence: 1, energy: 2, tier: 'sensitive' },
+  { id: 'sad.depressed', valence: 1, energy: 2, tier: 'sensitive' },
+  { id: 'sad.depressed.restless', valence: 2, energy: 4, tier: 'extended' },
+  { id: 'bad.tired', valence: 2, energy: 2, tier: 'core' },
+  { id: 'bad.tired.drained', valence: 1, energy: 2, tier: 'extended' },
 ];
 
 const vocabulary = EmotionVocabulary.create(DEFINITIONS);
@@ -27,15 +27,15 @@ describe('EmotionVocabulary construction', () => {
   it('refuses a vocabulary that defines the same id twice', () => {
     expect(() =>
       EmotionVocabulary.create([
-        { id: 'happy', valence: 5, energy: 'high', tier: 'core' },
-        { id: 'happy', valence: 4, energy: 'low', tier: 'core' },
+        { id: 'happy', valence: 5, energy: 4, tier: 'core' },
+        { id: 'happy', valence: 4, energy: 2, tier: 'core' },
       ]),
     ).toThrow(DuplicateEmotionIdError);
   });
 
   it('refuses a child whose branch is missing', () => {
     expect(() =>
-      EmotionVocabulary.create([{ id: 'sad.lonely', valence: 1, energy: 'low', tier: 'core' }]),
+      EmotionVocabulary.create([{ id: 'sad.lonely', valence: 1, energy: 2, tier: 'core' }]),
     ).toThrow(MissingParentEmotionError);
   });
 

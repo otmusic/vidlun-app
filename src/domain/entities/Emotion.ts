@@ -1,7 +1,17 @@
-import { InvalidEmotionIdError, InvalidEmotionValenceError } from '../errors/EmotionErrors';
+import {
+  InvalidEmotionEnergyError,
+  InvalidEmotionIdError,
+  InvalidEmotionValenceError,
+} from '../errors/EmotionErrors';
 import { isEmotionDepth, MAX_EMOTION_DEPTH, type EmotionDepth } from '../value-objects/EmotionDepth';
 
-export type EmotionEnergy = 'high' | 'low';
+/**
+ * 1 (still) to 5 (activated) — what the state does to the body, on the same
+ * scale as valence. It used to be a pair of words, which was enough to sort
+ * the drill-down into four shelves and nothing more; a number lets colour be
+ * derived from the two axes rather than assigned by hand to 125 words.
+ */
+export type EmotionEnergy = number;
 
 /**
  * `core` and `extended` are freely proposable. `sensitive` covers states like
@@ -20,8 +30,12 @@ export interface EmotionDefinition {
 
 const ID_SEGMENT = /^[a-z][a-z0-9_]*$/;
 const ID_SEPARATOR = '.';
-const VALENCE_MIN = 1;
-const VALENCE_MAX = 5;
+const SCALE_MIN = 1;
+const SCALE_MAX = 5;
+
+function withinScale(value: number): boolean {
+  return Number.isInteger(value) && value >= SCALE_MIN && value <= SCALE_MAX;
+}
 
 export class Emotion {
   private constructor(
@@ -36,8 +50,12 @@ export class Emotion {
   static create(definition: EmotionDefinition): Emotion {
     const segments = parseSegments(definition.id);
 
-    if (!Number.isInteger(definition.valence) || definition.valence < VALENCE_MIN || definition.valence > VALENCE_MAX) {
+    if (!withinScale(definition.valence)) {
       throw new InvalidEmotionValenceError(definition.id, definition.valence);
+    }
+
+    if (!withinScale(definition.energy)) {
+      throw new InvalidEmotionEnergyError(definition.id, definition.energy);
     }
 
     const depth = segments.length;

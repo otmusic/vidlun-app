@@ -1,7 +1,6 @@
 import type { Palette } from '../theme/tokens';
 import type { Emotion } from '@/domain/entities/Emotion';
 
-import type { ChipTone } from './Chip';
 
 /**
  * The drill-down groups people actually recognise, read off valence and energy
@@ -17,22 +16,17 @@ export const EMOTION_GROUPS: readonly EmotionGroup[] = [
   'heavy',
 ];
 
+/** The midpoint of the 1-5 scale: 3 is neither still nor activated. */
+const ENERGY_MIDPOINT = 3;
+
 export function groupOf(emotion: Emotion): EmotionGroup {
+  const activated = emotion.energy > ENERGY_MIDPOINT;
+
   if (emotion.valence >= 4) {
-    return emotion.energy === 'low' ? 'pleasantCalm' : 'pleasantEnergetic';
+    return activated ? 'pleasantEnergetic' : 'pleasantCalm';
   }
 
-  return emotion.energy === 'high' ? 'tense' : 'heavy';
-}
-
-export function toneOf(emotion: Emotion): ChipTone {
-  const group = groupOf(emotion);
-
-  if (group === 'pleasantCalm' || group === 'pleasantEnergetic') {
-    return 'calm';
-  }
-
-  return group === 'tense' ? 'tension' : 'low';
+  return activated ? 'tense' : 'heavy';
 }
 
 /**

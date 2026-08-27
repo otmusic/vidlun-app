@@ -1,26 +1,20 @@
 import { Emotion } from '@/domain/entities/Emotion';
-import { EMOTION_GROUPS, groupOf, toneOf } from '@/presentation/components/emotionTone';
+import { EMOTION_GROUPS, groupOf } from '@/presentation/components/emotionTone';
 import { createEmotionVocabulary } from '@/infrastructure/analysis/emotionVocabularyData';
 
-function emotion(valence: number, energy: 'high' | 'low') {
+function emotion(valence: number, energy: number) {
   return Emotion.create({ id: 'happy', valence, energy, tier: 'core' });
 }
 
 describe('emotion grouping', () => {
   it('separates pleasant states by what they do to the body', () => {
-    expect(groupOf(emotion(5, 'low'))).toBe('pleasantCalm');
-    expect(groupOf(emotion(5, 'high'))).toBe('pleasantEnergetic');
+    expect(groupOf(emotion(5, 2))).toBe('pleasantCalm');
+    expect(groupOf(emotion(5, 4))).toBe('pleasantEnergetic');
   });
 
   it('separates a hard state that keys you up from one that flattens you', () => {
-    expect(groupOf(emotion(2, 'high'))).toBe('tense');
-    expect(groupOf(emotion(2, 'low'))).toBe('heavy');
-  });
-
-  it('never paints a difficult state as an error', () => {
-    expect(toneOf(emotion(1, 'low'))).toBe('low');
-    expect(toneOf(emotion(2, 'high'))).toBe('tension');
-    expect(toneOf(emotion(5, 'low'))).toBe('calm');
+    expect(groupOf(emotion(2, 4))).toBe('tense');
+    expect(groupOf(emotion(2, 2))).toBe('heavy');
   });
 
   it('places every shipped emotion in exactly one group', () => {

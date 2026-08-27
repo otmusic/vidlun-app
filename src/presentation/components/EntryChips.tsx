@@ -6,7 +6,7 @@ import { emotionKey, type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
 import { Chip } from './Chip';
-import { toneOf } from './emotionTone';
+import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
 
 /**
@@ -38,7 +38,11 @@ export function EntryChips(props: {
           <Chip
             key={id}
             label={props.t(emotionKey(id))}
-            tone={emotion === undefined ? 'neutral' : toneOf(emotion)}
+            color={
+              emotion === undefined
+                ? undefined
+                : colorForEmotion(props.vocabulary, emotion, theme.isDark ? 'dark' : 'light')
+            }
           />
         );
       })}

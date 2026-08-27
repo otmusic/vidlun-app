@@ -5,7 +5,7 @@ function make(id: string, overrides: { valence?: number; tier?: 'core' | 'extend
   return Emotion.create({
     id,
     valence: overrides.valence ?? 3,
-    energy: 'low',
+    energy: 2,
     tier: overrides.tier ?? 'core',
   });
 }

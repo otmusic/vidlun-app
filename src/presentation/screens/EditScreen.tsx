@@ -11,7 +11,8 @@ import { emotionKey, type Translate, type TranslationKey } from '@/i18n';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
-import { EMOTION_GROUPS, groupOf, toneOf, type EmotionGroup } from '../components/emotionTone';
+import { EMOTION_GROUPS, groupOf, type EmotionGroup } from '../components/emotionTone';
+import { colorForEmotion } from '../theme/emotionColor';
 import { MoodScale } from '../components/MoodScale';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -108,7 +109,11 @@ export function EditScreen(props: EditScreenProps): React.JSX.Element {
               <Chip
                 key={id}
                 label={props.t(emotionKey(id))}
-                tone={emotion === undefined ? 'neutral' : toneOf(emotion)}
+                color={
+                  emotion === undefined
+                    ? undefined
+                    : colorForEmotion(props.vocabulary, emotion, theme.isDark ? 'dark' : 'light')
+                }
                 action="remove"
                 onPress={() => {
                   toggle(id);
@@ -198,8 +203,7 @@ function EmotionGroupSection(props: {
           <Chip
             key={emotion.id}
             label={props.t(emotionKey(emotion.id))}
-            tone={toneOf(emotion)}
-            outlined={!props.selected.includes(emotion.id)}
+            color={colorForEmotion(props.vocabulary, emotion, theme.isDark ? 'dark' : 'light')}
             selected={props.selected.includes(emotion.id)}
             action="add"
             onPress={() => {

@@ -12,6 +12,12 @@ export class InvalidEmotionValenceError extends DomainError {
   }
 }
 
+export class InvalidEmotionEnergyError extends DomainError {
+  constructor(id: string, energy: number) {
+    super(`Emotion "${id}" has energy ${energy}; expected a whole number from 1 to 5.`);
+  }
+}
+
 export class DuplicateEmotionIdError extends DomainError {
   constructor(id: string) {
     super(`Emotion "${id}" is defined more than once in the vocabulary.`);

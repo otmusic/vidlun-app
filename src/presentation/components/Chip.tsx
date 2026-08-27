@@ -13,9 +13,14 @@ export type ChipTone = 'calm' | 'tension' | 'low' | 'neutral' | 'warm';
 
 export interface ChipProps {
   readonly label: string;
+  /**
+   * The emotion's own colour, derived from its two axes. Given one, the chip
+   * ignores `tone` entirely: tone puts a word on one of four shelves, and four
+   * shelves were never meant to be a palette.
+   */
+  readonly color?: string;
   readonly tone?: ChipTone;
   readonly selected?: boolean;
-  readonly outlined?: boolean;
   readonly action?: 'remove' | 'add';
   readonly onPress?: () => void;
   readonly accessibilityLabel?: string;
@@ -33,7 +38,23 @@ const TONE_COLORS: Record<ChipTone, { soft: keyof Palette; ink: keyof Palette; s
 export function Chip(props: ChipProps): React.JSX.Element {
   const theme = useTheme();
   const tone = TONE_COLORS[props.tone ?? 'neutral'];
-  const filled = props.outlined !== true;
+
+  /*
+   * A chip is a ring of its own colour around its own word, not a filled
+   * lozenge. Four of these side by side used to be four blocks of colour on a
+   * screen about feelings; outlined, the words carry the row and the colour
+   * only names them. `filled` is what a selected chip becomes, so that picking
+   * one is visible without a tick.
+   */
+  const filled = props.selected === true && props.action === 'add';
+  const line = props.color ?? theme.palette[tone.solid];
+  const text = props.color ?? theme.palette[tone.ink];
+  /*
+   * A selected chip fills with its own colour at a whisper rather than with a
+   * shelf colour, so the fill agrees with the ring around it. Eight-digit hex
+   * is the only way to say "this colour, faintly" without a second token.
+   */
+  const fill = props.color === undefined ? theme.palette[tone.soft] : `${props.color}22`;
 
   const body = (
     <View
@@ -42,20 +63,17 @@ export function Chip(props: ChipProps): React.JSX.Element {
         alignItems: 'center',
         gap: theme.spacing.xs,
         borderRadius: theme.radii.pill,
-        paddingHorizontal: 13,
+        paddingHorizontal: 15,
         paddingVertical: theme.spacing.sm,
-        backgroundColor: filled ? theme.palette[tone.soft] : 'transparent',
-        borderWidth: props.selected === true ? 1.5 : filled ? 0 : 1,
-        borderColor: theme.palette[tone.solid],
+        backgroundColor: filled ? fill : 'transparent',
+        borderWidth: 1.5,
+        borderColor: line,
       }}
     >
-      <AppText variant="label" color={tone.ink}>
+      <AppText variant="secondary" style={{ color: text }}>
         {props.label}
       </AppText>
       {props.action === 'remove' ? <Icon name="x" size={12} color={tone.ink} /> : null}
-      {props.action === 'add' && props.selected === true ? (
-        <Icon name="check" size={12} color={tone.ink} />
-      ) : null}
     </View>
   );
 
