@@ -6,7 +6,7 @@ export interface AudioRecording {
 export interface IAudioRecorder {
   /**
    * Starts a take and resolves with it when the user stops it or the recorder
-   * auto-stops on silence. One promise per take, because both endings are the
+   * reaches the ceiling. One promise per take, because both endings are the
    * same event to the screen waiting on it.
    */
   start(): Promise<AudioRecording>;

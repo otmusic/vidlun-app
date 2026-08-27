@@ -2,8 +2,11 @@ import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { Settings } from '@/domain/ports/ISettings';
 import type { Locale, Translate } from '@/i18n';
 
+import { View } from 'react-native';
+
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { TabBar, type Tab } from '../components/TabBar';
 import type { CaptureFlow } from '../hooks/useCaptureFlow';
 import { EditScreen } from './EditScreen';
 import { EntryDetailScreen } from './EntryDetailScreen';
@@ -26,7 +29,50 @@ export interface CaptureFlowScreenProps {
   readonly t: Translate;
 }
 
+/**
+ * Which tab the bar shows lit. The stages the bar is absent from are not in
+ * here at all, so a stage that forgets to answer cannot light the wrong one.
+ */
+const TAB_FOR_STAGE: Partial<Record<CaptureFlow['stage']['kind'], Tab>> = {
+  idle: 'home',
+  history: 'journal',
+  settings: 'me',
+};
+
 export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Element {
+  const tab = TAB_FOR_STAGE[props.flow.stage.kind];
+
+  if (tab === undefined) {
+    return <Stage {...props} />;
+  }
+
+  /*
+   * The bar floats over the screen rather than beside it, so the content keeps
+   * running underneath and nothing ends in a hard edge. Screens that live
+   * under it leave the room in their own bottom padding.
+   */
+  return (
+    <View style={{ flex: 1 }}>
+      <Stage {...props} />
+      <TabBar
+        active={tab}
+        t={props.t}
+        onSelect={(next) => {
+          if (next === 'home') {
+            props.flow.backHome();
+          } else if (next === 'journal') {
+            props.flow.openHistory();
+          } else if (next === 'me') {
+            props.flow.openSettings();
+          }
+          // Search has no screen yet. Doing nothing beats navigating nowhere.
+        }}
+      />
+    </View>
+  );
+}
+
+function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
   const { flow, t } = props;
 
   switch (flow.stage.kind) {
@@ -107,7 +153,7 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
           locale={props.locale}
           t={t}
           onDelete={flow.deleteEntry}
-          onBack={flow.openHistory}
+          onBack={flow.closeEntry}
         />
       );
 
@@ -121,7 +167,6 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
           onWrite={flow.startWriting}
           onDelete={flow.deleteEntry}
           onOpenHistory={flow.openHistory}
-          onOpenSettings={flow.openSettings}
           onOpen={flow.openEntry}
         />
       );

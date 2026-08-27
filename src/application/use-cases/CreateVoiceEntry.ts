@@ -13,8 +13,8 @@ import { draftFromProposal } from './draftFromProposal';
  * Turns a finished recording into a draft. Nothing is stored: the reflection
  * card is a proposal, and only `ConfirmEntry` writes.
  *
- * The recording itself is started and stopped by the screen, because auto-stop
- * on silence is a capture-speed decision rather than a product rule.
+ * The recording itself is started and stopped by the screen: when a take ends
+ * is the person's call, not this use case's.
  */
 export class CreateVoiceEntry {
   constructor(

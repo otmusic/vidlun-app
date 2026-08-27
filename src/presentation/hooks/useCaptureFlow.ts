@@ -27,6 +27,12 @@ export type CaptureStage =
   | { readonly kind: 'settings' }
   | {
       readonly kind: 'detail';
+      /**
+       * Where this card was opened from, so closing or deleting it goes back
+       * there. Without it every card returns to history, including the ones
+       * opened from home.
+       */
+      readonly from: 'idle' | 'history';
       readonly entry: MoodEntry;
       /** Null while it is being looked up, and if there is none. */
       readonly recordingUri: string | null;
@@ -65,6 +71,8 @@ export interface CaptureFlow {
   readonly deleteEntry: (id: string) => void;
   readonly history: readonly HistoryDay[] | null;
   readonly openHistory: () => void;
+  /** Leaves an open card for wherever it was opened from. */
+  readonly closeEntry: () => void;
   readonly openEntry: (entry: MoodEntry) => void;
   readonly openSettings: () => void;
 }
@@ -198,7 +206,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     dependencies.recorder
       .start()
       .then((take) => {
-        // Fires for a tap and for silence alike: the person may not be looking.
+        // Fires for a tap and for the ceiling alike: the person may not be looking.
         dependencies.haptics.settle();
         takeUri.current = take.uri;
         analyze(() => dependencies.createVoiceEntry.execute(take));
@@ -286,7 +294,12 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     history,
     openEntry: useCallback(
       (entry: MoodEntry) => {
-        setStage({ kind: 'detail', entry, recordingUri: null });
+        setStage((current) => ({
+          kind: 'detail',
+          entry,
+          recordingUri: null,
+          from: current.kind === 'history' ? 'history' : 'idle',
+        }));
 
         void dependencies.findRecording
           .execute(entry.id)
@@ -303,6 +316,10 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       },
       [dependencies.findRecording],
     ),
+    closeEntry: useCallback(() => {
+      setStage((current) => (current.kind === 'detail' ? { kind: current.from } : current));
+      reloadHome();
+    }, [reloadHome]),
     openSettings: useCallback(() => {
       setStage({ kind: 'settings' });
     }, []),
@@ -318,6 +335,15 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         void dependencies.deleteEntry
           .execute(id)
           .then(async () => {
+            // Standing on a card that no longer exists is the one thing the
+            // delete must not leave behind. Back to wherever it was opened
+            // from — and only for that card, since a row swiped away in a list
+            // should leave the list where it is.
+            setStage((current) =>
+              current.kind === 'detail' && current.entry.id === id
+                ? { kind: current.from }
+                : current,
+            );
             reloadHome();
             setHistory(await dependencies.getHistory.execute());
           })

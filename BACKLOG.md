@@ -360,7 +360,7 @@ to download.
 | 2.4 | **Transcribe while recording, not after.** Worth less than it looked: transcription turned out to cost about the same for 21 s and 29.7 s of audio, so it is a fixed cost rather than one that grows. Whisper pads every clip to a 30-second window. Still the right shape eventually; no longer urgent if Parakeet lands. | §1c first |
 | 2.7 | **Try Parakeet on the device.** 4.6x faster on the desktop and reads better by hand. Same library, same adapter seam. | §1c |
 | 2.5 | Do not hold the card for the observation. | **Done.** On the measured take that was 2.5 s instead of 7.3 s. |
-| 2.6 | **Raise the 60-second recording ceiling.** If a typical entry is twenty seconds, a bad day runs forty or fifty, and cutting someone off mid-thought is the worst thing the app could do at that moment. | — |
+| 2.6 | Raise the 60-second recording ceiling. | **Done, and for a bigger reason.** Silence auto-stop is gone entirely — the person decides when a take ends — so the ceiling had to move past any real entry rather than just past a long one. Five minutes, and it exists only so a recording left running in a pocket cannot fill the disk. |
 | 2.2 | Check the dark theme on a real screen. §7.10 warns the green confirmation and the teal accent sit close in tone. | Owner |
 | 2.3 | **Decide what a crisis entry shows.** The domain nulls `observation` correctly, but §6 says what appears instead is a product decision. The card currently shows nothing. | Owner |
 
@@ -527,7 +527,7 @@ four difference cases, the edge cases and the tokens:
 
 | # | Item | State |
 |---|---|---|
-| 3b.1 | **`selfEmotionIds` on `MoodEntry`** — what the person named before seeing the answer, written once, empty being a real value. | Not started |
+| 3b.1 | `selfEmotionIds` on `MoodEntry`. | **Done.** Defaults to empty rather than to either of the other two: an entry made with the question switched off has no unaided answer, and filling it in from what was kept would count Vidlun's vocabulary as the person's. Stored and read back; records written before the field exists read as empty for the same reason. |
 | 3b.2 | **`proposedEmotionIds` must stop defaulting to `emotionIds`.** The draft now starts from the person's own answer, so that default would file their guess as the model's proposal. Takes 4.11's lenient `fromStored` fallback with it. | Not started |
 | 3b.3 | **Two card states in `useCaptureFlow`**: question, then comparison. The analysis runs behind the question instead of in front of it, so `ProcessingScreen` leaves the voice path and becomes a quiet inline state for the case where the person answers faster than the model. | Not started |
 | 3b.4 | **Nothing of the answer may leak before it is given** — not the observation, the mood, the context tags, nor the number of chips. Worth a test: it is the one defect that would never be noticed in use. | Not started |

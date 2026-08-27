@@ -19,8 +19,8 @@ export const SPEECH_RECORDING_OPTIONS: RecordingOptions = {
    * and the recorder silently falls back to native defaults — 8 kHz in a CAF
    * container, which whisper rejects outright.
    *
-   * Silence auto-stop reads the metering level, so without this the take never
-   * ends by itself.
+   * The recording screen draws the voice from the metering level, so without
+   * this there is nothing for the bars to move to.
    */
   isMeteringEnabled: true,
   extension: '.wav',

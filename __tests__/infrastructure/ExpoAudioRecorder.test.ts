@@ -1,16 +1,13 @@
 import { NoRecordingProducedError, RecordingCancelledError } from '@/domain/errors/RecordingErrors';
-import { ExpoAudioRecorder, type SilenceOptions } from '@/infrastructure/audio/ExpoAudioRecorder';
+import { ExpoAudioRecorder, type RecordingLimits } from '@/infrastructure/audio/ExpoAudioRecorder';
 import { FakeNativeRecorder, ManualScheduler } from './fakes';
 
-const OPTIONS: SilenceOptions = {
-  silenceThresholdDb: -45,
-  silenceDurationMs: 300,
+const OPTIONS: RecordingLimits = {
   maxDurationMs: 1000,
   pollIntervalMs: 100,
 };
 
 const SPEECH = -20;
-const SILENCE = -60;
 
 function setup() {
   const recorder = new FakeNativeRecorder();
@@ -56,7 +53,7 @@ function play(
 }
 
 describe('ExpoAudioRecorder', () => {
-  it('enables metering, because silence detection has nothing to listen to without it', async () => {
+  it('enables metering, which the recording screen draws the voice from', async () => {
     const { recorder, scheduler, subject } = setup();
     const take = subject.start();
 
@@ -68,46 +65,18 @@ describe('ExpoAudioRecorder', () => {
     expect(scheduler.watching).toBe(0);
   });
 
-  it('ends the take by itself once the speaker falls quiet', async () => {
+  it('keeps recording through a long silence, because a pause is not an ending', async () => {
     const { recorder, scheduler, subject } = setup();
     const take = subject.start();
 
     await live();
     play(recorder, scheduler, SPEECH, 2);
-    play(recorder, scheduler, SILENCE, 3);
-
-    await expect(take).resolves.toEqual({ uri: 'file:///take.m4a', durationMs: 500 });
-  });
-
-  it('waits through the pause before the first word', async () => {
-    const { recorder, scheduler, subject } = setup();
-    const take = subject.start();
-
-    await live();
-    play(recorder, scheduler, SILENCE, 5);
+    play(recorder, scheduler, -60, 6);
 
     expect(recorder.stopCalls).toBe(0);
 
-    play(recorder, scheduler, SPEECH, 1);
-    play(recorder, scheduler, SILENCE, 3);
-
-    await expect(take).resolves.toMatchObject({ uri: 'file:///take.m4a' });
-  });
-
-  it('restarts the count when the speaker pauses mid-sentence and carries on', async () => {
-    const { recorder, scheduler, subject } = setup();
-    const take = subject.start();
-
-    await live();
-    play(recorder, scheduler, SPEECH, 1);
-    play(recorder, scheduler, SILENCE, 2);
-    play(recorder, scheduler, SPEECH, 1);
-
-    expect(recorder.stopCalls).toBe(0);
-
-    play(recorder, scheduler, SILENCE, 3);
-
-    await expect(take).resolves.toMatchObject({ durationMs: 700 });
+    subject.stop();
+    await expect(take).resolves.toMatchObject({ durationMs: 800 });
   });
 
   it('stops at the ceiling so a forgotten recording cannot run all day', async () => {
@@ -181,20 +150,6 @@ describe('ExpoAudioRecorder', () => {
     subject.stop();
 
     await expect(take).rejects.toThrow('microphone was taken by a call');
-  });
-
-  it('settles a take once, even when silence and a tap arrive together', async () => {
-    const { recorder, scheduler, subject } = setup();
-    const take = subject.start();
-
-    await live();
-    play(recorder, scheduler, SPEECH, 1);
-    play(recorder, scheduler, SILENCE, 3);
-    subject.stop();
-    subject.cancel();
-
-    await expect(take).resolves.toMatchObject({ uri: 'file:///take.m4a' });
-    expect(recorder.stopCalls).toBe(1);
   });
 
   it('does nothing when stopped before a take was ever started', () => {

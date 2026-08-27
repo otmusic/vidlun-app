@@ -26,20 +26,24 @@ export interface NativeRecorder {
  */
 export type EnableRecordingMode = () => Promise<void>;
 
-export interface SilenceOptions {
-  /** dBFS below which the microphone counts as hearing nothing. */
-  readonly silenceThresholdDb: number;
-  /** How long that has to hold before the take ends by itself. */
-  readonly silenceDurationMs: number;
-  /** A hard ceiling, so a forgotten recording cannot run all day. */
+/**
+ * The take ends when the person ends it. Silence used to end it after a second
+ * and a half, which read as attentive and was not: someone gathering their
+ * words mid-sentence is the most ordinary thing on a screen that asks how the
+ * day went, and cutting them off there is the app deciding they had finished.
+ * Pauses are now part of speaking.
+ */
+export interface RecordingLimits {
+  /**
+   * A ceiling, not a timer — it exists so a recording left running in a pocket
+   * cannot fill the disk, and it is set far past any entry anyone would make.
+   */
   readonly maxDurationMs: number;
   readonly pollIntervalMs: number;
 }
 
-export const DEFAULT_SILENCE_OPTIONS: SilenceOptions = {
-  silenceThresholdDb: -45,
-  silenceDurationMs: 1500,
-  maxDurationMs: 60_000,
+export const DEFAULT_RECORDING_LIMITS: RecordingLimits = {
+  maxDurationMs: 300_000,
   pollIntervalMs: 150,
 };
 
@@ -56,14 +60,12 @@ interface Take {
  */
 export class ExpoAudioRecorder implements IAudioRecorder {
   private take: Take | null = null;
-  private silentForMs = 0;
-  private hasHeardAnything = false;
 
   constructor(
     private readonly recorder: NativeRecorder,
     private readonly enableRecordingMode: EnableRecordingMode,
     private readonly scheduler: IScheduler,
-    private readonly options: SilenceOptions = DEFAULT_SILENCE_OPTIONS,
+    private readonly options: RecordingLimits = DEFAULT_RECORDING_LIMITS,
   ) {}
 
   async start(): Promise<AudioRecording> {
@@ -72,8 +74,6 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     await this.enableRecordingMode();
     await this.recorder.prepareToRecordAsync();
 
-    this.silentForMs = 0;
-    this.hasHeardAnything = false;
     this.recorder.record();
 
     return new Promise<AudioRecording>((resolve, reject) => {
@@ -102,36 +102,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
   }
 
   private onTick(): void {
-    const status = this.recorder.getStatus();
-
-    if (status.durationMillis >= this.options.maxDurationMs) {
-      void this.finish();
-
-      return;
-    }
-
-    // Without metering there is nothing to listen to, so the take runs until
-    // the user ends it or the ceiling does.
-    if (status.metering === undefined) {
-      return;
-    }
-
-    if (status.metering > this.options.silenceThresholdDb) {
-      this.hasHeardAnything = true;
-      this.silentForMs = 0;
-
-      return;
-    }
-
-    // Silence before the first word is someone working up to it, not a finished
-    // sentence.
-    if (!this.hasHeardAnything) {
-      return;
-    }
-
-    this.silentForMs += this.options.pollIntervalMs;
-
-    if (this.silentForMs >= this.options.silenceDurationMs) {
+    if (this.recorder.getStatus().durationMillis >= this.options.maxDurationMs) {
       void this.finish();
     }
   }
