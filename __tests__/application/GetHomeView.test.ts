@@ -81,3 +81,37 @@ describe('GetHomeView', () => {
     expect(view.recentEntries[0]?.createdAt.getDate()).toBe(1);
   });
 });
+
+describe('GetHomeView week strip', () => {
+  it('covers the seven days ending today, oldest first', async () => {
+    const useCase = await setup([]);
+
+    const view = await useCase.execute(3);
+
+    expect(view.week).toHaveLength(7);
+    expect(view.week[0]?.date.getDate()).toBe(new Date(2026, 6, 26).getDate());
+    expect(view.week[6]?.date.getDate()).toBe(TODAY.getDate());
+  });
+
+  it('leaves a day without an entry without a mood, rather than at zero', async () => {
+    const useCase = await setup([entryOn(daysBefore(0))]);
+
+    const view = await useCase.execute(3);
+
+    expect(view.week[6]?.averageMood).toBe(3);
+    expect(view.week[5]?.averageMood).toBeNull();
+    expect(view.week[5]?.entryCount).toBe(0);
+  });
+
+  it('averages a day that holds more than one entry', async () => {
+    const useCase = await setup([
+      entryOn(daysBefore(0, 9)),
+      entryOn(daysBefore(0, 21)),
+    ]);
+
+    const view = await useCase.execute(3);
+
+    expect(view.week[6]?.entryCount).toBe(2);
+    expect(view.week[6]?.averageMood).toBe(3);
+  });
+});

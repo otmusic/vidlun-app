@@ -90,25 +90,42 @@ export function EntryRow(props: {
         onPress={() => onOpen(entry)}
         onLongPress={confirm}
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: theme.spacing.md,
           minHeight: ROW_HEIGHT,
-          backgroundColor: theme.palette.canvas,
+          backgroundColor: theme.palette.paper,
+          borderWidth: 1,
+          borderColor: theme.palette.line,
+          borderRadius: theme.radii.card,
+          paddingVertical: 18,
+          paddingHorizontal: 20,
+          gap: 10,
         }}
       >
-        <View
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: theme.palette[moodTone(entry.mood.value)],
-          }}
-        />
-        <AppText variant="secondary" color="inkSoft" numberOfLines={2} style={{ flex: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+          <View
+            style={{
+              width: 9,
+              height: 9,
+              borderRadius: 5,
+              backgroundColor: theme.palette[moodTone(entry.mood.value)],
+            }}
+          />
+          <AppText variant="secondary" color="inkSoft">
+            {timeOf(entry.createdAt)}
+          </AppText>
+        </View>
+        {/*
+          * The sentence is the row. It is the one line a person recognises
+          * their own day by, so it keeps the reading size rather than the
+          * list size.
+          */}
+        <AppText variant="quote" numberOfLines={2}>
           {entry.cleanTranscript}
         </AppText>
       </Pressable>
     </Swipeable>
   );
+}
+
+function timeOf(date: Date): string {
+  return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }

@@ -1,7 +1,16 @@
+/**
+ * `system` follows the phone and keeps following it, so a journal opened at
+ * night is dark without anyone having chosen anything. The other two are a
+ * decision the person made, and a decision outranks the phone: someone who
+ * picked light does not want the evening turning it dark behind their back.
+ */
+export type ThemeChoice = 'system' | 'light' | 'dark';
+
 export interface Settings {
   /** Whether a confirmed entry keeps the take it came from. */
   readonly keepRecordings: boolean;
   readonly locale: 'uk' | 'en';
+  readonly theme: ThemeChoice;
   /** False until someone has been told what the app does with their voice. */
   readonly hasOnboarded: boolean;
 }
@@ -15,6 +24,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   keepRecordings: true,
   locale: 'uk',
+  theme: 'system',
   hasOnboarded: false,
 };
 

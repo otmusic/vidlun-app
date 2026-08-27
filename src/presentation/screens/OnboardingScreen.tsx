@@ -3,20 +3,45 @@ import { View } from 'react-native';
 
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
-import type { Translate } from '@/i18n';
+import type { Translate, TranslationKey } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { Blob, WaveMark } from '../components/WaveMark';
 import { useTheme } from '../theme/ThemeProvider';
 import { Screen } from './Screen';
 
-type Step = 'welcome' | 'privacy' | 'microphone';
+const STEPS = ['welcome', 'privacy', 'microphone'] as const;
+
+type Step = (typeof STEPS)[number];
+
+const KICKER: Record<Step, TranslationKey> = {
+  welcome: 'onboarding.step1Kicker',
+  privacy: 'onboarding.step2Kicker',
+  microphone: 'onboarding.step3Kicker',
+};
+
+const HEADLINE: Record<Step, TranslationKey> = {
+  welcome: 'onboarding.welcomeTitle',
+  privacy: 'onboarding.privacyTitle',
+  microphone: 'onboarding.micTitle',
+};
+
+const ACTION: Record<Step, TranslationKey> = {
+  welcome: 'onboarding.welcomeAction',
+  privacy: 'onboarding.privacyAction',
+  microphone: 'onboarding.micAllow',
+};
 
 /**
  * Three screens before the first entry, in the order §8 asks for: what this is,
  * what happens to your voice, and only then the microphone. Being asked for a
  * microphone by something that has not said where the recording goes is the
  * moment people decide an app is not trustworthy.
+ *
+ * The frame never moves: rail, kicker, then the same two buttons in the same
+ * place. Only the middle changes, so the three screens read as one thing with
+ * an end rather than three separate demands.
  */
 export function OnboardingScreen(props: {
   readonly t: Translate;
@@ -25,66 +50,127 @@ export function OnboardingScreen(props: {
   readonly onDone: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
-  const [step, setStep] = useState<Step>('welcome');
+  const [index, setIndex] = useState(0);
   const { t } = props;
+  const step = STEPS[index] ?? 'welcome';
+  const isLast = index === STEPS.length - 1;
 
-  if (step === 'welcome') {
-    return (
-      <Screen centered>
-        <AppText variant="display" align="center">
-          {t('onboarding.welcomeTitle')}
-        </AppText>
-        <AppText variant="body" align="center" color="inkSoft">
-          {t('onboarding.welcomeBody')}
-        </AppText>
-        <View style={{ height: theme.spacing.lg }} />
-        <Button label={t('onboarding.welcomeAction')} onPress={() => setStep('privacy')} />
-      </Screen>
-    );
-  }
+  const advance = (): void => {
+    if (!isLast) {
+      setIndex(index + 1);
 
-  if (step === 'privacy') {
-    return (
-      <Screen>
-        <View style={{ flex: 1, justifyContent: 'center', gap: theme.spacing.md }}>
-          <AppText variant="display">{t('onboarding.privacyTitle')}</AppText>
-          <AppText variant="body" color="inkSoft">
-            {t('onboarding.privacyOnDevice')}
-          </AppText>
-          <AppText variant="body" color="inkSoft">
-            {t('onboarding.privacyKeep')}
-          </AppText>
-          <AppText variant="body" color="inkSoft">
-            {t('onboarding.privacyDelete')}
-          </AppText>
-        </View>
-        <Button label={t('onboarding.privacyAction')} onPress={() => setStep('microphone')} />
-      </Screen>
-    );
-  }
+      return;
+    }
+
+    // The answer does not gate anything: someone who says no still has a
+    // working journal, and asking twice would be worse than either outcome.
+    void props.onAskMicrophone().finally(props.onDone);
+  };
 
   return (
-    <Screen>
-      <View style={{ flex: 1, justifyContent: 'center', gap: theme.spacing.md }}>
-        <AppText variant="display">{t('onboarding.micTitle')}</AppText>
-        <AppText variant="body" color="inkSoft">
-          {t('onboarding.micBody')}
-        </AppText>
-        <ModelProgress state={props.model} t={t} />
+    <Screen inset={{ top: 74, sides: 28, bottom: 40 }} style={{ gap: 0 }}>
+      <ProgressRail reached={index} of={STEPS.length} />
+
+      <AppText variant="kicker" style={{ marginTop: 24 }}>
+        {t(KICKER[step])}
+      </AppText>
+
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          gap: step === 'welcome' ? 34 : 26,
+        }}
+      >
+        {step === 'welcome' ? (
+          <WaveMark width={214} color={theme.palette.ink} echoColor={theme.palette.accent} />
+        ) : null}
+        <Headline>{t(HEADLINE[step])}</Headline>
+        {step === 'welcome' ? <Lede>{t('onboarding.welcomeBody')}</Lede> : null}
+        {step === 'privacy' ? (
+          <View style={{ gap: 18, maxWidth: 320 }}>
+            <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
+              {t('onboarding.privacyOnDevice')}
+            </AppText>
+            <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
+              {t('onboarding.privacyKeep')}
+            </AppText>
+            <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
+              {t('onboarding.privacyDelete')}
+            </AppText>
+          </View>
+        ) : null}
+        {step === 'microphone' ? (
+          <>
+            <Lede>{t('onboarding.micBody')}</Lede>
+            <ModelProgress state={props.model} t={t} />
+          </>
+        ) : null}
       </View>
 
-      <View style={{ gap: theme.spacing.sm }}>
+      <View style={{ gap: 4 }}>
+        <Button label={t(ACTION[step])} onPress={advance} />
         <Button
-          label={t('onboarding.micAllow')}
-          onPress={() => {
-            // The answer does not gate anything: someone who says no still has
-            // a working journal, and asking twice would be worse than either.
-            void props.onAskMicrophone().finally(props.onDone);
-          }}
+          label={t(isLast ? 'onboarding.micLater' : 'onboarding.skip')}
+          variant="ghost"
+          onPress={props.onDone}
         />
-        <Button label={t('onboarding.micLater')} variant="ghost" onPress={props.onDone} />
       </View>
     </Screen>
+  );
+}
+
+/**
+ * Three marks rather than "1 of 3". The rail says how much is left without
+ * asking anyone to read a number before they have been told anything.
+ */
+function ProgressRail(props: { readonly reached: number; readonly of: number }): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <View style={{ flexDirection: 'row', gap: 6 }}>
+      {Array.from({ length: props.of }, (_unused, at) => (
+        <View
+          key={at}
+          style={{
+            flex: 1,
+            height: 3,
+            borderRadius: 2,
+            backgroundColor: at <= props.reached ? theme.palette.ink : theme.palette.line,
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * A lime shape sits behind the first words, off to the left, the way a
+ * highlighter runs past the edge of what it marks. It is decoration and is
+ * hidden from screen readers; the headline itself carries the meaning.
+ */
+function Headline(props: { readonly children: React.ReactNode }): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <View style={{ alignSelf: 'flex-start' }}>
+      <View
+        pointerEvents="none"
+        importantForAccessibility="no"
+        style={{ position: 'absolute', left: -12, top: -19 }}
+      >
+        <Blob width={88} fill={theme.palette.lime} line={theme.palette.ink} />
+      </View>
+      <AppText variant="hero">{props.children}</AppText>
+    </View>
+  );
+}
+
+function Lede(props: { readonly children: React.ReactNode }): React.JSX.Element {
+  return (
+    <AppText variant="lede" color="inkSoft" style={{ maxWidth: 310 }}>
+      {props.children}
+    </AppText>
   );
 }
 
@@ -97,6 +183,8 @@ function ModelProgress(props: {
   readonly state: SpeechModelState;
   readonly t: Translate;
 }): React.JSX.Element | null {
+  const theme = useTheme();
+
   if (props.state.kind === 'ready') {
     return (
       <AppText variant="secondary" color="inkFaint">
@@ -113,8 +201,8 @@ function ModelProgress(props: {
   const total = props.state.totalBytes === null ? '?' : Math.round(props.state.totalBytes / 1_000_000);
 
   return (
-    <View>
-      <AppText variant="secondary" color="inkFaint">
+    <View style={{ gap: theme.spacing.xs }}>
+      <AppText variant="secondary" color="inkSoft">
         {props.t('onboarding.downloading', { done, total })}
       </AppText>
       <AppText variant="secondary" color="inkFaint">

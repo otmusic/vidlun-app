@@ -290,65 +290,66 @@ means exactly one thing**.
 
 ### 7.1 Colour
 
-The accent colour **never** appears in the mood scale. Teal means "Vidlun is
-speaking / this is a control". The scale means "this is your feeling". Honey
-means "achievement". If a colour starts meaning two things, the language is
-broken.
+The identity changed on 2026-08-27; `design/` and
+`src/presentation/theme/tokens.ts` are the source of truth, and the values
+below are there in full.
 
-```ts
-light = {
-  canvas: '#EDF2F1', paper: '#FAFBFB',
-  ink: '#26302F', inkSoft: '#61706E', inkFaint: '#93A09D',
-  line: '#E2E6E6', lineSoft: '#ECF0EF',
-  accent: '#3E7C82', accentSoft: '#E2EDEE', accentInk: '#2F6167',
-  onAccent: '#FFFFFF',
-  warm: '#D9A05B', warmSoft: '#F7EBD8', warmInk: '#8A5E22',
-  calm: '#3FA88A', tension: '#D8A268', low: '#C77B62',
-}
+Warm paper and near-black ink, an acid lime, and a teal accent. **The loudest
+control on a screen carries the most contrast, not the most colour** — the
+primary button is ink on light and paper on dark. That is what keeps the accent
+meaning one thing: Vidlun is speaking, or this is a control.
 
-dark = {
-  canvas: '#101615', paper: '#19211F',
-  ink: '#E7EBE8', inkSoft: '#A3B0AC', inkFaint: '#71807C',
-  line: '#2A3432', lineSoft: '#232C2B',
-  accent: '#6FB8BC', accentSoft: '#1E2E30', accentInk: '#9AD3D6',
-  onAccent: '#0C1413',
-  warm: '#E0B77E', warmSoft: '#2E2519', warmInk: '#EBC894',
-  calm: '#5FC7A6', tension: '#E0B77E', low: '#D8907A',
-}
-```
+**Lime marks the record button and the highlight behind a headline. Nothing
+else.** It is the one saturated thing in the product and it stops being a
+signal the moment it appears twice.
 
-Mood scale mapping: value ≤2 → `low`, 3 → `tension`, ≥4 → `calm`.
+**Emotion colour is derived, never assigned.** 125 words carry a valence and an
+energy, both 1–5; `emotionColor.ts` blends them into a hue in OKLCH under a
+single chroma ceiling, with lightness fixed per theme so no feeling looks
+heavier than another because of brightness. Depth adds chroma and takes
+lightness; it never shifts the hue. The identity fixes seventeen words by hand
+and the function leaves those alone.
 
-**The mood scale has no signalling red.** The lowest state is a warm terracotta.
-A person logging a hard day must not see the colour of a fire alarm — that
-moralises the feeling and discourages honest entries.
+**No emotion is ever the colour of an alarm.** The hue domain starts at
+terracotta and never enters the signal range — enforced by a test across the
+whole vocabulary, not by care. A red border on "loneliness" says *something is
+wrong with you*, which is the one thing this product must never say. The same
+holds for the mood scale, whose lowest state is a warm terracotta.
 
 ### 7.2 Typography
 
-Two typefaces with a strict role split. This is the product's voice and must
-not be collapsed into one font.
+Two families with a strict role split — but the split is headline against text,
+not voice against chrome.
 
 | Face | Used for | Never used for |
 |---|---|---|
-| **Fraunces** (serif) | anything Vidlun "says": display headings, AI narrative, the transcript quote, the reflection observation | buttons, labels, settings, numbers |
-| **Inter** (sans) | the entire interface: buttons, labels, lists, captions, stats | narrative text |
+| **Unbounded** | headlines, the kicker above them, and every figure | anything read as a sentence |
+| **IBM Plex Sans** | everything meant to be read, prose included | headlines |
 
-Scale: display 25/500, narrative and body 16 with line-height 1.6, label 15/500,
-secondary 14, caption 11.5 with +4% letter-spacing and uppercase.
+Scale, all in `createTypography`: hero 31/1.16, display 27/1.15, kicker 19,
+lede 17/1.55, quote 16/1.6, body and label 15, secondary 14, caption 13
+uppercase with 0.1em of tracking. Headlines carry negative tracking; Unbounded
+is wide, and without it a headline reads as spaced out rather than set.
 
-- Never below 14px for readable text; the transcript is 16px because people
-  re-read their own entries at night with tired eyes.
+- **The transcript stays at 16** while the rest of the text sits at 15. People
+  re-read their own entries at night, and that is the line they come back to.
 - Exactly three greys (`ink`, `inkSoft`, `inkFaint`) — never invent a fourth.
 - **Support Dynamic Type.** No fixed heights on text containers; everything
   stretches with the system font size.
 
 ### 7.3 Spacing, shape, touch
 
-- 8-grid: `4, 8, 16, 24, 32`. No arbitrary values — random 13s and 19s are the
-  usual reason a layout feels subtly wrong.
-- Radii: control `14`, card `12–16`, pill `20`, orb `50%`.
+**Take the numbers from the drawing.** Spacing, radii and sizes come from
+`design/` screen by screen — 18, 20, 22, 26, 34 — and are not rounded to
+anything. The old 8-grid rule existed to keep arbitrary values out of the code
+when there was nothing to measure against; now there is, and rounding to the
+nearest 8 would be inventing numbers rather than avoiding them. The `spacing`
+scale survives for gaps no drawing specifies.
+
+- Radii: card `22`, panel `26`, tile `18`, control and chip fully round.
 - **Minimum tap target 44pt**, list rows `52`. Icons may look small — the touch
   area must not be. Expand the hit area rather than the glyph.
+- Buttons: 18 above and below, 20 either side; a ghost button 14.
 - Primary action lives in the **bottom third** (thumb zone). Never at the top.
 - One primary button per screen; everything else is secondary or text.
 
@@ -381,16 +382,22 @@ and turn text into a list.
 Not an inversion — a separate palette. The evening is the primary usage
 scenario, so this is not optional polish.
 
-- **Background is not black** (`#101615`). Pure black with light text is harsh
+**Which one shows.** The app follows the phone and keeps following it, so a
+journal opened at night is dark without anyone having chosen anything. Someone
+who picks light or dark in settings gets that always: a preference the time of
+day can override is not a preference. `system` is the default.
+
+- **Background is not black** (`#14161B`). Pure black with light text is harsh
   and reads cold.
-- **Text is not white** (`#E7EBE8`). Contrast stays within norms without the
+- **Text is not white** (`#F2EEE6`). Contrast stays within norms without the
   "torch in the eyes" effect.
 - Depth comes from **surface elevation** (card lighter than canvas), not shadows.
-- **The accent inverts**: teal lightens and the text on it becomes dark
-  (`onAccent` flips with the theme). This is where quick dark modes usually break.
-- **Mood colours warm up.** Warm hues go dull and grey on dark backgrounds, so
-  the dark scale is lighter and slightly more saturated than the light one.
-- **The orb does not glow at night.** Its backing stays muted; only the glyph
+- **The solid inverts**: the primary button is ink on light and paper on dark,
+  and `onSolid` flips with it. This is where quick dark modes usually break.
+- **Every hue lightens.** Colour goes grey on dark grounds, so the dark values
+  are lighter and slightly more saturated throughout — including the lightness
+  the emotion palette is generated at.
+- **Nothing glows at night.** The record button stays muted and only the glyph
   is bright. A glowing ring fills the screen with light in a dark room.
 
 ### 7.7 Surfaces and glass
@@ -433,13 +440,15 @@ Copy is a design surface here, not an afterthought.
 
 Inherited from the design system; do not treat these as settled:
 
-- `warm` (#D9A05B) and `tension` (#D8A268) are tonally close, and collapse into
-  one token in dark theme. Rule holds: **honey is for achievements only, never
-  for a mood state.** Separate them by at least half a tone if a conflict shows.
-- Green confirmation and the teal accent are tonally adjacent — verify on a real
-  device that "saved" reads distinctly from a button.
-- The insights screen scrolls on small phones after the type scale increase.
-  Verify the narrative card fits above the fold on an SE-sized device.
+- `warm` and `tension` resolve to the same amber in both themes. The old rule
+  kept honey for achievements alone; the new identity gives achievement no
+  colour at all, so this is no longer a collision — but nothing may start
+  reading amber as "well done" either.
+- The derived palette gives two words with identical coordinates the same
+  colour. `happy.playful` and `surprised.excited` are both (5, 5). An anchor is
+  the fix where it matters; the rule is not.
+- The insights screen scrolls on small phones. Verify the narrative card fits
+  above the fold on an SE-sized device.
 
 ### 7.11 Reference
 
@@ -448,7 +457,13 @@ path: splash, auth, welcome, privacy, permission, first, home, listening,
 thinking, reflect, edit, saved. Retention: insights, growth, settings, locked,
 paywall. Reflection mode: reflect-invite, guess, reveal. Grounding (M8):
 ground-offer, ground-see, ground-hear, ground-touch, ground-done. Use it as the
-source of truth for layout and flow. Both files live in `design/`:
+source of truth for layout and flow.
+
+**Superseded on 2026-08-27** by `Vidlun.dc.html` in the Claude Design project,
+which is the current drawing: it carries the new identity and screens the older
+files never had — tabs, feed, search, profile, calendar, the palette sheet.
+Measure against that one. The two files below still describe flow accurately
+and live in `design/`:
 `vidlun-prototype.html` covers screens and flow, `vidlun-design-system.html` covers
 tokens and components. They are self-contained — open them in a browser. Their
 UI copy is Ukrainian because it mirrors the shipping locale; that is reference
@@ -468,8 +483,9 @@ Complete milestones in order. Each ends with a green build and a commit.
 
 ### M0 — Foundation
 Expo + TypeScript strict, Jest, ESLint, folder structure, i18n scaffold with
-`en` and `uk` locale files, CI-ready npm scripts, font loading (Fraunces +
-Inter) wired into the theme provider.
+`en` and `uk` locale files, CI-ready npm scripts, font loading (Unbounded +
+IBM Plex Sans, since the 2026-08-27 identity change) wired into the theme
+provider.
 **Done when:** `npm test` runs (even with zero tests) and typecheck passes.
 
 ### M1 — Domain

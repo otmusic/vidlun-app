@@ -1,15 +1,24 @@
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import type { IClock } from '../../domain/ports/IClock';
 import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryRepository';
+import type { DailyMood } from './GetWeekSummary';
 
 export interface HomeView {
   /** Newest first. */
   readonly recentEntries: readonly MoodEntry[];
   readonly streakDays: number;
+  /**
+   * The last seven days ending today, oldest first — a rolling window rather
+   * than a calendar week, because the strip is about the run a person is on
+   * and a Monday would reset it to almost nothing every seven days.
+   */
+  readonly week: readonly DailyMood[];
 }
 
 /** A streak longer than this stops being a number anyone reads. */
 const STREAK_WINDOW_DAYS = 365;
+
+const WEEK_DAYS = 7;
 
 export class GetHomeView {
   constructor(
@@ -24,8 +33,40 @@ export class GetHomeView {
       this.repository.findBetween(addDays(today, -STREAK_WINDOW_DAYS), addDays(today, 1)),
     ]);
 
-    return { recentEntries, streakDays: countStreak(window, today) };
+    return {
+      recentEntries,
+      streakDays: countStreak(window, today),
+      week: buildWeek(window, today),
+    };
   }
+}
+
+/**
+ * Oldest first, so the strip reads left to right into today. A day with no
+ * entry carries a null mood rather than a zero: an untracked day is not a bad
+ * day, and the difference has to survive all the way to the screen.
+ */
+function buildWeek(entries: readonly MoodEntry[], today: Date): readonly DailyMood[] {
+  return Array.from({ length: WEEK_DAYS }, (_unused, offset) => {
+    const date = addDays(today, offset - (WEEK_DAYS - 1));
+    const onThisDay = entries.filter((entry) => dayKey(entry.createdAt) === dayKey(date));
+
+    return {
+      date,
+      averageMood: averageMood(onThisDay),
+      entryCount: onThisDay.length,
+    };
+  });
+}
+
+function averageMood(entries: readonly MoodEntry[]): number | null {
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const total = entries.reduce((sum, entry) => sum + entry.mood.value, 0);
+
+  return Math.round((total / entries.length) * 10) / 10;
 }
 
 /**

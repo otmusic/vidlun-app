@@ -1,15 +1,16 @@
 // Imported per weight, not from the package root: the root module `require`s
 // every weight the family ships, which pulled 36 font files into the bundle
 // instead of the 6 this app draws with.
-import { Fraunces_400Regular } from '@expo-google-fonts/fraunces/400Regular';
-import { Fraunces_400Regular_Italic } from '@expo-google-fonts/fraunces/400Regular_Italic';
-import { Fraunces_500Medium } from '@expo-google-fonts/fraunces/500Medium';
-import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
-import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
-import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { IBMPlexSans_400Regular } from '@expo-google-fonts/ibm-plex-sans/400Regular';
+import { IBMPlexSans_500Medium } from '@expo-google-fonts/ibm-plex-sans/500Medium';
+import { IBMPlexSans_600SemiBold } from '@expo-google-fonts/ibm-plex-sans/600SemiBold';
+import { Unbounded_400Regular } from '@expo-google-fonts/unbounded/400Regular';
+import { Unbounded_500Medium } from '@expo-google-fonts/unbounded/500Medium';
 import { useFonts } from 'expo-font';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, PixelRatio, useColorScheme, View } from 'react-native';
+
+import type { ThemeChoice } from '@/domain/ports/ISettings';
 
 import {
   createTypography,
@@ -43,19 +44,28 @@ export function useTheme(): Theme {
   return theme;
 }
 
-export function ThemeProvider(props: { readonly children: React.ReactNode }): React.JSX.Element {
+/**
+ * `system` follows the phone and keeps following it — the journal is used in
+ * the evening, and a person who never opened settings should still get the
+ * dark palette then. An explicit choice outranks the phone and never yields to
+ * it, because a preference that the time of day can override is not one.
+ */
+export function ThemeProvider(props: {
+  readonly children: React.ReactNode;
+  readonly choice?: ThemeChoice;
+}): React.JSX.Element {
   const scheme = useColorScheme();
   const reduceMotion = useReduceMotion();
   const [fontsLoaded] = useFonts({
-    Fraunces_400Regular,
-    Fraunces_400Regular_Italic,
-    Fraunces_500Medium,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
+    Unbounded_400Regular,
+    Unbounded_500Medium,
+    IBMPlexSans_400Regular,
+    IBMPlexSans_500Medium,
+    IBMPlexSans_600SemiBold,
   });
 
-  const isDark = scheme === 'dark';
+  const choice = props.choice ?? 'system';
+  const isDark = choice === 'system' ? scheme === 'dark' : choice === 'dark';
 
   const theme = useMemo<Theme>(
     () => ({

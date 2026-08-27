@@ -18,10 +18,20 @@ export function Button(props: ButtonProps): React.JSX.Element {
   const variant = props.variant ?? 'primary';
   const disabled = props.disabled ?? false;
 
+  /*
+   * The primary button carries contrast rather than colour: ink on light,
+   * paper on dark. It is the loudest thing on a screen without spending the
+   * accent, which now means one thing and only one.
+   */
   const background =
-    variant === 'primary' ? theme.palette.accent : 'transparent';
-  const border = variant === 'secondary' ? theme.palette.lineStrong : 'transparent';
-  const color = variant === 'primary' ? 'onAccent' : 'inkSoft';
+    variant === 'primary'
+      ? theme.palette.solid
+      : variant === 'secondary'
+        ? theme.palette.paper
+        : 'transparent';
+  const border = variant === 'secondary' ? theme.palette.line : 'transparent';
+  const color =
+    variant === 'primary' ? 'onSolid' : variant === 'secondary' ? 'ink' : 'inkFaint';
 
   return (
     <Pressable
@@ -31,22 +41,30 @@ export function Button(props: ButtonProps): React.JSX.Element {
       onPress={props.onPress}
       style={({ pressed }) => [
         {
-          minHeight: variant === 'ghost' ? MIN_TAP_TARGET : 48,
-          borderRadius: theme.radii.control,
+          minHeight: MIN_TAP_TARGET,
+          borderRadius: theme.radii.pill,
           backgroundColor: background,
           borderWidth: variant === 'secondary' ? 1 : 0,
           borderColor: border,
           alignItems: 'center',
           justifyContent: 'center',
-          paddingHorizontal: theme.spacing.md,
-          paddingVertical: theme.spacing.sm,
+          // Straight from the design rather than rounded to the 8-grid: these
+          // are the numbers the buttons were drawn with, and a filled pill
+          // reads as underweight a few points short of them.
+          paddingHorizontal: 20,
+          paddingVertical: variant === 'ghost' ? 14 : 18,
           opacity: disabled ? 0.4 : pressed ? 0.9 : 1,
           transform: [{ scale: pressed && !theme.reduceMotion ? 0.98 : 1 }],
         },
         props.style,
       ]}
     >
-      <AppText variant="label" color={color} align="center">
+      <AppText
+        variant="label"
+        color={color}
+        align="center"
+        style={variant === 'ghost' ? undefined : { fontSize: 16 }}
+      >
         {props.label}
       </AppText>
     </Pressable>

@@ -52,8 +52,13 @@ export function Orb(props: OrbProps): React.JSX.Element {
     };
   }, [isRecording, ring, theme.reduceMotion]);
 
-  const background = isRecording ? theme.palette.lowSoft : theme.palette.accentSoft;
-  const glyph = isRecording ? theme.palette.low : theme.palette.accent;
+  /*
+   * The button is ink, not accent, and the accent lives in the rings leaving
+   * it. That is the mark's own idea: the sound goes out and fades, so the only
+   * coloured thing on the screen is the part that is departing.
+   */
+  const background = isRecording ? theme.palette.lowSoft : theme.palette.solid;
+  const glyph = isRecording ? theme.palette.low : theme.palette.onSolid;
 
   const body = (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -64,11 +69,11 @@ export function Orb(props: OrbProps): React.JSX.Element {
           width: size,
           height: size,
           borderRadius: size / 2,
-          borderWidth: 1,
-          borderColor: isRecording ? theme.palette.low : theme.palette.accentSoft,
+          borderWidth: 1.5,
+          borderColor: isRecording ? theme.palette.low : theme.palette.accent,
           opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.7, 0] }),
           transform: [
-            { scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, isRecording ? 1.35 : 1.14] }) },
+            { scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, isRecording ? 1.35 : 1.29] }) },
           ],
         }}
       />
@@ -87,7 +92,7 @@ export function Orb(props: OrbProps): React.JSX.Element {
         ) : isRecording ? (
           <StopShape color={glyph} size={size * 0.36} />
         ) : (
-          <MicShape color={glyph} size={size * 0.36} />
+          <MicShape color={glyph} size={size * 0.27} />
         )}
       </View>
     </View>

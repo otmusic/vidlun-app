@@ -49,6 +49,7 @@ function merge(parsed: unknown): Settings {
 
   const record = parsed as Record<string, unknown>;
   const locale = record['locale'];
+  const theme = record['theme'];
 
   return {
     keepRecordings:
@@ -56,6 +57,10 @@ function merge(parsed: unknown): Settings {
         ? record['keepRecordings']
         : DEFAULT_SETTINGS.keepRecordings,
     locale: locale === 'en' || locale === 'uk' ? locale : DEFAULT_SETTINGS.locale,
+    theme:
+      theme === 'light' || theme === 'dark' || theme === 'system'
+        ? theme
+        : DEFAULT_SETTINGS.theme,
     hasOnboarded:
       typeof record['hasOnboarded'] === 'boolean'
         ? record['hasOnboarded']

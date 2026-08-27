@@ -34,9 +34,19 @@ describe('SettingsStore', () => {
   it('reads back what it wrote', async () => {
     const { subject } = setup();
 
-    await subject.write({ keepRecordings: false, locale: 'en', hasOnboarded: true });
+    await subject.write({
+      keepRecordings: false,
+      locale: 'en',
+      theme: 'dark',
+      hasOnboarded: true,
+    });
 
-    expect(await subject.read()).toEqual({ keepRecordings: false, locale: 'en', hasOnboarded: true });
+    expect(await subject.read()).toEqual({
+      keepRecordings: false,
+      locale: 'en',
+      theme: 'dark',
+      hasOnboarded: true,
+    });
   });
 
   it('falls back to defaults rather than failing on an unreadable file', async () => {
@@ -50,7 +60,12 @@ describe('SettingsStore', () => {
     const { store, subject } = setup();
     await store.setItem('vidlun.settings', JSON.stringify({ locale: 'en' }));
 
-    expect(await subject.read()).toEqual({ keepRecordings: true, locale: 'en', hasOnboarded: false });
+    expect(await subject.read()).toEqual({
+      keepRecordings: true,
+      locale: 'en',
+      theme: 'system',
+      hasOnboarded: false,
+    });
   });
 
   it('has not onboarded anyone on a fresh install', async () => {
@@ -64,5 +79,25 @@ describe('SettingsStore', () => {
     await store.setItem('vidlun.settings', JSON.stringify({ locale: 'fr' }));
 
     expect((await subject.read()).locale).toBe(DEFAULT_SETTINGS.locale);
+  });
+
+  it('keeps following the phone until someone picks a theme', async () => {
+    const { subject } = setup();
+
+    expect((await subject.read()).theme).toBe('system');
+  });
+
+  it('keeps a chosen theme, which is what makes it a choice', async () => {
+    const { store, subject } = setup();
+    await store.setItem('vidlun.settings', JSON.stringify({ theme: 'light' }));
+
+    expect((await subject.read()).theme).toBe('light');
+  });
+
+  it('ignores a theme it does not recognise rather than rendering nothing', async () => {
+    const { store, subject } = setup();
+    await store.setItem('vidlun.settings', JSON.stringify({ theme: 'sepia' }));
+
+    expect((await subject.read()).theme).toBe('system');
   });
 });
