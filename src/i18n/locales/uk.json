@@ -8,9 +8,9 @@
   "home.openHistory": "Усі",
   "home.writeInstead": "Не можеш говорити? Напиши",
   "recording.listening": "Слухаю",
-  "recording.hint": "Зупиниться сама, коли ти замовкнеш, або тапни",
+  "recording.hint": "Говори спокійно. Можна паузами — це нормально.",
   "recording.stop": "Зупинити запис",
-  "processing.thinking": "Читаю те, що ти сказав",
+  "processing.thinking": "Складаю відлуння",
   "reflection.eyebrow": "Рефлексія",
   "reflection.heard": "Ось що я чую",
   "reflection.noEmotions": "Тут нема що назвати — і це нормально.",
@@ -51,7 +51,6 @@
   "detail.play": "Послухати",
   "detail.pause": "Пауза",
   "detail.delete": "Видалити запис",
-  "home.openSettings": "Налаштування",
   "settings.title": "Налаштування",
   "settings.keepRecordings": "Зберігати голос",
   "settings.keepRecordingsHint": "Запис лишається на телефоні рік, потім зникає. Текст запису лишається назавжди.",
@@ -88,5 +87,10 @@
   "settings.themeSystem": "Як у телефоні",
   "settings.themeLight": "Світла",
   "settings.themeDark": "Темна",
-  "settings.themeHint": "Як у телефоні — темніє ввечері разом із системою. Обрана тема лишається завжди."
+  "settings.themeHint": "Як у телефоні — темніє ввечері разом із системою. Обрана тема лишається завжди.",
+  "processing.hint": "Розпізнаю мову й підбираю слова для настрою. Кілька секунд.",
+  "tab.home": "Дім",
+  "tab.journal": "Щоденник",
+  "tab.search": "Пошук",
+  "tab.me": "Я"
 }

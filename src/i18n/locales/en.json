@@ -8,9 +8,9 @@
   "home.openHistory": "All",
   "home.writeInstead": "Can't speak? Write it",
   "recording.listening": "Listening",
-  "recording.hint": "Stops on its own when you go quiet, or tap to stop",
+  "recording.hint": "Speak calmly. Pauses are fine.",
   "recording.stop": "Stop recording",
-  "processing.thinking": "Reading what you said",
+  "processing.thinking": "Composing the echo",
   "reflection.eyebrow": "Reflection",
   "reflection.heard": "What I heard",
   "reflection.noEmotions": "Nothing to name here, and that is fine.",
@@ -51,7 +51,6 @@
   "detail.play": "Listen",
   "detail.pause": "Pause",
   "detail.delete": "Delete entry",
-  "home.openSettings": "Settings",
   "settings.title": "Settings",
   "settings.keepRecordings": "Keep your voice",
   "settings.keepRecordingsHint": "Recordings stay on this phone for a year, then go. The written entry stays for good.",
@@ -88,5 +87,10 @@
   "settings.themeSystem": "Match the phone",
   "settings.themeLight": "Light",
   "settings.themeDark": "Dark",
-  "settings.themeHint": "Matching the phone darkens with it in the evening. A chosen theme always stays."
+  "settings.themeHint": "Matching the phone darkens with it in the evening. A chosen theme always stays.",
+  "processing.hint": "Reading the words and finding ones for the mood. A few seconds.",
+  "tab.home": "Home",
+  "tab.journal": "Journal",
+  "tab.search": "Search",
+  "tab.me": "Me"
 }

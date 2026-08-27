@@ -66,6 +66,13 @@ process.
 **The AI proposes, it never decides.** The reflection card is a draft. Nothing
 is written to storage until the user confirms it.
 
+**The person decides when a take ends.** The recorder used to stop itself after
+a second and a half of quiet, which read as attentive and was not: gathering
+your words mid-sentence is the most ordinary thing to do on a screen that asks
+how the day went, and ending the take there is the app deciding you had
+finished. A pause is part of speaking. There is still a ceiling, far past any
+real entry, so a recording left running in a pocket cannot fill the disk.
+
 **The recording is kept for a year, then only the audio is deleted.** A
 transcript loses the thing a voice journal was for: "I'm fine" said evenly and
 said barely holding together read identically on the page. Hearing yourself six
@@ -369,11 +376,17 @@ and turn text into a list.
 ### 7.5 Motion and haptics
 
 - Spring curve `cubic-bezier(.2,.9,.3,1.2)`. No bounces, no parallax.
-- **The orb is the only element allowed continuous motion**: it breathes slowly
-  when idle (~3.6s cycle) and pulses while recording.
+- **The record button is the only element allowed continuous motion**: two
+  rings leave it and fade, 3.4s apiece and half a cycle apart. They travel
+  outward and never inward — the mark's own idea, that sound goes out and stops
+  being there. The recording screen's bars are the exception that proves it:
+  they are the voice itself, not decoration.
+- The orb is gone. It was a soft disc with a glyph; the identity replaced it
+  with an ink circle carrying the mark, and the two other modes it used to have
+  belong to screens that now draw their own thing.
 - Screen transitions: the reflection card rises from the bottom; state changes
   cross-fade. Nothing slides sideways.
-- **Haptics** on: recording start, auto-stop, and save. This matters more than
+- **Haptics** on: recording start, stop, and save. This matters more than
   usual here — the user often is not looking at the screen while speaking.
 - Respect **Reduce Motion**: disable animation without breaking layout.
 
@@ -499,7 +512,7 @@ lifting, immutability, and the 4-emotion limit at ≥95% lines.
 **Done when:** all four regression cases from §5 pass with fake adapters.
 
 ### M3 — Adapters
-`ExpoAudioRecorder` (tap to start, auto-stop on silence, permission handling),
+`ExpoAudioRecorder` (tap to start, tap to stop, permission handling),
 `WhisperTranscriptionService`, `ClaudeReflectionAnalyzer`,
 `AsyncStorageMoodEntryRepository`, `SystemClock`, `UuidGenerator`, DI container.
 **Done when:** a real recording produces a real draft on device.

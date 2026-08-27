@@ -28,6 +28,19 @@ export interface Palette {
   /** A filled square that is not a card: home-screen tiles, icon previews. */
   readonly tile: string;
   readonly tileInk: string;
+  /** The two ends of a loading placeholder, pulsing between them. */
+  readonly skeleton: string;
+  readonly skeletonLift: string;
+  /**
+   * The record button is its own surface, not the primary button's. On dark it
+   * lifts off the page instead of inverting to paper: a white disc the size of
+   * a fist is the last thing anyone wants at night.
+   */
+  readonly record: string;
+  readonly onRecord: string;
+  readonly recordEdge: string;
+  /** The floating tab bar, which sits over content and must let it through. */
+  readonly bar: string;
   readonly warm: string;
   readonly warmSoft: string;
   readonly warmInk: string;
@@ -63,6 +76,12 @@ export const lightPalette: Palette = {
   limeSoft: '#EEF6D2',
   tile: '#DFD9CB',
   tileInk: '#6C6F78',
+  skeleton: '#EFE8DC',
+  skeletonLift: '#F8F3E9',
+  record: '#16181D',
+  onRecord: '#FBF7F0',
+  recordEdge: 'transparent',
+  bar: 'rgba(251,247,240,0.86)',
   warm: '#D08700',
   warmSoft: '#F7EEDC',
   warmInk: '#8A5D12',
@@ -108,6 +127,12 @@ export const darkPalette: Palette = {
   limeSoft: '#27311C',
   tile: '#2A2F38',
   tileInk: '#A9AEB8',
+  skeleton: '#232830',
+  skeletonLift: '#2C313A',
+  record: '#1F242D',
+  onRecord: '#F2EEE6',
+  recordEdge: '#39404B',
+  bar: 'rgba(27,30,37,0.88)',
   warm: '#F0AE2E',
   warmSoft: '#2E2519',
   warmInk: '#F5C766',
@@ -164,6 +189,12 @@ export interface TextStyle {
   readonly lineHeight: number;
   readonly letterSpacing?: number;
   readonly textTransform?: 'uppercase';
+  /**
+   * Not `readonly`, against the rule everywhere else here: React Native types
+   * this as a mutable array, and a readonly tuple will not spread into a
+   * `TextInput` style.
+   */
+  readonly fontVariant?: ['tabular-nums'];
 }
 
 export interface Typography {
@@ -176,6 +207,8 @@ export interface Typography {
   readonly lede: TextStyle;
   /** Unbounded again, with tabular figures. Never for words. */
   readonly numeric: TextStyle;
+  /** The elapsed clock while recording. Large, light, and it must not jog. */
+  readonly timer: TextStyle;
   /** IBM Plex Sans. Everything meant to be read. */
   readonly narrative: TextStyle;
   readonly quote: TextStyle;
@@ -199,7 +232,19 @@ export function createTypography(fontScale: number): Typography {
     display: { fontFamily: fonts.display, fontSize: 27, lineHeight: scaled(27, 1.15), letterSpacing: -0.8 },
     kicker: { fontFamily: fonts.displayLight, fontSize: 19, lineHeight: scaled(19, 1.3), letterSpacing: -0.2 },
     lede: { fontFamily: fonts.body, fontSize: 17, lineHeight: scaled(17, 1.55) },
-    numeric: { fontFamily: fonts.numeric, fontSize: 16, lineHeight: scaled(16, 1.2) },
+    numeric: {
+      fontFamily: fonts.numeric,
+      fontSize: 16,
+      lineHeight: scaled(16, 1.2),
+      fontVariant: ['tabular-nums'],
+    },
+    timer: {
+      fontFamily: fonts.displayLight,
+      fontSize: 36,
+      lineHeight: scaled(36, 1.2),
+      letterSpacing: -0.7,
+      fontVariant: ['tabular-nums'],
+    },
     narrative: { fontFamily: fonts.body, fontSize: 15, lineHeight: scaled(15, 1.6) },
     // The transcript keeps its 16, alone among the text styles: people re-read
     // their own entries at night, and this is the line they come back to.

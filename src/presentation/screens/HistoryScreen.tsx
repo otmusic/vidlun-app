@@ -33,7 +33,8 @@ export function HistoryScreen(props: {
         <SwipeGroup>
           <ScrollView
             style={{ flex: 1, marginTop: theme.spacing.md }}
-            contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
+            // Clears the floating tab bar, which the list scrolls under.
+            contentContainerStyle={{ paddingBottom: 118 }}
             showsVerticalScrollIndicator={false}
           >
             {(props.days ?? []).map((day) => (

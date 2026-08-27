@@ -51,7 +51,7 @@ export function SettingsScreen(props: {
   };
 
   return (
-    <Screen>
+    <Screen inset={{ bottom: 118 }}>
       <BackButton t={t} onPress={props.onBack} />
       <AppText variant="display">{t('settings.title')}</AppText>
 

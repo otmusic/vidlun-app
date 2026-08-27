@@ -1,31 +1,26 @@
-import { View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { Locale, Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
-import { TapTarget } from '../components/Button';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { Icon, ICON_SIZE } from '../components/Icon';
-import { Orb } from '../components/Orb';
+import { RecordButton } from '../components/RecordButton';
 import { WeekStrip } from '../components/WeekStrip';
 import { useTheme } from '../theme/ThemeProvider';
-import { Screen } from './Screen';
 
 export interface HomeScreenProps {
   readonly home: HomeView | null;
   readonly locale: Locale;
   readonly onDelete: (id: string) => void;
   readonly onOpenHistory: () => void;
-  readonly onOpenSettings: () => void;
   readonly onOpen: (entry: MoodEntry) => void;
   readonly t: Translate;
   readonly onRecord: () => void;
   readonly onWrite: () => void;
 }
-
-const RECORD_BUTTON = 152;
 
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const theme = useTheme();
@@ -33,8 +28,18 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const recent = props.home?.recentEntries ?? [];
   const week = props.home?.week ?? [];
 
+  /*
+   * Home scrolls. It used to be a fixed column with the record button in a
+   * flex:1 middle, which held only while the recent list was short — the
+   * moment it filled, the middle was squeezed and the button climbed over the
+   * question. Nothing here competes for height any more: every block is its
+   * own size and the page moves under them.
+   */
   return (
-    <Screen inset={{ top: 70, sides: 22, bottom: 40 }} style={{ gap: 0 }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: theme.palette.canvas }}
+      contentContainerStyle={{ paddingTop: 70, paddingHorizontal: 22, paddingBottom: 118 }}
+    >
       <View
         style={{
           flexDirection: 'row',
@@ -47,12 +52,16 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         <AppText variant="caption" color="inkFaint">
           {formatToday(props.locale)}
         </AppText>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-          {streak > 0 ? <StreakPill days={streak} label={props.t('home.streakUnit')} /> : null}
-          <TapTarget onPress={props.onOpenSettings} accessibilityLabel={props.t('home.openSettings')}>
-            <Icon name="settings" size={ICON_SIZE.action} />
-          </TapTarget>
-        </View>
+        {/*
+          * Nothing but the run of days sits opposite the date. Settings moved to
+          * its own tab, and a gear here would be the only control on the screen
+          * competing with the one the screen exists for.
+          *
+          * At zero the pill is absent rather than showing a nought. A person on
+          * their first day has not failed at anything, and a counter that opens
+          * at zero is the app saying otherwise.
+          */}
+        {streak > 0 ? <StreakPill days={streak} label={props.t('home.streakUnit')} /> : null}
       </View>
 
       {week.length > 0 ? (
@@ -67,34 +76,27 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         {props.t('home.prompt')}
       </AppText>
 
-      {/* The primary action sits in the thumb zone, never at the top. */}
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 18,
-          paddingTop: 16,
-          paddingBottom: 34,
-        }}
-      >
-        <Orb
-          mode="idle"
-          size={RECORD_BUTTON}
-          onPress={props.onRecord}
-          accessibilityLabel={props.t('home.recordHint')}
-        />
+      <View style={{ alignItems: 'center', gap: 18, paddingTop: 16, paddingBottom: 34 }}>
+        <RecordButton onPress={props.onRecord} accessibilityLabel={props.t('home.recordHint')} />
         <AppText variant="body" color="inkSoft">
           {props.t('home.recordHint')}
         </AppText>
-        <TapTarget onPress={props.onWrite} accessibilityLabel={props.t('home.writeInstead')}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-            <Icon name="edit-3" size={ICON_SIZE.glyph} color="inkFaint" />
-            <AppText variant="secondary" color="inkFaint">
-              {props.t('home.writeInstead')}
-            </AppText>
-          </View>
-        </TapTarget>
+        {/*
+          * hitSlop rather than a 44pt box: a padded target here would push the
+          * text off the line the design puts it on. The finger still lands on
+          * 44, the layout does not know about it.
+          */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={props.onWrite}
+          hitSlop={14}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 6 }}
+        >
+          <Icon name="edit-3" size={ICON_SIZE.glyph} color="inkFaint" />
+          <AppText variant="secondary" color="inkFaint">
+            {props.t('home.writeInstead')}
+          </AppText>
+        </Pressable>
       </View>
 
       <View style={{ gap: 12 }}>
@@ -110,11 +112,11 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             {props.t('home.recentTitle')}
           </AppText>
           {recent.length > 0 ? (
-            <TapTarget onPress={props.onOpenHistory} accessibilityLabel={props.t('home.openHistory')}>
+            <Pressable accessibilityRole="button" onPress={props.onOpenHistory} hitSlop={16}>
               <AppText variant="secondary" color="accent">
                 {props.t('home.openHistory')}
               </AppText>
-            </TapTarget>
+            </Pressable>
           ) : null}
         </View>
         {recent.length === 0 ? (
@@ -137,7 +139,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           </SwipeGroup>
         )}
       </View>
-    </Screen>
+    </ScrollView>
   );
 }
 
