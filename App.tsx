@@ -116,6 +116,7 @@ function Vidlun(props: {
   const flow = useCaptureFlow({
     recorder,
     haptics: container.haptics,
+    transcribeTake: container.transcribeTake,
     createVoiceEntry: container.createVoiceEntry,
     createTextEntry: container.createTextEntry,
     confirmEntry: container.confirmEntry,

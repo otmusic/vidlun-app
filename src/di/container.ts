@@ -9,6 +9,7 @@ import {
 import { ConfirmEntry } from '../application/use-cases/ConfirmEntry';
 import { CreateTextEntry } from '../application/use-cases/CreateTextEntry';
 import { CreateVoiceEntry } from '../application/use-cases/CreateVoiceEntry';
+import { TranscribeTake } from '../application/use-cases/TranscribeTake';
 import { GetHomeView } from '../application/use-cases/GetHomeView';
 import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
@@ -44,6 +45,7 @@ import {
 import { readAnthropicApiKey } from './config';
 
 export interface Container {
+  readonly transcribeTake: TranscribeTake;
   readonly createVoiceEntry: CreateVoiceEntry;
   readonly createTextEntry: CreateTextEntry;
   readonly confirmEntry: ConfirmEntry;
@@ -116,13 +118,8 @@ export function createContainer(dependencies: ContainerDependencies): Container 
   return {
     vocabulary,
     haptics: new ExpoHaptics(),
-    createVoiceEntry: new CreateVoiceEntry(
-      transcription,
-      analyzer,
-      vocabulary,
-      clock,
-      idGenerator,
-    ),
+    transcribeTake: new TranscribeTake(transcription),
+    createVoiceEntry: new CreateVoiceEntry(analyzer, vocabulary, clock, idGenerator),
     createTextEntry: new CreateTextEntry(analyzer, vocabulary, clock, idGenerator),
     confirmEntry: new ConfirmEntry(repository, revisionLog, clock, recordings),
     reviseEntry: new ReviseEntry(vocabulary),

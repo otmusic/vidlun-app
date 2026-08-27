@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ConfirmEntry } from '@/application/use-cases/ConfirmEntry';
 import type { CreateTextEntry } from '@/application/use-cases/CreateTextEntry';
 import type { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
+import type { TranscribeTake } from '@/application/use-cases/TranscribeTake';
 import type { GetHomeView, HomeView } from '@/application/use-cases/GetHomeView';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
 import type { FindRecording } from '@/application/use-cases/FindRecording';
@@ -42,6 +43,7 @@ export type CaptureStage =
 export interface CaptureDependencies {
   readonly recorder: IAudioRecorder;
   readonly haptics: IHaptics;
+  readonly transcribeTake: TranscribeTake;
   readonly createVoiceEntry: CreateVoiceEntry;
   readonly createTextEntry: CreateTextEntry;
   readonly confirmEntry: ConfirmEntry;
@@ -209,7 +211,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         // Fires for a tap and for the ceiling alike: the person may not be looking.
         dependencies.haptics.settle();
         takeUri.current = take.uri;
-        analyze(() => dependencies.createVoiceEntry.execute(take));
+        analyze(async () =>
+          dependencies.createVoiceEntry.execute(await dependencies.transcribeTake.execute(take)),
+        );
       })
       .catch(fail);
   }, [analyze, dependencies, fail]);

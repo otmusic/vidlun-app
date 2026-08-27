@@ -1,4 +1,5 @@
 import { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
+import { TranscribeTake } from '@/application/use-cases/TranscribeTake';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { NothingWasSaidError } from '@/domain/errors/MoodEntryErrors';
 import type { ReflectionProposal } from '@/domain/ports/IReflectionAnalyzer';
@@ -20,17 +21,24 @@ interface Heard {
   readonly confidence: number;
 }
 
+/**
+ * The two halves back to back, which is the order the capture path runs them
+ * in — the card simply asks its question between the one and the other.
+ */
 function capture(heard: Heard, proposed: ReflectionProposal) {
   const analyzer = new StubReflectionAnalyzer(proposed);
+  const transcribe = new TranscribeTake(new StubTranscriptionService(heard));
   const useCase = new CreateVoiceEntry(
-    new StubTranscriptionService(heard),
     analyzer,
     vocabulary,
     new FixedClock(NOW),
     new SequentialIdGenerator(),
   );
 
-  return { analyzer, run: () => useCase.execute(RECORDING) };
+  return {
+    analyzer,
+    run: async () => useCase.execute(await transcribe.execute(RECORDING)),
+  };
 }
 
 const CLEARLY_HEARD = { text: 'raw words', confidence: 0.95 };
