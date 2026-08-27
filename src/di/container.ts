@@ -78,7 +78,7 @@ export interface ContainerDependencies {
  * `playsInSilentMode` comes with it. Both have to be sent together; sending
  * only the first leaves the other at whatever it already was and throws.
  *
- * Luna never plays audio back, so the silent switch has nothing to suppress
+ * Vidlun never plays audio back, so the silent switch has nothing to suppress
  * here. This only widens the audio session, it does not make the app noisy.
  */
 const enableRecordingMode = (): Promise<void> =>

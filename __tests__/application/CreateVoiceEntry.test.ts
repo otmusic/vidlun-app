@@ -123,7 +123,7 @@ describe('CreateVoiceEntry', () => {
     const entry = await run();
 
     expect(entry.safetyFlag).toBe('crisis');
-    // Luna's sentence is written by WriteObservation once the card is showing.
+    // Vidlun's sentence is written by WriteObservation once the card is showing.
     expect(entry.observation).toBeNull();
   });
 

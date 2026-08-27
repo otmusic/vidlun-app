@@ -53,7 +53,7 @@ export default function App() {
       {wiring.container === undefined ? (
         <SetupNeeded detail={wiring.failure ?? ''} />
       ) : (
-        <Luna
+        <Vidlun
           container={wiring.container}
           nativeRecorder={nativeRecorder}
           locale={locale}
@@ -68,7 +68,7 @@ export default function App() {
   );
 }
 
-function Luna(props: {
+function Vidlun(props: {
   readonly container: Container;
   readonly nativeRecorder: Parameters<Container['createAudioRecorder']>[0];
   readonly locale: Locale;

@@ -6,7 +6,7 @@ import type { IRecordingStore } from '../../domain/ports/IRecordingStore';
 import type { IRevisionLog } from '../../domain/ports/IRevisionLog';
 
 export interface ConfirmEntryInput {
-  /** What Luna offered on the reflection card. */
+  /** What Vidlun offered on the reflection card. */
   readonly proposed: MoodEntry;
   /** What the user kept — the same entry when they changed nothing. */
   readonly confirmed: MoodEntry;

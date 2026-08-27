@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "Luna",
-    "slug": "luna",
+    "name": "Vidlun",
+    "slug": "vidlun",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.luna.journal"
+      "bundleIdentifier": "com.vidlun.journal"
     },
     "android": {
-      "package": "com.luna.journal",
+      "package": "com.vidlun.journal",
       "adaptiveIcon": {
         "backgroundColor": "#EDF2F1",
         "foregroundImage": "./assets/android-icon-foreground.png",

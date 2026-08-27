@@ -1,6 +1,6 @@
-# Luna — remaining work
+# Vidlun — remaining work
 
-Status as of 2026-08-25. Milestones M0 through M4 are complete and committed,
+Status as of 2026-08-27. Milestones M0 through M4 are complete and committed,
 and M5 has begun: 311 tests, `npm run verify` green.
 
 **M3 is finished.** The voice path runs end to end on a physical iPhone —
@@ -9,9 +9,11 @@ record, transcribe on the device, analyse, reflection card.
 This file is the running list of what is left. It is not a replacement for
 CLAUDE.md, which stays the source of truth for how the product should behave.
 
-The brief now carries nine milestones. M0–M5 are the MVP; M6 (reflection mode),
-M7 (scaffolding fade) and M8 (voice grounding) are designed but deliberately
-unbuilt, and each one requires validation with real people before any code.
+The brief now carries nine milestones. M0–M5 are the MVP. M7 (scaffolding fade)
+and M8 (voice grounding) are designed but deliberately unbuilt, and each one
+requires validation with real people before any code. M6 split on 2026-08-27:
+its question moved into the capture card and is now MVP work (§3b), while the
+growth view and the way back into old entries stay post-MVP.
 
 ---
 
@@ -30,6 +32,8 @@ unbuilt, and each one requires validation with real people before any code.
 | **Transcription confidence is derived from take duration.** | whisper.rn reports none, and a constant would be a lie the domain acts on: §6 ties emotion depth to confidence. Duration is the only predictor the §10 run supported. |
 | **Recordings are kept for a year, then the audio alone is deleted.** | A transcript loses tone, and tone is what a voice journal was for. Suggested by someone who uses emotion journals seriously; the entry survives the audio so history is never thinned. |
 | **The wait is measured from stop to card, not from tap to save.** Talking is not friction; waiting is. | The old criterion counted the speaking as a cost to reduce, which is backwards for a journal. See §2a. |
+| **The card asks before it answers.** The person names the entry first; Vidlun's version arrives second. | Capture taught nothing: Vidlun named the feeling and the user tapped yes, so after two months there are clean statistics and no growth in self-understanding. The question goes into the pause the analysis already needs, so §1 holds — naming your own feeling is time the person chose to spend, exactly like the speaking. |
+| **Numbers are free, prose is paid.** Anything that is arithmetic over the person's own entries is available to everyone; what we pay a model for is not. | §9 forbids gating basic tracking, and the theme counts in the prototype were behind the paywall despite being a count of tags we already store. One rule is easier to hold than a list, and it draws the line where the cost actually is. |
 | **The observation is written by Sonnet; the rest of the entry stays on Haiku.** Sent in parallel, so the wait is the slower call and not the sum. | This departs from §2, which put the whole entry on Haiku. Measured on 2026-08-25: Haiku produced a sentence that did not parse, clinical labels §7.9 forbids, and feelings nobody had named. The observation is the only field read as prose — everything else is an id, a number, or the speaker's own words — so the risk sits in one sentence, and §7.9 calls it a design surface. |
 
 ---
@@ -60,6 +64,48 @@ refuses to launch, that is what happened — rebuild to reissue them.
 
 ---
 
+## 0a. The rename to Vidlun — 2026-08-27
+
+The product is Vidlun. Renamed in one pass: every mention in the code,
+comments, tests, both locale files, `app.json`, `package.json`, both documents,
+and the two prototypes, which became `vidlun-*.html`. Verify is green on 311
+tests.
+
+The identifier went with it — `com.vidlun.journal` on both platforms — so
+`expo prebuild --clean` regenerated the native project as `ios/Vidlun`, and the
+build is installed and running on the phone under the new name. The old
+`com.luna.journal` is a separate app that stays on the device with its own
+journal, recordings and model until someone deletes it; Vidlun starts from an
+empty container and downloads the model again.
+
+The directories followed on the same day: `~/idea/vidlun-app`,
+`~/vidlun-design`, `~/vidlun-whisper`, and `~/Documents/vidlun-audio` with the
+§10 recordings. Older run logs under `~/vidlun-whisper` still print the paths
+they were written with; they are records of what happened and stay as they are.
+
+Two things the rename broke in the Ukrainian copy, both fixed with it: the app
+referred to itself in the feminine, which the old name was, and `delete.body`
+had a verb agreeing with it. Both are present tense now, which §7.9 asks for
+anyway. The rest of 4.15 is still owed.
+
+The storage keys went too — `vidlun.entry.`, `vidlun.revision.`,
+`vidlun.settings`. That was only safe because the identifier had already moved:
+anything written under the old keys sits in the old app's container, which this
+build cannot reach. On its own, renaming a key strands the data behind it, and
+the comment at `ENTRY_KEY_PREFIX` says so for whoever reaches for the next one.
+
+The repository is `otmusic/vidlun-app` and the local remote points at it.
+
+**What is still Luna:** the app icon and the adaptive-icon assets, which are
+the old mark. The new one is still being chosen.
+
+**One trap on a fresh clone.** `ios/` is gitignored and generated, and it is
+generated from `app.json` — so the project, the scheme and the identifier all
+come from there. There is nothing to rename by hand; `expo prebuild --clean` is
+the whole procedure.
+
+---
+
 ## 1. M3 — done, with one piece waiting on M5
 
 | # | Item | State |
@@ -70,7 +116,7 @@ refuses to launch, that is what happened — rebuild to reissue them.
 | 1.4 | Remove `ManualTranscriptionService` from the production path. | **Not doing it.** It earned a permanent place: the text fallback §2 asks for, and what the app runs on before the model lands. |
 | 1.5 | Record in a format Whisper can read. | **Done.** 16 kHz mono, linear PCM on iOS. |
 | 1.6 | Give the recogniser the user's language instead of letting it guess. | **Moot.** Built for Whisper, then Parakeet replaced it and takes no language hint. The code still chooses and nothing reads it — remove, or keep only if Whisper ever returns. |
-| 1.7 | **Recalibrate confidence against Parakeet.** The duration bands come from Whisper's error curve and §6 ties emotion depth to them, so a wrong curve makes Luna vaguer than it needs to be. | §1c |
+| 1.7 | **Recalibrate confidence against Parakeet.** The duration bands come from Whisper's error curve and §6 ties emotion depth to them, so a wrong curve makes Vidlun vaguer than it needs to be. | §1c |
 | 1.8 | **Re-measure whether the transcript repair still earns its risk.** It bought 0.034 against nonsense; against clean transcripts it may only be a licence to change someone's words. | §1c |
 
 **Transcription confidence is derived, not reported.** whisper.rn returns none,
@@ -102,7 +148,7 @@ infrastructure layer.
 ## 1b. §10 first result — 2026-08-24
 
 16 recordings by one speaker in one room: 9 Ukrainian, 3 Russian, 4 mixed.
-Raw output in `~/luna-whisper/run-2026-08-24-real-v2.txt`.
+Raw output in `~/vidlun-whisper/run-2026-08-24-real-v2.txt`.
 
 **Utterance length decides the outcome, not language.**
 
@@ -138,7 +184,7 @@ What follows from it:
 
 `scripts/whisper-experiment.mjs` now takes `--language`. Auto stays the
 default, because that is the position the app is in. Pinning is for measuring
-what the guessing costs. Run in `~/luna-whisper/run-2026-08-24-real-v3-pinned-uk.txt`.
+what the guessing costs. Run in `~/vidlun-whisper/run-2026-08-24-real-v3-pinned-uk.txt`.
 
 `-l uk` changed exactly two takes out of sixteen:
 
@@ -171,7 +217,7 @@ than they looked.
 under-4-second bucket that produced the worst number. Takes 01–11 were read
 from a script, 12–16 were spontaneous; the spontaneous ones scored best, but
 they were also the longest, so the two effects are confounded. A first run
-against `~/luna-whisper/run-2026-08-24-real-v1.txt` scored worse purely because
+against `~/vidlun-whisper/run-2026-08-24-real-v1.txt` scored worse purely because
 the references came from the script rather than from what was actually said —
 about a sixth of the measured error was that mistake, not the model's.
 
@@ -203,9 +249,9 @@ analyzer, vocabulary and use case — no device, no microphone. It has been run
 against the live API and it earned its keep: it exposed two prompt bugs, fixed
 in `8b3aea7`.
 
-- Luna answered Ukrainian sentences with English observations. The prompt set
+- Vidlun answered Ukrainian sentences with English observations. The prompt set
   the language of the cleaned transcript and said nothing about the
-  observation, which is the only text Luna actually says out loud.
+  observation, which is the only text Vidlun actually says out loud.
 - Mixed Ukrainian and Russian speech was normalised into one language. §1 says
   the audience mixes both inside a sentence, so rewriting the mix rewrites the
   person.
@@ -232,7 +278,7 @@ either language" before that was true, because the first version happily turned
 Russian words into Ukrainian ones.
 
 **One risk it introduced.** Where a mishearing is not recoverable, the entry
-still reads as fluent nonsense, and Luna answers it: "нічойний стих" produced
+still reads as fluent nonsense, and Vidlun answers it: "нічойний стих" produced
 an observation about insomnia. One in twelve. For a product where a single
 invented feeling costs trust in every later one, that is not a rounding error.
 
@@ -258,7 +304,7 @@ does not reach the domain.
 
 **On the numbers it is a wash. On reading it is not.** Four of five transcripts
 inspected by hand came back exactly right under Parakeet where Whisper mangled
-them, including the "нічойний стих" take that made Luna invent insomnia, and a
+them, including the "нічойний стих" take that made Vidlun invent insomnia, and a
 Russian take Whisper got wrong. The losses look like reference drift rather
 than errors — Parakeet transcribed a "Так," at the start of one entry that the
 written reference had left out, and WER charged it for that.
@@ -414,7 +460,7 @@ a working text journal, and asking twice would be worse than either outcome.
 
 **Still owed:**
 
-- Insights screen: free daily trend, paywalled weekly narrative
+- Insights screen: designed but unbuilt, see §3c
 - Local notifications and the reminder picker — the settings screen exists
   (§3a) and has room for the row
 - Paywall and the free/paid boundary
@@ -455,8 +501,86 @@ decision to keep recordings.
   reminder row: notifications are not built, and an empty setting is worse than
   a missing one.
 
-What M5 still owes: insights, onboarding, notifications, the reminder picker,
-the paywall and the free/paid boundary.
+What M5 still owes: insights, notifications, the reminder picker, the paywall
+and the free/paid boundary. Onboarding has since been built (§3).
+
+---
+
+## 3b. The card asks before it answers — designed 2026-08-27, not built
+
+The reflection card changes shape. Instead of opening with what Vidlun heard, it
+opens with a question — the person names the entry first, and Vidlun's answer
+arrives second, as a comparison rather than a verdict.
+
+**Why it does not cost the capture path anything.** Stop to card is 4.0 s today
+(§1c): 2.1 s of transcription, then 1.8 s of Haiku, with Sonnet's 4.0 s already
+arriving behind the card rather than holding it. The question needs only the
+transcript, so it can be on screen at 2.1 s — and the classification lands
+while the person is reading it. Added wait: none, and the first thing they see
+arrives about two seconds sooner than the card does now. Added taps: one. The
+time spent choosing a word is the person's own, on the same argument §1 makes
+about the speaking.
+
+The screen is specified in full — three states, the copy, the leak rules, the
+four difference cases, the edge cases and the tokens:
+<https://claude.ai/code/artifact/c78bd99f-6192-479f-9091-50a4aa7aebbd>
+
+| # | Item | State |
+|---|---|---|
+| 3b.1 | **`selfEmotionIds` on `MoodEntry`** — what the person named before seeing the answer, written once, empty being a real value. | Not started |
+| 3b.2 | **`proposedEmotionIds` must stop defaulting to `emotionIds`.** The draft now starts from the person's own answer, so that default would file their guess as the model's proposal. Takes 4.11's lenient `fromStored` fallback with it. | Not started |
+| 3b.3 | **Two card states in `useCaptureFlow`**: question, then comparison. The analysis runs behind the question instead of in front of it, so `ProcessingScreen` leaves the voice path and becomes a quiet inline state for the case where the person answers faster than the model. | Not started |
+| 3b.4 | **Nothing of the answer may leak before it is given** — not the observation, the mood, the context tags, nor the number of chips. Worth a test: it is the one defect that would never be noticed in use. | Not started |
+| 3b.5 | **Four difference cases**, including "Vidlun missed what you named". Copy lives in the locale files, never in the analyzer. | Not started |
+| 3b.6 | **Disagreement is logged separately from a revision.** A person who keeps their own word is not correcting a mistake, and the two must not land in one bucket. | Not started |
+| 3b.7 | **`distress` and `crisis` skip the question** and go straight to the card. | Not started |
+| 3b.8 | **The settings switch.** Off means the card is exactly what it is today, at exactly today's speed. | Not started |
+| 3b.11 | **The picker has to reach depth 3.** A tap on an already-chosen chip opens its children and only those, under a quiet "точніше?" line; choosing a child replaces the parent rather than spending a second slot. Without this the deepest words are unreachable by construction, and the vocabulary screen ends up measuring our own ceiling. It is also the drill-down §6 already relies on for sensitive states. | Not started |
+| 3b.9 | **Re-measure the wait to the question**, not to the card. Only the transcript gates it, so it should land near 2.1 s — inside what M4 asks for, which 2.1 is still open on at 4.0 s. | Ties to 2.1 |
+| 3b.10 | **Prototype.** `guess` and `reveal` already exist in `design/vidlun-prototype.html` for the old M6 flow. Drop the "1 / 3" counter, which has no meaning during capture, and bring the question to the display size — it is drawn at 19px, which is off the scale. | design/ |
+
+**What this does not change.** Reflection mode stays entirely optional, the
+growth view and emotional granularity stay post-MVP, and the invitation on Home
+stays — but for entries already saved, as the way back into an old one.
+
+---
+
+## 3c. The statistics screen — designed 2026-08-27, not built
+
+M5 owes an insights screen. It is designed as one screen with two registers:
+**the week** (what happened) and **the vocabulary** (how the person's language
+is changing). The second is the one this product is actually for.
+
+Full spec — three mockups, the chart rules, the empty states, the copy with
+i18n keys, and what still has to be computed:
+<https://claude.ai/code/artifact/066ac3a2-fc3c-46d6-a7dd-497eb29565b0>
+
+**The four positions it takes**, each of which the prototype does differently:
+
+- **No headline number.** An average of feelings means nothing and reads as a
+  verdict.
+- **A day without an entry is not a bad day** — straight out of
+  `GetWeekSummary`, where it is already `null`. It draws as a dot on the
+  baseline, never a short bar and never a mood colour.
+- **The chart comes before the narrative**, for both tiers. A free screen that
+  opens with a lock is hostile, and this also settles §7.10's fold problem by
+  putting the shorter element first.
+- **Precision is shown in words, not as a level.** Three progress tracks
+  labelled basic / refined / specific are our own vocabulary and read as a
+  grade. The screen shows pairs instead — happy → proud, angry → annoyed — so
+  it says *what the person now distinguishes* and never *how high they climbed*.
+  Depth is tied to confidence in §6: praising depth would teach people to
+  over-specify, which is the fabricated-insight failure from the other side.
+
+| # | Item | State |
+|---|---|---|
+| 3c.1 | The week: chart, entry count, narrative, lock. Everything it needs already exists in `GetWeekSummary`. | Not started |
+| 3c.2 | Week navigation. `containing` is already an input; there is no screen. Never forward past this week, never back past the first entry. | Not started |
+| 3c.3 | Theme counts — a use case over `contextTags` for the week. Free, per the boundary above. | Not started |
+| 3c.4 | The entitlement check and what the locked state shows. Ties to the paywall, which M5 also owes. | Not started |
+| 3c.5 | Patterns. A separate model call; the response shape is not designed. | Not started |
+| 3c.6 | The vocabulary half: words used for the first time, refinement pairs from `parentId`, distinct words per month. Waits on `selfEmotionIds` (§3b). | Blocked on 3b.1 |
+| 3c.7 | Prototype: `insights`, `locked` and `growth` now differ from the spec — themes move out of the lock, the monthly bars go, depth tracks become pairs. | design/ |
 
 ---
 
@@ -471,7 +595,8 @@ the paywall and the free/paid boundary.
 | 4.12 | `whisper.rn` must be imported as `whisper.rn/index`. Its exports map declares only `./*` and has no root entry, so Metro resolves the short path but TypeScript does not. | Looks like a typo and is not. Commented at the import; shortening it breaks typecheck. |
 | 4.13 | The `buffer` polyfill exists only because `whisper.rn` pulls `safe-buffer`, which the bundle cannot resolve without it. | Reached only by `transcribeData`, which nothing calls yet. Streaming transcription will. |
 | 4.14 | **History reads the whole journal in one query.** No worse than what `findRecent` already did — the stored repository always read everything — but a person with a year of daily entries is several hundred records parsed on every open. | Fine now, and the first thing to feel slow. Paging when it does, not before. |
-| 4.5 | Streak plurals are simplified (`{{count}} дн.`); Ukrainian plural rules are not implemented. | Cosmetic. |
+| 4.5 | Streak plurals are simplified; Ukrainian plural rules are not implemented. | Cosmetic. |
+| 4.15 | **The shipped copy assumes the reader's gender, and picks a different one in different places.** `processing.thinking` addresses a man; the prototype addresses a woman. Ukrainian past-tense verbs carry the addressee's gender, so half the audience reads a line written about somebody else. | §7.9 now requires the present tense. A sweep of `uk.json`, and the English keys have to be phrased so the translation can avoid the past tense at all. |
 | 4.6 | Icons are hand-drawn from `View`s. §7.4 wants a real set that scales with Dynamic Type. | Sizing is already token-driven, so the swap is local. |
 | 4.7 | `warm` and `tension` resolve to the same value in the dark palette (inherited from §7.10). | The rule holds — honey marks achievements only — but they should be separated if a conflict shows. |
 | 4.8 | **No component tests.** Jest runs in plain Node; React components would need `jest-expo` and a testing library. `useCaptureFlow.ts` is 179 lines of untested state machine. | The largest coverage gap. |

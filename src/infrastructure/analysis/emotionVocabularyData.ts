@@ -11,7 +11,7 @@ import type { EmotionDefinition } from '../../domain/entities/Emotion';
  *
  * `valence` is 1 (hardest) to 5 (best) and `energy` is what the state does to
  * the body; together they drive the drill-down grouping on the edit screen.
- * `sensitive` marks states Luna must never propose on its own.
+ * `sensitive` marks states Vidlun must never propose on its own.
  */
 export const EMOTION_VOCABULARY_DATA: readonly EmotionDefinition[] = [
   { id: 'happy', valence: 5, energy: 'high', tier: 'core' },

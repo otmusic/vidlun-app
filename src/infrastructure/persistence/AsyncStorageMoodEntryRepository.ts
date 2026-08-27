@@ -3,7 +3,14 @@ import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryReposito
 import type { IKeyValueStore } from './IKeyValueStore';
 import { fromStored, toStored } from './moodEntryMapper';
 
-export const ENTRY_KEY_PREFIX = 'luna.entry.';
+/**
+ * A storage key is an address, not a label. This one could follow the rename
+ * only because the bundle identifier moved at the same time: whatever was
+ * written under the old key belongs to the old app's container, which this
+ * build cannot reach anyway. Renaming it on its own would strand every entry
+ * on the device behind a key nothing reads.
+ */
+export const ENTRY_KEY_PREFIX = 'vidlun.entry.';
 
 /**
  * One key per entry rather than one blob for all of them: saving an entry then

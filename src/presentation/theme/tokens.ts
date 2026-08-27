@@ -117,7 +117,7 @@ export interface TextStyle {
 }
 
 export interface Typography {
-  /** Fraunces. Luna speaking. */
+  /** Fraunces. Vidlun speaking. */
   readonly display: TextStyle;
   readonly narrative: TextStyle;
   readonly quote: TextStyle;

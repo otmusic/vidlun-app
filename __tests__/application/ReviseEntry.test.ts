@@ -21,14 +21,14 @@ function draft(): MoodEntry {
 }
 
 describe('ReviseEntry', () => {
-  it('marks the entry as corrected by the user rather than proposed by Luna', () => {
+  it('marks the entry as corrected by the user rather than proposed by Vidlun', () => {
     const revised = useCase.execute(draft(), { mood: MoodScore.of(2) });
 
     expect(revised.wasRevisedByUser).toBe(true);
     expect(revised.mood.value).toBe(2);
   });
 
-  it('lets the user pick a sensitive state Luna is not allowed to offer', () => {
+  it('lets the user pick a sensitive state Vidlun is not allowed to offer', () => {
     const revised = useCase.execute(draft(), { emotionIds: ['fearful.weak.worthless'] });
 
     expect(revised.emotionIds).toEqual(['fearful.weak.worthless']);

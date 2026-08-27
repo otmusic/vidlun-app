@@ -192,7 +192,7 @@ describe('user revisions', () => {
 });
 
 describe('the AI proposal, kept apart from the user\'s own labels', () => {
-  it('starts out as whatever Luna proposed, because a fresh draft is all hers', () => {
+  it('starts out as whatever Vidlun proposed, because a fresh draft is all its own', () => {
     expect(entry().proposedEmotionIds).toEqual(['happy.proud', 'bad.tired']);
   });
 
@@ -210,7 +210,7 @@ describe('the AI proposal, kept apart from the user\'s own labels', () => {
     expect(kept.proposedEmotionIds).toEqual(['happy.proud', 'bad.tired']);
   });
 
-  it('records that Luna proposed nothing, rather than losing the fact', () => {
+  it('records that Vidlun proposed nothing, rather than losing the fact', () => {
     const mundane = entry({ emotionIds: [], cleanTranscript: 'Cooked dinner.' });
 
     expect(mundane.proposedEmotionIds).toEqual([]);

@@ -5,7 +5,7 @@ export type ConfidenceLevel = 'low' | 'medium' | 'high';
 
 /**
  * Thresholds are a product decision, not a property of any speech engine: they
- * set how specific Luna is allowed to sound about what it heard.
+ * set how specific Vidlun is allowed to sound about what it heard.
  */
 const HIGH_THRESHOLD = 0.8;
 const MEDIUM_THRESHOLD = 0.5;

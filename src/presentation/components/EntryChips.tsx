@@ -10,7 +10,7 @@ import { toneOf } from './emotionTone';
 import { useTheme } from '../theme/ThemeProvider';
 
 /**
- * What Luna heard, as chips. Shared by the card and the entry it becomes, so
+ * What Vidlun heard, as chips. Shared by the card and the entry it becomes, so
  * an entry looks the same when you come back to it a month later as it did the
  * moment you saved it.
  */

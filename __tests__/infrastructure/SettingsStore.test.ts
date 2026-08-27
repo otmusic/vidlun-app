@@ -24,7 +24,7 @@ describe('SettingsStore', () => {
 
   it('leaves a chosen language alone when the phone disagrees', async () => {
     const { store, subject } = setup('en');
-    await store.setItem('luna.settings', JSON.stringify({ locale: 'uk' }));
+    await store.setItem('vidlun.settings', JSON.stringify({ locale: 'uk' }));
 
     // Someone who picked a language keeps it. Changing the phone's language
     // must not quietly change theirs back.
@@ -41,14 +41,14 @@ describe('SettingsStore', () => {
 
   it('falls back to defaults rather than failing on an unreadable file', async () => {
     const { store, subject } = setup();
-    await store.setItem('luna.settings', 'not json');
+    await store.setItem('vidlun.settings', 'not json');
 
     expect(await subject.read()).toEqual(DEFAULT_SETTINGS);
   });
 
   it('fills in a setting the stored file predates', async () => {
     const { store, subject } = setup();
-    await store.setItem('luna.settings', JSON.stringify({ locale: 'en' }));
+    await store.setItem('vidlun.settings', JSON.stringify({ locale: 'en' }));
 
     expect(await subject.read()).toEqual({ keepRecordings: true, locale: 'en', hasOnboarded: false });
   });
@@ -61,7 +61,7 @@ describe('SettingsStore', () => {
 
   it('refuses a locale it does not have', async () => {
     const { store, subject } = setup();
-    await store.setItem('luna.settings', JSON.stringify({ locale: 'fr' }));
+    await store.setItem('vidlun.settings', JSON.stringify({ locale: 'fr' }));
 
     expect((await subject.read()).locale).toBe(DEFAULT_SETTINGS.locale);
   });

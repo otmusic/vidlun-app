@@ -1,4 +1,4 @@
-# Luna — Development Brief
+# Vidlun — Development Brief
 
 > Paste this as your first message in Claude Code, or save it as `CLAUDE.md`
 > in the project root so it stays in context across sessions.
@@ -32,7 +32,7 @@
 
 ## 1. What we are building
 
-Luna is a voice-first emotion journal for iOS. The user taps one button, says
+Vidlun is a voice-first emotion journal for iOS. The user taps one button, says
 how they feel, and AI turns it into a structured entry: cleaned transcript,
 mood score, emotions, context tags, and one short observation. The user
 confirms with one tap or corrects with one more.
@@ -47,6 +47,13 @@ So the budget is on everything except the speaking. Tap to recording, stop to
 card, confirm to saved: those must be short and must stay short however long
 the person spoke. Any change that adds friction to the capture path is wrong by
 default, even if it adds a nice feature.
+
+**Naming your own feeling belongs in the same category as speaking.** It is the
+person spending their own time on the thing they came to do, not the app
+spending it for them. So the card asks before it answers: the person names the
+entry first, and Vidlun's version arrives second. This costs no wait, because the
+question is asked into the pause the analysis already needs — see M6, which now
+begins inside the capture path instead of after it.
 
 **How long is an entry?** Observed at about twenty seconds across two people's
 real recordings — thin evidence, and the only evidence there is. Assume that
@@ -231,7 +238,8 @@ id, createdAt, source: 'voice' | 'text',
 rawTranscript, cleanTranscript,
 mood: MoodScore,
 emotionIds: readonly string[],           // max 4, what the user kept
-proposedEmotionIds: readonly string[],   // max 4, what Luna proposed
+selfEmotionIds: readonly string[],       // max 4, named before Vidlun answered
+proposedEmotionIds: readonly string[],   // max 4, what Vidlun proposed
 contextTags: readonly string[],
 observation: string | null,
 confidence: Confidence,
@@ -269,7 +277,8 @@ Seven roots: `happy`, `surprised`, `bad`, `fearful`, `angry`, `disgusted`,
 | **Drafts are not persisted.** `CreateVoiceEntry` returns an entry; only `ConfirmEntry` writes it. | The card is a proposal. |
 | **Every user revision is logged** (proposed ids vs final ids). | Training data for v2 personalization; must be collected from day one. |
 | **Audio belongs to the entry and outlives neither it nor a year.** Deleting an entry deletes its recording; a recording older than a year is deleted on its own. | Keeping a voice after someone removed the entry it belonged to is the kind of thing that ends trust in a journal permanently. |
-| **`proposedEmotionIds` is set once, at creation, and never changes.** It defaults to `emotionIds`, because a fresh draft is entirely Luna's; the two diverge only when the user corrects the card. | M6 has to render an entry without revealing the analysis, and every entry needs the proposal — not just the corrected ones the revision log covers. |
+| **`proposedEmotionIds` is set once, at creation, and never changes.** It is Vidlun's own answer and defaults to nothing else. | M6 has to render an entry without revealing the analysis, and every entry needs the proposal — not just the corrected ones the revision log covers. The draft now starts from what the person named, so defaulting the proposal to `emotionIds` would file their guess as the model's. |
+| **`selfEmotionIds` is what the person named before seeing Vidlun's answer, and it is written once.** Empty is a real value, not a missing one: naming nothing is an answer. | It is the only unaided measurement the entry carries. The moment the person adopts one of Vidlun's chips, `emotionIds` stops being theirs alone, and emotional granularity — M6's core value signal — would be measured off Vidlun's vocabulary rather than the person's. |
 
 ---
 
@@ -281,7 +290,7 @@ means exactly one thing**.
 
 ### 7.1 Colour
 
-The accent colour **never** appears in the mood scale. Teal means "Luna is
+The accent colour **never** appears in the mood scale. Teal means "Vidlun is
 speaking / this is a control". The scale means "this is your feeling". Honey
 means "achievement". If a colour starts meaning two things, the language is
 broken.
@@ -321,7 +330,7 @@ not be collapsed into one font.
 
 | Face | Used for | Never used for |
 |---|---|---|
-| **Fraunces** (serif) | anything Luna "says": display headings, AI narrative, the transcript quote, the reflection observation | buttons, labels, settings, numbers |
+| **Fraunces** (serif) | anything Vidlun "says": display headings, AI narrative, the transcript quote, the reflection observation | buttons, labels, settings, numbers |
 | **Inter** (sans) | the entire interface: buttons, labels, lists, captions, stats | narrative text |
 
 Scale: display 25/500, narrative and body 16 with line-height 1.6, label 15/500,
@@ -404,12 +413,18 @@ narrative blocks, and the emotion palette stay opaque.
 
 Copy is a design surface here, not an afterthought.
 
-- Luna observes, never diagnoses, advises, or praises. Acceptable: "Sounds like
+- Vidlun observes, never diagnoses, advises, or praises. Acceptable: "Sounds like
   the good kind of tired." Not acceptable: "You show signs of burnout"
   (diagnosis), "Try going to bed earlier" (advice), "Well done for coping!"
   (evaluation).
 - Never use warning colours or alarm icons on difficult emotions. A red border
   on "loneliness" says *something is wrong with you*.
+- **Address the user in the present tense.** Ukrainian and Russian past-tense
+  verbs carry the addressee's gender, so a line like "what would you have called
+  it" exists in two forms and whichever one ships is wrong for half the
+  audience. Present tense and noun phrases stay genderless, and there is no
+  acceptable both-endings-in-brackets fallback. This constrains the English key
+  too: phrase it so the translation can avoid the past tense at all.
 - Empty-head rescue: when the user opens the app and has nothing to say, rotate
   gentle prompts under the orb ("What is most on your mind right now?").
   "I don't know what to write" is the main reason journals get abandoned.
@@ -431,13 +446,19 @@ Inherited from the design system; do not treat these as settled:
 A clickable HTML prototype exists covering 25 screens in both themes. Capture
 path: splash, auth, welcome, privacy, permission, first, home, listening,
 thinking, reflect, edit, saved. Retention: insights, growth, settings, locked,
-paywall. Reflection mode (M6): reflect-invite, guess, reveal. Grounding (M8):
+paywall. Reflection mode: reflect-invite, guess, reveal. Grounding (M8):
 ground-offer, ground-see, ground-hear, ground-touch, ground-done. Use it as the
 source of truth for layout and flow. Both files live in `design/`:
-`luna-prototype.html` covers screens and flow, `luna-design-system.html` covers
+`vidlun-prototype.html` covers screens and flow, `vidlun-design-system.html` covers
 tokens and components. They are self-contained — open them in a browser. Their
 UI copy is Ukrainian because it mirrors the shipping locale; that is reference
 data, and absolute rule 1 still applies to everything under `src/`.
+
+`guess` and `reveal` are now the capture card's two states as well, not only
+reflection mode's own screens; `reflect` is what the card looks like with the
+mode switched off, and `reflect-invite` is the way back into an entry already
+saved. The counter drawn on `guess` belongs to that way back and has no meaning
+during capture.
 
 ---
 
@@ -478,6 +499,11 @@ The old wording — "capture-to-save under ten seconds" — counted the speaking
 part of the cost and so measured the wrong thing. Time spent talking is not a
 cost to reduce.
 
+Now that the card asks before it answers, the wait is measured to the question,
+which needs only the transcript; the analysis finishes behind it. Time the
+person spends choosing a word is not part of the measurement, for the same
+reason the speaking is not.
+
 ### M5 — Retention and monetization
 Insights screen (free daily trend + paywalled weekly narrative), onboarding
 (privacy screen before the microphone permission request), settings with
@@ -491,25 +517,36 @@ everyone regardless.
 **Done when:** the free/paid boundary matches §6 and nothing in the capture
 path got slower.
 
-### M6 — Reflection mode (post-MVP, but architect for it now)
-The capture flow teaches nothing: AI names the feeling, the user taps yes. The
-therapeutic value of an emotion journal comes from *affect labeling* — the act
-of finding the word yourself. We currently take that work away, so after two
-months a user has clean statistics and zero growth in self-understanding.
+### M6 — Reflection mode (the question ships with the card; the growth view is post-MVP)
+A capture flow that answers for you teaches nothing: AI names the feeling, the
+user taps yes. The therapeutic value of an emotion journal comes from *affect
+labeling* — the act of finding the word yourself. Taking that work away leaves
+a user with clean statistics and zero growth in self-understanding after two
+months.
 
-Reflection mode separates capture from reflection **in time**, so learning never
-slows the capture path.
+**Reflection mode asks before it answers, and it does so during capture.** The
+question goes into the pause the analysis already needs, so it costs the
+capture path no wait at all. This replaces the earlier plan of separating
+capture from reflection *in time*, which bought the same learning at the price
+of a second visit the user had to choose to make — and the moment the words are
+freshest is the moment they were just spoken.
 
-- **Entry point:** an invitation on Home, always dismissible. Never blocking,
-  never a nagging badge.
-- **Guess first:** the entry is shown with its transcript but **no tags**.
-  "What would you call this?" The user chooses. An escape hatch —
-  "I don't know, show me" — is mandatory.
-- **Reveal:** the user's answer and Luna's are shown as **two separate cards**,
+- **Entry point:** the card itself. The invitation on Home stays, but for
+  entries already saved — a way back into an old one, always dismissible, never
+  blocking, never a nagging badge.
+- **Guess first:** the card opens with the transcript and **nothing else the
+  analysis produced** — no emotions, no mood, no context tags, no observation,
+  and no placeholder whose count gives the answer away. "What would you call
+  this?" An escape hatch — "I don't know, show me" — is mandatory, and naming
+  nothing is a complete answer.
+- **Never asked on a difficult entry.** `distress` and `crisis` skip the
+  question and go straight to the card. Asking someone in trouble to play at
+  naming is the worst thing the app could do with that moment.
+- **Reveal:** the user's answer and Vidlun's are shown as **two separate cards**,
   never merged. A third card names the difference and quotes the user's own
   words as evidence.
 - **Disagreement is a first-class action.** "No, I know what I felt" must be as
-  prominent as accepting. Luna is not an authority on someone else's feelings.
+  prominent as accepting. Vidlun is not an authority on someone else's feelings.
   Log disagreements separately: they are either model errors or genuine
   self-knowledge, and both are valuable.
 - **Growth view:** distinct emotions used per month, and distribution across
@@ -520,14 +557,15 @@ Introduces the metric that becomes the product's core value signal:
 what depth of the wheel. It also answers "why keep paying in month three"
 better than mood charts do.
 
-**Architectural requirement that applies to the MVP right now:** store the AI
-proposal separately from the user's own labels from day one
-(`proposedEmotionIds` alongside `emotionIds`). Reflection mode needs to render
-an entry *without* revealing the analysis. Without this split, M6 means
-rewriting the capture flow.
+**Architectural requirement:** three separate fields, from day one —
+`selfEmotionIds` (unaided), `proposedEmotionIds` (Vidlun's), `emotionIds` (what
+was kept). Rendering an entry without revealing the analysis needs the second
+split; measuring granularity honestly needs the first, because after the reveal
+the kept set is a mix of both.
 
-**Done when:** reflection mode is entirely optional, and disabling it leaves
-capture exactly as fast as before.
+**Done when:** reflection mode is entirely optional — a switch in settings —
+and turning it off leaves capture exactly as fast as before and the card
+exactly as it was.
 
 ### M7 — Scaffolding fade (design before building)
 Assistance decreases as competence grows: week 1 full tags, week 3 root branch
@@ -601,9 +639,13 @@ end-to-end with speech recognition disabled.
   is paid.
 - Do not add analytics or crash SDKs until M5.
 - Do not "improve" the capture flow by adding steps, confirmations, or optional
-  fields.
+  fields. The question the card opens with is not a precedent for granting
+  others: it adds no wait, and it is the one thing the product exists to teach.
+- Do not show any part of Vidlun's answer before the person has given theirs —
+  that includes the observation, the mood, the context tags, and the number of
+  chips it found.
 - Do not put an icon inside a paragraph of text, or use a single font for both
-  the interface and Luna's voice.
+  the interface and Vidlun's voice.
 - Do not write iOS-only code without an interface behind it — Android is next,
   not hypothetical.
 - Do not reply to the developer in English.
@@ -611,9 +653,11 @@ end-to-end with speech recognition disabled.
   persist anything the user says during it.
 - Do not add breathing exercises, meditations, or a library of techniques —
   that is a different product category with far better funded competitors.
-- Do not build reflection mode or scaffolding fade before M5 ships — but do
-  keep `proposedEmotionIds` separate from `emotionIds` from the very first
-  entity, or M6 becomes a rewrite.
+- Do not build scaffolding fade before M5 ships. Reflection mode's question now
+  lives in the capture card and is built with it — but keep `selfEmotionIds`,
+  `proposedEmotionIds` and `emotionIds` as three separate fields, or the
+  granularity metric ends up measuring Vidlun's vocabulary instead of the
+  person's.
 
 ---
 

@@ -185,7 +185,7 @@ describe('AsyncStorageMoodEntryRepository', () => {
     const store = new InMemoryKeyValueStore();
     const repository = new AsyncStorageMoodEntryRepository(store);
 
-    await store.setItem('luna.settings.theme', 'dark');
+    await store.setItem('vidlun.settings.theme', 'dark');
     await repository.save(entry());
 
     expect(await repository.findRecent(10)).toHaveLength(1);
@@ -268,7 +268,7 @@ describe('AsyncStorageRevisionLog', () => {
 
     await log.forget('entry-1');
 
-    const left = (await store.getAllKeys()).filter((k) => k.startsWith('luna.revision.'));
+    const left = (await store.getAllKeys()).filter((k) => k.startsWith('vidlun.revision.'));
 
     expect(left).toHaveLength(1);
     expect(left[0]).toContain('entry-2');

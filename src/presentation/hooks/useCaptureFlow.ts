@@ -171,7 +171,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           setStage({ kind: 'reflecting', proposed: draft, draft });
 
           /*
-           * The card is already on screen. Luna's sentence comes from a slower
+           * The card is already on screen. Vidlun's sentence comes from a slower
            * model and the entry needs it neither to render nor to save, so it
            * is written in afterwards rather than waited for — the difference
            * between two seconds of waiting and four.

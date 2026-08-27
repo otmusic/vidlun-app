@@ -5,7 +5,8 @@ import {
 } from '../../domain/ports/ISettings';
 import type { IKeyValueStore } from '../persistence/IKeyValueStore';
 
-const KEY = 'luna.settings';
+// Renaming a key strands the data behind it; see ENTRY_KEY_PREFIX.
+const KEY = 'vidlun.settings';
 
 export class SettingsStore implements ISettingsStore {
   constructor(

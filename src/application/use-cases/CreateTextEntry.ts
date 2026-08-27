@@ -10,7 +10,7 @@ import { draftFromProposal } from './draftFromProposal';
 /**
  * The fallback for someone who cannot speak right now. Confidence is full:
  * a human typed the words, so nothing was heard and nothing was misheard,
- * and Luna may be as specific as the wheel allows.
+ * and Vidlun may be as specific as the wheel allows.
  */
 export class CreateTextEntry {
   constructor(

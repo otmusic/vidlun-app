@@ -17,7 +17,7 @@ describe('translator', () => {
   it('leaves an unknown placeholder untouched instead of printing undefined', () => {
     const translate = createTranslator('en');
 
-    expect(translate('app.name', { unrelated: 'x' })).toBe('Luna');
+    expect(translate('app.name', { unrelated: 'x' })).toBe('Vidlun');
   });
 
   it('rejects a locale the app does not ship', () => {

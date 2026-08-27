@@ -8,7 +8,7 @@ export interface EntryRevisionRecord {
 }
 
 /**
- * What Luna proposed against what the user kept. Collected from day one
+ * What Vidlun proposed against what the user kept. Collected from day one
  * because personalization later cannot be back-filled.
  */
 export interface IRevisionLog {

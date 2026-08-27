@@ -8,7 +8,7 @@ function said(observation: string | null): FakeMessagesClient {
 }
 
 describe('ClaudeObservationWriter', () => {
-  it('returns the sentence Luna says out loud', async () => {
+  it('returns the sentence Vidlun says out loud', async () => {
     const client = said('Sounds like the good kind of tired.');
 
     expect(await new ClaudeObservationWriter(client).observe('raw words')).toBe(

@@ -1,11 +1,12 @@
 import type { EntryRevisionRecord, IRevisionLog } from '../../domain/ports/IRevisionLog';
 import type { IKeyValueStore } from './IKeyValueStore';
 
-export const REVISION_KEY_PREFIX = 'luna.revision.';
+// Renaming a key strands the data behind it; see ENTRY_KEY_PREFIX.
+export const REVISION_KEY_PREFIX = 'vidlun.revision.';
 
 /**
  * Append-only while the entry lives. These records are the only evidence of
- * what Luna got wrong, and personalization later cannot be back-filled from
+ * what Vidlun got wrong, and personalization later cannot be back-filled from
  * entries alone — but they go when the entry does.
  */
 export class AsyncStorageRevisionLog implements IRevisionLog {

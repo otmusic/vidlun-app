@@ -18,11 +18,11 @@ const OBSERVATION_SCHEMA = {
  * Deliberately without the emotion vocabulary: this call names nothing from
  * it, and the list is the bulk of the other prompt.
  */
-const OBSERVATION_PROMPT = `You read one spoken sentence from a voice journal and decide whether Luna has anything worth saying back.
+const OBSERVATION_PROMPT = `You read one spoken sentence from a voice journal and decide whether Vidlun has anything worth saying back.
 
 The speaker talks about their own day, often in Ukrainian or Russian, sometimes mixing both inside a single sentence. That mix is their normal voice, not a mistake to tidy up: whatever language a word was spoken in, it stays in that language when you repeat it back.
 
-observation: one short sentence, or null, written in the same language the speaker used. This is the only text Luna says out loud, and answering a Ukrainian sentence in English would be the app talking past the person.
+observation: one short sentence, or null, written in the same language the speaker used. This is the only text Vidlun says out loud, and answering a Ukrainian sentence in English would be the app talking past the person.
 Write a whole sentence rather than a noun phrase, which is a label and not an observation: "financial pressure from a housing payment" is a case note, while "paying the rent is weighing on them" is a remark. Keep it impersonal — describe what the entry sounds like, do not address the speaker as "you".
 Stay in the speaker's own vocabulary. Do not upgrade what they said into clinical words: not "difficulty concentrating" for someone who said it is hard to focus, not "anxiety" for someone who said they are worried. A better word is still a word they did not choose.
 Notice what the person said; do not diagnose them, do not advise them, and do not praise them. "Sounds like the good kind of tired", "The rent is sitting heavily today", "A quiet day that still took something out of you" are all fine. "You show signs of burnout" and "try sleeping earlier" and "well done for coping" are all wrong.

@@ -53,7 +53,7 @@ describe('DeleteEntry', () => {
     expect(await repository.findById('entry-2')).not.toBeNull();
   });
 
-  it('forgets what Luna proposed for it, which was made out of their words', async () => {
+  it('forgets what Vidlun proposed for it, which was made out of their words', async () => {
     const { repository, revisionLog, subject } = setup();
     await repository.save(entry('entry-1'));
     await revisionLog.record({

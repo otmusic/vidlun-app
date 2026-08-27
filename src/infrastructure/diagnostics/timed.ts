@@ -19,7 +19,7 @@ export const logTiming: ReportTiming = (stage, ms) => {
    * line is not a warning, and being readable is the whole point of it.
    */
   // eslint-disable-next-line no-console
-  console.log(`[luna] ${stage} ${Math.round(ms)}ms`);
+  console.log(`[vidlun] ${stage} ${Math.round(ms)}ms`);
 };
 
 async function timed<T>(

@@ -11,7 +11,7 @@ export class ReviseEntry {
     }
 
     // The user picked from the wheel by hand, so the choice is exact: no depth
-    // lifting and no sensitive-tier filter, both of which only restrain Luna.
+    // lifting and no sensitive-tier filter, both of which only restrain Vidlun.
     return entry.reviseWith({
       ...edits,
       emotionIds: this.vocabulary.keepKnown(edits.emotionIds),

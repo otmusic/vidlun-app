@@ -89,7 +89,7 @@ describe('ConfirmEntry', () => {
     expect(revisionLog.records).toEqual([]);
   });
 
-  it('records what Luna proposed against what the user kept', async () => {
+  it('records what Vidlun proposed against what the user kept', async () => {
     const { revisionLog, useCase } = setup();
     const proposed = draft();
     const confirmed = proposed.reviseWith({

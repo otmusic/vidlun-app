@@ -117,7 +117,7 @@ export class EmotionVocabulary {
   }
 
   /**
-   * The full gate between what the model returned and what Luna is allowed to
+   * The full gate between what the model returned and what Vidlun is allowed to
    * show as a proposal.
    */
   normalizeAiProposal(ids: readonly string[], limits: AiProposalLimits): readonly string[] {

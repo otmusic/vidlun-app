@@ -68,7 +68,7 @@ export class MoodEntry {
 
     const emotionIds = withinLimit(unique(props.emotionIds ?? []));
 
-    // Luna's own answer, kept whatever the user does next. On a fresh draft it
+    // Vidlun's own answer, kept whatever the user does next. On a fresh draft it
     // is the same list; the two only diverge once the user corrects the card.
     const proposedEmotionIds = withinLimit(unique(props.proposedEmotionIds ?? emotionIds));
 
@@ -127,7 +127,7 @@ export class MoodEntry {
 
   /**
    * The user's own correction. Flagged separately from `with*` so that
-   * "what Luna proposed vs what the user kept" stays diffable.
+   * "what Vidlun proposed vs what the user kept" stays diffable.
    */
   reviseWith(edits: EntryEdits): MoodEntry {
     return this.copyWith({ ...edits, wasRevisedByUser: true });
