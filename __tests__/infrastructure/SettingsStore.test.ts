@@ -41,6 +41,9 @@ describe('SettingsStore', () => {
       hasOnboarded: true,
       asksFirst: false,
       trialStartedAt: null,
+      reminderOn: true,
+      reminderHour: 22,
+      reminderMinute: 30,
     });
 
     expect(await subject.read()).toEqual({
@@ -50,6 +53,9 @@ describe('SettingsStore', () => {
       hasOnboarded: true,
       asksFirst: false,
       trialStartedAt: null,
+      reminderOn: true,
+      reminderHour: 22,
+      reminderMinute: 30,
     });
   });
 
@@ -82,6 +88,9 @@ describe('SettingsStore', () => {
       theme: 'system',
       asksFirst: true,
       trialStartedAt: null,
+      reminderOn: false,
+      reminderHour: 21,
+      reminderMinute: 0,
       hasOnboarded: false,
     });
   });
@@ -117,5 +126,20 @@ describe('SettingsStore', () => {
     await store.setItem('vidlun.settings', JSON.stringify({ theme: 'sepia' }));
 
     expect((await subject.read()).theme).toBe('system');
+  });
+
+  it('refuses a stored clock reading that is not one', async () => {
+    const { store, subject } = setup();
+    await store.setItem(
+      'vidlun.settings',
+      JSON.stringify({ reminderHour: 47, reminderMinute: -3 }),
+    );
+
+    // Out of range is damage, not a preference, and a reminder at 47:00 would
+    // simply never fire.
+    const settings = await subject.read();
+
+    expect(settings.reminderHour).toBe(21);
+    expect(settings.reminderMinute).toBe(0);
   });
 });

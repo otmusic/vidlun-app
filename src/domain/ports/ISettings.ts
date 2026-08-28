@@ -25,6 +25,15 @@ export interface Settings {
    * this is the whole of the entitlement.
    */
   readonly trialStartedAt: string | null;
+  /**
+   * The evening nudge. Stored here whether or not anything delivers it yet:
+   * scheduling a local notification needs `expo-notifications`, which is a
+   * dependency to ask about, and the preference is the person's either way.
+   */
+  readonly reminderOn: boolean;
+  /** Local time, 24 hour. */
+  readonly reminderHour: number;
+  readonly reminderMinute: number;
 }
 
 /**
@@ -45,6 +54,13 @@ export const DEFAULT_SETTINGS: Settings = {
    */
   asksFirst: true,
   trialStartedAt: null,
+  /*
+   * Off, and the evening rather than the morning if it is turned on: §8 puts
+   * the reminder at the hour someone is usually already home.
+   */
+  reminderOn: false,
+  reminderHour: 21,
+  reminderMinute: 0,
 };
 
 /**

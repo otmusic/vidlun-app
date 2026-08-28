@@ -11,7 +11,6 @@ import type { CaptureFlow } from '../hooks/useCaptureFlow';
 import { EditScreen } from './EditScreen';
 import { EntryDetailScreen } from './EntryDetailScreen';
 import { HistoryScreen } from './HistoryScreen';
-import { SettingsScreen } from './SettingsScreen';
 import { HomeScreen } from './HomeScreen';
 import { ProcessingScreen } from './ProcessingScreen';
 import { CompareScreen } from './CompareScreen';
@@ -19,6 +18,8 @@ import { RecordingScreen } from './RecordingScreen';
 import { TurnScreen } from './TurnScreen';
 import { ReflectionScreen } from './ReflectionScreen';
 import { SavedScreen } from './SavedScreen';
+import { ProfileScreen } from './ProfileScreen';
+import { SearchScreen } from './SearchScreen';
 import { StatsScreen } from './StatsScreen';
 import { VocabularyScreen } from './VocabularyScreen';
 import { Screen } from './Screen';
@@ -42,6 +43,7 @@ export interface CaptureFlowScreenProps {
 const TAB_FOR_STAGE: Partial<Record<CaptureFlow['stage']['kind'], Tab>> = {
   idle: 'home',
   history: 'journal',
+  search: 'search',
   settings: 'me',
 };
 
@@ -68,10 +70,11 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
             props.flow.backHome();
           } else if (next === 'journal') {
             props.flow.openHistory();
+          } else if (next === 'search') {
+            props.flow.openSearch();
           } else if (next === 'me') {
             props.flow.openSettings();
           }
-          // Search has no screen yet. Doing nothing beats navigating nowhere.
         }}
       />
     </View>
@@ -161,11 +164,16 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
 
     case 'settings':
       return (
-        <SettingsScreen
+        <ProfileScreen
+          entryCount={
+            flow.history === null
+              ? null
+              : flow.history.reduce((total, day) => total + day.entries.length, 0)
+          }
+          streakDays={flow.home?.streakDays ?? 0}
           settings={props.settings}
           t={t}
           onChange={props.onSettingsChange}
-          onBack={flow.backHome}
         />
       );
 
@@ -200,15 +208,37 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
         />
       );
 
+    case 'search':
+      return (
+        <SearchScreen
+          result={flow.stage.result}
+          query={flow.stage.query}
+          emotionId={flow.stage.emotionId}
+          vocabulary={props.vocabulary}
+          locale={props.locale}
+          t={t}
+          onQuery={(query) => {
+            flow.search(query, flow.stage.kind === 'search' ? flow.stage.emotionId : null);
+          }}
+          onFilter={(emotionId) => {
+            flow.search(flow.stage.kind === 'search' ? flow.stage.query : '', emotionId);
+          }}
+          onReset={() => {
+            flow.search('', null);
+          }}
+          onOpen={flow.openEntry}
+        />
+      );
+
     case 'history':
       return (
         <HistoryScreen
           days={flow.history}
+          vocabulary={props.vocabulary}
           locale={props.locale}
           t={t}
           onOpen={flow.openEntry}
-          onDelete={flow.deleteEntry}
-          onBack={flow.backHome}
+          onRecord={flow.startRecording}
         />
       );
 

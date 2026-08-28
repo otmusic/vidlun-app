@@ -1114,6 +1114,62 @@ i18n keys, and what still has to be computed:
 
 ---
 
+## 3d. The rest of the drawing — built 2026-08-28
+
+`Vidlun.dc.html` had fifteen screens and the code had seven. It now has
+fourteen; only the grounding exercise (§M8, post-MVP and waiting on a concierge
+test) is left undrawn in code.
+
+| Screen | State |
+|---|---|
+| feed | **Done.** Flat, newest first, not grouped by day — days with nothing in them are not headings with nothing under them. `HistoryScreen` is the file; the name is now wrong. |
+| search | **Done.** A word or a feeling, because people remember an entry either way. Searches `cleanTranscript` and the tags, never `rawTranscript`: a card returned on a word the person cannot see would be the app claiming they said it. Filters are their five most-used words, not a fixed list. |
+| profile | **Done**, and it replaces the settings screen. |
+| palette | Not started. |
+| ground | §M8, and §8 asks for a concierge test before any of it is built. |
+
+**What the profile cost.** The drawing's appearance control is a single dark
+switch whose off state reads "follows system", so **"light always" has no way
+in any more** — §7.6 argues for three states and the drawing has two. Someone
+who already chose light keeps it and cannot choose it again. Unresolved.
+
+**The reminder is stored and delivered by nothing.** Hour, minute and on/off
+live in settings; scheduling needs `expo-notifications`, which is a dependency
+to ask about. The wheel is the alarm-clock one, at the owner's request.
+
+**One block is in the code and not in the drawing**: the switch for whether the
+card asks first. §M6 calls that question the point of the product, so where it
+is turned off belongs somewhere a person would look. It needs a block in
+`Vidlun.dc.html`.
+
+---
+
+## 3e. Mood may be absent — 2026-08-28
+
+`MoodEntry.mood` is `MoodScore | null`, and this was the owner's call after
+noticing an entry that said "just recording, no emotions, just sound" had been
+filed as a 3 out of 5.
+
+**A three was standing in for "it did not come up".** The analyzer had to
+return a number, so on an entry that never said how the day was it returned the
+middle one — and that number was then averaged into the week's chart, compared
+across the month by `FindMoodPatterns`, and shown on the card as a measurement.
+§6 already says zero emotions is a complete entry; the same is true of the
+number, and the drawing half-knew it — the comparison card hides the mood block
+whenever Vidlun heard no emotion.
+
+Null now travels the whole way: the schema accepts it, the prompt says when
+(a three is for a day conveyed as even, never for one nobody described), the
+averages skip it, the screens draw nothing, and the editor opens on an empty
+scale rather than a pre-filled three. Records written before the change all
+carry a number, so nothing old changed meaning.
+
+**What this does not fix**: entries already saved keep the three they were
+given. Backfilling would mean guessing again, at a distance, which is the same
+mistake later.
+
+---
+
 ## 4. Deliberate debt
 
 | # | Debt | Why it matters |

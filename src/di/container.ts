@@ -15,6 +15,7 @@ import { FindMoodPatterns } from '../application/use-cases/FindMoodPatterns';
 import { GetVocabularyGrowth } from '../application/use-cases/GetVocabularyGrowth';
 import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
 import { GetWeekThemes } from '../application/use-cases/GetWeekThemes';
+import { SearchEntries } from '../application/use-cases/SearchEntries';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
 import { FindRecording } from '../application/use-cases/FindRecording';
 import { ForgetOldRecordings } from '../application/use-cases/ForgetOldRecordings';
@@ -66,6 +67,7 @@ export interface Container {
   readonly getWeekSummary: GetWeekSummary;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
+  readonly searchEntries: SearchEntries;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
   readonly microphonePermission: IMicrophonePermission;
   readonly haptics: IHaptics;
@@ -157,6 +159,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     ),
     getWeekThemes: new GetWeekThemes(repository),
     findMoodPatterns: new FindMoodPatterns(repository, clock),
+    searchEntries: new SearchEntries(repository),
     getVocabularyGrowth: new GetVocabularyGrowth(repository, vocabulary, clock),
     microphonePermission: new ExpoMicrophonePermission({
       getRecordingPermissionsAsync,

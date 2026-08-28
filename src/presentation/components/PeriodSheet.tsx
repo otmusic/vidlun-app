@@ -249,7 +249,9 @@ function Calendar(props: {
           }
 
           const day = new Date(first.getFullYear(), first.getMonth(), dayOfMonth);
-          const outside = day < props.earliest || day > props.today;
+          // By day at both ends: `today` arrives with the hour on it, so a
+          // plain comparison put today itself in the future.
+          const outside = day < startOfDay(props.earliest) || day > startOfDay(props.today);
           const edge = sameDay(day, props.from) || sameDay(day, props.to);
           const inside =
             props.from !== null && props.to !== null && day > props.from && day < props.to;
@@ -341,6 +343,10 @@ function dayLabel(date: Date, locale: Locale): string {
 
 function mondayOf(date: Date): Date {
   return addDays(date, -((date.getDay() + 6) % COLUMNS));
+}
+
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function startOfMonth(date: Date): Date {

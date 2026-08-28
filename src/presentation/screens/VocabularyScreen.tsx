@@ -36,6 +36,8 @@ export function VocabularyScreen(props: {
   const theme = useTheme();
   const scheme = theme.isDark ? 'dark' : 'light';
   const [pickingPeriod, setPickingPeriod] = useState(false);
+  /** The list is trimmed to what fits; the rest are one tap away, not gone. */
+  const [showingAll, setShowingAll] = useState(false);
   const { growth, t } = props;
 
   const label = (id: string): string => t(emotionKey(id));
@@ -47,7 +49,7 @@ export function VocabularyScreen(props: {
       : colorForEmotion(props.vocabulary, emotion, scheme);
   };
 
-  const shown = growth.firstTimeIds.slice(0, SHOWN_WORDS);
+  const shown = showingAll ? growth.firstTimeIds : growth.firstTimeIds.slice(0, SHOWN_WORDS);
   const rest = growth.firstTimeIds.length - shown.length;
 
   return (
@@ -112,9 +114,17 @@ export function VocabularyScreen(props: {
             <Outlined key={id} label={label(id)} colour={colourOf(id)} />
           ))}
           {rest > 0 ? (
-            <AppText variant="body" color="inkSoft">
-              {t('stats.newWordsMore', { n: rest })}
-            </AppText>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setShowingAll(true);
+              }}
+              hitSlop={8}
+            >
+              <AppText variant="body" color="inkSoft">
+                {t('stats.newWordsMore', { n: rest })}
+              </AppText>
+            </Pressable>
           ) : null}
         </View>
       )}

@@ -76,5 +76,24 @@ function merge(parsed: unknown): Settings {
       typeof record['trialStartedAt'] === 'string'
         ? record['trialStartedAt']
         : DEFAULT_SETTINGS.trialStartedAt,
+    reminderOn:
+      typeof record['reminderOn'] === 'boolean'
+        ? record['reminderOn']
+        : DEFAULT_SETTINGS.reminderOn,
+    reminderHour: hourOr(record['reminderHour'], DEFAULT_SETTINGS.reminderHour),
+    reminderMinute: minuteOr(record['reminderMinute'], DEFAULT_SETTINGS.reminderMinute),
   };
+}
+
+/** A stored clock reading that is out of range is not a preference, it is damage. */
+function hourOr(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 23
+    ? value
+    : fallback;
+}
+
+function minuteOr(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 59
+    ? value
+    : fallback;
 }

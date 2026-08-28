@@ -144,6 +144,7 @@ function Vidlun(props: {
     getWeekSummary: container.getWeekSummary,
     getWeekThemes: container.getWeekThemes,
     findMoodPatterns: container.findMoodPatterns,
+    searchEntries: container.searchEntries,
     getVocabularyGrowth: container.getVocabularyGrowth,
     /*
      * The free week is the whole entitlement so far. Buying what comes after

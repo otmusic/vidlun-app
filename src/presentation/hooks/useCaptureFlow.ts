@@ -12,6 +12,7 @@ import type {
 import type { GetWeekSummary } from '@/application/use-cases/GetWeekSummary';
 import type { FindMoodPatterns } from '@/application/use-cases/FindMoodPatterns';
 import type { GetWeekThemes } from '@/application/use-cases/GetWeekThemes';
+import type { SearchEntries, SearchResult } from '@/application/use-cases/SearchEntries';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
 import type { FindRecording } from '@/application/use-cases/FindRecording';
 import type { ForgetOldRecordings } from '@/application/use-cases/ForgetOldRecordings';
@@ -55,6 +56,17 @@ export type CaptureStage =
   | { readonly kind: 'saved'; readonly streakDays: number }
   | { readonly kind: 'history' }
   | { readonly kind: 'settings' }
+  /**
+   * The query and the filter live on the stage rather than beside it, so
+   * leaving search and coming back starts clean — a screen that remembers what
+   * you were looking for last week is one you have to clear before using.
+   */
+  | {
+      readonly kind: 'search';
+      readonly query: string;
+      readonly emotionId: string | null;
+      readonly result: SearchResult | null;
+    }
   /**
    * The insights screen. `weeksBack` lives on the stage rather than beside it
    * so that leaving and coming back starts at this week again — a screen that
@@ -106,6 +118,7 @@ export interface CaptureDependencies {
   readonly getWeekSummary: GetWeekSummary;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
+  readonly searchEntries: SearchEntries;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
   /** True while the free week runs. The chart and the themes never wait on it. */
   readonly hasNarrativeAccess: boolean;
@@ -147,6 +160,8 @@ export interface CaptureFlow {
   readonly closeEntry: () => void;
   readonly openEntry: (entry: MoodEntry) => void;
   readonly openSettings: () => void;
+  readonly openSearch: () => void;
+  readonly search: (query: string, emotionId: string | null) => void;
   readonly openStats: () => void;
   readonly openVocabulary: () => void;
   /** Re-counts the vocabulary over a period the person picked. */
@@ -484,6 +499,26 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     [dependencies, fail],
   );
 
+  const runSearch = useCallback(
+    (query: string, emotionId: string | null) => {
+      // The typed text lands immediately and the results follow, so the field
+      // never lags behind the keyboard.
+      setStage({ kind: 'search', query, emotionId, result: null });
+
+      void dependencies.searchEntries
+        .execute({ query, emotionId })
+        .then((result) => {
+          setStage((current) =>
+            current.kind === 'search' && current.query === query && current.emotionId === emotionId
+              ? { ...current, result }
+              : current,
+          );
+        })
+        .catch(fail);
+    },
+    [dependencies.searchEntries, fail],
+  );
+
   const loadVocabulary = useCallback(
     (period?: { readonly from: Date; readonly to: Date }) => {
       setStage((current) =>
@@ -499,7 +534,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         dependencies.getHistory.execute(),
       ])
         .then(([growth, history]) => {
-          const oldest = history.at(-1)?.entries.at(-1)?.createdAt ?? growth.from;
+          /*
+           * The start of that day, not the minute of it. An entry written at
+           * 21:58 made every hour of its own day count as before the journal
+           * began, so today and yesterday were both unpickable in the calendar.
+           */
+          const first = history.at(-1)?.entries.at(-1)?.createdAt ?? growth.from;
+          const oldest = new Date(first.getFullYear(), first.getMonth(), first.getDate());
 
           setStage((current) =>
             current.kind === 'vocabulary' ? { ...current, growth, earliest: oldest } : current,
@@ -700,7 +741,18 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     keptMine,
     openSettings: useCallback(() => {
       setStage({ kind: 'settings' });
-    }, []),
+      // The profile counts entries, and the count comes from the journal it
+      // shares with the feed rather than from a second reading of the same
+      // rows.
+      void dependencies.getHistory
+        .execute()
+        .then(setHistory)
+        .catch(fail);
+    }, [dependencies.getHistory, fail]),
+    openSearch: useCallback(() => {
+      runSearch('', null);
+    }, [runSearch]),
+    search: runSearch,
     openStats: useCallback(() => {
       loadStats(0);
     }, [loadStats]),
