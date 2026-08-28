@@ -660,8 +660,15 @@ end-to-end with speech recognition disabled.
 
 - Do not put any Cyrillic text in code files.
 - Do not use `localStorage` or `sessionStorage`.
-- Do not add cloud speech-to-text in the MVP — it breaks both the privacy
-  promise and the unit economics for free users.
+- ~~Do not add cloud speech-to-text in the MVP.~~ **Reversed by the owner on
+  2026-08-28.** The unit-economics half of the objection is out of date —
+  Gemini 3.5 Transcribe costs about five cents a month for someone writing
+  daily, less than the Haiku and Sonnet calls the same entry already makes. The
+  privacy half stands and is now an open debt: the onboarding line promising
+  the voice never leaves the phone has been removed, and nothing honest has
+  replaced it yet. Cloud recognition runs only while there is a connection;
+  Parakeet still answers offline, so voice never depends on the network. See
+  BACKLOG §1e.
 - Do not build v2 features: pattern detection, voice-topic analysis, health
   data integration, personalization, append-to-entry.
 - Do not gate basic tracking or backups behind the paywall. Only AI narrative
@@ -708,3 +715,10 @@ Three possible outcomes:
   the privacy copy in onboarding must be rewritten to match reality.
 
 Report the result before continuing. Do not silently fall back to cloud STT.
+
+**Resolved, then reopened from the other side — 2026-08-28.** Parakeet closed
+the quality question by ear and the app shipped on-device only. The owner has
+now put Gemini 3.5 Transcribe in front of it for connected takes; the fallback
+to the phone is by design and is not silent — it is logged and every failure
+path is tested. What is still owed is the copy: onboarding no longer claims the
+voice stays on the phone, and it does not yet say where it goes instead.

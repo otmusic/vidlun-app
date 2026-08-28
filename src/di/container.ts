@@ -40,6 +40,7 @@ import { SystemClock } from '../infrastructure/system/SystemClock';
 import { UuidGenerator } from '../infrastructure/system/UuidGenerator';
 import {
   TimedMessagesClient,
+  TimedReflectionAnalyzer,
   TimedTranscriptionService,
 } from '../infrastructure/diagnostics/timed';
 import { readAnthropicApiKey } from './config';
@@ -106,7 +107,13 @@ export function createContainer(dependencies: ContainerDependencies): Container 
    * needs to be visible while that is worked on.
    */
   const messages = __DEV__ ? new TimedMessagesClient(anthropic.messages) : anthropic.messages;
-  const analyzer = new ClaudeReflectionAnalyzer(messages, vocabulary);
+  const reflection = new ClaudeReflectionAnalyzer(messages, vocabulary);
+  /*
+   * The card shows the repaired transcript, so the two rewriters on this path
+   * — the recogniser and this prompt — are indistinguishable from the outside.
+   * Printing both is the only way to tell whose word a wrong word is.
+   */
+  const analyzer = __DEV__ ? new TimedReflectionAnalyzer(reflection) : reflection;
   const observationWriter = new ClaudeObservationWriter(messages);
   const transcription = __DEV__
     ? new TimedTranscriptionService(dependencies.transcription)

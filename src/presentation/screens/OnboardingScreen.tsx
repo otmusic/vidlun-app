@@ -89,9 +89,12 @@ export function OnboardingScreen(props: {
         {step === 'welcome' ? <Lede>{t('onboarding.welcomeBody')}</Lede> : null}
         {step === 'privacy' ? (
           <View style={{ gap: 18, maxWidth: 320 }}>
-            <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
-              {t('onboarding.privacyOnDevice')}
-            </AppText>
+            {/*
+              The line promising the voice never leaves the phone is gone with
+              the promise: recognition now goes to Gemini whenever there is a
+              connection. What replaces it is a product decision, not a copy
+              edit, and it has to be made before this ships — see BACKLOG §1e.
+            */}
             <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
               {t('onboarding.privacyKeep')}
             </AppText>

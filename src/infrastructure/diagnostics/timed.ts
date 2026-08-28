@@ -11,6 +11,29 @@ import type { MessagesClient } from '../analysis/claudeModels';
 /** Where a stage timing goes. Injected so a test can read it without a console. */
 export type ReportTiming = (stage: string, ms: number) => void;
 
+/** Where the words go, for as long as it takes to tell two rewriters apart. */
+export type ReportTranscript = (text: string) => void;
+
+/**
+ * The card shows `cleanTranscript`, which has been through the analyzer's
+ * repair prompt. So a wrong word on screen has two possible authors and no
+ * way to tell which: the recogniser mishearing, or the repair "fixing" what
+ * was heard correctly. This prints what the recogniser actually returned.
+ *
+ * Development only, and it puts someone's own sentence in the terminal — it
+ * comes out again once §1e's attribution question is settled.
+ */
+export const logTranscript: ReportTranscript = (text) => {
+  // eslint-disable-next-line no-console
+  console.log(`[vidlun] heard: ${text}`);
+};
+
+/** The other half of the same question: what the repair prompt made of it. */
+export const logRepair: ReportTranscript = (text) => {
+  // eslint-disable-next-line no-console
+  console.log(`[vidlun] repaired: ${text}`);
+};
+
 export const logTiming: ReportTiming = (stage, ms) => {
   /*
    * log, not warn. React Native routes warnings into LogBox, which swallows
@@ -49,12 +72,23 @@ export class TimedTranscriptionService implements ITranscriptionService {
   constructor(
     private readonly inner: ITranscriptionService,
     private readonly report: ReportTiming = logTiming,
+    private readonly reportTranscript: ReportTranscript = logTranscript,
   ) {}
 
-  transcribe(recording: AudioRecording): Promise<TranscriptionResult> {
-    return timed(`transcribe (${Math.round(recording.durationMs / 100) / 10}s of audio)`, this.report, () =>
-      this.inner.transcribe(recording),
+  prepare(): Promise<void> {
+    return timed('open model', this.report, () => this.inner.prepare());
+  }
+
+  async transcribe(recording: AudioRecording): Promise<TranscriptionResult> {
+    const result = await timed(
+      `transcribe (${Math.round(recording.durationMs / 100) / 10}s of audio)`,
+      this.report,
+      () => this.inner.transcribe(recording),
     );
+
+    this.reportTranscript(result.text);
+
+    return result;
   }
 }
 
@@ -62,10 +96,15 @@ export class TimedReflectionAnalyzer implements IReflectionAnalyzer {
   constructor(
     private readonly inner: IReflectionAnalyzer,
     private readonly report: ReportTiming = logTiming,
+    private readonly reportTranscript: ReportTranscript = logRepair,
   ) {}
 
-  analyze(transcript: string): Promise<ReflectionProposal> {
-    return timed('analyze', this.report, () => this.inner.analyze(transcript));
+  async analyze(transcript: string): Promise<ReflectionProposal> {
+    const proposal = await timed('analyze', this.report, () => this.inner.analyze(transcript));
+
+    this.reportTranscript(proposal.cleanTranscript);
+
+    return proposal;
   }
 }
 

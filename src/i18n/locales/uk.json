@@ -66,7 +66,6 @@
   "onboarding.welcomeBody": "Розкажи, як пройшов день. Решту Vidlun зробить сам.",
   "onboarding.welcomeAction": "Почати",
   "onboarding.privacyTitle": "Твої слова лишаються твоїми",
-  "onboarding.privacyOnDevice": "Мова розпізнається на самому телефоні. Голос нікуди не надсилається.",
   "onboarding.privacyKeep": "Запис голосу лишається на телефоні рік, потім зникає сам. Текст запису лишається назавжди.",
   "onboarding.privacyDelete": "Будь-який запис можна видалити, і голос зникне разом із ним.",
   "onboarding.privacyAction": "Зрозуміло",

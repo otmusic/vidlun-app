@@ -431,6 +431,235 @@ near the cloud, the question closes for good and in our favour.
 
 ---
 
+## 1e. Gemini in front of Parakeet — built 2026-08-28
+
+The owner decided what §1d left open, and decided it both ways: **Gemini 3.5
+Transcribe when there is a connection, Parakeet when there is not.** Voice
+never depends on the network, and the recogniser that answers is chosen per
+take rather than per install.
+
+### How the choice is made
+
+There is no connectivity check, and that is deliberate. A flag saying the radio
+is up answers a different question, and it is wrong exactly where being wrong
+costs most: a captive portal, a bar of signal carrying no packets, an airport
+network that resolves DNS and nothing else. The request is the test. It carries
+a 12-second deadline, and missing it means what having no connection means —
+run Parakeet. This also kept the promise in absolute rule 5: no new dependency
+was needed for it.
+
+`CloudFirstTranscriptionService` owns the decision; neither recogniser knows
+about the other. `prepare` opens the local model either way, so a fallback
+costs the transcription and not the ten-second load as well — half a gigabyte
+read on a connection that was about to hold is cheaper than a cold model in
+front of someone who has already waited out a timeout.
+
+An empty cloud transcript counts as a failure and goes to the phone too. It is
+equally "nothing was said" and "the cloud heard nothing in audio Parakeet can
+read", and only one of those is worth throwing an entry away for.
+
+### First numbers on the phone — 2026-08-28
+
+Three real takes, iPhone 14 Pro, Wi-Fi:
+
+```
+35.6 s of audio   4069 ms
+24.8 s of audio   4224 ms
+20.2 s of audio   4245 ms
+```
+
+**The cost is fixed and it is not the upload.** Time does not grow with the
+audio — it falls slightly, so a take twice as long is free. Compressing to AAC
+before sending would buy nothing; only streaming (2.4) touches this number, and
+that is a different architecture.
+
+Against Parakeet's 2121 ms, also fixed, **the cloud costs about 2x on the one
+number M4 is defined by.** Stop-to-card was 4.0 s and is now near 6 s. That is
+the price of the swap, and nothing in these three takes has yet shown what it
+buys: Parakeet was never run on this same audio.
+
+`open model` came in at 900-942 ms, not the ten seconds the brief inherited
+from Whisper. Warming both recognisers in `prepare` costs almost nothing, so
+the fallback stays instant.
+
+**Accuracy, three takes deep and therefore not a measurement.** The owner's
+first take — sent before language codes were — dropped a word and misheard
+`the word for "anxious"`. The two after it, with `language_codes: ["uk-UA", "ru-RU"]`,
+came back exact. The codes are documented as hints that leave code-switching
+alone, so they cost nothing either way, but one take against two proves
+nothing on its own.
+
+The repair prompt was cleared of the suspicion it was under: on a verbatim
+transcript carrying `e-e` fillers and a broken clause, it removed the fillers
+and left the clause standing, which is exactly §1's rule. Gemini's own smart
+mode would duplicate that work under rules we cannot see, which is why it
+stays off.
+
+### The run §1d asked for, done — 2026-08-28
+
+16 labelled real takes, `~/vidlun-whisper/recordings-real/audio`, one harness:
+`scripts/transcription-benchmark.mjs`. Gemini goes through the app's own
+adapter, compiled rather than copied, so what is measured is what ships.
+**Parakeet is a number for the first time.**
+
+Fifteen takes, not sixteen: the free-tier key ran out of requests and take-16
+never got a cloud answer. The table is the fifteen all three engines finished,
+so the columns compare.
+
+| | whisper q5_0 | parakeet q8_0 | gemini verbatim |
+|---|---|---|---|
+| mean WER | 0.242 | 0.216 | **0.182** |
+| median WER | 0.167 | **0.091** | 0.118 |
+| Ukrainian (9) | 0.254 | 0.260 | **0.237** |
+| Russian (3) | 0.282 | 0.190 | **0.116** |
+| mixed (3) | 0.163 | 0.109 | **0.084** |
+| exact transcripts | 2/15 | **5/15** | 2/15 |
+| takes over 0.4 | 3/15 | 2/15 | **1/15** |
+| desktop s/take | 2.37 | **0.52** | see below |
+
+**Gemini wins the average, Parakeet wins the middle.** Gemini is ahead on every
+language and has the fewest disasters; Parakeet is exactly right more than
+twice as often as either. The two facts are consistent: Gemini is more evenly
+good and rarely far wrong, Parakeet either nails a take or drops a word.
+
+Wall time from this run is not comparable for the cloud rows — the quota pause
+in front of each request was inside the measurement, which is a harness bug now
+fixed. The phone numbers stand as the latency figure: Gemini ~4.1 s fixed
+against Parakeet's ~2.1 s.
+
+**The one that should worry us is take-02.** "Приготував вечерю" — two words,
+badly recorded, and all three failed it. But they failed differently:
+
+```
+whisper    Прогутового вечера.
+parakeet   Правут о вечерню.
+gemini     Доброго вечора.
+```
+
+The local two produced visible nonsense. Gemini produced a fluent, ordinary,
+completely wrong sentence — and it is the only one of the three the repair
+prompt cannot catch, because that prompt's whole test is "is this a word in any
+language". "Доброго вечора" passes that test and reaches the analyzer as an
+evening greeting. **A better recogniser fails more dangerously, not less**, and
+that is an argument about safety rather than accuracy.
+
+Reading the rest: on take-12 Gemini alone got both "схвильований" and "свій
+додаток" right where Whisper invented "халюваний"; on the Russian take-08 it
+was clearly best. Some of its losses are reference drift, the same charge
+Parakeet took in §1c — it transcribes the "Так," at the start of a take that the
+written reference left out, and WER bills it.
+
+### Smart mode measured, and it is not for us — 2026-08-28
+
+Run again on a second key, both modes, the 13 takes that survived the quota:
+
+| | whisper q5_0 | parakeet q8_0 | gemini verbatim | gemini smart |
+|---|---|---|---|---|
+| mean WER | 0.256 | 0.233 | **0.195** | 0.442 |
+| median WER | 0.167 | **0.091** | 0.125 | 0.167 |
+| takes over 0.4 | 3 | 2 | **1** | 2 |
+
+The first impression — that smart returned text identical to verbatim — was an
+artefact of three takes it happened to leave alone. It changes six of thirteen,
+**and four of the six get worse.** The two it improves are ordinary sentences;
+what it does to the hard ones is a different kind of failure:
+
+```
+said      Норм.
+verbatim  Норм.
+smart     नॉर्म
+
+said      Приготував вечерю.
+verbatim  Доброго вечора.
+smart     Prostovoljci.
+
+said      ...і схвильований...
+verbatim  Проживаю схвильований
+smart     Проживаю в Схльовані
+```
+
+Devanagari for a one-word Ukrainian take, a Slovenian noun for a two-word one,
+and an adjective turned into a place name. Smart mode is optimising for a
+readable sentence, and on a short or noisy take the most readable sentence is
+one nobody said. That is the same failure as `Доброго вечора`, further along:
+**fluency is what makes a wrong transcript dangerous here**, and this mode buys
+more of it.
+
+Verbatim stays. The repair the product needs is the one whose rules we write.
+
+
+### The fallback, seen working — 2026-08-28
+
+Not simulated: the benchmark had exhausted the key, so the next take on the
+phone met a real 429.
+
+```
+[vidlun] open model 991ms
+[vidlun] transcribing on the phone instead: ...the service answered 429
+[vidlun] transcribe (16.3s of audio) 1985ms
+[vidlun] heard: Сьогодні кіт знову сходив в туалет з жидким стулом...
+```
+
+**1985 ms for the whole path** — the refusal plus Parakeet, which is what
+Parakeet costs alone. Nothing on screen said the recogniser had changed, which
+is the point. One caveat: a rejection returns immediately, where a dropped
+connection would spend the 12-second deadline first and only then start the
+local model.
+
+### The repair prompt breaks §1, and now there is a log line proving it
+
+The same take, one stage later:
+
+```
+heard:     ...з жидким стулом...
+repaired:  ...з рідким стулом...
+```
+
+The speaker said `жидким`. The prompt turned it into the Ukrainian word. §1
+forbids exactly this — a Russian word inside a Ukrainian sentence is how this
+person talks, and converting it is named there as the one thing the app must
+never do. The licence covers runs of letters that are not words in any
+language; `жидким` is an ordinary Russian word and should have survived
+untouched.
+
+This is the owner's original complaint, correctly addressed: the first take of
+the day lost `нову` and misheard a word, and both were laid at the recogniser's
+door. The recogniser was not the author. **1.8 stops being a question about
+whether the repair still earns its risk and becomes a bug**: the prompt is
+doing something its own rules forbid, on a transcript clean enough that it had
+nothing legitimate to fix.
+
+### What was left alone
+
+- **Smart mode is off.** Gemini's own filler-word removal and self-correction
+  repair overlap with what the analyzer prompt does under rules written for
+  this audience — a Russian word inside a Ukrainian sentence is how the person
+  talks and must survive. Two repairs in a row, one of them not ours to tune,
+  is how someone's words quietly become someone else's. Measure before
+  enabling; this is 1.8 again, now with a second candidate.
+- **No language hint.** Gemini detects per utterance, and naming one language
+  is exactly what breaks a sentence that switches halfway.
+- **Confidence is a flat 0.9 on the cloud path**, asserted rather than
+  measured. The duration bands mean nothing against 2.6% WER, but nothing here
+  is measured either — 1.7 now covers both recognisers.
+
+### What this owes
+
+- **The copy.** `onboarding.privacyOnDevice` — "your voice is never sent
+  anywhere" — is deleted, key and all, because it stopped being true. Nothing
+  replaces it yet. That line is a product decision and it blocks release, not
+  the build: the privacy step currently says what is kept and what can be
+  deleted, and says nothing about where recognition happens.
+- **The measurement §1d asked for is still not done.** Parakeet has never been
+  a number. It now matters more, not less: the fallback path is the one nobody
+  will watch.
+- **The key ships in the bundle**, exactly like the Anthropic one, and moves
+  behind the same proxy — see the debt note in `src/di/config.ts`. Unlike the
+  Anthropic key it is optional: without `EXPO_PUBLIC_GEMINI_API_KEY` the app is
+  on-device only and everything still works.
+
+---
+
 ## 2. M4 — built, not verified
 
 | # | Item | Who |
