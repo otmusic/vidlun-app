@@ -122,7 +122,12 @@ speech pipeline must handle that. The codebase must not.
   with how much someone had to say — the app would charge most for its best
   entries. Streaming makes the wait after the stop a constant.
 - Cloud LLM for analysis (Claude Haiku for per-entry, Sonnet for weekly summary)
-- Local-first storage; no backend in the MVP
+- Local-first storage; no backend in the MVP, with one exception that is not
+  one in spirit: `server/` is a Cloudflare Worker that holds the Anthropic key
+  and rate-limits calls. It stores nothing, has no accounts, and keeps no
+  record of what anyone wrote. Anything shipped in a bundle can be read out of
+  it, and a key read out of it spends the owner's money — that is the whole of
+  why it exists. Nothing else may move there without reopening this line.
 - No state management library until a milestone actually needs one
 
 ---

@@ -28,6 +28,7 @@ import type { IClock } from '../domain/ports/IClock';
 import type { IHaptics } from '../domain/ports/IHaptics';
 import type { IMicrophonePermission } from '../domain/ports/IMicrophonePermission';
 import type { IPurchases, PurchaseOutcome } from '../domain/ports/IPurchases';
+import type { IReminders } from '../domain/ports/IReminders';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
 import { CachedNarrativeGenerator } from '../infrastructure/analysis/CachedNarrativeGenerator';
 import { ClaudeNarrativeGenerator } from '../infrastructure/analysis/ClaudeNarrativeGenerator';
@@ -43,6 +44,7 @@ import { detectLocale } from '../infrastructure/settings/deviceLocale';
 import { SettingsStore } from '../infrastructure/settings/SettingsStore';
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
+import { ExpoReminders } from '../infrastructure/system/ExpoReminders';
 import { SystemClock } from '../infrastructure/system/SystemClock';
 import { FakePurchases } from '../infrastructure/purchases/FakePurchases';
 import { RevenueCatPurchases } from '../infrastructure/purchases/RevenueCatPurchases';
@@ -54,7 +56,12 @@ import {
   TimedReflectionAnalyzer,
   TimedTranscriptionService,
 } from '../infrastructure/diagnostics/timed';
-import { readAnthropicApiKey, readFakePurchaseOutcome, readRevenueCatKey } from './config';
+import {
+  readAnthropicApiKey,
+  readFakePurchaseOutcome,
+  readProxy,
+  readRevenueCatKey,
+} from './config';
 
 export interface Container {
   readonly transcribeTake: TranscribeTake;
@@ -75,6 +82,7 @@ export interface Container {
   readonly findMoodPatterns: FindMoodPatterns;
   readonly searchEntries: SearchEntries;
   readonly purchases: IPurchases;
+  readonly reminders: IReminders;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
   readonly microphonePermission: IMicrophonePermission;
   readonly haptics: IHaptics;
@@ -131,10 +139,17 @@ export function createContainer(dependencies: ContainerDependencies): Container 
   const scheduler = new IntervalScheduler();
   const vocabulary = createEmotionVocabulary();
 
+  /*
+   * Through the proxy where one is configured, straight to Anthropic where it
+   * is not. The SDK sends its key as `x-api-key` either way, so the proxy
+   * reads the app's token out of that same header and swaps in the real one —
+   * which is why this is a base URL change and nothing more.
+   */
+  const proxy = readProxy();
   const anthropic = new Anthropic({
-    apiKey: readAnthropicApiKey(),
-    // React Native defines `window`, which the SDK reads as a browser. See the
-    // debt note in ./config.ts for why this is temporary.
+    apiKey: proxy?.token ?? readAnthropicApiKey(),
+    baseURL: proxy === null ? undefined : proxy.baseUrl,
+    // React Native defines `window`, which the SDK reads as a browser.
     dangerouslyAllowBrowser: true,
   });
 
@@ -189,6 +204,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     getWeekThemes: new GetWeekThemes(repository),
     findMoodPatterns: new FindMoodPatterns(repository, clock),
     searchEntries: new SearchEntries(repository),
+    reminders: new ExpoReminders(),
     purchases: __DEV__
       ? new TimedPurchases(purchasesFor(readRevenueCatKey()))
       : purchasesFor(readRevenueCatKey()),

@@ -187,6 +187,39 @@ function Vidlun(props: {
     onEntitlementChanged: readStatus,
   });
 
+  /*
+   * Whenever the preference moves, and once when the app opens: a reminder
+   * scheduled by a previous install of these settings is not something the
+   * phone forgets on its own.
+   */
+  useEffect(() => {
+    const { reminderOn, reminderHour, reminderMinute } = props.settings;
+
+    if (!reminderOn) {
+      void container.reminders.cancel();
+
+      return;
+    }
+
+    void container.reminders.schedule({
+      at: { hour: reminderHour, minute: reminderMinute },
+      text: { title: t('reminder.title'), body: t('reminder.body') },
+      now: container.clock.now(),
+      // The last day of the rolling week is today, and the queue is refilled
+      // on every save, so an entry made this evening takes tonight's nudge
+      // away rather than racing it.
+      skipToday: (flow.home?.week.at(-1)?.entryCount ?? 0) > 0,
+    });
+  }, [
+    container.clock,
+    container.reminders,
+    flow.home,
+    props.settings.reminderOn,
+    props.settings.reminderHour,
+    props.settings.reminderMinute,
+    t,
+  ]);
+
   if (!props.settings.hasOnboarded) {
     return (
       <OnboardingScreen

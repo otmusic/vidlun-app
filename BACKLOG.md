@@ -1125,7 +1125,7 @@ test) is left undrawn in code.
 | feed | **Done.** Flat, newest first, not grouped by day — days with nothing in them are not headings with nothing under them. `HistoryScreen` is the file; the name is now wrong. |
 | search | **Done.** A word or a feeling, because people remember an entry either way. Searches `cleanTranscript` and the tags, never `rawTranscript`: a card returned on a word the person cannot see would be the app claiming they said it. Filters are their five most-used words, not a fixed list. |
 | profile | **Done**, and it replaces the settings screen. |
-| palette | Not started. |
+| palette | **Not to be built.** Decided 2026-08-28: the screen exists in the drawing as a reference for the emotion colour system, not as a place anyone navigates to. The rules it documents are already enforced in `emotionColor.ts` and by the test that keeps every emotion out of the signal range. Do not reopen this. |
 | ground | §M8, and §8 asks for a concierge test before any of it is built. |
 
 **What the profile cost.** The drawing's appearance control is a single dark
@@ -1220,6 +1220,42 @@ broken. This came from the owner noticing exactly that.
 | 3f.3 | **A store with nothing to sell reports `failed`**, so a missing offering reads as a declined card. True but unhelpful; the drawing has no state for it. | design/ |
 | 3f.4 | `FakePurchases` keeps its state in memory, so relaunching loses a scripted purchase. Use `active` to start subscribed. Not worth persisting a dev stub. | — |
 | 3f.5 | **Patterns are nearly unreachable on a young journal**: three entries carrying a tag, three without, half a point apart — and an absent mood now shrinks the pool further. Correct per §5, but the paid half stays invisible for weeks. Measure on a real month before touching the thresholds. | §5 |
+
+---
+
+## 3g. The key stopped shipping in the bundle — 2026-08-28
+
+`config.ts` had carried a KNOWN DEBT note since M3: the Anthropic key is
+inlined at build time, so it ships inside the app and can be read out of it,
+and a key read out of it spends the owner's money. The note said the fix was a
+thin proxy. This is it.
+
+`server/` is a Cloudflare Worker on the free tier. The app's Anthropic client
+gets a `baseURL` and a token in place of the key, and because the SDK sends its
+key as `x-api-key` either way, the Worker reads the app's token out of that
+same header and swaps in the real one. **The change on the app side is a base
+URL and nothing else** — exactly what the old note predicted.
+
+It refuses what it has no business forwarding: any model other than the two the
+app asks for, any `max_tokens` past a ceiling, any path but `/v1/messages`, and
+anything without the app token. Answers come back untouched, so the app still
+reads an Anthropic error as an Anthropic error.
+
+**What it does not solve, and the note in `server/README.md` says so out
+loud.** `APP_TOKEN` ships in the bundle in exactly the way the Anthropic key
+did. What it buys: extracting it costs a rate-limited quota rather than an
+uncapped bill, and rotating it is a Worker secret rather than an App Store
+release. The real fix is App Attest — iOS can prove a request comes from a
+genuine build — and it is the next thing to do here. The per-device bucket
+keys off an install id the caller controls, so it slows a stranger down and
+does not stop one.
+
+**Not deployed.** It needs `wrangler login`, two secrets and a `deploy`, all of
+which are the owner's account. Until `EXPO_PUBLIC_API_PROXY_URL` is set the app
+talks to Anthropic directly with its own key, which is the shape of a
+development machine and is the thing this exists to stop in a published one.
+
+§2 said no backend in the MVP and now says why this is not one.
 
 ---
 

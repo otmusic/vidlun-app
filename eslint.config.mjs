@@ -34,6 +34,9 @@ export default tseslint.config(
       'assets/',
       // Compiled output of tsconfig.analysis.json, not source.
       '.analysis-build/',
+      // Its own project, its own runtime: the Worker is typechecked by
+      // server/tsconfig.json and shares none of the app's layer rules.
+      'server/',
       'babel.config.js',
       'metro.config.js',
     ],

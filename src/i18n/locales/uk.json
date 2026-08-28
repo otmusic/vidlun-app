@@ -192,6 +192,8 @@
   "buy.fine": "Добре",
   "stats.patternNoneBody": "Цього тижня нічого, що повторюється, Vidlun не побачив. Патерни трапляються не щотижня — і це нормально.",
   "stats.morePatternsNone": "Патернів цього тижня не видно.",
+  "reminder.title": "Vidlun",
+  "reminder.body": "Скажи одне речення про сьогодні.",
   "settings.title": "Налаштування",
   "settings.keepRecordings": "Зберігати голос",
   "settings.keepRecordingsHint": "Запис лишається на телефоні рік, потім зникає. Текст запису лишається назавжди.",

@@ -1,0 +1,15 @@
+name = "vidlun-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-08-28"
+
+# Per device, per minute. Generous for a person writing a journal and mean for
+# anyone who found the URL: an entry costs two calls, a week's narrative one.
+[[unsafe.bindings]]
+name = "RATE_LIMIT"
+type = "ratelimit"
+namespace_id = "1"
+simple = { limit = 30, period = 60 }
+
+# Secrets are set with `wrangler secret put`, never written here:
+#   wrangler secret put ANTHROPIC_API_KEY
+#   wrangler secret put APP_TOKEN

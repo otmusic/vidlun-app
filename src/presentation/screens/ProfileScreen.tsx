@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, Switch, View } from 'react-native';
 
 import type { Entitlement } from '@/domain/entities/Entitlement';
@@ -339,10 +339,12 @@ function Row(props: {
 /**
  * The hour to be nudged at, and whether to be nudged at all.
  *
- * Nothing here schedules anything yet: delivering it needs a notifications
- * dependency, and the preference is the person's whether or not the phone can
- * act on it. The switch is inside the sheet rather than on the row because
- * turning it on without saying when is not a decision anyone has made.
+ * The wheels move a draft, not the setting. Committing on every flick meant
+ * the sheet closed under the finger that was still choosing — a time picker
+ * that closes when you pick a time is a time picker you cannot use.
+ *
+ * Closing commits, whether by the button or by the scrim: nobody expects a
+ * clock to discard the hour they just set.
  */
 function TimeSheet(props: {
   readonly open: boolean;
@@ -352,23 +354,40 @@ function TimeSheet(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const { settings, t } = props;
+  const [draft, setDraft] = useState({
+    hour: settings.reminderHour,
+    minute: settings.reminderMinute,
+    on: settings.reminderOn,
+  });
+
+  useEffect(() => {
+    // Opened again, so it starts from what is stored rather than from whatever
+    // was last spun.
+    if (props.open) {
+      setDraft({
+        hour: settings.reminderHour,
+        minute: settings.reminderMinute,
+        on: settings.reminderOn,
+      });
+    }
+  }, [props.open, settings.reminderHour, settings.reminderMinute, settings.reminderOn]);
+
+  const commit = (): void => {
+    props.onDone({
+      ...settings,
+      reminderHour: draft.hour,
+      reminderMinute: draft.minute,
+      reminderOn: draft.on,
+    });
+  };
 
   return (
-    <Modal
-      visible={props.open}
-      transparent
-      animationType="slide"
-      onRequestClose={() => {
-        props.onDone(settings);
-      }}
-    >
+    <Modal visible={props.open} transparent animationType="slide" onRequestClose={commit}>
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('time.done')}
-          onPress={() => {
-            props.onDone(settings);
-          }}
+          onPress={commit}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
         <View
@@ -393,17 +412,19 @@ function TimeSheet(props: {
             <Wheel
               label={t('time.hour')}
               values={HOURS}
-              value={settings.reminderHour}
-              onChange={(reminderHour) => {
-                props.onDone({ ...settings, reminderHour, reminderOn: true });
+              value={draft.hour}
+              onChange={(hour) => {
+                // Spinning a wheel is asking to be reminded, so the switch
+                // follows rather than having to be found afterwards.
+                setDraft((current) => ({ ...current, hour, on: true }));
               }}
             />
             <Wheel
               label={t('time.minute')}
               values={MINUTES}
-              value={settings.reminderMinute}
-              onChange={(reminderMinute) => {
-                props.onDone({ ...settings, reminderMinute, reminderOn: true });
+              value={draft.minute}
+              onChange={(minute) => {
+                setDraft((current) => ({ ...current, minute, on: true }));
               }}
             />
           </View>
@@ -420,9 +441,9 @@ function TimeSheet(props: {
               {t('time.remindDaily')}
             </AppText>
             <Switch
-              value={settings.reminderOn}
-              onValueChange={(reminderOn) => {
-                props.onDone({ ...settings, reminderOn });
+              value={draft.on}
+              onValueChange={(on) => {
+                setDraft((current) => ({ ...current, on }));
               }}
               trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
               accessibilityLabel={t('time.remindDaily')}
@@ -431,9 +452,7 @@ function TimeSheet(props: {
 
           <Pressable
             accessibilityRole="button"
-            onPress={() => {
-              props.onDone(settings);
-            }}
+            onPress={commit}
             style={{
               borderRadius: 999,
               backgroundColor: theme.palette.solid,

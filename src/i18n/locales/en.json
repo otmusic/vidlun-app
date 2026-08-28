@@ -192,6 +192,8 @@
   "buy.fine": "Got it",
   "stats.patternNoneBody": "Nothing repeating showed up this week. Patterns do not turn up every week — that is fine.",
   "stats.morePatternsNone": "No patterns visible this week.",
+  "reminder.title": "Vidlun",
+  "reminder.body": "Say one sentence about today.",
   "settings.title": "Settings",
   "settings.keepRecordings": "Keep your voice",
   "settings.keepRecordingsHint": "Recordings stay on this phone for a year, then go. The written entry stays for good.",

@@ -6,13 +6,12 @@
 declare const process: { readonly env: Readonly<Record<string, string | undefined>> };
 
 /**
- * KNOWN DEBT, must be resolved before release.
+ * The Anthropic key, for development only.
  *
- * Because the value is inlined into the JavaScript bundle, this key ships
- * inside the app and can be extracted from it. That is acceptable while
- * developing against a throwaway key and not acceptable in a published build:
- * the fix is a thin proxy that holds the key server-side, at which point the
- * analyzer's base URL changes and nothing else does.
+ * Anything inlined into the bundle can be read out of it, so a published build
+ * must not carry this: it goes through the proxy in `server/`, which holds the
+ * real key and is reached with `readProxy()` below. Read directly only when no
+ * proxy is configured, which is the shape of a development machine.
  */
 export function readAnthropicApiKey(): string {
   const key = process.env['EXPO_PUBLIC_ANTHROPIC_API_KEY'];
@@ -47,4 +46,30 @@ export function readFakePurchaseOutcome(): string | null {
   const scripted = process.env['EXPO_PUBLIC_FAKE_PURCHASES'];
 
   return scripted === undefined || scripted.length === 0 ? null : scripted;
+}
+
+export interface Proxy {
+  readonly baseUrl: string;
+  /** What the app sends in place of a key. The proxy swaps in the real one. */
+  readonly token: string;
+}
+
+/**
+ * Where the key lives in a published build. Null on a machine that has not
+ * configured one, and then the app falls back to its own key — see the note on
+ * `readAnthropicApiKey`.
+ */
+export function readProxy(): Proxy | null {
+  const baseUrl = process.env['EXPO_PUBLIC_API_PROXY_URL'];
+  const token = process.env['EXPO_PUBLIC_APP_TOKEN'];
+
+  if (baseUrl === undefined || baseUrl.length === 0) {
+    return null;
+  }
+
+  if (token === undefined || token.length === 0) {
+    throw new Error('EXPO_PUBLIC_API_PROXY_URL is set but EXPO_PUBLIC_APP_TOKEN is not.');
+  }
+
+  return { baseUrl, token };
 }
