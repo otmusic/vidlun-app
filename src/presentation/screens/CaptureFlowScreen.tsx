@@ -1,4 +1,5 @@
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
+import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings } from '@/domain/ports/ISettings';
 import type { Locale, Translate } from '@/i18n';
 
@@ -20,6 +21,7 @@ import { ReflectionScreen } from './ReflectionScreen';
 import { SavedScreen } from './SavedScreen';
 import { ProfileScreen } from './ProfileScreen';
 import { SearchScreen } from './SearchScreen';
+import { SubscriptionScreen } from './SubscriptionScreen';
 import { StatsScreen } from './StatsScreen';
 import { VocabularyScreen } from './VocabularyScreen';
 import { Screen } from './Screen';
@@ -33,7 +35,7 @@ export interface CaptureFlowScreenProps {
   readonly locale: Locale;
   readonly today: Date;
   readonly t: Translate;
-  readonly onStartTrial: () => void;
+  readonly entitlement: Entitlement;
 }
 
 /**
@@ -174,6 +176,8 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           settings={props.settings}
           t={t}
           onChange={props.onSettingsChange}
+          entitlement={props.entitlement}
+          onOpenSubscription={flow.openSubscription}
         />
       );
 
@@ -188,7 +192,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           onLaterWeek={flow.showLaterWeek}
           onOpenVocabulary={flow.openVocabulary}
           onOpenDay={flow.openHistory}
-          onStartTrial={props.onStartTrial}
+          onOpenSubscription={flow.openSubscription}
         />
       );
 
@@ -205,6 +209,19 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           t={t}
           onSeeWeek={flow.openStats}
           onPeriodChange={flow.showPeriod}
+        />
+      );
+
+    case 'subscription':
+      return (
+        <SubscriptionScreen
+          entitlement={props.entitlement}
+          outcome={flow.stage.outcome}
+          t={t}
+          onSubscribe={flow.subscribe}
+          onRestore={flow.restorePurchase}
+          onDismissOutcome={flow.dismissPurchaseOutcome}
+          onBack={flow.backHome}
         />
       );
 

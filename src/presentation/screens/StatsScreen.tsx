@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, View } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { WeekSummary } from '@/application/use-cases/GetWeekSummary';
 import type { MoodPattern } from '@/application/use-cases/FindMoodPatterns';
@@ -78,7 +78,7 @@ export function StatsScreen(props: {
   readonly onLaterWeek: () => void;
   readonly onOpenVocabulary: () => void;
   readonly onOpenDay: () => void;
-  readonly onStartTrial: () => void;
+  readonly onOpenSubscription: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { view, t } = props;
@@ -120,9 +120,14 @@ export function StatsScreen(props: {
             view={view}
             locale={props.locale}
             t={t}
-            onStartTrial={props.onStartTrial}
+            onOpenSubscription={props.onOpenSubscription}
           />
-          <Pattern view={view} locale={props.locale} t={t} />
+          <Pattern
+            view={view}
+            locale={props.locale}
+            t={t}
+            onOpenSubscription={props.onOpenSubscription}
+          />
           <Themes themes={view.themes} locale={props.locale} t={t} />
           <Pressable accessibilityRole="button" onPress={props.onOpenVocabulary} hitSlop={12}>
             <AppText variant="body" color="inkSoft">
@@ -307,12 +312,17 @@ function Narrative(props: {
   readonly view: StatsView;
   readonly locale: Locale;
   readonly t: Translate;
-  readonly onStartTrial: () => void;
+  readonly onOpenSubscription: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { week, hasNarrativeAccess } = props.view;
 
-  if (week.entryCount < NARRATIVE_FROM_ENTRIES || week.narrative === null) {
+  /*
+   * Two different silences, and lumping them together was a bug: a week with
+   * six entries and no subscription was being told it had too little to read.
+   * Too few entries is the only thing this line is about.
+   */
+  if (week.entryCount < NARRATIVE_FROM_ENTRIES) {
     return (
       <View
         style={{
@@ -329,7 +339,7 @@ function Narrative(props: {
     );
   }
 
-  const paragraphs = week.narrative.split('\n').filter((line) => line.trim().length > 0);
+  const paragraphs = (week.narrative ?? '').split('\n').filter((line) => line.trim().length > 0);
   const shown = hasNarrativeAccess ? paragraphs : paragraphs.slice(0, 1);
 
   return (
@@ -361,24 +371,32 @@ function Narrative(props: {
             alignItems: 'flex-start',
           }}
         >
-          {props.view.patterns.length === 0 ? null : (
-            /*
-             * Counted, never quoted. Naming the pattern here would be giving
-             * away the thing and then asking to be paid for it, and hiding the
-             * fact that there is one would be worse.
-             */
+          {/*
+            Counted, never quoted. Naming the pattern here would be giving away
+            the thing and then asking to be paid for it, and hiding the fact
+            that there is one would be worse. When there is none, that is said
+            too — silence would read as something being kept back.
+          */}
+          <AppText variant="secondary" style={{ color: theme.palette.onPanel, opacity: 0.7 }}>
+            {props.view.patterns.length === 0
+              ? props.t('stats.morePatternsNone')
+              : props.t('stats.morePatterns', {
+                  n: props.view.patterns.length,
+                  w: props.t(
+                    countedKey('stats.pattern', props.view.patterns.length, props.locale),
+                  ),
+                })}
+          </AppText>
+          {/*
+            One button either way; the subscription screen is where the offer
+            differs, because that is where the price is said out loud.
+          */}
+          <Button label={props.t('stats.readAll')} onPress={props.onOpenSubscription} />
+          {props.view.trialSpent ? (
             <AppText variant="secondary" style={{ color: theme.palette.onPanel, opacity: 0.7 }}>
-              {props.t('stats.morePatterns', {
-                n: props.view.patterns.length,
-                w: props.t(
-                  countedKey('stats.pattern', props.view.patterns.length, props.locale),
-                ),
-              })}
+              {props.t('subs.trialOver')}
             </AppText>
-          )}
-          {props.view.trialSpent ? null : (
-            <Button label={props.t('stats.readAll')} onPress={props.onStartTrial} />
-          )}
+          ) : null}
           <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.55 }}>
             {props.t('stats.trialLine')}
           </AppText>
@@ -399,13 +417,10 @@ function Pattern(props: {
   readonly view: StatsView;
   readonly locale: Locale;
   readonly t: Translate;
+  readonly onOpenSubscription: () => void;
 }): React.JSX.Element | null {
   const theme = useTheme();
   const pattern = props.view.patterns[0];
-
-  if (!props.view.hasNarrativeAccess || pattern === undefined) {
-    return null;
-  }
 
   return (
     <View
@@ -419,17 +434,63 @@ function Pattern(props: {
         gap: 10,
       }}
     >
-      <AppText variant="caption" color="inkFaint">
-        {props.t('stats.patternTitle')}
-      </AppText>
-      <AppText variant="body">
-        {props.t(pattern.direction === 'higher' ? 'stats.patternHigher' : 'stats.patternLower', {
-          tag: pattern.tag,
-          n: pattern.occurrences,
-          times: props.t(countedKey('stats.times', pattern.occurrences, props.locale)),
-        })}
-      </AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+        <Bulb colour={theme.palette.inkFaint} />
+        <AppText variant="caption" color="inkFaint">
+          {props.t('stats.patternTitle')}
+        </AppText>
+      </View>
+      {pattern === undefined ? (
+        /*
+         * Shown to everyone, paid or not. A week with no pattern is a fact
+         * about the week rather than something withheld, and an empty space
+         * where the card was last week reads as something having broken.
+         */
+        <AppText variant="body" color="inkSoft">
+          {props.t('stats.patternNoneBody')}
+        </AppText>
+      ) : props.view.hasNarrativeAccess ? (
+        <AppText variant="body">
+          {props.t(pattern.direction === 'higher' ? 'stats.patternHigher' : 'stats.patternLower', {
+            tag: pattern.tag,
+            n: pattern.occurrences,
+            times: props.t(countedKey('stats.times', pattern.occurrences, props.locale)),
+          })}
+        </AppText>
+      ) : (
+        /*
+         * Named as a thing that exists, never quoted. Telling someone there is
+         * nothing here would be a lie; telling them what it says would be
+         * giving away the one thing sold.
+         */
+        <Pressable accessibilityRole="button" onPress={props.onOpenSubscription} hitSlop={8}>
+          <AppText variant="body" color="accentInk">
+            {props.t('subs.patternLocked')}
+          </AppText>
+        </Pressable>
+      )}
     </View>
+  );
+}
+
+/** The drawing's own bulb, which Feather has no equal of. */
+function Bulb(props: { readonly colour: string }): React.JSX.Element {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24">
+      <Path
+        d="M12 3.4a6 6 0 0 1 3.5 10.9v1.6h-7v-1.6A6 6 0 0 1 12 3.4z"
+        fill="none"
+        stroke={props.colour}
+        strokeWidth={1.8}
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M9.7 18.3h4.6M10.6 20.8h2.8"
+        stroke={props.colour}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+      />
+    </Svg>
   );
 }
 

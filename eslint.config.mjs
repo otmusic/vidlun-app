@@ -15,6 +15,7 @@ const FRAMEWORK_PACKAGES = [
   'expo',
   'expo-*',
   'whisper.rn',
+  'react-native-purchases',
   '@react-native-async-storage/*',
 ];
 

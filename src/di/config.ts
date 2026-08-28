@@ -24,3 +24,27 @@ export function readAnthropicApiKey(): string {
   return key;
 }
 
+/**
+ * RevenueCat's public SDK key. Public by design — it identifies the app to
+ * their servers and buys nothing on its own; the receipt Apple signs is what
+ * grants anything. Absent means the store is not wired on this build, and the
+ * app says so honestly rather than pretending to sell.
+ */
+export function readRevenueCatKey(): string | null {
+  const key = process.env['EXPO_PUBLIC_REVENUECAT_IOS_KEY'];
+
+  return key === undefined || key.length === 0 ? null : key;
+}
+
+/**
+ * Which answer a pretend store should give, for walking the paid screens
+ * before a real one is configured. Unset means no pretending: the app talks to
+ * RevenueCat, or to nothing at all.
+ *
+ * Read only in development — see the wiring in ./container.ts.
+ */
+export function readFakePurchaseOutcome(): string | null {
+  const scripted = process.env['EXPO_PUBLIC_FAKE_PURCHASES'];
+
+  return scripted === undefined || scripted.length === 0 ? null : scripted;
+}

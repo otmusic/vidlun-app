@@ -24,6 +24,7 @@ import type { StatsView } from '@/presentation/screens/StatsScreen';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
 import type { IClock } from '@/domain/ports/IClock';
+import type { IPurchases, PurchaseOutcome } from '@/domain/ports/IPurchases';
 import type { IHaptics } from '@/domain/ports/IHaptics';
 
 export type CaptureStage =
@@ -56,6 +57,8 @@ export type CaptureStage =
   | { readonly kind: 'saved'; readonly streakDays: number }
   | { readonly kind: 'history' }
   | { readonly kind: 'settings' }
+  /** The one thing sold, and what the store said about buying it. */
+  | { readonly kind: 'subscription'; readonly outcome: PurchaseOutcome | null }
   /**
    * The query and the filter live on the stage rather than beside it, so
    * leaving search and coming back starts clean — a screen that remembers what
@@ -126,6 +129,9 @@ export interface CaptureDependencies {
   readonly trialSpent: boolean;
   /** Injected for the same reason the use cases take one: a test cannot wait a week. */
   readonly clock: IClock;
+  readonly purchases: IPurchases;
+  /** Told when the store says something that changes what may be read. */
+  readonly onEntitlementChanged: () => void;
 }
 
 export interface CaptureFlow {
@@ -162,6 +168,10 @@ export interface CaptureFlow {
   readonly openSettings: () => void;
   readonly openSearch: () => void;
   readonly search: (query: string, emotionId: string | null) => void;
+  readonly openSubscription: () => void;
+  readonly subscribe: () => void;
+  readonly restorePurchase: () => void;
+  readonly dismissPurchaseOutcome: () => void;
   readonly openStats: () => void;
   readonly openVocabulary: () => void;
   /** Re-counts the vocabulary over a period the person picked. */
@@ -454,7 +464,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       const containing = weeksAgo(dependencies.clock.now(), weeksBack);
 
       void dependencies.getWeekSummary
-        .execute({ withNarrative: dependencies.hasNarrativeAccess, containing })
+        /*
+         * Asked for by everyone, because the drawing gives the first paragraph
+         * away: locking the whole of someone's own week is the app holding
+         * their words hostage. Generated per visit for now — caching it by
+         * week is debt, and it is a Sonnet call each time.
+         */
+        .execute({ withNarrative: true, containing })
         .then(async (week) => {
           const [themes, patterns, earlier] = await Promise.all([
             dependencies.getWeekThemes.execute({
@@ -474,6 +490,18 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
               containing: weeksAgo(dependencies.clock.now(), weeksBack + 1),
             }),
           ]);
+
+          if (__DEV__) {
+            /*
+             * An absent pattern card and a broken one look identical, and the
+             * thresholds are strict on purpose — three entries carrying a tag,
+             * three without it, half a point between them.
+             */
+            // eslint-disable-next-line no-console
+            console.log(
+              `[vidlun] week ${String(week.entryCount)} entries, ${String(themes.length)} themes, ${String(patterns.length)} patterns`,
+            );
+          }
 
           setStage((current) =>
             // Someone who navigated on while this was in flight gets the week
@@ -753,6 +781,40 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       runSearch('', null);
     }, [runSearch]),
     search: runSearch,
+    openSubscription: useCallback(() => {
+      setStage({ kind: 'subscription', outcome: null });
+    }, []),
+    subscribe: useCallback(() => {
+      void dependencies.purchases
+        .subscribe()
+        .then((outcome) => {
+          setStage((current) =>
+            current.kind === 'subscription' ? { ...current, outcome } : current,
+          );
+
+          if (outcome === 'bought') {
+            dependencies.onEntitlementChanged();
+          }
+        })
+        .catch(fail);
+    }, [dependencies, fail]),
+    restorePurchase: useCallback(() => {
+      void dependencies.purchases
+        .restore()
+        .then((outcome) => {
+          setStage((current) =>
+            current.kind === 'subscription' ? { ...current, outcome } : current,
+          );
+
+          if (outcome === 'restored') {
+            dependencies.onEntitlementChanged();
+          }
+        })
+        .catch(fail);
+    }, [dependencies, fail]),
+    dismissPurchaseOutcome: useCallback(() => {
+      setStage((current) => (current.kind === 'subscription' ? { ...current, outcome: null } : current));
+    }, []),
     openStats: useCallback(() => {
       loadStats(0);
     }, [loadStats]),

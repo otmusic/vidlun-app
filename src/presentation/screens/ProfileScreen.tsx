@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, Switch, View } from 'react-native';
 
+import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings } from '@/domain/ports/ISettings';
-import { LOCALES, type Translate, type TranslationKey } from '@/i18n';
+import type { Translate, TranslationKey } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { useTheme } from '../theme/ThemeProvider';
@@ -33,6 +34,8 @@ export function ProfileScreen(props: {
   readonly settings: Settings;
   readonly t: Translate;
   readonly onChange: (settings: Settings) => void;
+  readonly entitlement: Entitlement;
+  readonly onOpenSubscription: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { settings, t } = props;
@@ -60,6 +63,39 @@ export function ProfileScreen(props: {
           valueColor={theme.palette.accentInk}
         />
       </View>
+
+      <Section label={t('subs.section')}>
+        <Row
+          title={t('subs.name')}
+          hint={t(subscriptionHint(props.entitlement))}
+          onPress={props.onOpenSubscription}
+        >
+          <AppText variant="body" color="inkFaint">
+            ›
+          </AppText>
+        </Row>
+      </Section>
+
+      {/*
+        Development only, and it earns its place: the trial is stored rather
+        than bought, so without this the paid screens can be seen once per
+        install and never again.
+      */}
+      {__DEV__ && settings.trialStartedAt !== null ? (
+        <Section label="dev">
+          <Row
+            title="Reset the trial week"
+            hint={settings.trialStartedAt}
+            onPress={() => {
+              props.onChange({ ...settings, trialStartedAt: null });
+            }}
+          >
+            <AppText variant="body" color="inkFaint">
+              ×
+            </AppText>
+          </Row>
+        </Section>
+      ) : null}
 
       <Section label={t('profile.rhythm')}>
         <Row
@@ -162,13 +198,16 @@ export function ProfileScreen(props: {
         <View
           style={{
             flexDirection: 'row',
-            gap: 6,
+            gap: 8,
             padding: 6,
+            borderWidth: 1,
+            borderColor: theme.palette.line,
             borderRadius: 999,
-            backgroundColor: theme.palette.lineSoft,
+            backgroundColor: theme.palette.paper,
           }}
         >
-          {LOCALES.map((locale) => {
+          {/* The drawing's order, which is not the locale list's: uk first. */}
+          {(['uk', 'en'] as const).map((locale) => {
             const chosen = settings.locale === locale;
 
             return (
@@ -482,6 +521,22 @@ function Wheel(props: {
       </View>
     </View>
   );
+}
+
+/**
+ * The state in one line, because someone looking here wants to know whether
+ * they are paying and until when — not to be sold to again.
+ */
+function subscriptionHint(entitlement: Entitlement): TranslationKey {
+  if (entitlement === 'subscribed') {
+    return 'subs.manageTitle';
+  }
+
+  if (entitlement === 'trial') {
+    return 'subs.trialActive';
+  }
+
+  return entitlement === 'trialSpent' ? 'subs.trialOver' : 'subs.trialNote';
 }
 
 function clockOf(settings: Settings): string {

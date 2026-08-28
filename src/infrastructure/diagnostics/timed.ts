@@ -6,6 +6,11 @@ import type {
   ITranscriptionService,
   TranscriptionResult,
 } from '../../domain/ports/ITranscriptionService';
+import type {
+  IPurchases,
+  PurchaseOutcome,
+  SubscriptionStatus,
+} from '../../domain/ports/IPurchases';
 import type { MessagesClient } from '../analysis/claudeModels';
 
 /** Where a stage timing goes. Injected so a test can read it without a console. */
@@ -120,5 +125,48 @@ export class TimedMessagesClient implements MessagesClient {
 
   create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message> {
     return timed(params.model, this.report, () => this.inner.create(params));
+  }
+}
+
+/**
+ * What the store answered, and why, while the paywall is being wired.
+ *
+ * A purchase fails in a dozen ways that all look the same from the screen —
+ * no product, wrong entitlement id, sandbox account not signed in — and the
+ * difference is only ever in the error the SDK threw.
+ */
+export class TimedPurchases implements IPurchases {
+  constructor(
+    private readonly inner: IPurchases,
+    private readonly report: ReportTiming = logTiming,
+  ) {}
+
+  async status(): Promise<SubscriptionStatus> {
+    const status = await timed('store status', this.report, () => this.inner.status());
+
+    // eslint-disable-next-line no-console
+    console.log(`[vidlun] store says active=${String(status.active)}`);
+
+    return status;
+  }
+
+  async subscribe(): Promise<PurchaseOutcome> {
+    return this.announce('subscribe', () => this.inner.subscribe());
+  }
+
+  async restore(): Promise<PurchaseOutcome> {
+    return this.announce('restore', () => this.inner.restore());
+  }
+
+  private async announce(
+    what: string,
+    work: () => Promise<PurchaseOutcome>,
+  ): Promise<PurchaseOutcome> {
+    const outcome = await timed(what, this.report, work);
+
+    // eslint-disable-next-line no-console
+    console.log(`[vidlun] ${what} -> ${outcome}`);
+
+    return outcome;
   }
 }

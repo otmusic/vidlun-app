@@ -1170,6 +1170,59 @@ mistake later.
 
 ---
 
+## 3f. The paid half — built 2026-08-28
+
+§M5 sells one thing and §3c.4 had it as a stub. It is now end to end, minus
+the two things that are not code.
+
+**The boundary, as it ships.** The chart, the themes, the journal, search, the
+vocabulary and the period picker are free and always will be. The narrative's
+first paragraph is free; the rest and the pattern card are not. That first
+paragraph is not generosity — locking the whole of someone's own week is the
+app holding their words hostage, and the drawing says so too.
+
+**Entitlement has four states, not two.** `none`, `trial`, `trialSpent`,
+`subscribed`. `trialSpent` is deliberately distinct from `none`: the offer
+changes from "seven days free" to "charged right away", and promising a week
+that is gone is a promise the store then breaks. A purchase outranks a running
+trial, so nobody who bought is told their week is running out.
+
+**`IPurchases`, and three adapters behind it.** `RevenueCatPurchases` is the
+real one; Apple requires in-app purchase for anything consumed in the app, so
+the money goes through Apple whatever we use, and RevenueCat is here for the
+one thing §2 rules out doing ourselves — validating the receipt without a
+server. `UnavailablePurchases` fails honestly when no key is configured, and
+refuses to grant anything: a stub that granted entitlement would put people
+behind a paywall they never paid for and take it away silently later.
+`FakePurchases` is the opposite and says so — development only, behind its own
+flag *and* `__DEV__`, because a declined card and a restore that finds nothing
+are drawn states no real store produces on request.
+
+**Hutko and the like cannot be used for this.** Guideline 3.1.1: digital
+content consumed inside the app goes through IAP. An external acquirer would
+be legitimate only for a web subscription bought outside the app, which needs
+accounts, a site and a different product.
+
+**The narrative is cached by week.** One row per week, keyed on Monday and
+fingerprinted by what the week held, so an entry added or corrected rewrites it
+and nothing else does. Without this, every visit to the insights screen was a
+Sonnet call — including for people who had paid for nothing, since the first
+paragraph is free.
+
+**A week with no pattern says so**, to everyone, paid or not. Absence is a fact
+about the week; an empty space where the card was last week reads as something
+broken. This came from the owner noticing exactly that.
+
+| # | Left to do | Where |
+|---|---|---|
+| 3f.1 | **Terms and Privacy are plain text, not links.** App Store review requires working ones, and the pages do not exist. Blocks release. | ours |
+| 3f.2 | A subscription in App Store Connect, an `appl_` key, and the entitlement `narrative` with its product in the current offering. The Test Store key proves the path, not the product. | owner |
+| 3f.3 | **A store with nothing to sell reports `failed`**, so a missing offering reads as a declined card. True but unhelpful; the drawing has no state for it. | design/ |
+| 3f.4 | `FakePurchases` keeps its state in memory, so relaunching loses a scripted purchase. Use `active` to start subscribed. Not worth persisting a dev stub. | — |
+| 3f.5 | **Patterns are nearly unreachable on a young journal**: three entries carrying a tag, three without, half a point apart — and an absent mood now shrinks the pool further. Correct per §5, but the paid half stays invisible for weeks. Measure on a real month before touching the thresholds. | §5 |
+
+---
+
 ## 4. Deliberate debt
 
 | # | Debt | Why it matters |

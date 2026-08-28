@@ -27,7 +27,9 @@ import type { IAudioRecorder } from '../domain/ports/IAudioRecorder';
 import type { IClock } from '../domain/ports/IClock';
 import type { IHaptics } from '../domain/ports/IHaptics';
 import type { IMicrophonePermission } from '../domain/ports/IMicrophonePermission';
+import type { IPurchases, PurchaseOutcome } from '../domain/ports/IPurchases';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
+import { CachedNarrativeGenerator } from '../infrastructure/analysis/CachedNarrativeGenerator';
 import { ClaudeNarrativeGenerator } from '../infrastructure/analysis/ClaudeNarrativeGenerator';
 import { ClaudeObservationWriter } from '../infrastructure/analysis/ClaudeObservationWriter';
 import { ClaudeReflectionAnalyzer } from '../infrastructure/analysis/ClaudeReflectionAnalyzer';
@@ -42,13 +44,17 @@ import { SettingsStore } from '../infrastructure/settings/SettingsStore';
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { SystemClock } from '../infrastructure/system/SystemClock';
+import { FakePurchases } from '../infrastructure/purchases/FakePurchases';
+import { RevenueCatPurchases } from '../infrastructure/purchases/RevenueCatPurchases';
+import { UnavailablePurchases } from '../infrastructure/purchases/UnavailablePurchases';
 import { UuidGenerator } from '../infrastructure/system/UuidGenerator';
 import {
   TimedMessagesClient,
+  TimedPurchases,
   TimedReflectionAnalyzer,
   TimedTranscriptionService,
 } from '../infrastructure/diagnostics/timed';
-import { readAnthropicApiKey } from './config';
+import { readAnthropicApiKey, readFakePurchaseOutcome, readRevenueCatKey } from './config';
 
 export interface Container {
   readonly transcribeTake: TranscribeTake;
@@ -68,6 +74,7 @@ export interface Container {
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
   readonly searchEntries: SearchEntries;
+  readonly purchases: IPurchases;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
   readonly microphonePermission: IMicrophonePermission;
   readonly haptics: IHaptics;
@@ -97,6 +104,25 @@ export interface ContainerDependencies {
  */
 const enableRecordingMode = (): Promise<void> =>
   setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+
+/**
+ * Without a key there is no store, and the screens say that plainly instead of
+ * failing somewhere deep in a native module.
+ */
+function purchasesFor(apiKey: string | null): IPurchases {
+  const scripted = readFakePurchaseOutcome();
+
+  /*
+   * The pretend store is gated on `__DEV__` as well as on its own flag, so a
+   * release build cannot be talked into granting anything however the
+   * environment is set.
+   */
+  if (__DEV__ && scripted !== null) {
+    return new FakePurchases(scripted as PurchaseOutcome, scripted === 'active');
+  }
+
+  return apiKey === null ? new UnavailablePurchases() : new RevenueCatPurchases(apiKey);
+}
 
 /** The only place concrete classes are wired. */
 export function createContainer(dependencies: ContainerDependencies): Container {
@@ -154,12 +180,18 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     getHomeView: new GetHomeView(repository, clock),
     getWeekSummary: new GetWeekSummary(
       repository,
-      new ClaudeNarrativeGenerator(anthropic.messages),
+      new CachedNarrativeGenerator(
+        new ClaudeNarrativeGenerator(anthropic.messages),
+        AsyncStorage,
+      ),
       clock,
     ),
     getWeekThemes: new GetWeekThemes(repository),
     findMoodPatterns: new FindMoodPatterns(repository, clock),
     searchEntries: new SearchEntries(repository),
+    purchases: __DEV__
+      ? new TimedPurchases(purchasesFor(readRevenueCatKey()))
+      : purchasesFor(readRevenueCatKey()),
     getVocabularyGrowth: new GetVocabularyGrowth(repository, vocabulary, clock),
     microphonePermission: new ExpoMicrophonePermission({
       getRecordingPermissionsAsync,

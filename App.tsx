@@ -8,7 +8,7 @@ import { createTranslator, type Locale } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
-import { isTrialLive, isTrialSpent } from '@/domain/entities/Trial';
+import { entitlementOf, readsInFull } from '@/domain/entities/Entitlement';
 import { DEFAULT_SETTINGS, type Settings } from '@/domain/ports/ISettings';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import { SPEECH_MODEL, SpeechModelStore } from '@/infrastructure/transcription/SpeechModelStore';
@@ -113,12 +113,41 @@ function Vidlun(props: {
   const trialStartedAt =
     props.settings.trialStartedAt === null ? null : new Date(props.settings.trialStartedAt);
 
-  const startTrial = useCallback(() => {
-    // Once. Tapping again on a spent week must not quietly renew it.
-    if (props.settings.trialStartedAt === null) {
-      changeSettings({ ...props.settings, trialStartedAt: new Date().toISOString() });
+  /*
+   * Asked of the store rather than remembered: a subscription can end without
+   * this app being open, and a flag we wrote ourselves would outlive it.
+   */
+  const [subscribed, setSubscribed] = useState(false);
+
+  const readStatus = useCallback(() => {
+    void props.container.purchases
+      .status()
+      .then((status) => {
+        setSubscribed(status.active);
+      })
+      .catch(() => {
+        // A store that will not answer is not a reason to lock someone out of
+        // the rest of the app; it only means the paid half stays closed.
+      });
+  }, [props.container.purchases]);
+
+  useEffect(readStatus, [readStatus]);
+
+  const entitlement = entitlementOf({ subscribed, trialStartedAt, now });
+
+  useEffect(() => {
+    if (__DEV__) {
+      // Which of the four states the paid half is in, and why. The trial lives
+      // in settings and the subscription in the store, so "unlocked" has two
+      // possible causes and they look identical on screen.
+      // eslint-disable-next-line no-console
+      console.log(
+        `[vidlun] entitlement=${entitlement} subscribed=${String(subscribed)} trialStartedAt=${
+          props.settings.trialStartedAt ?? 'never'
+        }`,
+      );
     }
-  }, [changeSettings, props.settings]);
+  }, [entitlement, props.settings.trialStartedAt, subscribed]);
 
   const recorder = useMemo(
     () => container.createAudioRecorder(props.nativeRecorder),
@@ -151,9 +180,11 @@ function Vidlun(props: {
      * it is M5's, and lands behind this same pair of flags rather than beside
      * them.
      */
-    hasNarrativeAccess: isTrialLive(trialStartedAt, now),
-    trialSpent: isTrialSpent(trialStartedAt, now),
+    hasNarrativeAccess: readsInFull(entitlement),
+    trialSpent: entitlement === 'trialSpent',
     clock: container.clock,
+    purchases: container.purchases,
+    onEntitlementChanged: readStatus,
   });
 
   if (!props.settings.hasOnboarded) {
@@ -176,7 +207,7 @@ function Vidlun(props: {
       t={t}
       settings={props.settings}
       onSettingsChange={changeSettings}
-      onStartTrial={startTrial}
+      entitlement={entitlement}
     />
   );
 }
