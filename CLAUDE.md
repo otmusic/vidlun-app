@@ -660,15 +660,12 @@ end-to-end with speech recognition disabled.
 
 - Do not put any Cyrillic text in code files.
 - Do not use `localStorage` or `sessionStorage`.
-- ~~Do not add cloud speech-to-text in the MVP.~~ **Reversed by the owner on
-  2026-08-28.** The unit-economics half of the objection is out of date —
-  Gemini 3.5 Transcribe costs about five cents a month for someone writing
-  daily, less than the Haiku and Sonnet calls the same entry already makes. The
-  privacy half stands and is now an open debt: the onboarding line promising
-  the voice never leaves the phone has been removed, and nothing honest has
-  replaced it yet. Cloud recognition runs only while there is a connection;
-  Parakeet still answers offline, so voice never depends on the network. See
-  BACKLOG §1e.
+- Do not add cloud speech-to-text. Tried and removed on 2026-08-28, so this is
+  now a measured rule rather than an assumed one: the cost objection turned out
+  to be out of date, and the rule survives on the other two grounds. Gemini was
+  twice as slow as Parakeet on the phone, and where it was wrong it was wrong
+  fluently — a sentence nobody said, which nothing downstream can catch. See
+  BACKLOG §1g.
 - Do not build v2 features: pattern detection, voice-topic analysis, health
   data integration, personalization, append-to-entry.
 - Do not gate basic tracking or backups behind the paywall. Only AI narrative
@@ -716,9 +713,9 @@ Three possible outcomes:
 
 Report the result before continuing. Do not silently fall back to cloud STT.
 
-**Resolved, then reopened from the other side — 2026-08-28.** Parakeet closed
-the quality question by ear and the app shipped on-device only. The owner has
-now put Gemini 3.5 Transcribe in front of it for connected takes; the fallback
-to the phone is by design and is not silent — it is logged and every failure
-path is tested. What is still owed is the copy: onboarding no longer claims the
-voice stays on the phone, and it does not yet say where it goes instead.
+**Resolved, and then verified with numbers — 2026-08-28.** Parakeet closed the
+quality question by ear in August and has now been measured against both
+Whisper and a cloud recogniser on the 16 labelled takes. It is the best of the
+three at being exactly right and the fastest by a wide margin, so the on-device
+plan holds and the privacy copy in onboarding remains true as written. See
+BACKLOG §1d through §1g.

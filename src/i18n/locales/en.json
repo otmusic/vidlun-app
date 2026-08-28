@@ -66,6 +66,7 @@
   "onboarding.welcomeBody": "Tell it how the day went. Vidlun does the rest.",
   "onboarding.welcomeAction": "Start",
   "onboarding.privacyTitle": "Your words stay yours",
+  "onboarding.privacyOnDevice": "Speech is recognised on this phone. Your voice is never sent anywhere.",
   "onboarding.privacyKeep": "Recordings stay on this phone for a year, then go on their own. The written entry stays for good.",
   "onboarding.privacyDelete": "Any entry can be deleted, and its recording goes with it.",
   "onboarding.privacyAction": "Understood",

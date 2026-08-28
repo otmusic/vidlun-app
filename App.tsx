@@ -3,14 +3,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAudioRecorder } from 'expo-audio';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService';
-import { readGeminiApiKey } from '@/di/config';
 import { createContainer, type Container } from '@/di/container';
 import { createTranslator, type Locale } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
-import { CloudFirstTranscriptionService } from '@/infrastructure/transcription/CloudFirstTranscriptionService';
-import { readAudioBytes } from '@/infrastructure/transcription/expoAudioBytes';
-import { GeminiTranscriptionService } from '@/infrastructure/transcription/GeminiTranscriptionService';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
 import { DEFAULT_SETTINGS, type Settings } from '@/domain/ports/ISettings';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
@@ -183,55 +179,25 @@ function useSpeechModel(): { readonly state: SpeechModelState; readonly fetch: (
 }
 
 /**
- * Two recognisers, and which one runs is decided per take rather than here.
- * Gemini goes first when there is a connection to reach it through; Parakeet
- * answers when there is not, which also covers the flight, the basement and
- * the phone with the data turned off.
- *
- * Either one alone is still a working app: without the key voice is entirely
- * on-device, and before the download finishes it is entirely in the cloud.
- * With neither, text still works — which is the whole reason half a gigabyte
- * is not allowed to block anything.
+ * Voice needs the model on disk; text never does. Until it arrives the app is
+ * a working text journal rather than a broken voice one, which is the whole
+ * reason half a gigabyte is not allowed to block anything.
  */
-/**
- * What the recogniser is told to expect. Both languages go in for a Ukrainian
- * interface because §1's audience mixes them inside one sentence, and the
- * codes are a hint rather than a filter — a third language still transcribes,
- * it just gets no help.
- */
-const SPOKEN_LANGUAGES: Readonly<Record<Locale, readonly string[]>> = {
-  uk: ['uk-UA', 'ru-RU'],
-  en: ['en-US'],
-};
-
 function useTranscription(locale: Locale, model: SpeechModelState): ITranscriptionService {
   const typed = useMemo(() => new ManualTranscriptionService(), []);
-  const cloud = useMemo(() => {
-    const key = readGeminiApiKey();
-
-    return key === null
-      ? null
-      : new GeminiTranscriptionService(key, readAudioBytes, undefined, {
-          languageCodes: SPOKEN_LANGUAGES[locale],
-        });
-  }, [locale]);
 
   return useMemo(() => {
-    const onDevice = model.kind === 'ready' ? openOnDevice(model.uri, locale) : null;
-
-    if (cloud !== null && onDevice !== null) {
-      return new CloudFirstTranscriptionService(cloud, onDevice);
+    if (model.kind !== 'ready') {
+      return typed;
     }
 
-    return cloud ?? onDevice ?? typed;
-  }, [cloud, locale, model, typed]);
-}
+    const open =
+      SPEECH_MODEL.engine === 'parakeet'
+        ? openParakeetEngine(model.uri)
+        : openSpeechEngine(model.uri);
 
-function openOnDevice(uri: string, locale: Locale): OnDeviceTranscriptionService {
-  const open =
-    SPEECH_MODEL.engine === 'parakeet' ? openParakeetEngine(uri) : openSpeechEngine(uri);
-
-  return new OnDeviceTranscriptionService(open, () => locale);
+    return new OnDeviceTranscriptionService(open, () => locale);
+  }, [locale, model, typed]);
 }
 
 /** Shown when the api key is missing, which is a developer state, not a user one. */

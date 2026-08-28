@@ -759,6 +759,55 @@ be read past, and a fluent invented one cannot even be noticed.
 
 ---
 
+## 1g. Gemini removed — 2026-08-28, the same day it landed
+
+Built, measured on the desktop and on the phone, and taken out again. The code
+is in the history; what follows is why it is not in the app.
+
+**It is twice as slow, and the cost is fixed.** Three takes on the phone: 4069
+ms for 35.6 s of audio, 4224 for 24.8 s, 4245 for 20.2 s. The time does not
+follow the length — it falls slightly — so it is service latency, not upload,
+and compressing the audio would buy nothing. Parakeet is ~2.1 s, also fixed.
+Stop-to-card was 4.0 s and would have been near 6.
+
+**It is more accurate on average and worse where it counts.** Over the 15
+labelled takes all three engines finished, Gemini took the mean on every
+language, and Parakeet was exactly right on 5 of 15 against Gemini's 2. Then
+take-02, two words and badly recorded:
+
+```
+said       Приготував вечерю.
+whisper    Прогутового вечера.
+parakeet   Правут о вечерню.
+gemini     Доброго вечора.
+```
+
+The local two produced visible nonsense. The cloud produced an ordinary evening
+greeting nobody said. **Nothing downstream can catch that** — not the analyzer,
+not the person reading their own entry back a month later. The better
+recogniser fails in the one way this product cannot tolerate, and the mean does
+not show it.
+
+**It reopened a promise we had already made.** Onboarding says the voice never
+leaves the phone. That line came out when the cloud went in and nothing honest
+was ready to replace it; it goes back now, unchanged and true.
+
+**What stays:**
+
+- `scripts/transcription-benchmark.mjs`, minus its cloud engine. It answered
+  §1d and will answer the next version of the question.
+- The `heard:` / `repaired:` diagnostics, which is how §1f was found at all.
+- The whole of §1e and §1f above. The Parakeet numbers, the fluency finding and
+  the repair-licence bug are all worth more than the code that produced them.
+
+**What we know now that we did not this morning:** cloud speech-to-text is not
+rejected on cost — that objection is dead and should not be repeated. It is
+rejected because it is slower, because it ends offline use, and because a
+fluent wrong sentence is worse for this product than an obviously broken one.
+If the question comes back, it comes back against those three.
+
+---
+
 ## 2. M4 — built, not verified
 
 | # | Item | Who |

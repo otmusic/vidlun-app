@@ -24,14 +24,3 @@ export function readAnthropicApiKey(): string {
   return key;
 }
 
-/**
- * Optional where the Anthropic key is not: without it Vidlun still transcribes
- * on the phone, so a missing key degrades to the offline recogniser rather
- * than stopping the app at startup. The same debt note above applies — it
- * ships inside the bundle and moves behind the proxy with the other one.
- */
-export function readGeminiApiKey(): string | null {
-  const key = process.env['EXPO_PUBLIC_GEMINI_API_KEY'];
-
-  return key === undefined || key.length === 0 ? null : key;
-}

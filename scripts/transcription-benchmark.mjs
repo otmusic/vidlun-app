@@ -1,17 +1,13 @@
 #!/usr/bin/env node
-// The run §1d asked for: Whisper as the fixed point, Parakeet as a number for
-// the first time on this set, and Gemini as the ceiling — same takes, same
-// references, same metric.
+// The run §1d asked for: Whisper as the fixed point and Parakeet as a number
+// for the first time on this set — same takes, same references, same metric.
 //
-// Gemini runs through the app's own adapter, compiled rather than copied, so
-// what is measured here is what ships. Whisper and Parakeet go through the
-// homebrew CLIs over the same whisper.cpp the phone runs.
+// Both go through the homebrew CLIs over the same whisper.cpp the phone runs,
+// so word error rate carries over to the device even though wall time does not.
 //
-// Build the TypeScript first:
-//   npx tsc --project tsconfig.analysis.json
+// A cloud row lived here too until Gemini was removed; see BACKLOG §1g for the
+// numbers it produced and why they did not survive contact with the product.
 //
-// Then, with the key exported:
-//   set -a; . ./.env; set +a
 //   node scripts/transcription-benchmark.mjs \
 //     --recordings ~/vidlun-whisper/recordings-real/audio \
 //     --models ~/vidlun-whisper/models
@@ -20,28 +16,13 @@
 // transcripts.tsv: filename <TAB> uk|ru|mix <TAB> what was actually said.
 import { execFile } from 'node:child_process';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import { basename, dirname, extname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { basename, extname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
 import { wordErrorRate } from './whisper-experiment.mjs';
 
 const run = promisify(execFile);
-const require = createRequire(import.meta.url);
-const BUILD = join(dirname(fileURLToPath(import.meta.url)), '..', '.analysis-build');
-
-const { GeminiTranscriptionService } = require(
-  `${BUILD}/infrastructure/transcription/GeminiTranscriptionService.js`,
-);
-
 const AUDIO_EXTENSIONS = new Set(['.m4a', '.mp3', '.wav', '.aac', '.caf', '.ogg']);
-
-/**
- * Both languages, because §1's audience mixes them inside one sentence. This
- * is what the app sends, so the benchmark sends it too.
- */
-const SPOKEN_LANGUAGES = ['uk-UA', 'ru-RU'];
 
 const WHISPER_MODEL = 'ggml-large-v3-turbo-q5_0.bin';
 const PARAKEET_MODEL = 'ggml-parakeet-tdt-0.6b-v3-q8_0.bin';
@@ -156,70 +137,12 @@ async function buildEngines(options) {
     });
   }
 
-  const cloud = options.engines.has('gemini') || options.engines.has('gemini-smart');
-
-  if (cloud) {
-    const apiKey = readGeminiKey();
-
-    for (const mode of ['verbatim', 'smart']) {
-      if (!options.engines.has(mode === 'verbatim' ? 'gemini' : 'gemini-smart')) {
-        continue;
-      }
-
-      const service = new GeminiTranscriptionService(apiKey, readAudio, undefined, {
-        languageCodes: SPOKEN_LANGUAGES,
-        mode,
-        // Desktop, not the capture path: a slow answer here is worth waiting
-        // for, where on the phone it would be worth abandoning.
-        timeoutMs: 120_000,
-      });
-
-      engines.push({
-        id: `gemini-${mode}`,
-        transcribe: (wav) =>
-          patiently(
-            () => timed(async () => (await service.transcribe({ uri: wav, durationMs: 0 })).text),
-            options,
-          ),
-      });
-    }
-  }
-
   if (engines.length === 0) {
-    fail('No engines selected. Use --engines whisper,parakeet,gemini,gemini-smart');
+    fail('No engines selected. Use --engines whisper,parakeet');
   }
 
   return engines;
 }
-
-/**
- * A free-tier key runs out of requests per minute long before it runs out of
- * takes: the first run lost 13 of 16 to 429 and reported a mean over the three
- * that survived, which is worse than reporting nothing. So the cloud is paced,
- * and a refusal waits rather than counting as a result.
- *
- * On the phone a 429 is correctly a fallback to Parakeet and must never wait.
- * That is why this lives in the benchmark and not in the adapter.
- */
-async function patiently(work, options) {
-  for (let attempt = 0; ; attempt += 1) {
-    await pause(attempt === 0 ? options.paceMs : options.backoffMs * attempt);
-
-    try {
-      return await work();
-    } catch (failure) {
-      const throttled = failure.message.includes('429');
-
-      if (!throttled || attempt >= options.attempts - 1) {
-        throw failure;
-      }
-
-      process.stdout.write(`  throttled, waiting ${(options.backoffMs / 1000) * (attempt + 1)}s\n`);
-    }
-  }
-}
-
-const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Every engine times its own work. The first run timed the loop instead, which
@@ -231,13 +154,6 @@ async function timed(work) {
 
   return { text: await work(), ms: Date.now() - startedAt };
 }
-
-/** What `expoAudioBytes` does on the phone, with Node's filesystem instead. */
-const readAudio = async (path) => {
-  const bytes = await readFile(path);
-
-  return { base64: bytes.toString('base64'), byteLength: bytes.byteLength };
-};
 
 async function durationOf(wav) {
   const { stdout } = await run('ffprobe', [
@@ -380,29 +296,13 @@ async function readReferences(path) {
   return references;
 }
 
-function readGeminiKey() {
-  const key = process.env.GEMINI_API_KEY ?? process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-
-  if (key !== undefined && key.length > 0) {
-    return key;
-  }
-
-  fail(
-    'No Gemini key. Set EXPO_PUBLIC_GEMINI_API_KEY in .env, then run:\n' +
-      '  set -a; . ./.env; set +a; node scripts/transcription-benchmark.mjs ...',
-  );
-}
-
 function readOptions(argv) {
   const options = {
     recordings: null,
     models: null,
-    engines: new Set(['whisper', 'parakeet', 'gemini', 'gemini-smart']),
+    engines: new Set(['whisper', 'parakeet']),
     out: null,
     merge: null,
-    paceMs: 12_000,
-    backoffMs: 30_000,
-    attempts: 5,
   };
 
   for (let index = 0; index < argv.length; index += 2) {
@@ -430,16 +330,12 @@ function readOptions(argv) {
     if (argv[index] === '--merge') {
       options.merge = resolve(expandHome(value));
     }
-
-    if (argv[index] === '--pace') {
-      options.paceMs = Number.parseFloat(value) * 1000;
-    }
   }
 
   if (options.recordings === null || options.models === null) {
     fail(
       'Usage: node scripts/transcription-benchmark.mjs --recordings <dir> --models <dir> ' +
-        '[--engines whisper,parakeet,gemini,gemini-smart] [--out rows.json]',
+        '[--engines whisper,parakeet] [--out rows.json]',
     );
   }
 
