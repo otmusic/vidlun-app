@@ -8,7 +8,15 @@ export interface MessagesClient {
   create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message>;
 }
 
-/** Per-entry analysis. Cheap and fast, because it runs on the capture path. */
+/**
+ * Per-entry analysis. Cheap and fast, because it runs on the capture path.
+ *
+ * It briefly moved to Sonnet on 2026-08-28: Haiku could not be trusted to
+ * leave a Russian word alone while it was allowed to repair mishearings, and
+ * Sonnet could. Measured on the phone, that cost three times the wait — 6.8 s
+ * against 2.2 s. The licence to repair was withdrawn instead, and with nothing
+ * left to rewrite the rule Haiku kept breaking no longer exists. See BACKLOG §1f.
+ */
 export const REFLECTION_MODEL = 'claude-haiku-4-5';
 
 /**

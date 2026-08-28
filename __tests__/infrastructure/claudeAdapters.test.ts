@@ -33,9 +33,10 @@ describe('ClaudeReflectionAnalyzer', () => {
 
     const request = client.requests[0];
 
+    // Affordable again now that the transcript is passed through rather than
+    // repaired: the rule this model could not keep no longer exists. §1f.
     expect(request?.model).toBe('claude-haiku-4-5');
     expect(request?.output_config?.format?.type).toBe('json_schema');
-    // Haiku rejects the effort parameter outright.
     expect(request?.output_config?.effort).toBeUndefined();
   });
 

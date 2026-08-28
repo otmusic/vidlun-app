@@ -660,6 +660,105 @@ nothing legitimate to fix.
 
 ---
 
+## 1f. The repair prompt, fixed as far as prose goes — 2026-08-28
+
+§1e caught the analyzer converting `жидким` to `рідким` on a transcript that
+needed no repair at all. Restating the rule was not an option: the prompt
+already forbade this three times, in three different sentences.
+
+`scripts/repair-check.mjs` runs the real analyzer over
+`~/vidlun-whisper/repair-cases.tsv` — five transcripts that must come back word
+for word, one that may legitimately be repaired, one that is only fillers — and
+prints every word added or dropped. A run is read, not scored: a legitimate
+repair and an act of invention look identical to a diff.
+
+**What was actually wrong**, none of it a missing rule:
+
+- **The premise was out of date.** "It came from speech recognition that is
+  weak at Ukrainian, and it *will* contain words the speaker never said" was
+  true of Whisper and instructs the model to go looking. Replaced with the
+  truth — recognition is usually exact, and returning the sentence untouched is
+  the most common correct answer.
+- **There was no default.** Every line described how to repair; none said that
+  most transcripts need nothing.
+- **"False starts removed" was a licence to drop words.** That is how `Тестую
+  нову модель` became `Тестуємо модель`. Only fillers are removed now.
+- **The prohibitions were too broad to bite.** "Do not tidy the grammar" does
+  not obviously cover re-personing a verb. Named individually now.
+- **Surzhyk was not covered by the rule at all, and this is the substantive
+  find.** `полний` and `равно` are not Russian words — Russian is `полный`,
+  and `всё равно` — so under "change only a run of letters that is a word in no
+  language" they were fair game, and the model was obeying. Everyone this app
+  is for speaks that way constantly. The prompt now says a word of one language
+  carried into the other and written as it was said is a real word.
+
+**Before: three forbidden conversions across the set. After, five runs on each
+model:**
+
+| | forbidden conversions | licence exercised |
+|---|---|---|
+| haiku-4-5 | 3 of 5 runs (`полний`) | never |
+| sonnet-5 | **0 of 5** | 2 of 5 (`нічойний`) |
+
+`жидким`, `всьо равно`, `нову`, the Russian sentence and `Норм.` are stable on
+both. What separates them is `полний`, and it is not variance: Haiku breaks it
+about half the time and Sonnet never did.
+
+What Sonnet changes instead is `нічойний` — a genuine non-word, the one case
+the licence exists for. It is allowed to touch that. It guesses wrong (`нічний`
+for `нічого не встиг`), but a wrong guess inside the licence is a different
+class of failure from rewriting a word the person said.
+
+**A fourth iteration made it worse and was reverted.** Turning the surzhyk rule
+into an ordered gate in front of the non-word test broke `жидким`, which had
+been solid. That is where prose stopped paying.
+
+**So the residue is model capacity, not wording,** and the decision is whether
+`REFLECTION_MODEL` moves to Sonnet. `claudeModels.ts` already records Haiku
+writing ungrammatical Ukrainian, which is why the observation moved; this is
+the same finding reaching the other call.
+
+The objection is the capture path, and it is weaker than it looks. Measured on
+the phone the same day: Haiku's analysis ran 1768-2991 ms, and Sonnet's
+observation — a different prompt, so not a clean comparison — ran 1417-1851 ms
+on two of three calls. Sonnet is not obviously the slower one here. Settling it
+needs an A/B on the device, not another desktop run.
+
+### 1.8 answered: the licence is gone — 2026-08-28
+
+Sonnet was measured on the phone before anything was decided: **analysis went
+from 2.2 s to 6.8 s**, three takes at 8015, 7489 and 5014 ms against Haiku's
+1768-2991. Stop-to-card is untouched, because §3b's card asks its question off
+the transcript and the analysis runs behind it — but the wait moved to just
+after the person answers, where Haiku's 2.2 s had been hidden by the answering
+itself and 6.8 s will not be.
+
+So the choice was never Haiku against Sonnet. **The rule Haiku kept breaking
+was the repair rule, and the repair rule had stopped earning its place.** The
+recognisers now return clean transcripts; over five runs Haiku never once used
+the licence, and Sonnet used it twice and was wrong both times, turning
+`нічойний стих` into `нічний стиль` where the truth was `нічого не встиг`.
+
+The licence is withdrawn. `cleanTranscript` is now the sentence as it arrived,
+hesitation sounds removed and nothing else — no recovery of a misheard word
+from its sound, however plain it looks. The owner decided this on the numbers
+above; the model went back to Haiku with it, and `claudeModels.ts` carries the
+reason.
+
+**Ten runs of `repair-check.mjs` on Haiku after the change: not one word
+rewritten.** The one thing that is not reliable is the deletion that remains —
+hesitation survives in about one run in five. That is the benign direction to
+fail in, and worth knowing rather than fixing by force: two attempts to word it
+more strongly first suppressed the deletion entirely (5 runs, one removal), and
+naming it as a step someone performs brought it back to 8 of 10.
+
+**What was given up**: `клот` -> `Клод`, which the licence got right on a live
+take an hour earlier. Real recognition errors now reach the person as they
+came. That is the trade, taken deliberately: a strange word left standing can
+be read past, and a fluent invented one cannot even be noticed.
+
+---
+
 ## 2. M4 — built, not verified
 
 | # | Item | Who |
