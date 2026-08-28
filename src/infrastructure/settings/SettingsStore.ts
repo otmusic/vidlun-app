@@ -72,5 +72,9 @@ function merge(parsed: unknown): Settings {
       typeof record['asksFirst'] === 'boolean'
         ? record['asksFirst']
         : DEFAULT_SETTINGS.asksFirst,
+    trialStartedAt:
+      typeof record['trialStartedAt'] === 'string'
+        ? record['trialStartedAt']
+        : DEFAULT_SETTINGS.trialStartedAt,
   };
 }

@@ -5,6 +5,13 @@ import type { CreateTextEntry } from '@/application/use-cases/CreateTextEntry';
 import type { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
 import type { Spoken, TranscribeTake } from '@/application/use-cases/TranscribeTake';
 import type { GetHomeView, HomeView } from '@/application/use-cases/GetHomeView';
+import type {
+  GetVocabularyGrowth,
+  VocabularyGrowth,
+} from '@/application/use-cases/GetVocabularyGrowth';
+import type { GetWeekSummary } from '@/application/use-cases/GetWeekSummary';
+import type { FindMoodPatterns } from '@/application/use-cases/FindMoodPatterns';
+import type { GetWeekThemes } from '@/application/use-cases/GetWeekThemes';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
 import type { FindRecording } from '@/application/use-cases/FindRecording';
 import type { ForgetOldRecordings } from '@/application/use-cases/ForgetOldRecordings';
@@ -12,8 +19,10 @@ import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory'
 import type { ReviseEntry } from '@/application/use-cases/ReviseEntry';
 import type { WriteObservation } from '@/application/use-cases/WriteObservation';
 import { MoodEntry, type EntryEdits } from '@/domain/entities/MoodEntry';
+import type { StatsView } from '@/presentation/screens/StatsScreen';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
+import type { IClock } from '@/domain/ports/IClock';
 import type { IHaptics } from '@/domain/ports/IHaptics';
 
 export type CaptureStage =
@@ -46,6 +55,19 @@ export type CaptureStage =
   | { readonly kind: 'saved'; readonly streakDays: number }
   | { readonly kind: 'history' }
   | { readonly kind: 'settings' }
+  /**
+   * The insights screen. `weeksBack` lives on the stage rather than beside it
+   * so that leaving and coming back starts at this week again — a screen that
+   * remembers you were reading June is a screen you have to navigate out of.
+   */
+  | { readonly kind: 'stats'; readonly weeksBack: number; readonly view: StatsView | null }
+  /** The other half of the insights screen, and its own screen in the drawing. */
+  | {
+      readonly kind: 'vocabulary';
+      readonly growth: VocabularyGrowth | null;
+      /** The oldest entry there is, so the calendar offers nothing emptier. */
+      readonly earliest: Date | null;
+    }
   | {
       readonly kind: 'detail';
       /**
@@ -81,6 +103,16 @@ export interface CaptureDependencies {
    */
   readonly asksFirst: boolean;
   readonly getHomeView: GetHomeView;
+  readonly getWeekSummary: GetWeekSummary;
+  readonly getWeekThemes: GetWeekThemes;
+  readonly findMoodPatterns: FindMoodPatterns;
+  readonly getVocabularyGrowth: GetVocabularyGrowth;
+  /** True while the free week runs. The chart and the themes never wait on it. */
+  readonly hasNarrativeAccess: boolean;
+  /** True once the free week has been used, so it stops being offered. */
+  readonly trialSpent: boolean;
+  /** Injected for the same reason the use cases take one: a test cannot wait a week. */
+  readonly clock: IClock;
 }
 
 export interface CaptureFlow {
@@ -115,6 +147,13 @@ export interface CaptureFlow {
   readonly closeEntry: () => void;
   readonly openEntry: (entry: MoodEntry) => void;
   readonly openSettings: () => void;
+  readonly openStats: () => void;
+  readonly openVocabulary: () => void;
+  /** Re-counts the vocabulary over a period the person picked. */
+  readonly showPeriod: (period: { readonly from: Date; readonly to: Date }) => void;
+  /** One week further back, and one week forward again. Never past this week. */
+  readonly showEarlierWeek: () => void;
+  readonly showLaterWeek: () => void;
 }
 
 const RECENT_LIMIT = 3;
@@ -213,6 +252,15 @@ function comparisonOf(proposed: MoodEntry, chosen: readonly string[]): CaptureSt
   }
 
   return { kind: 'comparing', proposed, draft };
+}
+
+/** Any day inside the week `weeksBack` weeks before the one holding `from`. */
+function weeksAgo(from: Date, weeksBack: number): Date {
+  const shifted = new Date(from.getTime());
+
+  shifted.setDate(shifted.getDate() - weeksBack * 7);
+
+  return shifted;
 }
 
 /**
@@ -378,6 +426,89 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       })
       .catch(fail);
   }, [ask, dependencies, fail]);
+
+  /**
+   * The week and its themes. The vocabulary is a separate screen and a
+   * separate read, so opening the week no longer pays for a month of history
+   * nobody asked to see.
+   */
+  const loadStats = useCallback(
+    (weeksBack: number) => {
+      setStage({ kind: 'stats', weeksBack, view: null });
+
+      const containing = weeksAgo(dependencies.clock.now(), weeksBack);
+
+      void dependencies.getWeekSummary
+        .execute({ withNarrative: dependencies.hasNarrativeAccess, containing })
+        .then(async (week) => {
+          const [themes, patterns, earlier] = await Promise.all([
+            dependencies.getWeekThemes.execute({
+              weekStart: week.weekStart,
+              weekEnd: week.weekEnd,
+            }),
+            // Over the month, as the drawing has it: a week rarely holds
+            // enough of anything for a comparison worth printing.
+            dependencies.findMoodPatterns.execute({ containing: week.weekStart }),
+            /*
+             * Whether the step back leads anywhere. Asked rather than assumed,
+             * because a live arrow into a week that never existed reads as a
+             * week the person failed to fill.
+             */
+            dependencies.getWeekSummary.execute({
+              withNarrative: false,
+              containing: weeksAgo(dependencies.clock.now(), weeksBack + 1),
+            }),
+          ]);
+
+          setStage((current) =>
+            // Someone who navigated on while this was in flight gets the week
+            // they asked for, not the one that happened to finish.
+            current.kind === 'stats' && current.weeksBack === weeksBack
+              ? {
+                  ...current,
+                  view: {
+                    week,
+                    themes,
+                    patterns,
+                    weeksBack,
+                    hasEarlierWeek: earlier.entryCount > 0,
+                    hasNarrativeAccess: dependencies.hasNarrativeAccess,
+                    trialSpent: dependencies.trialSpent,
+                  },
+                }
+              : current,
+          );
+        })
+        .catch(fail);
+    },
+    [dependencies, fail],
+  );
+
+  const loadVocabulary = useCallback(
+    (period?: { readonly from: Date; readonly to: Date }) => {
+      setStage((current) =>
+        current.kind === 'vocabulary'
+          ? { ...current, growth: null }
+          : { kind: 'vocabulary', growth: null, earliest: null },
+      );
+
+      void Promise.all([
+        dependencies.getVocabularyGrowth.execute(period ?? {}),
+        // The whole journal, for the one date the calendar needs: there is no
+        // point offering a month that predates the first thing ever written.
+        dependencies.getHistory.execute(),
+      ])
+        .then(([growth, history]) => {
+          const oldest = history.at(-1)?.entries.at(-1)?.createdAt ?? growth.from;
+
+          setStage((current) =>
+            current.kind === 'vocabulary' ? { ...current, growth, earliest: oldest } : current,
+          );
+        })
+        .catch(fail);
+    },
+    [dependencies.getHistory, dependencies.getVocabularyGrowth, fail],
+  );
 
   const confirm = useCallback(() => {
     if (stage.kind !== 'reflecting' && stage.kind !== 'editing' && stage.kind !== 'comparing') {
@@ -570,6 +701,38 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     openSettings: useCallback(() => {
       setStage({ kind: 'settings' });
     }, []),
+    openStats: useCallback(() => {
+      loadStats(0);
+    }, [loadStats]),
+    openVocabulary: useCallback(() => {
+      loadVocabulary();
+    }, [loadVocabulary]),
+    showPeriod: useCallback(
+      (period: { readonly from: Date; readonly to: Date }) => {
+        loadVocabulary(period);
+      },
+      [loadVocabulary],
+    ),
+    showEarlierWeek: useCallback(() => {
+      setStage((current) => {
+        if (current.kind === 'stats') {
+          loadStats(current.weeksBack + 1);
+        }
+
+        return current;
+      });
+    }, [loadStats]),
+    showLaterWeek: useCallback(() => {
+      setStage((current) => {
+        // Never forward past this week: there is nothing there yet, and an
+        // empty week you navigated into reads as one you failed to fill.
+        if (current.kind === 'stats' && current.weeksBack > 0) {
+          loadStats(current.weeksBack - 1);
+        }
+
+        return current;
+      });
+    }, [loadStats]),
     openHistory: useCallback(() => {
       setStage({ kind: 'history' });
       void dependencies.getHistory.execute().then(setHistory).catch(fail);

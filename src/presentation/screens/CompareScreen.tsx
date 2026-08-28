@@ -44,6 +44,8 @@ export function CompareScreen(props: {
   const scheme = theme.isDark ? 'dark' : 'light';
   const mine = props.draft.selfEmotionIds;
   const difference = differenceBetween(mine, props.proposed.emotionIds);
+  /** §6 calls an empty proposal correct and common; the drawing gives it a state. */
+  const heardNothing = props.proposed.emotionIds.length === 0;
 
   const colorOf = (id: string): string | undefined => {
     const emotion = props.vocabulary.find(id);
@@ -90,18 +92,43 @@ export function CompareScreen(props: {
 
       <Block surface={theme.palette.voiceSoft}>
         <AppText variant="caption" color="accentInk">
-          {props.t('compare.luna')}
+          {props.t(heardNothing ? 'compare.lunaNone' : 'compare.luna')}
         </AppText>
-        {props.proposed.emotionIds.length === 0 ? (
+        {heardNothing ? (
           /*
-           * §6 calls an empty proposal correct and common, so this is an
-           * ordinary state and not an edge case. Without a line of its own the
-           * block fell through to the disagree link with nothing above it, and
-           * "No, I'll keep mine" read as the word Vidlun had heard.
+           * Not an empty slot but a finding, and one §6 calls correct and
+           * common: an entry about what the day held rather than how it felt
+           * has no emotion in it to hear. The way out is offered, never taken
+           * on the person's behalf.
            */
-          <AppText variant="secondary" color="inkSoft">
-            {props.t('compare.lunaEmpty')}
-          </AppText>
+          <>
+            <AppText variant="body">{props.t('compare.noneCopy')}</AppText>
+            {props.draft.selfEmotionIds.length > 0 ? (
+              <AppText variant="secondary" color="inkSoft" style={{ paddingTop: 14 }}>
+                {props.t('compare.noneKept')}
+              </AppText>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                onPress={props.onEdit}
+                hitSlop={8}
+                style={{
+                  alignSelf: 'flex-start',
+                  marginTop: 14,
+                  borderWidth: 1.5,
+                  borderStyle: 'dashed',
+                  borderColor: theme.palette.line,
+                  borderRadius: 999,
+                  paddingVertical: 9,
+                  paddingHorizontal: 16,
+                }}
+              >
+                <AppText variant="secondary" color="inkSoft">
+                  {`+ ${props.t('compare.noneName')}`}
+                </AppText>
+              </Pressable>
+            )}
+          </>
         ) : (
           <>
             <Row>
@@ -138,9 +165,6 @@ export function CompareScreen(props: {
                * As prominent as adopting, and deliberately so: Vidlun is not an
                * authority on someone else's feelings, and disagreeing has to be
                * one tap rather than a thing you do by ignoring the screen.
-               *
-               * Offered only against an actual proposal: with nothing to
-               * disagree with, refusing is a control that does nothing.
                */
               <Pressable accessibilityRole="button" onPress={props.onKeepMine} hitSlop={12}>
                 <AppText variant="label" color="accentInk">
@@ -152,6 +176,7 @@ export function CompareScreen(props: {
         )}
       </Block>
 
+      {heardNothing ? null : (
       <Block bordered>
         <AppText variant="body">
           {props.t(`diff.${difference.kind}`, {
@@ -161,8 +186,25 @@ export function CompareScreen(props: {
           })}
         </AppText>
       </Block>
+      )}
 
-      {props.draft.observation === null ? null : (
+      {heardNothing ? (
+        /*
+         * The observation would be about a feeling there was none of, so the
+         * drawing gives this state its own line instead.
+         */
+        <Block surface={theme.palette.panel}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+            <WaveMark width={26} color={theme.palette.lime} />
+            <AppText variant="caption" color="tileInk">
+              {props.t('compare.echo')}
+            </AppText>
+          </View>
+          <AppText variant="quote" color="onPanel">
+            {props.t('compare.noneEcho')}
+          </AppText>
+        </Block>
+      ) : props.draft.observation === null ? null : (
         <Block surface={theme.palette.panel}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
             <WaveMark width={26} color={theme.palette.lime} />
@@ -176,6 +218,7 @@ export function CompareScreen(props: {
         </Block>
       )}
 
+      {heardNothing ? null : (
       <Block bordered>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
           <MoodRing value={props.draft.mood.value} />
@@ -189,6 +232,7 @@ export function CompareScreen(props: {
           </View>
         </View>
       </Block>
+      )}
 
       {props.draft.contextTags.length > 0 ? (
         <Row>

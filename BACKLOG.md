@@ -1102,13 +1102,15 @@ i18n keys, and what still has to be computed:
 
 | # | Item | State |
 |---|---|---|
-| 3c.1 | The week: chart, entry count, narrative, lock. Everything it needs already exists in `GetWeekSummary`. | Not started |
-| 3c.2 | Week navigation. `containing` is already an input; there is no screen. Never forward past this week, never back past the first entry. | Not started |
-| 3c.3 | Theme counts — a use case over `contextTags` for the week. Free, per the boundary above. | Not started |
-| 3c.4 | The entitlement check and what the locked state shows. Ties to the paywall, which M5 also owes. | Not started |
-| 3c.5 | Patterns. A separate model call; the response shape is not designed. | Not started |
-| 3c.6 | The vocabulary half: words used for the first time, refinement pairs from `parentId`, distinct words per month. Waits on `selfEmotionIds` (§3b). | Blocked on 3b.1 |
-| 3c.7 | Prototype: `insights`, `locked` and `growth` now differ from the spec — themes move out of the lock, the monthly bars go, depth tracks become pairs. | design/ |
+| 3c.1 | The week: chart, entry count, narrative, lock. | **Done.** Chart at the drawing's 156 with tappable bars into the journal, the count with a declined noun, the narrative in the dark panel with the first paragraph free. |
+| 3c.2 | Week navigation. | **Done.** Both steps stay in place greyed rather than disappearing; back is asked rather than assumed — the week before is fetched to see whether it holds anything. |
+| 3c.3 | Theme counts over `contextTags`. | **Done.** `GetWeekThemes`, counted per entry rather than per mention, ring and legend, free. |
+| 3c.4 | The entitlement check and the locked state. | **Half done, and the half that exists is the free week.** `Settings.trialStartedAt` plus `isTrialLive`, started by the button the copy already promised. The purchase after it is still M5's and needs a store SDK, which is a dependency to ask about. Until then a spent trial simply stops being offered. |
+| 3c.5 | Patterns. | **Done, and not with a model.** The pattern the drawing shows is a difference of two averages, so `FindMoodPatterns` computes it: a tag needs three entries on each side and half a point of gap. A model asked for the same sentence would sometimes produce one the data does not support, and §5 says one fabricated insight costs every later one. Patterns arithmetic cannot reach are still open. |
+| 3c.6 | The vocabulary half. | **Done**, on its own screen as the drawing has it. Read from `selfEmotionIds` alone, so it measures the person's vocabulary and not ours. Pairs are found month by month against everything before each month — comparing the whole period against what preceded it went blank on exactly the periods people pick. The period picker, presets and calendar are built. |
+| 3c.8 | **What the drawing does not say and the code had to.** The pattern sentence is fixed prose about a walk, so its template is ours. "N more patterns" is counted over the month here because the patterns are monthly, while the drawing's line says week. The picker's "точніше?" line has no copy. All three are provisional until they land in `Vidlun.dc.html`. | design/ |
+| 3c.9 | **The chart and the mood picker disagree.** The drawing bands the chart 1-2 / 3 / 4-5; `MoodScale` splits five points 1 / 2-3 / 4-5. They differ at 2. The chart follows the drawing and `bandOf` says so in a comment; which of the two is right is a design question. | design/ |
+| 3c.7 | Prototype. | Superseded: `Vidlun.dc.html` is the drawing and it already carries all of this. What it still owes the code is listed in 3c.8. |
 
 ---
 

@@ -19,6 +19,8 @@ import { RecordingScreen } from './RecordingScreen';
 import { TurnScreen } from './TurnScreen';
 import { ReflectionScreen } from './ReflectionScreen';
 import { SavedScreen } from './SavedScreen';
+import { StatsScreen } from './StatsScreen';
+import { VocabularyScreen } from './VocabularyScreen';
 import { Screen } from './Screen';
 import { TextEntryScreen } from './TextEntryScreen';
 
@@ -28,7 +30,9 @@ export interface CaptureFlowScreenProps {
   readonly settings: Settings;
   readonly onSettingsChange: (settings: Settings) => void;
   readonly locale: Locale;
+  readonly today: Date;
   readonly t: Translate;
+  readonly onStartTrial: () => void;
 }
 
 /**
@@ -165,6 +169,37 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
         />
       );
 
+    case 'stats':
+      return (
+        <StatsScreen
+          view={flow.stage.view}
+          locale={props.locale}
+          t={t}
+          onBack={flow.backHome}
+          onEarlierWeek={flow.showEarlierWeek}
+          onLaterWeek={flow.showLaterWeek}
+          onOpenVocabulary={flow.openVocabulary}
+          onOpenDay={flow.openHistory}
+          onStartTrial={props.onStartTrial}
+        />
+      );
+
+    case 'vocabulary':
+      return flow.stage.growth === null ? (
+        <ProcessingScreen t={t} />
+      ) : (
+        <VocabularyScreen
+          growth={flow.stage.growth}
+          vocabulary={props.vocabulary}
+          locale={props.locale}
+          today={props.today}
+          earliest={flow.stage.earliest ?? flow.stage.growth.from}
+          t={t}
+          onSeeWeek={flow.openStats}
+          onPeriodChange={flow.showPeriod}
+        />
+      );
+
     case 'history':
       return (
         <HistoryScreen
@@ -200,6 +235,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           onWrite={flow.startWriting}
           onDelete={flow.deleteEntry}
           onOpenHistory={flow.openHistory}
+          onOpenStats={flow.openStats}
           onOpen={flow.openEntry}
         />
       );

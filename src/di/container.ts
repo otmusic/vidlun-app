@@ -11,7 +11,10 @@ import { CreateTextEntry } from '../application/use-cases/CreateTextEntry';
 import { CreateVoiceEntry } from '../application/use-cases/CreateVoiceEntry';
 import { TranscribeTake } from '../application/use-cases/TranscribeTake';
 import { GetHomeView } from '../application/use-cases/GetHomeView';
+import { FindMoodPatterns } from '../application/use-cases/FindMoodPatterns';
+import { GetVocabularyGrowth } from '../application/use-cases/GetVocabularyGrowth';
 import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
+import { GetWeekThemes } from '../application/use-cases/GetWeekThemes';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
 import { FindRecording } from '../application/use-cases/FindRecording';
 import { ForgetOldRecordings } from '../application/use-cases/ForgetOldRecordings';
@@ -20,6 +23,7 @@ import { ReviseEntry } from '../application/use-cases/ReviseEntry';
 import { WriteObservation } from '../application/use-cases/WriteObservation';
 import type { EmotionVocabulary } from '../domain/entities/EmotionVocabulary';
 import type { IAudioRecorder } from '../domain/ports/IAudioRecorder';
+import type { IClock } from '../domain/ports/IClock';
 import type { IHaptics } from '../domain/ports/IHaptics';
 import type { IMicrophonePermission } from '../domain/ports/IMicrophonePermission';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
@@ -60,9 +64,14 @@ export interface Container {
   readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
+  readonly getWeekThemes: GetWeekThemes;
+  readonly findMoodPatterns: FindMoodPatterns;
+  readonly getVocabularyGrowth: GetVocabularyGrowth;
   readonly microphonePermission: IMicrophonePermission;
   readonly haptics: IHaptics;
   readonly vocabulary: EmotionVocabulary;
+  /** The screens need one too — the insights screen counts backwards from today. */
+  readonly clock: IClock;
   /**
    * expo-audio hands out recorders through a React hook, so the screen creates
    * the native instance and the container only wraps it.
@@ -124,6 +133,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
 
   return {
     vocabulary,
+    clock,
     haptics: new ExpoHaptics(),
     transcribeTake: new TranscribeTake(transcription),
     createVoiceEntry: new CreateVoiceEntry(analyzer, vocabulary, clock, idGenerator),
@@ -145,6 +155,9 @@ export function createContainer(dependencies: ContainerDependencies): Container 
       new ClaudeNarrativeGenerator(anthropic.messages),
       clock,
     ),
+    getWeekThemes: new GetWeekThemes(repository),
+    findMoodPatterns: new FindMoodPatterns(repository, clock),
+    getVocabularyGrowth: new GetVocabularyGrowth(repository, vocabulary, clock),
     microphonePermission: new ExpoMicrophonePermission({
       getRecordingPermissionsAsync,
       requestRecordingPermissionsAsync,

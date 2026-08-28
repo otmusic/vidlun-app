@@ -8,6 +8,7 @@ import { createTranslator, type Locale } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
+import { isTrialLive, isTrialSpent } from '@/domain/entities/Trial';
 import { DEFAULT_SETTINGS, type Settings } from '@/domain/ports/ISettings';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import { SPEECH_MODEL, SpeechModelStore } from '@/infrastructure/transcription/SpeechModelStore';
@@ -108,6 +109,17 @@ function Vidlun(props: {
     },
     [container, onSettingsChange],
   );
+  const now = props.container.clock.now();
+  const trialStartedAt =
+    props.settings.trialStartedAt === null ? null : new Date(props.settings.trialStartedAt);
+
+  const startTrial = useCallback(() => {
+    // Once. Tapping again on a spent week must not quietly renew it.
+    if (props.settings.trialStartedAt === null) {
+      changeSettings({ ...props.settings, trialStartedAt: new Date().toISOString() });
+    }
+  }, [changeSettings, props.settings]);
+
   const recorder = useMemo(
     () => container.createAudioRecorder(props.nativeRecorder),
     [container, props.nativeRecorder],
@@ -129,6 +141,18 @@ function Vidlun(props: {
     keepRecordings: props.settings.keepRecordings,
     asksFirst: props.settings.asksFirst,
     getHomeView: container.getHomeView,
+    getWeekSummary: container.getWeekSummary,
+    getWeekThemes: container.getWeekThemes,
+    findMoodPatterns: container.findMoodPatterns,
+    getVocabularyGrowth: container.getVocabularyGrowth,
+    /*
+     * The free week is the whole entitlement so far. Buying what comes after
+     * it is M5's, and lands behind this same pair of flags rather than beside
+     * them.
+     */
+    hasNarrativeAccess: isTrialLive(trialStartedAt, now),
+    trialSpent: isTrialSpent(trialStartedAt, now),
+    clock: container.clock,
   });
 
   if (!props.settings.hasOnboarded) {
@@ -147,9 +171,11 @@ function Vidlun(props: {
       flow={flow}
       vocabulary={container.vocabulary}
       locale={locale}
+      today={container.clock.now()}
       t={t}
       settings={props.settings}
       onSettingsChange={changeSettings}
+      onStartTrial={startTrial}
     />
   );
 }

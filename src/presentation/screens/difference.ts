@@ -5,7 +5,7 @@
  * comparison that could be wrong in a way nobody would notice by looking: the
  * copy reads fine in every case, and only the choice between them can be off.
  */
-export type DifferenceKind = 'quiet' | 'silent' | 'same' | 'more' | 'missing' | 'other';
+export type DifferenceKind = 'silent' | 'same' | 'more' | 'missing' | 'other';
 
 export interface Difference {
   readonly kind: DifferenceKind;
@@ -20,17 +20,6 @@ export function differenceBetween(
   mine: readonly string[],
   theirs: readonly string[],
 ): Difference {
-  /*
-   * Neither side found a word, which is not the same as the person alone
-   * staying quiet: `silent` promises that Vidlun's answer is sitting beside
-   * theirs, and here there is nothing to sit there. An entry about which model
-   * to use holds no feeling, §6 says an empty proposal is the correct answer to
-   * that, and the screen has to be able to say so.
-   */
-  if (mine.length === 0 && theirs.length === 0) {
-    return { kind: 'quiet' };
-  }
-
   // Saying nothing is an answer, and it is the first one to recognise: every
   // other case below would read as a correction of a word that was never given.
   if (mine.length === 0) {

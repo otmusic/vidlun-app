@@ -5,11 +5,6 @@ describe('what the card says about two answers', () => {
     expect(differenceBetween([], ['bad.tired'])).toEqual({ kind: 'silent' });
   });
 
-  it('tells two silences apart, because only one of them has Vidlun beside it', () => {
-    expect(differenceBetween([], [])).toEqual({ kind: 'quiet' });
-    expect(differenceBetween([], ['bad.tired'])).toEqual({ kind: 'silent' });
-  });
-
   it('says so plainly when both landed on the same word', () => {
     expect(differenceBetween(['bad.tired'], ['bad.tired'])).toEqual({ kind: 'same' });
   });

@@ -27,6 +27,17 @@
    failing build.
 5. **Ask before adding a dependency.** Prefer the standard library and what is
    already installed.
+6. **`Vidlun.dc.html` is the design. Nothing else is.** Every screen, every
+   number, every string of user-facing copy comes from it — read the markup
+   before building, not only the copy keys, because the structure is part of
+   the design and inventing a layout that "follows the principles" still
+   produces a screen nobody drew. It lives in the Claude Design project
+   `85fa8e02-a6fe-472a-8f41-52107f474a39` and is read with the `DesignSync`
+   tool (`get_file`). Where it is silent, say so and ask — do not fill the gap
+   and move on. `design/*.html` in this repo is older and outranked by it, and
+   a prototype's own scaffolding (`ios-frame.jsx`, `support.js`) is not design:
+   that is the phone bezel and the canvas runtime, which iOS and React Native
+   already provide.
 
 ---
 
@@ -472,8 +483,13 @@ paywall. Reflection mode: reflect-invite, guess, reveal. Grounding (M8):
 ground-offer, ground-see, ground-hear, ground-touch, ground-done. Use it as the
 source of truth for layout and flow.
 
-**Superseded on 2026-08-27** by `Vidlun.dc.html` in the Claude Design project,
-which is the current drawing: it carries the new identity and screens the older
+**`Vidlun.dc.html` is the only design.** Absolute rule 6 says why; this section
+says what is in it. Read the markup and not only the copy dictionary — the
+structure is the design. It is one reactive prototype rather than artboards:
+fifteen screens switched on a `screen` variable, a `T` dictionary of ~240 uk/en
+keys, the emotion palette, the mood scale and both themes.
+
+**Superseded on 2026-08-27** by that file, which is the current drawing: it carries the new identity and screens the older
 files never had — tabs, feed, search, profile, calendar, the palette sheet.
 Measure against that one. The two files below still describe flow accurately
 and live in `design/`:

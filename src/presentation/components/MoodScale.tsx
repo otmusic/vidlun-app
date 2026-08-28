@@ -19,7 +19,11 @@ const POINTS = [1, 2, 3, 4, 5];
  * There is no signalling red on this scale: the lowest state is a warm
  * terracotta, because a difficult day must not look like an error.
  */
-function toneFor(point: number): keyof Palette {
+/**
+ * Exported because the week chart colours its bars by the same rule. Two
+ * mappings would drift, and §7 asks that one colour mean exactly one thing.
+ */
+export function toneFor(point: number): keyof Palette {
   if (point <= 1) {
     return 'low';
   }

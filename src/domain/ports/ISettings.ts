@@ -19,6 +19,12 @@ export interface Settings {
    * nothing to wait for that was not already there.
    */
   readonly asksFirst: boolean;
+  /**
+   * When the free week started, as an ISO date, or null if it never has. The
+   * weekly narrative is the one paid thing in §M5, and until the store exists
+   * this is the whole of the entitlement.
+   */
+  readonly trialStartedAt: string | null;
 }
 
 /**
@@ -38,6 +44,7 @@ export const DEFAULT_SETTINGS: Settings = {
    * setting because the same section says the mode is entirely optional.
    */
   asksFirst: true,
+  trialStartedAt: null,
 };
 
 /**

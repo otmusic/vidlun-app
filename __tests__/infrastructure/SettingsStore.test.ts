@@ -40,6 +40,7 @@ describe('SettingsStore', () => {
       theme: 'dark',
       hasOnboarded: true,
       asksFirst: false,
+      trialStartedAt: null,
     });
 
     expect(await subject.read()).toEqual({
@@ -48,6 +49,7 @@ describe('SettingsStore', () => {
       theme: 'dark',
       hasOnboarded: true,
       asksFirst: false,
+      trialStartedAt: null,
     });
   });
 
@@ -79,6 +81,7 @@ describe('SettingsStore', () => {
       locale: 'en',
       theme: 'system',
       asksFirst: true,
+      trialStartedAt: null,
       hasOnboarded: false,
     });
   });

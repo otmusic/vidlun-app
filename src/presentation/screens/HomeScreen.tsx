@@ -16,6 +16,7 @@ export interface HomeScreenProps {
   readonly locale: Locale;
   readonly onDelete: (id: string) => void;
   readonly onOpenHistory: () => void;
+  readonly onOpenStats: () => void;
   readonly onOpen: (entry: MoodEntry) => void;
   readonly t: Translate;
   readonly onRecord: () => void;
@@ -65,11 +66,30 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
       </View>
 
       {week.length > 0 ? (
-        <WeekStrip
-          week={week}
-          locale={props.locale}
-          noEntryLabel={props.t('home.noEntryThatDay')}
-        />
+        /*
+         * The strip is the week in miniature, so the way into the week itself
+         * belongs on it rather than in a tab. Tapping the days is the same
+         * gesture as reading them, one step further.
+         */
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={props.t('home.seeWeek')}
+          onPress={props.onOpenStats}
+          style={{ gap: 10 }}
+        >
+          <WeekStrip
+            week={week}
+            locale={props.locale}
+            noEntryLabel={props.t('home.noEntryThatDay')}
+          />
+          {/*
+            Named rather than left to be discovered: a strip that silently
+            opens something is a control nobody knows is there.
+          */}
+          <AppText variant="secondary" color="inkFaint" style={{ alignSelf: 'flex-end' }}>
+            {`${props.t('home.weekLink')} ›`}
+          </AppText>
+        </Pressable>
       ) : null}
 
       <AppText variant="display" style={{ marginTop: 22 }}>
