@@ -52,5 +52,9 @@ function describeEntry(entry: MoodEntry): string {
   const emotions = entry.emotionIds.length > 0 ? entry.emotionIds.join(', ') : 'none';
   const tags = entry.contextTags.length > 0 ? entry.contextTags.join(', ') : 'none';
 
-  return `${day} | mood ${entry.mood.value} | emotions: ${emotions} | about: ${tags} | "${entry.cleanTranscript}"`;
+  // "not said" rather than a number: the model reading these must not average
+  // a stand-in into a sentence about someone's week.
+  const mood = entry.mood === null ? 'not said' : String(entry.mood.value);
+
+  return `${day} | mood ${mood} | emotions: ${emotions} | about: ${tags} | "${entry.cleanTranscript}"`;
 }

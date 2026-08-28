@@ -70,8 +70,8 @@ export class ConfirmEntry {
       await this.revisionLog.record({
         entryId: confirmed.id,
         revisedAt: this.clock.now(),
-        proposedMood: proposed.mood.value,
-        finalMood: confirmed.mood.value,
+        proposedMood: proposed.mood?.value ?? null,
+        finalMood: confirmed.mood?.value ?? null,
         proposedEmotionIds: proposed.emotionIds,
         finalEmotionIds: confirmed.emotionIds,
       });

@@ -76,7 +76,7 @@ describe('MoodEntry invariants', () => {
   it('lets mood and emotions disagree, because tiredness after achievement is a good day', () => {
     const good = entry({ mood: MoodScore.of(4), emotionIds: ['bad.tired'] });
 
-    expect(good.mood.value).toBe(4);
+    expect(good.mood?.value).toBe(4);
     expect(good.emotionIds).toEqual(['bad.tired']);
   });
 });
@@ -117,8 +117,8 @@ describe('immutability', () => {
     const changed = original.withMood(MoodScore.of(2));
 
     expect(changed).not.toBe(original);
-    expect(original.mood.value).toBe(4);
-    expect(changed.mood.value).toBe(2);
+    expect(original.mood?.value).toBe(4);
+    expect(changed.mood?.value).toBe(2);
   });
 
   it('freezes the collections it exposes', () => {
@@ -170,7 +170,7 @@ describe('user revisions', () => {
     expect(proposed.wasRevisedByUser).toBe(false);
     expect(kept.wasRevisedByUser).toBe(true);
     expect(kept.emotionIds).toEqual(['happy.proud']);
-    expect(kept.mood.value).toBe(5);
+    expect(kept.mood?.value).toBe(5);
   });
 
   it('lets the user correct the transcript and the tags too', () => {

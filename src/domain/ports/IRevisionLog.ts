@@ -1,8 +1,9 @@
 export interface EntryRevisionRecord {
   readonly entryId: string;
   readonly revisedAt: Date;
-  readonly proposedMood: number;
-  readonly finalMood: number;
+  /** Null where the entry never said how the day was. */
+  readonly proposedMood: number | null;
+  readonly finalMood: number | null;
   readonly proposedEmotionIds: readonly string[];
   readonly finalEmotionIds: readonly string[];
 }

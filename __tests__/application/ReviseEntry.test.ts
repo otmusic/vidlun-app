@@ -25,7 +25,7 @@ describe('ReviseEntry', () => {
     const revised = useCase.execute(draft(), { mood: MoodScore.of(2) });
 
     expect(revised.wasRevisedByUser).toBe(true);
-    expect(revised.mood.value).toBe(2);
+    expect(revised.mood?.value).toBe(2);
   });
 
   it('lets the user pick a sensitive state Vidlun is not allowed to offer', () => {

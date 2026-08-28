@@ -218,7 +218,7 @@ export function CompareScreen(props: {
         </Block>
       )}
 
-      {heardNothing ? null : (
+      {heardNothing || props.draft.mood === null ? null : (
       <Block bordered>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
           <MoodRing value={props.draft.mood.value} />

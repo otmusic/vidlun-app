@@ -13,7 +13,9 @@ const RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
     cleanTranscript: { type: 'string' },
-    mood: { type: 'integer', enum: [1, 2, 3, 4, 5] },
+    // Null is an answer, not a missing field, so it stays required: the model
+    // has to decide rather than quietly omit it.
+    mood: { anyOf: [{ type: 'integer', enum: [1, 2, 3, 4, 5] }, { type: 'null' }] },
     emotionIds: { type: 'array', items: { type: 'string' } },
     contextTags: { type: 'array', items: { type: 'string' } },
     safetyFlag: { type: 'string', enum: [...SAFETY_FLAGS] },
@@ -81,7 +83,9 @@ Second, nothing. Everything that is a word stays, letter for letter. A misspelle
 Do not tidy the grammar, do not correct case or agreement, do not change a verb's person, number or tense, do not raise the register, do not drop a word, do not finish a thought that trails off, and do not add anything that was not there in sound.
 A strange word left standing is honest. There is no version of this field where you improve the sentence — the mood, the emotions and the tags are where your reading of it belongs, and you may read a garbled word for meaning there while leaving it untouched here.
 
-mood: 1 to 5, how the day itself rated. This is independent of the emotions. Someone can be exhausted and still call the day a 4, because tiredness after finishing something is a good day.
+mood: 1 to 5, how the day itself rated, or null.
+This is independent of the emotions. Someone can be exhausted and still call the day a 4, because tiredness after finishing something is a good day.
+Null when the sentence does not say how the day was — someone testing the app, listing what they did, leaving a note about a thing that happened. A three is for a day the person conveyed as even, never for one they said nothing about. The difference matters: this number is averaged into their week and compared across their month, and a three that means "it did not come up" moves both.
 
 emotionIds: choose only from the list below, exact strings.
 - An empty array is a correct and common answer. Ordinary days exist. Never invent an emotion to fill the field: one fabricated insight destroys trust in every later one.
@@ -118,7 +122,8 @@ function parseProposal(raw: string): ReflectionProposal {
 
   return {
     cleanTranscript: readString(record, 'cleanTranscript'),
-    mood: readNumber(record, 'mood'),
+    // Absent and null are the same thing here, and both mean it was not said.
+    mood: record['mood'] === null || record['mood'] === undefined ? null : readNumber(record, 'mood'),
     emotionIds: readStringArray(record, 'emotionIds'),
     contextTags: readStringArray(record, 'contextTags'),
     safetyFlag: readSafetyFlag(record),

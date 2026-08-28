@@ -42,7 +42,7 @@ describe('WriteObservation', () => {
     const entry = await new WriteObservation(new FakeWriter('Quietly done.')).execute(original);
 
     expect(entry.id).toBe(original.id);
-    expect(entry.mood.value).toBe(original.mood.value);
+    expect(entry.mood?.value).toBe(original.mood?.value);
     expect(entry.emotionIds).toEqual(original.emotionIds);
     expect(entry.wasRevisedByUser).toBe(false);
   });

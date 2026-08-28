@@ -59,14 +59,17 @@ function buildWeek(entries: readonly MoodEntry[], today: Date): readonly DailyMo
   });
 }
 
+/** Over the entries that said how the day was; null when none of them did. */
 function averageMood(entries: readonly MoodEntry[]): number | null {
-  if (entries.length === 0) {
+  const scored = entries.filter((entry) => entry.mood !== null);
+
+  if (scored.length === 0) {
     return null;
   }
 
-  const total = entries.reduce((sum, entry) => sum + entry.mood.value, 0);
+  const total = scored.reduce((sum, entry) => sum + (entry.mood?.value ?? 0), 0);
 
-  return Math.round((total / entries.length) * 10) / 10;
+  return Math.round((total / scored.length) * 10) / 10;
 }
 
 /**

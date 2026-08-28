@@ -32,7 +32,7 @@ describe('InMemoryMoodEntryRepository', () => {
     await repository.save(entry('entry-1', MONDAY, 2));
     await repository.save(entry('entry-1', MONDAY, 5));
 
-    expect((await repository.findById('entry-1'))?.mood.value).toBe(5);
+    expect((await repository.findById('entry-1'))?.mood?.value).toBe(5);
     expect(await repository.findRecent(10)).toHaveLength(1);
   });
 

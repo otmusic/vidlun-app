@@ -56,7 +56,7 @@ describe('regression suite from real recordings', () => {
     const entry = await run();
 
     expect(entry.emotionIds).toEqual(['happy.proud.successful', 'bad.tired.drained']);
-    expect(entry.mood.value).toBe(4);
+    expect(entry.mood?.value).toBe(4);
 
     const branches = entry.emotionIds.map((id) => vocabulary.find(id)?.rootId);
     expect(new Set(branches).size).toBe(2);
@@ -111,7 +111,7 @@ describe('CreateVoiceEntry', () => {
   it('pulls an out-of-range mood back onto the scale', async () => {
     const { run } = capture(CLEARLY_HEARD, proposal({ mood: 9 }));
 
-    expect((await run()).mood.value).toBe(5);
+    expect((await run()).mood?.value).toBe(5);
   });
 
   it('caps the card at four emotions', async () => {

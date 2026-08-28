@@ -16,7 +16,16 @@ export interface MoodEntryProps {
   readonly source: EntrySource;
   readonly rawTranscript: string;
   readonly cleanTranscript: string;
-  readonly mood: MoodScore;
+  /**
+   * Null when the entry said nothing about how the day was.
+   *
+   * An entry can describe what someone did and never once say how it felt, and
+   * §6 already insists that zero emotions is a complete entry — the same is
+   * true of the number. A three standing in for "it did not come up" is not an
+   * even day, it is a non-answer wearing the shape of a measurement, and it
+   * would go on to be averaged into the week as if it were one.
+   */
+  readonly mood: MoodScore | null;
   readonly emotionIds?: readonly string[];
   /**
    * What the person named before seeing any answer. Empty is a real value:
@@ -36,7 +45,7 @@ export interface MoodEntryProps {
 /** What the user is allowed to correct on the reflection card. */
 export interface EntryEdits {
   readonly cleanTranscript?: string;
-  readonly mood?: MoodScore;
+  readonly mood?: MoodScore | null;
   readonly emotionIds?: readonly string[];
   readonly contextTags?: readonly string[];
 }
@@ -53,7 +62,7 @@ export class MoodEntry {
     readonly source: EntrySource,
     readonly rawTranscript: string,
     readonly cleanTranscript: string,
-    readonly mood: MoodScore,
+    readonly mood: MoodScore | null,
     readonly emotionIds: readonly string[],
     readonly selfEmotionIds: readonly string[],
     readonly proposedEmotionIds: readonly string[],
@@ -121,7 +130,7 @@ export class MoodEntry {
     return this.confidence.needsUserReview;
   }
 
-  withMood(mood: MoodScore): MoodEntry {
+  withMood(mood: MoodScore | null): MoodEntry {
     return this.copyWith({ mood });
   }
 

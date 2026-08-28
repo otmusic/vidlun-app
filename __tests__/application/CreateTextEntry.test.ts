@@ -61,7 +61,7 @@ describe('CreateTextEntry', () => {
 
     const entry = await subject.execute('Something heavy.');
 
-    expect(entry.mood.value).toBe(5);
+    expect(entry.mood?.value).toBe(5);
     expect(entry.emotionIds).toEqual([]);
     expect(entry.observation).toBeNull();
   });

@@ -15,7 +15,8 @@ export interface StoredMoodEntry {
   readonly source: EntrySource;
   readonly rawTranscript: string;
   readonly cleanTranscript: string;
-  readonly mood: number;
+  /** Null on an entry that never said how the day was. */
+  readonly mood: number | null;
   readonly emotionIds: readonly string[];
   readonly selfEmotionIds: readonly string[];
   readonly proposedEmotionIds: readonly string[];
@@ -36,7 +37,7 @@ export function toStored(entry: MoodEntry): StoredMoodEntry {
     source: entry.source,
     rawTranscript: entry.rawTranscript,
     cleanTranscript: entry.cleanTranscript,
-    mood: entry.mood.value,
+    mood: entry.mood === null ? null : entry.mood.value,
     emotionIds: [...entry.emotionIds],
     selfEmotionIds: [...entry.selfEmotionIds],
     proposedEmotionIds: [...entry.proposedEmotionIds],
@@ -67,7 +68,11 @@ export function fromStored(raw: unknown): MoodEntry {
     source: readOneOf(record, 'source', SOURCES),
     rawTranscript: readString(record, 'rawTranscript'),
     cleanTranscript: readString(record, 'cleanTranscript'),
-    mood: MoodScore.of(readNumber(record, 'mood')),
+    /*
+     * Records written before the field could be empty always carry a number,
+     * so nothing old changes meaning; only new entries can arrive without one.
+     */
+    mood: record['mood'] === null ? null : MoodScore.of(readNumber(record, 'mood')),
     emotionIds: readStringArray(record, 'emotionIds'),
     // Absent on every entry made before the card started asking. Empty is the
     // honest reading of that: those people were never asked, so they never

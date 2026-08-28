@@ -52,7 +52,13 @@ export class FindMoodPatterns {
 
   async execute(input: FindMoodPatternsInput = {}): Promise<readonly MoodPattern[]> {
     const monthStart = startOfMonth(input.containing ?? this.clock.now());
-    const entries = await this.repository.findBetween(monthStart, addMonths(monthStart, 1));
+    /*
+     * Only entries that said how the day was. One that did not carries no
+     * number to put on either side of the comparison, and standing it in at
+     * three would move the average of whichever side it landed on.
+     */
+    const entries = (await this.repository.findBetween(monthStart, addMonths(monthStart, 1)))
+      .filter((entry) => entry.mood !== null);
 
     if (entries.length < LEAST_ENTRIES * 2) {
       return [];
@@ -92,7 +98,7 @@ export class FindMoodPatterns {
 }
 
 function averageMood(entries: readonly MoodEntry[]): number {
-  return entries.reduce((sum, entry) => sum + entry.mood.value, 0) / entries.length;
+  return entries.reduce((sum, entry) => sum + (entry.mood?.value ?? 0), 0) / entries.length;
 }
 
 function startOfMonth(date: Date): Date {

@@ -91,12 +91,19 @@ function buildDays(weekStart: Date, entries: readonly MoodEntry[]): readonly Dai
   });
 }
 
+/**
+ * Over the entries that said how the day was, and null when none of them did.
+ * A day whose only entry never mentioned the mood is the same to this chart as
+ * a day with no entry: nothing was measured, so nothing is drawn.
+ */
 function averageMood(entries: readonly MoodEntry[]): number | null {
-  if (entries.length === 0) {
+  const scored = entries.filter((entry) => entry.mood !== null);
+
+  if (scored.length === 0) {
     return null;
   }
 
-  const total = entries.reduce((sum, entry) => sum + entry.mood.value, 0);
+  const total = scored.reduce((sum, entry) => sum + (entry.mood?.value ?? 0), 0);
 
-  return Math.round((total / entries.length) * 10) / 10;
+  return Math.round((total / scored.length) * 10) / 10;
 }

@@ -33,7 +33,12 @@ const GROUP_LABELS: Record<EmotionGroup, TranslationKey> = {
 export function EditScreen(props: EditScreenProps): React.JSX.Element {
   const theme = useTheme();
   const [transcript, setTranscript] = useState(props.draft.cleanTranscript);
-  const [mood, setMood] = useState(props.draft.mood.value);
+  /*
+   * Null until the person picks one. An entry that never said how the day was
+   * arrives here empty rather than pre-filled with a three — offering a number
+   * nobody gave and calling it theirs is the thing this whole change is about.
+   */
+  const [mood, setMood] = useState<number | null>(props.draft.mood?.value ?? null);
   const [emotionIds, setEmotionIds] = useState<readonly string[]>(props.draft.emotionIds);
   const [tags, setTags] = useState<readonly string[]>(props.draft.contextTags);
 
@@ -63,7 +68,9 @@ export function EditScreen(props: EditScreenProps): React.JSX.Element {
             onPress={() => {
               props.onDone({
                 cleanTranscript: transcript,
-                mood: MoodScore.of(mood),
+                // Still null if they did not pick one: editing an entry is not
+                // an occasion to make somebody rate a day they did not rate.
+                mood: mood === null ? null : MoodScore.of(mood),
                 emotionIds,
                 contextTags: tags,
               });

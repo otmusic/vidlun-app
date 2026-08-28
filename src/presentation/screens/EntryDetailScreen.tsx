@@ -81,6 +81,7 @@ export function EntryDetailScreen(props: {
 
       {props.recordingUri === null ? <AudioGone t={t} /> : <Playback uri={props.recordingUri} t={t} />}
 
+      {entry.mood === null ? null : (
       <View
         style={{
           flexDirection: 'row',
@@ -107,6 +108,29 @@ export function EntryDetailScreen(props: {
           </AppText>
         </View>
       </View>
+      )}
+
+      {entry.emotionIds.length > 0 ? null : (
+        /*
+         * The same finding the card showed, kept when the entry is opened
+         * again: §6 calls an empty proposal correct and common, and a card
+         * that simply has no chips reads as one that lost them.
+         */
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: theme.palette.line,
+            borderRadius: 22,
+            padding: 20,
+            gap: 6,
+          }}
+        >
+          <AppText variant="caption" color="accentInk">
+            {t('compare.lunaNone')}
+          </AppText>
+          <AppText variant="body">{t('compare.noneCopy')}</AppText>
+        </View>
+      )}
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {entry.emotionIds.map((id) => {

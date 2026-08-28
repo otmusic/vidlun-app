@@ -106,7 +106,9 @@ export function EntryRow(props: {
               width: 9,
               height: 9,
               borderRadius: 5,
-              backgroundColor: theme.palette[moodTone(entry.mood.value)],
+              // The line, not a mood colour, where the day was never rated.
+              backgroundColor:
+                entry.mood === null ? theme.palette.line : theme.palette[moodTone(entry.mood.value)],
             }}
           />
           <AppText variant="secondary" color="inkSoft">

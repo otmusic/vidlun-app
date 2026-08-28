@@ -6,7 +6,8 @@ import { MIN_TAP_TARGET } from '../theme/tokens';
 import { AppText } from './AppText';
 
 export interface MoodScaleProps {
-  readonly value: number;
+  /** Null when the entry never said how the day was: no point is filled. */
+  readonly value: number | null;
   readonly onChange: (value: number) => void;
   readonly lowLabel: string;
   readonly highLabel: string;

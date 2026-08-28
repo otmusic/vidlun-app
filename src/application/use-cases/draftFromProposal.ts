@@ -28,7 +28,12 @@ export function draftFromProposal(input: DraftInput): MoodEntry {
     rawTranscript: input.rawTranscript,
     // A model that returns an empty cleanup must not cost the user the entry.
     cleanTranscript: cleaned.length > 0 ? cleaned : input.rawTranscript,
-    mood: MoodScore.clamped(input.proposal.mood),
+    /*
+     * Clamped when there is one, kept absent when there is not. Filling it in
+     * would put a number in the entry that the person never gave and that the
+     * week's average would then treat as one they did.
+     */
+    mood: input.proposal.mood === null ? null : MoodScore.clamped(input.proposal.mood),
     emotionIds: input.vocabulary.normalizeAiProposal(input.proposal.emotionIds, {
       maxDepth: input.confidence.maxEmotionDepth,
       limit: MoodEntry.MAX_EMOTIONS,

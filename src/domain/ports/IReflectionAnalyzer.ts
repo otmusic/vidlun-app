@@ -6,7 +6,8 @@ import type { SafetyFlag } from '../entities/MoodEntry';
  */
 export interface ReflectionProposal {
   readonly cleanTranscript: string;
-  readonly mood: number;
+  /** Null where the sentence never said how the day was. */
+  readonly mood: number | null;
   readonly emotionIds: readonly string[];
   readonly contextTags: readonly string[];
   readonly safetyFlag: SafetyFlag;
