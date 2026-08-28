@@ -13,6 +13,12 @@ export interface Settings {
   readonly theme: ThemeChoice;
   /** False until someone has been told what the app does with their voice. */
   readonly hasOnboarded: boolean;
+  /**
+   * Whether the card asks for the person's own word before showing Vidlun's.
+   * Off leaves the capture path exactly as it was: one card, no question, and
+   * nothing to wait for that was not already there.
+   */
+  readonly asksFirst: boolean;
 }
 
 /**
@@ -26,6 +32,12 @@ export const DEFAULT_SETTINGS: Settings = {
   locale: 'uk',
   theme: 'system',
   hasOnboarded: false,
+  /*
+   * On, because §M6 says finding the word yourself is where the value of the
+   * journal is and a setting nobody discovers decides itself. It stays a
+   * setting because the same section says the mode is entirely optional.
+   */
+  asksFirst: true,
 };
 
 /**

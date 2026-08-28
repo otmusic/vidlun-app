@@ -29,6 +29,7 @@ export function TurnScreen(props: {
   readonly holding: boolean;
   readonly t: Translate;
   readonly onToggle: (id: string) => void;
+  readonly onRefine: (parentId: string, childId: string) => void;
   readonly onNext: () => void;
   readonly onSkip: () => void;
 }): React.JSX.Element {
@@ -95,6 +96,7 @@ export function TurnScreen(props: {
           selected={props.chosen}
           t={props.t}
           onToggle={props.onToggle}
+          onRefine={props.onRefine}
         />
       ) : null}
 

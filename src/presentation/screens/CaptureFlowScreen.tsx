@@ -96,6 +96,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           holding={flow.stage.holding}
           t={t}
           onToggle={flow.toggleOwnWord}
+          onRefine={flow.refineOwnWord}
           onNext={flow.answer}
           onSkip={flow.skipAnswer}
         />

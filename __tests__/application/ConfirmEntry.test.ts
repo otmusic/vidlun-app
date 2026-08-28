@@ -135,4 +135,34 @@ describe('ConfirmEntry', () => {
 
     expect(await useCase.execute({ proposed, confirmed: proposed })).toBe(proposed);
   });
+
+  it('logs a refusal apart from a correction, because they are different claims', async () => {
+    const { revisionLog, useCase } = setup();
+    const proposed = draft({ emotionIds: ['bad.tired'] });
+    const confirmed = MoodEntry.create({
+      ...proposed.toProps(),
+      selfEmotionIds: ['sad.lonely'],
+      emotionIds: ['sad.lonely'],
+    });
+
+    await useCase.execute({ proposed, confirmed, keptOwnWords: true });
+
+    expect(revisionLog.disagreements).toEqual([
+      {
+        entryId: confirmed.id,
+        at: NOW,
+        proposedEmotionIds: ['bad.tired'],
+        selfEmotionIds: ['sad.lonely'],
+      },
+    ]);
+  });
+
+  it('says nothing about a card that was simply accepted', async () => {
+    const { revisionLog, useCase } = setup();
+    const proposed = draft({ emotionIds: ['bad.tired'] });
+
+    await useCase.execute({ proposed, confirmed: proposed });
+
+    expect(revisionLog.disagreements).toEqual([]);
+  });
 });

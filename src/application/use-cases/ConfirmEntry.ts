@@ -12,6 +12,12 @@ export interface ConfirmEntryInput {
   readonly confirmed: MoodEntry;
   /** The take this came from, absent for a typed entry. */
   readonly recordingUri?: string;
+  /**
+   * True when the person read Vidlun's words and declined them out loud. Not
+   * inferred from an absence of taps: ignoring the screen and rejecting it say
+   * different things, and only one of them is evidence.
+   */
+  readonly keptOwnWords?: boolean;
 }
 
 /** The only use case that writes. */
@@ -42,6 +48,20 @@ export class ConfirmEntry {
      */
     if (input.recordingUri !== undefined) {
       await this.recordings.keep(confirmed.id, input.recordingUri).catch(() => undefined);
+    }
+
+    /*
+     * Both, where both happened: adopting one word and refusing the rest is a
+     * revision and a disagreement at once, and collapsing that into whichever
+     * came first would lose the half that was not chosen.
+     */
+    if (input.keptOwnWords === true) {
+      await this.revisionLog.disagree({
+        entryId: confirmed.id,
+        at: this.clock.now(),
+        proposedEmotionIds: proposed.emotionIds,
+        selfEmotionIds: confirmed.selfEmotionIds,
+      });
     }
 
     // Saving is the user's intent; logging is ours. Never let the second

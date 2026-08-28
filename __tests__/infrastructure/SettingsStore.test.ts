@@ -39,6 +39,7 @@ describe('SettingsStore', () => {
       locale: 'en',
       theme: 'dark',
       hasOnboarded: true,
+      asksFirst: false,
     });
 
     expect(await subject.read()).toEqual({
@@ -46,7 +47,20 @@ describe('SettingsStore', () => {
       locale: 'en',
       theme: 'dark',
       hasOnboarded: true,
+      asksFirst: false,
     });
+  });
+
+  it('gives a record written before the question existed the question', async () => {
+    const { store, subject } = setup();
+    await store.setItem(
+      'vidlun.settings',
+      JSON.stringify({ keepRecordings: true, locale: 'uk', theme: 'system', hasOnboarded: true }),
+    );
+
+    // A missing flag is not an answer. Reading it as off would switch §M6's
+    // whole point away from everyone who onboarded before it shipped.
+    expect((await subject.read()).asksFirst).toBe(true);
   });
 
   it('falls back to defaults rather than failing on an unreadable file', async () => {
@@ -64,6 +78,7 @@ describe('SettingsStore', () => {
       keepRecordings: true,
       locale: 'en',
       theme: 'system',
+      asksFirst: true,
       hasOnboarded: false,
     });
   });

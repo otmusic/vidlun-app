@@ -5,7 +5,7 @@ import type { IClock } from '@/domain/ports/IClock';
 import type { IIdGenerator } from '@/domain/ports/IIdGenerator';
 import type { INarrativeGenerator } from '@/domain/ports/INarrativeGenerator';
 import type { IReflectionAnalyzer, ReflectionProposal } from '@/domain/ports/IReflectionAnalyzer';
-import type { EntryRevisionRecord, IRevisionLog } from '@/domain/ports/IRevisionLog';
+import type { DisagreementRecord, EntryRevisionRecord, IRevisionLog } from '@/domain/ports/IRevisionLog';
 import type { ITranscriptionService, TranscriptionResult } from '@/domain/ports/ITranscriptionService';
 
 export const RECORDING: AudioRecording = { uri: 'file:///take.m4a', durationMs: 4200 };
@@ -78,6 +78,7 @@ export class StubNarrativeGenerator implements INarrativeGenerator {
 
 export class RecordingRevisionLog implements IRevisionLog {
   readonly records: EntryRevisionRecord[] = [];
+  readonly disagreements: DisagreementRecord[] = [];
   readonly forgotten: string[] = [];
 
   record(revision: EntryRevisionRecord): Promise<void> {
@@ -86,12 +87,20 @@ export class RecordingRevisionLog implements IRevisionLog {
     return Promise.resolve();
   }
 
+  disagree(disagreement: DisagreementRecord): Promise<void> {
+    this.disagreements.push(disagreement);
+
+    return Promise.resolve();
+  }
+
   forget(entryId: string): Promise<void> {
     this.forgotten.push(entryId);
 
-    for (let i = this.records.length - 1; i >= 0; i -= 1) {
-      if (this.records[i]?.entryId === entryId) {
-        this.records.splice(i, 1);
+    for (const kept of [this.records, this.disagreements]) {
+      for (let i = kept.length - 1; i >= 0; i -= 1) {
+        if (kept[i]?.entryId === entryId) {
+          kept.splice(i, 1);
+        }
       }
     }
 

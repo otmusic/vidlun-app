@@ -65,5 +65,12 @@ function merge(parsed: unknown): Settings {
       typeof record['hasOnboarded'] === 'boolean'
         ? record['hasOnboarded']
         : DEFAULT_SETTINGS.hasOnboarded,
+    // Absent in every record written before the switch existed, and those
+    // people get the default rather than the off state a missing flag would
+    // otherwise read as.
+    asksFirst:
+      typeof record['asksFirst'] === 'boolean'
+        ? record['asksFirst']
+        : DEFAULT_SETTINGS.asksFirst,
   };
 }

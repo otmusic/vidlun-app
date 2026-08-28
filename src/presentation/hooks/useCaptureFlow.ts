@@ -75,6 +75,11 @@ export interface CaptureDependencies {
   readonly findRecording: FindRecording;
   /** False stops a confirmed take from being kept at all. */
   readonly keepRecordings: boolean;
+  /**
+   * False takes the question out of the capture path entirely: the card is
+   * what it was before §3b, and it costs what it cost then.
+   */
+  readonly asksFirst: boolean;
   readonly getHomeView: GetHomeView;
 }
 
@@ -89,6 +94,8 @@ export interface CaptureFlow {
   readonly beginEditing: () => void;
   /** Adds or removes one of the person's own words while the card is asking. */
   readonly toggleOwnWord: (id: string) => void;
+  /** Trades one of their words for a more exact child of it. */
+  readonly refineOwnWord: (parentId: string, childId: string) => void;
   /** Done answering. Goes on to the comparison, or waits for it. */
   readonly answer: () => void;
   /** "I don't know, show me" — no answer given, and none invented. */
@@ -208,6 +215,41 @@ function comparisonOf(proposed: MoodEntry, chosen: readonly string[]): CaptureSt
   return { kind: 'comparing', proposed, draft };
 }
 
+/**
+ * Where the analysis goes when it arrives, which is the one transition §3b's
+ * leak rule lives or dies on.
+ *
+ * Exported for the test rather than for a caller. Nothing of the answer may be
+ * on screen before the answer is given, and that defect would never be noticed
+ * in use — the card would simply look a little more helpful than it should.
+ */
+export function whenAnalysisLands(
+  current: CaptureStage,
+  draft: MoodEntry,
+  asking: boolean,
+): CaptureStage {
+  /*
+   * With the question switched off there is nothing to hold the card back for,
+   * so the analysis lands on the card directly — the flow as it was before
+   * §3b, at the speed it was.
+   */
+  if (!asking) {
+    return current.kind === 'processing' ? { kind: 'reflecting', proposed: draft, draft } : current;
+  }
+
+  if (current.kind !== 'turn') {
+    return current;
+  }
+
+  /*
+   * Held, not shown. The draft is carried on the stage because the comparison
+   * needs it the instant the person answers, and `TurnScreen` is given the
+   * transcript and their own words and nothing else — so what the card can
+   * display and what the stage knows are two different sets on purpose.
+   */
+  return current.holding ? comparisonOf(draft, current.chosen) : { ...current, draft };
+}
+
 export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [stage, setStage] = useState<CaptureStage>({ kind: 'idle' });
   const [home, setHome] = useState<HomeView | null>(null);
@@ -293,26 +335,28 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    */
   const ask = useCallback(
     (spoken: Spoken) => {
-      setStage({ kind: 'turn', spoken, chosen: [], draft: null, holding: false });
+      // Per card, not per session. Left standing it would put the last entry's
+      // refusal on this one's label, and now that it is logged, in its record.
+      setKeptMine(false);
+
+      const asking = dependencies.asksFirst;
+
+      setStage(
+        asking
+          ? { kind: 'turn', spoken, chosen: [], draft: null, holding: false }
+          : { kind: 'processing' },
+      );
 
       dependencies.createVoiceEntry
         .execute(spoken)
         .then((draft) => {
-          setStage((current) => {
-            if (current.kind !== 'turn') {
-              return current;
-            }
-
-            return current.holding
-              ? comparisonOf(draft, current.chosen)
-              : { ...current, draft };
-          });
+          setStage((current) => whenAnalysisLands(current, draft, asking));
 
           void withObservation(draft);
         })
         .catch(fail);
     },
-    [dependencies.createVoiceEntry, fail, withObservation],
+    [dependencies.asksFirst, dependencies.createVoiceEntry, fail, withObservation],
   );
 
   const startRecording = useCallback(() => {
@@ -349,6 +393,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         proposed,
         confirmed: draft,
         recordingUri: dependencies.keepRecordings ? (takeUri.current ?? undefined) : undefined,
+        keptOwnWords: keptMine,
       })
       .then(async () => {
         dependencies.haptics.success();
@@ -361,7 +406,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         setStage({ kind: 'saved', streakDays: refreshed.streakDays });
       })
       .catch(fail);
-  }, [dependencies, fail, stage]);
+  }, [dependencies, fail, keptMine, stage]);
 
   return {
     stage,
@@ -452,6 +497,24 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           : current.chosen.length >= MoodEntry.MAX_EMOTIONS
             ? current.chosen
             : [...current.chosen, id];
+
+        return { ...current, chosen };
+      });
+    }, []),
+    refineOwnWord: useCallback((parentId: string, childId: string) => {
+      setStage((current) => {
+        if (current.kind !== 'turn' || !current.chosen.includes(parentId)) {
+          return current;
+        }
+
+        /*
+         * In place, so the more exact word inherits the position the broad one
+         * held rather than arriving at the end of the row. Filtered afterwards
+         * because the child may already be there — refining twice into the same
+         * word is one word, not two.
+         */
+        const replaced = current.chosen.map((each) => (each === parentId ? childId : each));
+        const chosen = replaced.filter((each, at) => replaced.indexOf(each) === at);
 
         return { ...current, chosen };
       });

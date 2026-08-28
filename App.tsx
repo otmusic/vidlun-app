@@ -127,6 +127,7 @@ function Vidlun(props: {
     forgetOldRecordings: container.forgetOldRecordings,
     findRecording: container.findRecording,
     keepRecordings: props.settings.keepRecordings,
+    asksFirst: props.settings.asksFirst,
     getHomeView: container.getHomeView,
   });
 

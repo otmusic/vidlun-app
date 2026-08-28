@@ -1032,15 +1032,40 @@ four difference cases, the edge cases and the tokens:
 |---|---|---|
 | 3b.1 | `selfEmotionIds` on `MoodEntry`. | **Done.** Defaults to empty rather than to either of the other two: an entry made with the question switched off has no unaided answer, and filling it in from what was kept would count Vidlun's vocabulary as the person's. Stored and read back; records written before the field exists read as empty for the same reason. |
 | 3b.2 | `proposedEmotionIds` must stop defaulting to `emotionIds`. | **Not needed, and the item was wrong.** It assumed the draft would be built from the person's answer. It is not: `CreateVoiceEntry` still builds it from the analysis, and the unaided answer arrives beside it as `selfEmotionIds`. So at creation `emotionIds` really is Vidlun's proposal, and the default is exact. 4.11's lenient fallback stands for the same reason. |
-| 3b.3 | **Two card states in `useCaptureFlow`**: question, then comparison. | **Half done.** `TranscribeTake` is split out of `CreateVoiceEntry`, so the words exist before the analysis starts and the card has something to ask about. The stages themselves are next. |
-| 3b.4 | **Nothing of the answer may leak before it is given** — not the observation, the mood, the context tags, nor the number of chips. Worth a test: it is the one defect that would never be noticed in use. | Not started |
-| 3b.5 | **Four difference cases**, including "Vidlun missed what you named". Copy lives in the locale files, never in the analyzer. | Not started |
-| 3b.6 | **Disagreement is logged separately from a revision.** A person who keeps their own word is not correcting a mistake, and the two must not land in one bucket. | Not started |
-| 3b.7 | **`distress` and `crisis` skip the question** and go straight to the card. | Not started |
-| 3b.8 | **The settings switch.** Off means the card is exactly what it is today, at exactly today's speed. | Not started |
-| 3b.11 | **The picker has to reach depth 3.** A tap on an already-chosen chip opens its children and only those, under a quiet "точніше?" line; choosing a child replaces the parent rather than spending a second slot. Without this the deepest words are unreachable by construction, and the vocabulary screen ends up measuring our own ceiling. It is also the drill-down §6 already relies on for sensitive states. | Not started |
-| 3b.9 | **Re-measure the wait to the question**, not to the card. Only the transcript gates it, so it should land near 2.1 s — inside what M4 asks for, which 2.1 is still open on at 4.0 s. | Ties to 2.1 |
+| 3b.3 | **Two card states in `useCaptureFlow`**: question, then comparison. | **Done.** `turn` and `comparing`, with the analysis landing behind the question and the comparison built the moment it is answered. |
+| 3b.4 | **Nothing of the answer may leak before it is given.** | **Done.** Two guards, because one is not enough: `TurnScreen` is handed the transcript, the chosen words and `holding` and has no way to render the rest, and `whenAnalysisLands` is now a pure function with a test asserting that an arriving analysis changes nothing the person can see. The stage does carry the draft — that is what makes the comparison instant — so what the card knows and what it can show are deliberately two different sets. |
+| 3b.5 | **Four difference cases**, including "Vidlun missed what you named". | **Done, and there are five.** `differenceBetween` also tells the two silences apart: the person alone saying nothing, and neither side finding a word. Copy is in the locale files. |
+| 3b.6 | **Disagreement is logged separately from a revision.** | **Done.** `DisagreementRecord` under its own storage prefix, written by `ConfirmEntry` only when the refusal was said out loud, never inferred from an absence of taps. Both kinds go when the entry does. The flag also had to be cleared per card — left standing it would have filed the last entry's refusal against this one. |
+| 3b.7 | **`distress` and `crisis` skip the question.** | **Done as far as it can be, which is not all the way.** They skip the comparison, not the question: the flag is not known until the analysis returns and the question is on screen before that. One quiet question with a way out of it is the mildest version of asking, and this is the part of the rule the flow cannot honour. |
+| 3b.8 | **The settings switch.** | **Done.** `asksFirst`, defaulting on, and off takes the `turn` stage out of the path entirely rather than hiding it. A record written before the switch existed reads as on: a missing flag is not an answer. |
+| 3b.11 | **The picker has to reach depth 3.** | **Done.** A chosen word with children offers them under a quiet "точніше?" line; the child replaces the parent in place rather than spending a second slot. A second tap on the same chip lets the word go, so nothing that was possible before became unreachable. |
+| 3b.9 | **Re-measure the wait to the question**, not to the card. | **Done, and better than the estimate: 827 ms.** See below. |
 | 3b.10 | **Prototype.** `guess` and `reveal` already exist in `design/vidlun-prototype.html` for the old M6 flow. Drop the "1 / 3" counter, which has no meaning during capture, and bring the question to the display size — it is drawn at 19px, which is off the scale. | design/ |
+
+**Measured on the phone, 2026-08-28.** 18.4 s of audio:
+
+```
+open model      822 ms
+transcribe      827 ms   <- the wait to the question
+analyze        1875 ms   <- lands behind it
+```
+
+**M4 is met with room, and both ways.** The question is on screen at 0.8 s; with
+`asksFirst` switched off the whole card arrives at about 2.7 s, still inside the
+two to three seconds §M4 asks for. The old 4.0 s figure was transcription plus
+Haiku in series, and the question does not wait for the second half.
+
+The estimate said 2.1 s and it was wrong for a reason worth writing down: every
+Parakeet timing taken earlier today — 1985, 1889, 2075 ms — was measured through
+`CloudFirstTranscriptionService`, so each one carried a failed round trip to
+Gemini before falling back. **What looked like Parakeet's cost was mostly the
+cloud's.** With the cloud gone the same wrapper reports 827 ms, and 916 ms on a
+short take, which puts BACKLOG 1.7's confidence bands on a recogniser that is
+faster than the one they were guessed for.
+
+On the same take the transcript and the repaired sentence were byte for byte
+identical — the withdrawn licence (§1f) behaving on live audio, hesitation and
+all left standing.
 
 **What this does not change.** Reflection mode stays entirely optional, the
 growth view and emotional granularity stay post-MVP, and the invitation on Home

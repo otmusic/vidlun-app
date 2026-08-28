@@ -80,6 +80,38 @@ export function SettingsScreen(props: {
         </AppText>
       </View>
 
+      {/*
+        No confirmation on this one, unlike the recordings switch: turning it
+        off changes what the next card looks like and destroys nothing, so
+        asking would be a step for its own sake.
+      */}
+      <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.lg }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing.md,
+            minHeight: 52,
+          }}
+        >
+          <AppText variant="label" style={{ flex: 1 }}>
+            {t('settings.asksFirst')}
+          </AppText>
+          <Switch
+            value={settings.asksFirst}
+            onValueChange={(asksFirst) => {
+              props.onChange({ ...settings, asksFirst });
+            }}
+            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
+            accessibilityLabel={t('settings.asksFirst')}
+          />
+        </View>
+        <AppText variant="secondary" color="inkFaint">
+          {t('settings.asksFirstHint')}
+        </AppText>
+      </View>
+
       <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.lg }}>
         <AppText variant="label">{t('settings.language')}</AppText>
         <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
