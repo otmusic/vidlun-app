@@ -59,6 +59,20 @@ export class OnDeviceTranscriptionService implements ITranscriptionService {
     private readonly thresholds: SpeechThresholds = DEFAULT_SPEECH_THRESHOLDS,
   ) {}
 
+  async prepare(): Promise<void> {
+    try {
+      this.engine ??= this.open();
+      await this.engine;
+    } catch {
+      /*
+       * Forget the failed attempt so the next one is allowed to try again, and
+       * say nothing: the model may simply not be on disk yet, in which case the
+       * app is a working text journal and there is nothing to report.
+       */
+      this.engine = null;
+    }
+  }
+
   async transcribe(recording: AudioRecording): Promise<TranscriptionResult> {
     // Held, not re-opened: the model stays loaded between takes, which is what
     // keeps the second entry of a session fast.

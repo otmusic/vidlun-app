@@ -41,6 +41,12 @@ export interface Palette {
   readonly recordEdge: string;
   /** The floating tab bar, which sits over content and must let it through. */
   readonly bar: string;
+  /**
+   * The surface Vidlun's own answer sits on. Violet rather than the accent, so
+   * that "this part is Vidlun's" is a place on the card rather than one more
+   * thing the teal has to mean.
+   */
+  readonly voiceSoft: string;
   readonly warm: string;
   readonly warmSoft: string;
   readonly warmInk: string;
@@ -82,6 +88,7 @@ export const lightPalette: Palette = {
   onRecord: '#FBF7F0',
   recordEdge: 'transparent',
   bar: 'rgba(251,247,240,0.86)',
+  voiceSoft: '#E8E5FD',
   warm: '#D08700',
   warmSoft: '#F7EEDC',
   warmInk: '#8A5D12',
@@ -133,6 +140,7 @@ export const darkPalette: Palette = {
   onRecord: '#F2EEE6',
   recordEdge: '#39404B',
   bar: 'rgba(27,30,37,0.88)',
+  voiceSoft: '#232149',
   warm: '#F0AE2E',
   warmSoft: '#2E2519',
   warmInk: '#F5C766',

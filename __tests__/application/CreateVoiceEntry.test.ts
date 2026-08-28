@@ -179,3 +179,25 @@ describe('CreateVoiceEntry', () => {
     expect(entry.wasRevisedByUser).toBe(false);
   });
 });
+
+describe('getting ready to listen', () => {
+  it('opens the model without being asked for words', async () => {
+    const transcription = new StubTranscriptionService(CLEARLY_HEARD);
+    const useCase = new TranscribeTake(transcription);
+
+    await useCase.prepare();
+
+    expect(transcription.prepared).toBe(1);
+  });
+
+  it('can be asked twice, because a person may start two takes', async () => {
+    const transcription = new StubTranscriptionService(CLEARLY_HEARD);
+    const useCase = new TranscribeTake(transcription);
+
+    await useCase.prepare();
+    await useCase.prepare();
+
+    expect(transcription.prepared).toBe(2);
+  });
+});
+

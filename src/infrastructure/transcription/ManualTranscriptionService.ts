@@ -18,6 +18,11 @@ export class ManualTranscriptionService implements ITranscriptionService {
     this.text = text;
   }
 
+  /** Nothing to get ready: the words are already typed. */
+  prepare(): Promise<void> {
+    return Promise.resolve();
+  }
+
   transcribe(): Promise<TranscriptionResult> {
     return Promise.resolve({ text: this.text, confidence: 1 });
   }

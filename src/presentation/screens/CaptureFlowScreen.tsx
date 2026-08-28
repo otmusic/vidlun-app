@@ -14,7 +14,9 @@ import { HistoryScreen } from './HistoryScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { HomeScreen } from './HomeScreen';
 import { ProcessingScreen } from './ProcessingScreen';
+import { CompareScreen } from './CompareScreen';
 import { RecordingScreen } from './RecordingScreen';
+import { TurnScreen } from './TurnScreen';
 import { ReflectionScreen } from './ReflectionScreen';
 import { SavedScreen } from './SavedScreen';
 import { Screen } from './Screen';
@@ -84,6 +86,36 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
 
     case 'processing':
       return <ProcessingScreen t={t} />;
+
+    case 'turn':
+      return (
+        <TurnScreen
+          transcript={flow.stage.spoken.text}
+          chosen={flow.stage.chosen}
+          vocabulary={props.vocabulary}
+          holding={flow.stage.holding}
+          t={t}
+          onToggle={flow.toggleOwnWord}
+          onNext={flow.answer}
+          onSkip={flow.skipAnswer}
+        />
+      );
+
+    case 'comparing':
+      return (
+        <CompareScreen
+          proposed={flow.stage.proposed}
+          draft={flow.stage.draft}
+          vocabulary={props.vocabulary}
+          t={t}
+          onAdopt={flow.adopt}
+          onKeepMine={flow.keepMine}
+          keptMine={flow.keptMine}
+          onConfirm={flow.confirm}
+          onEdit={flow.beginEditing}
+          onBack={flow.backHome}
+        />
+      );
 
     case 'reflecting':
       return (

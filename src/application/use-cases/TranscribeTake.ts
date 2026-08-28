@@ -19,6 +19,15 @@ export interface Spoken {
 export class TranscribeTake {
   constructor(private readonly transcription: ITranscriptionService) {}
 
+  /**
+   * Called when the recording starts, not when it ends. The model takes about
+   * ten seconds to open and that used to land on whoever spoke first each
+   * session; opening it while they are still talking hides the whole of it.
+   */
+  async prepare(): Promise<void> {
+    await this.transcription.prepare();
+  }
+
   async execute(recording: AudioRecording): Promise<Spoken> {
     const result = await this.transcription.transcribe(recording);
     const text = result.text.trim();

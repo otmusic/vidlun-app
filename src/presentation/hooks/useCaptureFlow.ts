@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ConfirmEntry } from '@/application/use-cases/ConfirmEntry';
 import type { CreateTextEntry } from '@/application/use-cases/CreateTextEntry';
 import type { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
-import type { TranscribeTake } from '@/application/use-cases/TranscribeTake';
+import type { Spoken, TranscribeTake } from '@/application/use-cases/TranscribeTake';
 import type { GetHomeView, HomeView } from '@/application/use-cases/GetHomeView';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
 import type { FindRecording } from '@/application/use-cases/FindRecording';
@@ -11,7 +11,7 @@ import type { ForgetOldRecordings } from '@/application/use-cases/ForgetOldRecor
 import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory';
 import type { ReviseEntry } from '@/application/use-cases/ReviseEntry';
 import type { WriteObservation } from '@/application/use-cases/WriteObservation';
-import type { EntryEdits, MoodEntry } from '@/domain/entities/MoodEntry';
+import { MoodEntry, type EntryEdits } from '@/domain/entities/MoodEntry';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
 import type { IHaptics } from '@/domain/ports/IHaptics';
@@ -21,6 +21,26 @@ export type CaptureStage =
   | { readonly kind: 'recording' }
   | { readonly kind: 'writing' }
   | { readonly kind: 'processing' }
+  /**
+   * The card, asking before it answers. One stage rather than two screens: the
+   * question and the hold are the same card in two states, and a person who
+   * answers slower than the model never sees the second one.
+   */
+  | {
+      readonly kind: 'turn';
+      readonly spoken: Spoken;
+      /** What the person has named so far. Empty is an answer, not a blank. */
+      readonly chosen: readonly string[];
+      /** Null until the analysis lands behind the question. */
+      readonly draft: MoodEntry | null;
+      /** True once they have answered and are waiting on the analysis. */
+      readonly holding: boolean;
+    }
+  | {
+      readonly kind: 'comparing';
+      readonly proposed: MoodEntry;
+      readonly draft: MoodEntry;
+    }
   | { readonly kind: 'reflecting'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
   | { readonly kind: 'editing'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
   | { readonly kind: 'saved'; readonly streakDays: number }
@@ -67,6 +87,17 @@ export interface CaptureFlow {
   readonly startWriting: () => void;
   readonly submitText: (text: string) => void;
   readonly beginEditing: () => void;
+  /** Adds or removes one of the person's own words while the card is asking. */
+  readonly toggleOwnWord: (id: string) => void;
+  /** Done answering. Goes on to the comparison, or waits for it. */
+  readonly answer: () => void;
+  /** "I don't know, show me" — no answer given, and none invented. */
+  readonly skipAnswer: () => void;
+  /** Takes one of Vidlun's words into the entry. */
+  readonly adopt: (id: string) => void;
+  /** Declines the rest of them, and says so out loud rather than by silence. */
+  readonly keepMine: () => void;
+  readonly keptMine: boolean;
   readonly applyEdits: (edits: EntryEdits) => void;
   readonly confirm: () => void;
   readonly backHome: () => void;
@@ -120,21 +151,69 @@ function describe(error: unknown): string {
  * correct.
  */
 function addObservation(current: CaptureStage, spoken: MoodEntry): CaptureStage {
-  if (current.kind !== 'reflecting' || current.draft.id !== spoken.id) {
+  if (current.kind === 'turn' && current.draft !== null && current.draft.id === spoken.id) {
+    return { ...current, draft: spoken };
+  }
+
+  if (current.kind !== 'reflecting' && current.kind !== 'comparing') {
     return current;
   }
 
-  if (current.draft.wasRevisedByUser) {
+  if (current.draft.id !== spoken.id || current.draft.wasRevisedByUser) {
     return current;
   }
 
-  return { kind: 'reflecting', proposed: spoken, draft: spoken };
+  /*
+   * The sentence arrives after the card, so it is folded into whatever the
+   * card is holding rather than replacing it: the person may already have
+   * adopted a word, and overwriting the draft would take it back.
+   */
+  return {
+    kind: current.kind,
+    proposed: spoken,
+    draft: current.draft.withObservation(spoken.observation),
+  };
+}
+
+/**
+ * What the card holds once the answering is over.
+ *
+ * The kept set starts as the person's own words. When they named nothing, it
+ * starts as Vidlun's instead — an unanswered question is the card as it was
+ * before any of this, and throwing a good analysis away because someone had no
+ * word to hand would be the opposite of helping.
+ */
+function comparisonOf(proposed: MoodEntry, chosen: readonly string[]): CaptureStage {
+  const draft = MoodEntry.create({
+    ...proposed.toProps(),
+    selfEmotionIds: chosen,
+    emotionIds: chosen.length > 0 ? chosen : proposed.emotionIds,
+  });
+
+  /*
+   * A hard entry gets the plain card, never the comparison. Setting somebody's
+   * answer beside Vidlun's and naming the difference is a thing to do with an
+   * ordinary day; on a difficult one it is the app making a lesson out of what
+   * someone just said.
+   *
+   * The question itself has already been asked by this point — the flag is not
+   * known until the analysis returns, and by then the card is on screen. That
+   * is the part of §M8's rule this flow cannot honour, and one quiet question
+   * with a way out of it is the mildest version of asking.
+   */
+  if (proposed.safetyFlag !== 'none') {
+    return { kind: 'reflecting', proposed, draft };
+  }
+
+  return { kind: 'comparing', proposed, draft };
 }
 
 export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [stage, setStage] = useState<CaptureStage>({ kind: 'idle' });
   const [home, setHome] = useState<HomeView | null>(null);
   const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
+  /** Whether the person has declined Vidlun's remaining words on this card. */
+  const [keptMine, setKeptMine] = useState(false);
   /*
    * The take behind the draft on screen, held only until it is confirmed or
    * abandoned. Not on the entry: MoodEntry is about what someone felt, and a
@@ -172,6 +251,26 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     setStage({ kind: 'failed', message: describe(error) });
   }, []);
 
+  /*
+   * The card is already on screen. Vidlun's sentence comes from a slower model
+   * and the entry needs it neither to render nor to save, so it is written in
+   * afterwards rather than waited for — the difference between two seconds of
+   * waiting and four.
+   */
+  const withObservation = useCallback(
+    async (draft: MoodEntry) => {
+      try {
+        const spoken = await dependencies.writeObservation.execute(draft);
+
+        setStage((current) => addObservation(current, spoken));
+      } catch {
+        // The entry is complete without it. Failing here must not take down a
+        // card the user is already reading.
+      }
+    },
+    [dependencies.writeObservation],
+  );
+
   const analyze = useCallback(
     (build: () => Promise<MoodEntry>) => {
       setStage({ kind: 'processing' });
@@ -179,47 +278,65 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       build()
         .then((draft) => {
           setStage({ kind: 'reflecting', proposed: draft, draft });
-
-          /*
-           * The card is already on screen. Vidlun's sentence comes from a slower
-           * model and the entry needs it neither to render nor to save, so it
-           * is written in afterwards rather than waited for — the difference
-           * between two seconds of waiting and four.
-           */
-          void dependencies.writeObservation
-            .execute(draft)
-            .then((spoken) => {
-              setStage((current) => addObservation(current, spoken));
-            })
-            .catch(() => {
-              // The entry is complete without it. Failing here must not take
-              // down a card the user is already reading.
-            });
+          void withObservation(draft);
         })
         .catch(fail);
     },
-    [dependencies.writeObservation, fail],
+    [fail, withObservation],
+  );
+
+  /**
+   * The question goes up as soon as there are words, and the analysis runs
+   * behind it. Whoever finishes second decides what happens next: the person
+   * waits a moment, or the model was ready before they were and nothing waits
+   * at all.
+   */
+  const ask = useCallback(
+    (spoken: Spoken) => {
+      setStage({ kind: 'turn', spoken, chosen: [], draft: null, holding: false });
+
+      dependencies.createVoiceEntry
+        .execute(spoken)
+        .then((draft) => {
+          setStage((current) => {
+            if (current.kind !== 'turn') {
+              return current;
+            }
+
+            return current.holding
+              ? comparisonOf(draft, current.chosen)
+              : { ...current, draft };
+          });
+
+          void withObservation(draft);
+        })
+        .catch(fail);
+    },
+    [dependencies.createVoiceEntry, fail, withObservation],
   );
 
   const startRecording = useCallback(() => {
     dependencies.haptics.tap();
     setStage({ kind: 'recording' });
 
+    // Not awaited, and its failure is not ours: the take must start now, and
+    // an unopened model only means the transcription pays for it later.
+    void dependencies.transcribeTake.prepare();
+
     dependencies.recorder
       .start()
-      .then((take) => {
+      .then(async (take) => {
         // Fires for a tap and for the ceiling alike: the person may not be looking.
         dependencies.haptics.settle();
         takeUri.current = take.uri;
-        analyze(async () =>
-          dependencies.createVoiceEntry.execute(await dependencies.transcribeTake.execute(take)),
-        );
+        setStage({ kind: 'processing' });
+        ask(await dependencies.transcribeTake.execute(take));
       })
       .catch(fail);
-  }, [analyze, dependencies, fail]);
+  }, [ask, dependencies, fail]);
 
   const confirm = useCallback(() => {
-    if (stage.kind !== 'reflecting' && stage.kind !== 'editing') {
+    if (stage.kind !== 'reflecting' && stage.kind !== 'editing' && stage.kind !== 'comparing') {
       return;
     }
 
@@ -269,7 +386,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     ),
     beginEditing: useCallback(() => {
       setStage((current) =>
-        current.kind === 'reflecting'
+        current.kind === 'reflecting' || current.kind === 'comparing'
           ? { kind: 'editing', proposed: current.proposed, draft: current.draft }
           : current,
       );
@@ -324,6 +441,69 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       setStage((current) => (current.kind === 'detail' ? { kind: current.from } : current));
       reloadHome();
     }, [reloadHome]),
+    toggleOwnWord: useCallback((id: string) => {
+      setStage((current) => {
+        if (current.kind !== 'turn') {
+          return current;
+        }
+
+        const chosen = current.chosen.includes(id)
+          ? current.chosen.filter((each) => each !== id)
+          : current.chosen.length >= MoodEntry.MAX_EMOTIONS
+            ? current.chosen
+            : [...current.chosen, id];
+
+        return { ...current, chosen };
+      });
+    }, []),
+    answer: useCallback(() => {
+      setStage((current) => {
+        if (current.kind !== 'turn') {
+          return current;
+        }
+
+        // Nothing to compare against yet: hold, and the analysis will carry
+        // the card forward the moment it lands.
+        return current.draft === null
+          ? { ...current, holding: true }
+          : comparisonOf(current.draft, current.chosen);
+      });
+    }, []),
+    skipAnswer: useCallback(() => {
+      setStage((current) => {
+        if (current.kind !== 'turn') {
+          return current;
+        }
+
+        // "Show me" is not an answer, so none is recorded — the empty set here
+        // means they chose not to, and the card holds Vidlun's words instead.
+        return current.draft === null
+          ? { ...current, chosen: [], holding: true }
+          : comparisonOf(current.draft, []);
+      });
+    }, []),
+    adopt: useCallback((id: string) => {
+      setStage((current) => {
+        if (current.kind !== 'comparing' || current.draft.emotionIds.includes(id)) {
+          return current;
+        }
+
+        const emotionIds = [...current.draft.emotionIds, id].slice(0, MoodEntry.MAX_EMOTIONS);
+
+        return { ...current, draft: current.draft.withEmotionIds(emotionIds) };
+      });
+      setKeptMine(false);
+    }, []),
+    keepMine: useCallback(() => {
+      /*
+       * Recorded rather than inferred from doing nothing. A person who keeps
+       * their own word is telling us something — either the model was wrong or
+       * they know themselves better than it does — and both are worth more than
+       * an absence of taps.
+       */
+      setKeptMine(true);
+    }, []),
+    keptMine,
     openSettings: useCallback(() => {
       setStage({ kind: 'settings' });
     }, []),
