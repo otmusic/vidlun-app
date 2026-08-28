@@ -352,6 +352,85 @@ to download.
 
 ---
 
+## 1d. Is anything better than Parakeet? — surveyed 2026-08-28
+
+Prompted by Gemini 3.5 Transcribe landing on 2026-08-26. Nothing changed as a
+result; this is written down so the same ground is not covered twice.
+
+### Canary 1B v2 — checked in the source, it will not load
+
+The obvious candidate: NVIDIA, same 25 European languages as our Parakeet,
+larger, and it takes an explicit source language where Parakeet only
+auto-detects — which §1b showed going wrong on short takes. A ggml port exists.
+
+**`whisper.rn` cannot load it, and no version bump fixes that.** In the bundled
+`cpp/parakeet.cpp` the architecture enum holds exactly two values, `UNKNOWN`
+and `TDT`, and the loader does not detect an architecture at all — it assigns
+one:
+
+```c
+hparams.arch = PARAKEET_ARCH_TDT;
+```
+
+The tensor map agrees: 123 encoder entries, 12 predictor, 18 joint. That is
+RNN-T and nothing else; the only four mentions of "decoder" are the predictor's
+own LSTM. Canary is a FastConformer encoder with a cross-attending Transformer
+decoder, so its tensors are not in the map and the load fails on the first name
+it looks for. The port even carries a TODO wondering whether other versions
+exist — support for them was never intended.
+
+Trying Canary therefore means replacing `whisper.rn` with another native
+runtime (CrispASR, parakeet.cpp). That is a project with its own prebuild,
+pods and bugs, not a model swap. Checked against 0.7.3; latest is 0.7.4, a
+patch.
+
+### Parakeet TDT 1.1B — English only
+
+Looked like a free upgrade from our 0.6B. It is not multilingual; `0.6b-v3` is
+the multilingual one in that family. Nothing to do here.
+
+### The specialised Ukrainian models are a trap
+
+`egorsmkv/speech-recognition-uk` benchmarks them on Common Voice 10: Citrinet
+1024 at **4.32% WER**, FastConformer P&C at 4.52%, against a Ukrainian-tuned
+Whisper large-v2 at 13.72%. Three times better on paper.
+
+They are all **monolingual**, and §1 says our audience mixes Ukrainian and
+Russian inside one sentence. A model that is excellent on clean read Ukrainian
+and lost on a Russian word mid-phrase can easily be worse in this app than a
+multilingual one that is mediocre at both. No ggml path for them either.
+
+### Gemini 3.5 Transcribe — good, and not ours to take
+
+85+ languages including `uk-UA` and `ru-RU`, mid-utterance code-switching,
+2.6% WER non-streaming overall and 5.04% on multilingual FLEURS. Roughly
+**$0.005 per audio minute**, which is about five cents a month for someone
+writing daily — less than the Haiku and Sonnet calls that entry already costs.
+It also strips filler words and repairs self-corrections, which is most of what
+our transcript-repair prompt does (see 1.8).
+
+**The cost objection in §9 is simply out of date.** The privacy one is not, and
+it now has a second life: the onboarding screen we shipped says the voice never
+leaves the phone. Moving to cloud STT is not a model swap, it is a change to a
+promise people have read — which is what §10 means by revisiting it "at the
+price of the privacy promise". It would also end offline use.
+
+### What is actually left
+
+Two candidates, and the choice between them is a product decision rather than a
+technical one. Before it can be made honestly, the hole from §1c has to be
+filled: **Parakeet has never been measured.** It was chosen by ear, on the
+owner's judgement as a native speaker, which was enough to close §10 and is not
+enough to compare against a number.
+
+The run to do, on the 17 labelled real takes in
+`~/vidlun-whisper/recordings-real` with the harness that produced Whisper's
+0.330: Whisper as the fixed point, **Parakeet for the first time as a number**,
+Gemini as the ceiling. Half a day and a few cents. If Parakeet lands anywhere
+near the cloud, the question closes for good and in our favour.
+
+---
+
 ## 2. M4 — built, not verified
 
 | # | Item | Who |
@@ -362,7 +441,54 @@ to download.
 | 2.5 | Do not hold the card for the observation. | **Done.** On the measured take that was 2.5 s instead of 7.3 s. |
 | 2.6 | Raise the 60-second recording ceiling. | **Done, and for a bigger reason.** Silence auto-stop is gone entirely — the person decides when a take ends — so the ceiling had to move past any real entry rather than just past a long one. Five minutes, and it exists only so a recording left running in a pocket cannot fill the disk. |
 | 2.2 | Check the dark theme on a real screen. §7.10 warns the green confirmation and the teal accent sit close in tone. | Owner |
-| 2.3 | **Decide what a crisis entry shows.** The domain nulls `observation` correctly, but §6 says what appears instead is a product decision. The card currently shows nothing. | Owner |
+| 2.3 | **Decide what a crisis entry shows.** The domain nulls `observation` correctly, but §6 says what appears instead is a product decision. The card currently shows nothing. One candidate answer is in §2c. | Owner |
+
+---
+
+## 2c. Idea: a helpline number on a hard entry — 2026-08-28
+
+**Not scheduled, not decided.** Written down because it is the first concrete
+answer anyone has offered to 2.3, and because the ways it can go wrong are
+easier to see now than in a hurry later.
+
+The idea: when an entry comes back flagged as anxious or genuinely hard, show
+the crisis line for the country the person is in, alongside whatever else the
+card does.
+
+**What makes it worth doing.** A person who has just said the worst thing out
+loud has already done the hardest part. The number being there — not searched
+for, not asked for — is the difference between a thought and a phone call, and
+that is a difference this product is unusually well placed to make: it is the
+only moment we know for certain what somebody just said.
+
+**What makes it dangerous, in the order the problems bite:**
+
+- **A wrong number is worse than none.** Someone in trouble dialling a line
+  that is dead, moved, or answers in a language they do not speak is worse off
+  than someone who was shown nothing. Whatever table ships has to be right on
+  the day it is dialled, which means it needs an owner, not just an author.
+- **Which country, and how do we know?** The phone's region is where the device
+  was set up, not where the person is standing, and a Ukrainian abroad may want
+  the Ukrainian line rather than the local one. Getting this from the network
+  would mean sending something about a crisis entry off the device, which is
+  the one thing §9 does not allow. A bundled table plus the phone's region,
+  with the country visible and changeable, is the honest version.
+- **On which flag.** Showing a suicide line after "this traffic is infuriating"
+  is alarming, faintly insulting, and teaches people that the app panics — after
+  which they will not believe it on the day it matters. `crisis` only, and the
+  threshold for that flag is already meant to be conservative. `distress` has
+  the grounding exercise (M8) and should keep it.
+- **Tone.** It cannot read as the app filing someone as a case. No alarm colour,
+  no icon shouting, no "we noticed you may be at risk" — that sentence is a
+  diagnosis, which §7.9 forbids, and it arrives at the worst possible moment
+  for one.
+- **Nothing about it may be logged.** Not that it was shown, not that it was
+  tapped. A journal that records whether you looked at a crisis number is not a
+  journal anyone should keep.
+
+**Before any of it is built:** the copy and the trigger both need review by a
+mental health professional, the same as M8's. This is the one screen in the
+product where being wrong has consequences outside the app.
 
 ---
 
