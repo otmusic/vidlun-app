@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Switch, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, Switch, useColorScheme, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import type { Entitlement } from '@/domain/entities/Entitlement';
-import type { Settings } from '@/domain/ports/ISettings';
+import type { Settings, ThemeChoice } from '@/domain/ports/ISettings';
 import type { Translate, TranslationKey } from '@/i18n';
 
 import { AppText } from '../components/AppText';
@@ -10,6 +11,15 @@ import { useTheme } from '../theme/ThemeProvider';
 
 /** The bar floats over this screen, so the last row needs room under it. */
 const BOTTOM_ROOM = 118;
+
+/** The drawing's order: what you choose, then what chooses for you. */
+const THEME_CHOICES: readonly ThemeChoice[] = ['light', 'dark', 'system'];
+
+const THEME_LABELS: Readonly<Record<ThemeChoice, TranslationKey>> = {
+  light: 'profile.themeLight',
+  dark: 'profile.themeDark',
+  system: 'profile.themeSystem',
+};
 
 /** One value per row, and three rows visible: the chosen one and its neighbours. */
 const ROW_HEIGHT = 46;
@@ -133,26 +143,7 @@ export function ProfileScreen(props: {
         </Row>
       </Section>
 
-      <Section label={t('profile.look')}>
-        <Row
-          title={t('profile.darkTheme')}
-          hint={t(settings.theme === 'dark' ? 'profile.darkOn' : 'profile.darkOff')}
-        >
-          {/*
-            On means dark always; off means following the phone. §7.6 keeps a
-            third state — light always — which this switch has no room for, so
-            it stays reachable only to someone who already chose it.
-          */}
-          <Switch
-            value={settings.theme === 'dark'}
-            onValueChange={(dark) => {
-              props.onChange({ ...settings, theme: dark ? 'dark' : 'system' });
-            }}
-            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
-            accessibilityLabel={t('profile.darkTheme')}
-          />
-        </Row>
-      </Section>
+      <Theme settings={settings} t={t} onChange={props.onChange} />
 
       <Section label={t('profile.audio')}>
         <Row
@@ -194,49 +185,56 @@ export function ProfileScreen(props: {
         {t('profile.audioNote')}
       </AppText>
 
-      <Section label={t('profile.language')}>
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 8,
-            padding: 6,
-            borderWidth: 1,
-            borderColor: theme.palette.line,
-            borderRadius: 999,
-            backgroundColor: theme.palette.paper,
-          }}
-        >
-          {/* The drawing's order, which is not the locale list's: uk first. */}
-          {(['uk', 'en'] as const).map((locale) => {
-            const chosen = settings.locale === locale;
+      {/*
+        No card around this one, unlike every other section: the drawing has the
+        label sitting straight above the pill, and wrapping it produced a border
+        inside a border with the section's padding between them.
+      */}
+      <AppText variant="caption" color="inkFaint" style={{ marginBottom: 10 }}>
+        {t('profile.language')}
+      </AppText>
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 8,
+          padding: 6,
+          borderWidth: 1,
+          borderColor: theme.palette.line,
+          borderRadius: 999,
+          backgroundColor: theme.palette.paper,
+          marginBottom: 30,
+        }}
+      >
+        {/* The drawing's order, which is not the locale list's: uk first. */}
+        {(['uk', 'en'] as const).map((locale) => {
+          const chosen = settings.locale === locale;
 
-            return (
-              <Pressable
-                key={locale}
-                accessibilityRole="button"
-                accessibilityState={{ selected: chosen }}
-                onPress={() => {
-                  props.onChange({ ...settings, locale });
-                }}
-                style={{
-                  flex: 1,
-                  borderRadius: 999,
-                  paddingVertical: 12,
-                  alignItems: 'center',
-                  backgroundColor: chosen ? theme.palette.solid : 'transparent',
-                }}
+          return (
+            <Pressable
+              key={locale}
+              accessibilityRole="button"
+              accessibilityState={{ selected: chosen }}
+              onPress={() => {
+                props.onChange({ ...settings, locale });
+              }}
+              style={{
+                flex: 1,
+                borderRadius: 999,
+                paddingVertical: 12,
+                alignItems: 'center',
+                backgroundColor: chosen ? theme.palette.solid : 'transparent',
+              }}
+            >
+              <AppText
+                variant="body"
+                style={{ color: chosen ? theme.palette.onSolid : theme.palette.ink }}
               >
-                <AppText
-                  variant="body"
-                  style={{ color: chosen ? theme.palette.onSolid : theme.palette.ink }}
-                >
-                  {t(`language.${locale}` as TranslationKey)}
-                </AppText>
-              </Pressable>
-            );
-          })}
-        </View>
-      </Section>
+                {t(`language.${locale}` as TranslationKey)}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </View>
 
       <TimeSheet
         open={pickingTime}
@@ -248,6 +246,144 @@ export function ProfileScreen(props: {
         }}
       />
     </ScrollView>
+  );
+}
+
+/**
+ * Three states, not two. §7.6 argues that a preference the time of day can
+ * override is not a preference, and the drawing now agrees: light and dark are
+ * always themselves, and system follows the phone and says which way it is
+ * leaning right now.
+ */
+function Theme(props: {
+  readonly settings: Settings;
+  readonly t: Translate;
+  readonly onChange: (settings: Settings) => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const scheme = useColorScheme();
+  const { settings, t } = props;
+
+  const hint =
+    settings.theme === 'system'
+      ? t('profile.themeHintSystem', {
+          now: t(scheme === 'dark' ? 'profile.themeNowDark' : 'profile.themeNowLight'),
+        })
+      : t(settings.theme === 'dark' ? 'profile.themeHintDark' : 'profile.themeHintLight');
+
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: theme.palette.line,
+        backgroundColor: theme.palette.paper,
+        borderRadius: 22,
+        padding: 16,
+        marginBottom: 26,
+      }}
+    >
+      <View style={{ gap: 3, marginLeft: 4, marginRight: 4, marginTop: 1, marginBottom: 13 }}>
+        <AppText variant="body" style={{ fontSize: 16 }}>
+          {t('profile.themeTitle')}
+        </AppText>
+        <AppText variant="caption" color="inkFaint" style={{ textTransform: 'none' }}>
+          {hint}
+        </AppText>
+      </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 4,
+          padding: 4,
+          borderRadius: 999,
+          backgroundColor: theme.palette.lineSoft,
+        }}
+      >
+        {THEME_CHOICES.map((choice) => (
+          <ThemeChoiceButton
+            key={choice}
+            choice={choice}
+            chosen={settings.theme === choice}
+            t={t}
+            onPress={() => {
+              props.onChange({ ...settings, theme: choice });
+            }}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function ThemeChoiceButton(props: {
+  readonly choice: ThemeChoice;
+  readonly chosen: boolean;
+  readonly t: Translate;
+  readonly onPress: () => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const colour = props.chosen ? theme.palette.ink : theme.palette.inkSoft;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: props.chosen }}
+      onPress={props.onPress}
+      style={{
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 12,
+        paddingHorizontal: 4,
+        borderRadius: 999,
+        backgroundColor: props.chosen ? theme.palette.paper : 'transparent',
+        // Lifted rather than outlined: a border inside a track this tight
+        // reads as a second track.
+        shadowColor: '#000',
+        shadowOpacity: props.chosen ? 0.1 : 0,
+        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 1 },
+      }}
+    >
+      <ThemeGlyph choice={props.choice} colour={colour} />
+      <AppText variant="secondary" style={{ color: colour }}>
+        {props.t(THEME_LABELS[props.choice])}
+      </AppText>
+    </Pressable>
+  );
+}
+
+/** The drawing's own three: a sun, a moon and a phone. */
+function ThemeGlyph(props: {
+  readonly choice: ThemeChoice;
+  readonly colour: string;
+}): React.JSX.Element {
+  const line = {
+    fill: 'none',
+    stroke: props.colour,
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+
+  return (
+    <Svg width={15} height={15} viewBox="0 0 24 24">
+      {props.choice === 'light' ? (
+        <Path
+          d="M12 7.4a4.6 4.6 0 100 9.2 4.6 4.6 0 000-9.2M12 2.6v1.9M12 19.5v1.9M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2.6 12h1.9M19.5 12h1.9M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+          {...line}
+        />
+      ) : props.choice === 'dark' ? (
+        <Path d="M20.4 14.3A8.6 8.6 0 019.7 3.6a8.6 8.6 0 1010.7 10.7z" {...line} />
+      ) : (
+        <Path
+          d="M8.2 3h7.6c.9 0 1.6.7 1.6 1.6v14.8c0 .9-.7 1.6-1.6 1.6H8.2c-.9 0-1.6-.7-1.6-1.6V4.6c0-.9.7-1.6 1.6-1.6M10.6 18.3h2.8"
+          {...line}
+        />
+      )}
+    </Svg>
   );
 }
 
