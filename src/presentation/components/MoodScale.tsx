@@ -21,15 +21,21 @@ const POINTS = [1, 2, 3, 4, 5];
  * terracotta, because a difficult day must not look like an error.
  */
 /**
- * Exported because the week chart colours its bars by the same rule. Two
- * mappings would drift, and §7 asks that one colour mean exactly one thing.
+ * Three bands across five points, split where the words split them: `mood.1`
+ * and `mood.2` are both low, `mood.3` is even, `mood.4` and `mood.5` are the
+ * good end. Colouring a "low" day the same as an "even" one said something the
+ * label denied.
+ *
+ * Exported because the week chart colours its bars by this too. Two mappings
+ * drifted apart once already, and §7 asks that one colour mean exactly one
+ * thing.
  */
 export function toneFor(point: number): keyof Palette {
-  if (point <= 1) {
+  if (point <= 2) {
     return 'low';
   }
 
-  return point <= 3 ? 'tension' : 'calm';
+  return point < 4 ? 'tension' : 'calm';
 }
 
 export function MoodScale(props: MoodScaleProps): React.JSX.Element {

@@ -52,7 +52,6 @@ import { UnavailablePurchases } from '../infrastructure/purchases/UnavailablePur
 import { UuidGenerator } from '../infrastructure/system/UuidGenerator';
 import {
   TimedMessagesClient,
-  TimedPurchases,
   TimedReflectionAnalyzer,
   TimedTranscriptionService,
 } from '../infrastructure/diagnostics/timed';
@@ -205,9 +204,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     findMoodPatterns: new FindMoodPatterns(repository, clock),
     searchEntries: new SearchEntries(repository),
     reminders: new ExpoReminders(),
-    purchases: __DEV__
-      ? new TimedPurchases(purchasesFor(readRevenueCatKey()))
-      : purchasesFor(readRevenueCatKey()),
+    purchases: purchasesFor(readRevenueCatKey()),
     getVocabularyGrowth: new GetVocabularyGrowth(repository, vocabulary, clock),
     microphonePermission: new ExpoMicrophonePermission({
       getRecordingPermissionsAsync,

@@ -8,26 +8,11 @@ import { countedKey } from '@/i18n/plural';
 import type { Locale, Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
+import { toneFor } from '../components/MoodScale';
 import { Button } from '../components/Button';
 import { RoundBack } from '../components/RoundBack';
 
 import { useTheme } from '../theme/ThemeProvider';
-
-/**
- * The chart's own three bands, which are not the picker's.
- *
- * `MoodScale` splits five points as 1 / 2-3 / 4-5; the drawing splits the chart
- * as 1-2 / 3 / 4-5. They disagree at 2, and the chart follows the drawing —
- * flagged rather than reconciled, because which one is right is a design
- * question and only one of the two is drawn.
- */
-function bandOf(mood: number): 'low' | 'tension' | 'calm' {
-  if (mood <= 2) {
-    return 'low';
-  }
-
-  return mood < 4 ? 'tension' : 'calm';
-}
 
 /** Straight off the drawing, not rounded to a grid: the chart is 156 tall. */
 const CHART_HEIGHT = 156;
@@ -273,7 +258,7 @@ function Chart(props: {
                   borderRadius: 4,
                   // Five is the top of the scale, so a 4 stands four fifths tall.
                   height: `${(day.averageMood / 5) * 100}%`,
-                  backgroundColor: theme.palette[bandOf(day.averageMood)],
+                  backgroundColor: theme.palette[toneFor(day.averageMood)],
                 }}
               />
             )}

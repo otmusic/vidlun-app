@@ -1109,7 +1109,7 @@ i18n keys, and what still has to be computed:
 | 3c.5 | Patterns. | **Done, and not with a model.** The pattern the drawing shows is a difference of two averages, so `FindMoodPatterns` computes it: a tag needs three entries on each side and half a point of gap. A model asked for the same sentence would sometimes produce one the data does not support, and §5 says one fabricated insight costs every later one. Patterns arithmetic cannot reach are still open. |
 | 3c.6 | The vocabulary half. | **Done**, on its own screen as the drawing has it. Read from `selfEmotionIds` alone, so it measures the person's vocabulary and not ours. Pairs are found month by month against everything before each month — comparing the whole period against what preceded it went blank on exactly the periods people pick. The period picker, presets and calendar are built. |
 | 3c.8 | **What the drawing does not say and the code had to.** The pattern sentence is fixed prose about a walk, so its template is ours. "N more patterns" is counted over the month here because the patterns are monthly, while the drawing's line says week. The picker's "точніше?" line has no copy. All three are provisional until they land in `Vidlun.dc.html`. | design/ |
-| 3c.9 | **The chart and the mood picker disagree.** The drawing bands the chart 1-2 / 3 / 4-5; `MoodScale` splits five points 1 / 2-3 / 4-5. They differ at 2. The chart follows the drawing and `bandOf` says so in a comment; which of the two is right is a design question. | design/ |
+| 3c.9 | **The chart and the mood picker disagreed at 2.** | **Settled 2026-08-29 on the drawing's split**, and the words settled it: `mood.2` is "low" and `mood.3` is "even", so colouring them alike said something the label denied. The palette already held the drawing's three colours exactly, in both themes; only the split differed. `toneFor` is now the single rule and the chart's private copy is gone. |
 | 3c.7 | Prototype. | Superseded: `Vidlun.dc.html` is the drawing and it already carries all of this. What it still owes the code is listed in 3c.8. |
 
 ---
@@ -1256,6 +1256,26 @@ talks to Anthropic directly with its own key, which is the shape of a
 development machine and is the thing this exists to stop in a published one.
 
 §2 said no backend in the MVP and now says why this is not one.
+
+---
+
+## 3h. The diagnostics came out — 2026-08-29
+
+Everything added to debug the last three days is gone. What it bought is
+recorded in §1e, §1f and §3f; what it cost was that the app printed people's
+own sentences into a terminal.
+
+Removed: the `heard:` and `repaired:` pair, which is how §1f was found at all
+and which had no business surviving the finding; the store's answers; the
+week's entry, theme and pattern counts; the entitlement line; and the
+development row that reset the trial week.
+
+**Kept: the stage timings.** They carry no transcript and no entry — a stage
+name and a number — and §M4 is defined by them. Losing them would mean losing
+the ability to say whether the wait is still what the brief asks for.
+
+One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
+`__DEV__` wiring in the composition root.
 
 ---
 

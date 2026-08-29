@@ -135,19 +135,6 @@ function Vidlun(props: {
 
   const entitlement = entitlementOf({ subscribed, trialStartedAt, now });
 
-  useEffect(() => {
-    if (__DEV__) {
-      // Which of the four states the paid half is in, and why. The trial lives
-      // in settings and the subscription in the store, so "unlocked" has two
-      // possible causes and they look identical on screen.
-      // eslint-disable-next-line no-console
-      console.log(
-        `[vidlun] entitlement=${entitlement} subscribed=${String(subscribed)} trialStartedAt=${
-          props.settings.trialStartedAt ?? 'never'
-        }`,
-      );
-    }
-  }, [entitlement, props.settings.trialStartedAt, subscribed]);
 
   const recorder = useMemo(
     () => container.createAudioRecorder(props.nativeRecorder),

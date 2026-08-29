@@ -6,38 +6,10 @@ import type {
   ITranscriptionService,
   TranscriptionResult,
 } from '../../domain/ports/ITranscriptionService';
-import type {
-  IPurchases,
-  PurchaseOutcome,
-  SubscriptionStatus,
-} from '../../domain/ports/IPurchases';
 import type { MessagesClient } from '../analysis/claudeModels';
 
 /** Where a stage timing goes. Injected so a test can read it without a console. */
 export type ReportTiming = (stage: string, ms: number) => void;
-
-/** Where the words go, for as long as it takes to tell two rewriters apart. */
-export type ReportTranscript = (text: string) => void;
-
-/**
- * The card shows `cleanTranscript`, which has been through the analyzer's
- * repair prompt. So a wrong word on screen has two possible authors and no
- * way to tell which: the recogniser mishearing, or the repair "fixing" what
- * was heard correctly. This prints what the recogniser actually returned.
- *
- * Development only, and it puts someone's own sentence in the terminal — it
- * comes out again once §1e's attribution question is settled.
- */
-export const logTranscript: ReportTranscript = (text) => {
-  // eslint-disable-next-line no-console
-  console.log(`[vidlun] heard: ${text}`);
-};
-
-/** The other half of the same question: what the repair prompt made of it. */
-export const logRepair: ReportTranscript = (text) => {
-  // eslint-disable-next-line no-console
-  console.log(`[vidlun] repaired: ${text}`);
-};
 
 export const logTiming: ReportTiming = (stage, ms) => {
   /*
@@ -77,23 +49,18 @@ export class TimedTranscriptionService implements ITranscriptionService {
   constructor(
     private readonly inner: ITranscriptionService,
     private readonly report: ReportTiming = logTiming,
-    private readonly reportTranscript: ReportTranscript = logTranscript,
   ) {}
 
   prepare(): Promise<void> {
     return timed('open model', this.report, () => this.inner.prepare());
   }
 
-  async transcribe(recording: AudioRecording): Promise<TranscriptionResult> {
-    const result = await timed(
+  transcribe(recording: AudioRecording): Promise<TranscriptionResult> {
+    return timed(
       `transcribe (${Math.round(recording.durationMs / 100) / 10}s of audio)`,
       this.report,
       () => this.inner.transcribe(recording),
     );
-
-    this.reportTranscript(result.text);
-
-    return result;
   }
 }
 
@@ -101,15 +68,10 @@ export class TimedReflectionAnalyzer implements IReflectionAnalyzer {
   constructor(
     private readonly inner: IReflectionAnalyzer,
     private readonly report: ReportTiming = logTiming,
-    private readonly reportTranscript: ReportTranscript = logRepair,
   ) {}
 
-  async analyze(transcript: string): Promise<ReflectionProposal> {
-    const proposal = await timed('analyze', this.report, () => this.inner.analyze(transcript));
-
-    this.reportTranscript(proposal.cleanTranscript);
-
-    return proposal;
+  analyze(transcript: string): Promise<ReflectionProposal> {
+    return timed('analyze', this.report, () => this.inner.analyze(transcript));
   }
 }
 
@@ -125,48 +87,5 @@ export class TimedMessagesClient implements MessagesClient {
 
   create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message> {
     return timed(params.model, this.report, () => this.inner.create(params));
-  }
-}
-
-/**
- * What the store answered, and why, while the paywall is being wired.
- *
- * A purchase fails in a dozen ways that all look the same from the screen —
- * no product, wrong entitlement id, sandbox account not signed in — and the
- * difference is only ever in the error the SDK threw.
- */
-export class TimedPurchases implements IPurchases {
-  constructor(
-    private readonly inner: IPurchases,
-    private readonly report: ReportTiming = logTiming,
-  ) {}
-
-  async status(): Promise<SubscriptionStatus> {
-    const status = await timed('store status', this.report, () => this.inner.status());
-
-    // eslint-disable-next-line no-console
-    console.log(`[vidlun] store says active=${String(status.active)}`);
-
-    return status;
-  }
-
-  async subscribe(): Promise<PurchaseOutcome> {
-    return this.announce('subscribe', () => this.inner.subscribe());
-  }
-
-  async restore(): Promise<PurchaseOutcome> {
-    return this.announce('restore', () => this.inner.restore());
-  }
-
-  private async announce(
-    what: string,
-    work: () => Promise<PurchaseOutcome>,
-  ): Promise<PurchaseOutcome> {
-    const outcome = await timed(what, this.report, work);
-
-    // eslint-disable-next-line no-console
-    console.log(`[vidlun] ${what} -> ${outcome}`);
-
-    return outcome;
   }
 }

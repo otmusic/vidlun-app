@@ -491,18 +491,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             }),
           ]);
 
-          if (__DEV__) {
-            /*
-             * An absent pattern card and a broken one look identical, and the
-             * thresholds are strict on purpose — three entries carrying a tag,
-             * three without it, half a point between them.
-             */
-            // eslint-disable-next-line no-console
-            console.log(
-              `[vidlun] week ${String(week.entryCount)} entries, ${String(themes.length)} themes, ${String(patterns.length)} patterns`,
-            );
-          }
-
           setStage((current) =>
             // Someone who navigated on while this was in flight gets the week
             // they asked for, not the one that happened to finish.

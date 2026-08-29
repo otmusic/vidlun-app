@@ -86,6 +86,18 @@ export function ProfileScreen(props: {
         </Row>
       </Section>
 
+      <Section label={t('subs.section')}>
+        <Row
+          title={t('subs.name')}
+          hint={t(subscriptionHint(props.entitlement))}
+          onPress={props.onOpenSubscription}
+        >
+          <AppText variant="body" color="inkFaint">
+            ›
+          </AppText>
+        </Row>
+      </Section>
+
       {/*
         Development only, and it earns its place: the trial is stored rather
         than bought, so without this the paid screens can be seen once per
