@@ -1,12 +1,27 @@
+import { useState } from 'react';
 import { Linking, Modal, Pressable, ScrollView, View } from 'react-native';
 
 import type { Entitlement } from '@/domain/entities/Entitlement';
-import type { PurchaseOutcome } from '@/domain/ports/IPurchases';
-import type { Translate } from '@/i18n';
+import type { Plan, PurchaseOutcome } from '@/domain/ports/IPurchases';
+import type { Locale, Translate } from '@/i18n';
+import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
 import { RoundBack } from '../components/RoundBack';
 import { useTheme } from '../theme/ThemeProvider';
+import { savingAgainstMonthly } from './planSaving';
+
+const PLAN_LABELS = {
+  monthly: 'subs.planMonthly',
+  annual: 'subs.planAnnual',
+  lifetime: 'subs.planLifetime',
+} as const;
+
+const PLAN_PERIODS = {
+  monthly: 'subs.perMonth',
+  annual: 'subs.perYear',
+  lifetime: 'subs.once',
+} as const;
 
 /** Where "manage" goes. The store owns cancelling; we only point at it. */
 const APP_STORE_SUBSCRIPTIONS = 'https://apps.apple.com/account/subscriptions';
@@ -21,9 +36,11 @@ const APP_STORE_SUBSCRIPTIONS = 'https://apps.apple.com/account/subscriptions';
  */
 export function SubscriptionScreen(props: {
   readonly entitlement: Entitlement;
+  readonly plans: readonly Plan[];
   readonly outcome: PurchaseOutcome | null;
+  readonly locale: Locale;
   readonly t: Translate;
-  readonly onSubscribe: () => void;
+  readonly onSubscribe: (planId: string) => void;
   readonly onRestore: () => void;
   readonly onDismissOutcome: () => void;
   readonly onBack: () => void;
@@ -31,7 +48,14 @@ export function SubscriptionScreen(props: {
   const theme = useTheme();
   const { t } = props;
   const owns = props.entitlement === 'subscribed';
-  const spent = props.entitlement === 'trialSpent';
+  /*
+   * The year is preselected, and that is the whole argument of the screen: the
+   * month is here so the year can be read against it, and someone who never
+   * touches these cards buys the one worth buying.
+   */
+  const [chosenId, setChosenId] = useState<string | null>(null);
+  const preferred = props.plans.find((plan) => plan.kind === 'annual') ?? props.plans[0];
+  const chosen = props.plans.find((plan) => plan.id === chosenId) ?? preferred;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.palette.canvas }}>
@@ -83,23 +107,42 @@ export function SubscriptionScreen(props: {
               }}
             />
           </>
+        ) : props.plans.length === 0 ? (
+          /*
+           * Nothing priced means the store has nothing to sell — not
+           * configured, or unreachable. Saying so is better than an empty
+           * space where a price belongs.
+           */
+          <AppText variant="body" color="inkSoft" style={{ marginBottom: 20 }}>
+            {t('subs.storeQuiet')}
+          </AppText>
         ) : (
           <>
-            <View style={{ marginBottom: 20, gap: 6 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-                <AppText variant="display">{t('subs.price')}</AppText>
-                <AppText variant="body" color="inkSoft">
-                  {t('subs.per')}
-                </AppText>
-              </View>
-              <AppText variant="secondary" color="inkSoft">
-                {/* A spent week is said out loud rather than quietly charged. */}
-                {t(spent ? 'subs.priceNote' : 'subs.trialNote')}
-              </AppText>
+            <AppText variant="caption" color="inkFaint" style={{ marginBottom: 12 }}>
+              {t('subs.chooseTitle')}
+            </AppText>
+            <View style={{ gap: 10, marginBottom: 20 }}>
+              {props.plans.map((plan) => (
+                <PlanCard
+                  key={plan.id}
+                  plan={plan}
+                  chosen={plan.id === chosenId}
+                  saving={savingAgainstMonthly(plan, props.plans)}
+                  locale={props.locale}
+                  t={t}
+                  onPress={() => {
+                    setChosenId(plan.id);
+                  }}
+                />
+              ))}
             </View>
             <Solid
-              label={t(spent ? 'subs.buy' : 'subs.startTrial')}
-              onPress={props.onSubscribe}
+              label={buyLabel(chosen, t, props.locale)}
+              onPress={() => {
+                if (chosen !== undefined) {
+                  props.onSubscribe(chosen.id);
+                }
+              }}
             />
             <Quiet label={t('subs.restore')} onPress={props.onRestore} />
           </>
@@ -132,11 +175,94 @@ export function SubscriptionScreen(props: {
       <OutcomeSheet
         outcome={props.outcome}
         t={t}
-        onRetry={props.onSubscribe}
+        onRetry={() => {
+          if (chosen !== undefined) {
+            props.onSubscribe(chosen.id);
+          }
+        }}
         onClose={props.onDismissOutcome}
       />
     </View>
   );
+}
+
+/**
+ * One plan, priced by the store and never by us. The year carries what it
+ * saves against the month, worked out from the two real prices rather than
+ * written into the copy — a percentage in a translation is a number that goes
+ * stale the first time a price moves.
+ */
+function PlanCard(props: {
+  readonly plan: Plan;
+  readonly chosen: boolean;
+  readonly saving: number | null;
+  readonly locale: Locale;
+  readonly t: Translate;
+  readonly onPress: () => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const { plan, t } = props;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: props.chosen }}
+      onPress={props.onPress}
+      style={{
+        borderWidth: props.chosen ? 2 : 1,
+        borderColor: props.chosen ? theme.palette.ink : theme.palette.line,
+        backgroundColor: theme.palette.paper,
+        borderRadius: 22,
+        paddingVertical: 18,
+        paddingHorizontal: 20,
+        gap: 4,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <AppText variant="body" style={{ fontSize: 16, flex: 1 }}>
+          {t(PLAN_LABELS[plan.kind])}
+        </AppText>
+        {props.saving === null ? null : (
+          <View
+            style={{
+              borderRadius: 999,
+              backgroundColor: theme.palette.lime,
+              paddingVertical: 4,
+              paddingHorizontal: 10,
+            }}
+          >
+            <AppText variant="caption" style={{ color: theme.palette.ink }}>
+              {t('subs.saving', { percent: props.saving })}
+            </AppText>
+          </View>
+        )}
+        <AppText variant="body" style={{ fontSize: 16 }}>
+          {plan.price}
+        </AppText>
+      </View>
+      <AppText variant="caption" color="inkFaint" style={{ textTransform: 'none' }}>
+        {plan.trialDays > 0
+          ? t('subs.trialDays', {
+              n: plan.trialDays,
+              days: t(countedKey('subs.day', plan.trialDays, props.locale)),
+            })
+          : t(PLAN_PERIODS[plan.kind])}
+      </AppText>
+    </Pressable>
+  );
+}
+
+function buyLabel(plan: Plan | undefined, t: Translate, locale: Locale): string {
+  if (plan === undefined) {
+    return t('subs.restore');
+  }
+
+  return plan.trialDays > 0
+    ? t('subs.trialDays', {
+        n: plan.trialDays,
+        days: t(countedKey('subs.day', plan.trialDays, locale)),
+      })
+    : `${t('subs.buyFor')} ${plan.price}`;
 }
 
 function Item(props: { readonly label: string }): React.JSX.Element {

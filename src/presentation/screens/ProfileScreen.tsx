@@ -703,7 +703,9 @@ function subscriptionHint(entitlement: Entitlement): TranslationKey {
     return 'subs.trialActive';
   }
 
-  return entitlement === 'trialSpent' ? 'subs.trialOver' : 'subs.trialNote';
+  // Never a price: what it costs is said on the screen that sells it, where
+  // the store's own numbers are.
+  return entitlement === 'trialSpent' ? 'subs.trialOver' : 'subs.name';
 }
 
 function clockOf(settings: Settings): string {

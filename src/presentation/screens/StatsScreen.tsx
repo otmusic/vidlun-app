@@ -382,9 +382,11 @@ function Narrative(props: {
               {props.t('subs.trialOver')}
             </AppText>
           ) : null}
-          <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.55 }}>
-            {props.t('stats.trialLine')}
-          </AppText>
+          {/*
+            No price here. This panel is on the free screen and the store's
+            numbers live one tap away, where they are the store's own and in
+            the buyer's own currency.
+          */}
         </View>
       )}
     </View>

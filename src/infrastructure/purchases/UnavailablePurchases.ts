@@ -1,4 +1,9 @@
-import type { IPurchases, PurchaseOutcome, SubscriptionStatus } from '../../domain/ports/IPurchases';
+import type {
+  IPurchases,
+  Plan,
+  PurchaseOutcome,
+  SubscriptionStatus,
+} from '../../domain/ports/IPurchases';
 
 /**
  * The store, before there is a store.
@@ -12,7 +17,11 @@ import type { IPurchases, PurchaseOutcome, SubscriptionStatus } from '../../doma
  */
 export class UnavailablePurchases implements IPurchases {
   status(): Promise<SubscriptionStatus> {
-    return Promise.resolve({ active: false, renewsAt: null });
+    return Promise.resolve({ active: false, inTrial: false, renewsAt: null });
+  }
+
+  plans(): Promise<readonly Plan[]> {
+    return Promise.resolve([]);
   }
 
   subscribe(): Promise<PurchaseOutcome> {

@@ -1,4 +1,19 @@
-import type { IPurchases, PurchaseOutcome, SubscriptionStatus } from '../../domain/ports/IPurchases';
+import type {
+  IPurchases,
+  Plan,
+  PurchaseOutcome,
+  SubscriptionStatus,
+} from '../../domain/ports/IPurchases';
+
+/**
+ * Priced as the owner set them on 2026-08-29, and formatted the way a store
+ * would: the screen must never build a price string itself.
+ */
+const PRETEND_PLANS: readonly Plan[] = [
+  { id: 'monthly', kind: 'monthly', price: '199 ₴', amount: 199, trialDays: 0 },
+  { id: 'annual', kind: 'annual', price: '999 ₴', amount: 999, trialDays: 7 },
+  { id: 'lifetime', kind: 'lifetime', price: '2 999 ₴', amount: 2999, trialDays: 0 },
+];
 
 /**
  * A store that answers whatever the screens need to be walked through.
@@ -29,7 +44,17 @@ export class FakePurchases implements IPurchases {
 
     renewsAt.setMonth(renewsAt.getMonth() + 1);
 
-    return Promise.resolve({ active: this.active, renewsAt: this.active ? renewsAt : null });
+    return Promise.resolve({
+      active: this.active,
+      // Whatever was bought here came with free days, which is what the
+      // annual plan really offers and the state the screens differ on.
+      inTrial: this.active,
+      renewsAt: this.active ? renewsAt : null,
+    });
+  }
+
+  plans(): Promise<readonly Plan[]> {
+    return Promise.resolve(PRETEND_PLANS);
   }
 
   subscribe(): Promise<PurchaseOutcome> {

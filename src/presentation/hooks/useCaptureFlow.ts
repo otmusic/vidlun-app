@@ -24,7 +24,7 @@ import type { StatsView } from '@/presentation/screens/StatsScreen';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
 import type { IClock } from '@/domain/ports/IClock';
-import type { IPurchases, PurchaseOutcome } from '@/domain/ports/IPurchases';
+import type { IPurchases, Plan, PurchaseOutcome } from '@/domain/ports/IPurchases';
 import type { IHaptics } from '@/domain/ports/IHaptics';
 
 export type CaptureStage =
@@ -58,7 +58,11 @@ export type CaptureStage =
   | { readonly kind: 'history' }
   | { readonly kind: 'settings' }
   /** The one thing sold, and what the store said about buying it. */
-  | { readonly kind: 'subscription'; readonly outcome: PurchaseOutcome | null }
+  | {
+      readonly kind: 'subscription';
+      readonly plans: readonly Plan[];
+      readonly outcome: PurchaseOutcome | null;
+    }
   /**
    * The query and the filter live on the stage rather than beside it, so
    * leaving search and coming back starts clean — a screen that remembers what
@@ -169,7 +173,7 @@ export interface CaptureFlow {
   readonly openSearch: () => void;
   readonly search: (query: string, emotionId: string | null) => void;
   readonly openSubscription: () => void;
-  readonly subscribe: () => void;
+  readonly subscribe: (planId: string) => void;
   readonly restorePurchase: () => void;
   readonly dismissPurchaseOutcome: () => void;
   readonly openStats: () => void;
@@ -770,11 +774,22 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, [runSearch]),
     search: runSearch,
     openSubscription: useCallback(() => {
-      setStage({ kind: 'subscription', outcome: null });
-    }, []),
-    subscribe: useCallback(() => {
+      setStage({ kind: 'subscription', plans: [], outcome: null });
+
+      // Asked for every time the screen opens: prices move, and a price
+      // remembered from last week is a price we would be quoting wrongly.
       void dependencies.purchases
-        .subscribe()
+        .plans()
+        .then((plans) => {
+          setStage((current) =>
+            current.kind === 'subscription' ? { ...current, plans } : current,
+          );
+        })
+        .catch(fail);
+    }, [dependencies.purchases, fail]),
+    subscribe: useCallback((planId: string) => {
+      void dependencies.purchases
+        .subscribe(planId)
         .then((outcome) => {
           setStage((current) =>
             current.kind === 'subscription' ? { ...current, outcome } : current,

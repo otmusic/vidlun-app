@@ -216,7 +216,9 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
       return (
         <SubscriptionScreen
           entitlement={props.entitlement}
+          plans={flow.stage.plans}
           outcome={flow.stage.outcome}
+          locale={props.locale}
           t={t}
           onSubscribe={flow.subscribe}
           onRestore={flow.restorePurchase}

@@ -1,10 +1,20 @@
-import Purchases, { type CustomerInfo, type PurchasesPackage } from 'react-native-purchases';
+import Purchases, {
+  PACKAGE_TYPE,
+  type CustomerInfo,
+  type PurchasesPackage,
+} from 'react-native-purchases';
 
-import type { IPurchases, PurchaseOutcome, SubscriptionStatus } from '../../domain/ports/IPurchases';
+import type {
+  IPurchases,
+  Plan,
+  PlanKind,
+  PurchaseOutcome,
+  SubscriptionStatus,
+} from '../../domain/ports/IPurchases';
 
 /**
- * The one thing sold, named in the RevenueCat dashboard. §M5 sells exactly one
- * thing, so there is one id here and no catalogue to match against.
+ * The one thing sold, named in the RevenueCat dashboard. Every plan grants it,
+ * so nothing above this layer knows which one someone bought.
  */
 export const NARRATIVE_ENTITLEMENT = 'narrative';
 
@@ -35,16 +45,29 @@ export class RevenueCatPurchases implements IPurchases {
     return readStatus(await Purchases.getCustomerInfo());
   }
 
-  async subscribe(): Promise<PurchaseOutcome> {
+  async plans(): Promise<readonly Plan[]> {
     const offering = (await Purchases.getOfferings()).current;
-    const item: PurchasesPackage | undefined = offering?.availablePackages[0];
+
+    if (offering === null) {
+      /*
+       * No current offering means the product is not configured or the store
+       * is unreachable. Both leave the screen with nothing to price, and
+       * neither is the person's to explain.
+       */
+      return [];
+    }
+
+    return offering.availablePackages
+      .map(planOf)
+      .filter((plan): plan is Plan => plan !== null)
+      .sort((a, b) => a.amount - b.amount);
+  }
+
+  async subscribe(planId: string): Promise<PurchaseOutcome> {
+    const offering = (await Purchases.getOfferings()).current;
+    const item = offering?.availablePackages.find((each) => each.identifier === planId);
 
     if (item === undefined) {
-      /*
-       * Nothing to sell means the product is not configured or the store is
-       * unreachable. Both are failures to the person looking at the price, and
-       * neither is their fault to explain.
-       */
       return 'failed';
     }
 
@@ -70,11 +93,71 @@ export class RevenueCatPurchases implements IPurchases {
   }
 }
 
+/** Null for a package shape this app does not sell — a week, a quarter. */
+function planOf(item: PurchasesPackage): Plan | null {
+  const kind = kindOf(item.packageType);
+
+  if (kind === null) {
+    return null;
+  }
+
+  const product = item.product;
+
+  return {
+    id: item.identifier,
+    kind,
+    price: product.priceString,
+    amount: product.price,
+    trialDays: trialDaysOf(item),
+  };
+}
+
+function kindOf(packageType: PurchasesPackage['packageType']): PlanKind | null {
+  if (packageType === PACKAGE_TYPE.MONTHLY) {
+    return 'monthly';
+  }
+
+  if (packageType === PACKAGE_TYPE.ANNUAL) {
+    return 'annual';
+  }
+
+  return packageType === PACKAGE_TYPE.LIFETIME ? 'lifetime' : null;
+}
+
+/**
+ * Whatever free days the store is actually offering, rather than what our copy
+ * remembers being configured. Apple decides eligibility per person, and a
+ * screen promising a trial to someone who has used theirs is a promise the
+ * purchase sheet then breaks.
+ */
+function trialDaysOf(item: PurchasesPackage): number {
+  const period = item.product.introPrice;
+
+  if (period === null || period.price !== 0) {
+    return 0;
+  }
+
+  const units = period.periodNumberOfUnits;
+
+  switch (period.periodUnit) {
+    case 'DAY':
+      return units;
+    case 'WEEK':
+      return units * 7;
+    case 'MONTH':
+      return units * 30;
+    case 'YEAR':
+      return units * 365;
+    default:
+      return 0;
+  }
+}
+
 function readStatus(info: CustomerInfo): SubscriptionStatus {
   const entitlement = info.entitlements.active[NARRATIVE_ENTITLEMENT];
 
   if (entitlement === undefined) {
-    return { active: false, renewsAt: null };
+    return { active: false, inTrial: false, renewsAt: null };
   }
 
   const renewsAt =
@@ -82,6 +165,7 @@ function readStatus(info: CustomerInfo): SubscriptionStatus {
 
   return {
     active: true,
+    inTrial: entitlement.periodType === 'TRIAL',
     // A date the store could not parse is not a date to show anyone.
     renewsAt: renewsAt !== null && !Number.isNaN(renewsAt.getTime()) ? renewsAt : null,
   };
