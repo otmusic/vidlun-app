@@ -49,3 +49,4 @@ coverage/
 # secrets
 .env
 .analysis-build/
+server/.dev.vars

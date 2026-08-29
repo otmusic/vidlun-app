@@ -1,27 +1,25 @@
 /**
  * A key holder, not a backend.
  *
- * §2 says no backend in the MVP, and this does not become one: it stores
- * nothing, knows no users, and never sees an entry it does not immediately
- * forget. What it does is hold the Anthropic key, which the app cannot —
- * anything shipped in a bundle can be read out of it, and a key read out of it
- * spends the owner's money.
- *
- * The app talks to this exactly as it talked to Anthropic, so the change on
- * the other side is a base URL and nothing else.
+ * §2 says no backend in the MVP, and this stays honest to it: it knows no
+ * users and never sees an entry it does not immediately forget. What it
+ * holds is the Anthropic key — which the app cannot, because anything in a
+ * bundle can be read out of it — and, since App Attest, the public halves of
+ * device keys: not identities, just proof that a caller is a genuine build
+ * of this app on real Apple hardware.
  */
+import { assertKey, issueChallenge, mintToken, readToken, register, type AttestStore } from './attest';
+
 
 export interface Env {
   /** The real key. A Worker secret, never in the repository. */
   readonly ANTHROPIC_API_KEY: string;
-  /**
-   * What a build of the app sends in place of a key. Rotatable without
-   * touching Anthropic, and worth exactly as much as the bundle it ships in —
-   * see the note on App Attest below.
-   */
-  readonly APP_TOKEN: string;
+  /** Signs the short-lived tokens. A Worker secret, rotatable at will. */
+  readonly TOKEN_SECRET: string;
   /** Cloudflare's own limiter, configured in wrangler.toml. */
   readonly RATE_LIMIT: { limit(input: { key: string }): Promise<{ success: boolean }> };
+  /** Attested device keys and one-time challenges. */
+  readonly ATTEST: AttestStore;
 }
 
 const UPSTREAM = 'https://api.anthropic.com/v1/messages';
@@ -41,20 +39,34 @@ export default {
       return problem(405, 'Only POST is served here.');
     }
 
-    if (new URL(request.url).pathname !== '/v1/messages') {
+    if (!env.TOKEN_SECRET) {
+      // Refusing loudly beats an HMAC stack trace: a missing secret is a
+      // deployment mistake, and the message should say whose.
+      return problem(500, 'This proxy is deployed without its token secret.');
+    }
+
+    const path = new URL(request.url).pathname;
+
+    if (path.startsWith('/attest/')) {
+      return attest(path, request, env);
+    }
+
+    if (path !== '/v1/messages') {
       return problem(404, 'No such path.');
     }
 
     /*
-     * Timing-safe would be better and is not available at the edge without
-     * pulling in crypto; the token is not a password and the window is a
-     * single string compare against a fixed-length value.
+     * The token is minted by /attest and proves the caller once held a key
+     * that Apple attested as living inside a genuine build of this app on
+     * real hardware. Nothing shipped in the bundle opens this door.
      */
-    if (request.headers.get('x-api-key') !== env.APP_TOKEN) {
-      return problem(401, 'This build is not allowed to use this proxy.');
+    const keyId = await readToken(env.TOKEN_SECRET, request.headers.get('x-api-key') ?? '', Date.now());
+
+    if (keyId === null) {
+      return problem(401, 'This caller has not proven itself to this proxy.');
     }
 
-    const limited = await env.RATE_LIMIT.limit({ key: clientKey(request) });
+    const limited = await env.RATE_LIMIT.limit({ key: keyId });
 
     if (!limited.success) {
       return problem(429, 'Too many requests from this device.');
@@ -119,21 +131,59 @@ function checkBody(body: unknown): string | null {
 }
 
 /**
- * One bucket per device, falling back to the connecting address.
- *
- * The header is the app's own anonymous install id — it identifies a phone to
- * the limiter and nothing else, and it is not tied to a person, an account or
- * an entry. **This is the weak part of the whole design**: a determined caller
- * can change it and get a fresh bucket, and the token above ships in a bundle
- * anyone can read. App Attest is the real fix — it proves the caller is a
- * genuine build of this app — and it is the next thing to do here.
+ * The attestation endpoints. Register is the once-per-install ceremony;
+ * token is the daily renewal. Both consume a one-time challenge, so a
+ * captured request replays as nothing.
  */
-function clientKey(request: Request): string {
-  return (
-    request.headers.get('x-vidlun-install') ??
-    request.headers.get('cf-connecting-ip') ??
-    'unknown'
-  );
+async function attest(path: string, request: Request, env: Env): Promise<Response> {
+  if (path === '/attest/challenge') {
+    return answer({ challenge: await issueChallenge(env.ATTEST) });
+  }
+
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return problem(400, 'The body was not JSON.');
+  }
+
+  const record = (typeof body === 'object' && body !== null ? body : {}) as Record<string, unknown>;
+  const keyId = record['keyId'];
+  const challenge = record['challenge'];
+
+  if (typeof keyId !== 'string' || typeof challenge !== 'string') {
+    return problem(400, 'keyId and challenge are required.');
+  }
+
+  try {
+    if (path === '/attest/register' && typeof record['attestation'] === 'string') {
+      if (!(await register(env.ATTEST, { keyId, challenge, attestation: record['attestation'] }))) {
+        return problem(401, 'The challenge was not one this proxy issued.');
+      }
+    } else if (path === '/attest/token' && typeof record['assertion'] === 'string') {
+      if (!(await assertKey(env.ATTEST, { keyId, challenge, assertion: record['assertion'] }))) {
+        return problem(401, 'The challenge was not one this proxy issued, or the key is unknown.');
+      }
+    } else {
+      return problem(404, 'No such path.');
+    }
+  } catch {
+    /*
+     * A failed verification carries detail worth logging and not worth
+     * sharing: whoever sent a forged attestation does not get told which
+     * check caught it.
+     */
+    return problem(401, 'The proof did not verify.');
+  }
+
+  return answer({ token: await mintToken(env.TOKEN_SECRET, keyId, Date.now()) });
+}
+
+function answer(body: Record<string, string>): Response {
+  return new Response(JSON.stringify(body), {
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 function problem(status: number, detail: string): Response {

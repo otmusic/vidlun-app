@@ -48,28 +48,14 @@ export function readFakePurchaseOutcome(): string | null {
   return scripted === undefined || scripted.length === 0 ? null : scripted;
 }
 
-export interface Proxy {
-  readonly baseUrl: string;
-  /** What the app sends in place of a key. The proxy swaps in the real one. */
-  readonly token: string;
-}
-
 /**
  * Where the key lives in a published build. Null on a machine that has not
  * configured one, and then the app falls back to its own key — see the note on
- * `readAnthropicApiKey`.
+ * `readAnthropicApiKey`. No token any more: access is proven with App Attest,
+ * not with anything shipped in the bundle.
  */
-export function readProxy(): Proxy | null {
+export function readProxyUrl(): string | null {
   const baseUrl = process.env['EXPO_PUBLIC_API_PROXY_URL'];
-  const token = process.env['EXPO_PUBLIC_APP_TOKEN'];
 
-  if (baseUrl === undefined || baseUrl.length === 0) {
-    return null;
-  }
-
-  if (token === undefined || token.length === 0) {
-    throw new Error('EXPO_PUBLIC_API_PROXY_URL is set but EXPO_PUBLIC_APP_TOKEN is not.');
-  }
-
-  return { baseUrl, token };
+  return baseUrl === undefined || baseUrl.length === 0 ? null : baseUrl;
 }

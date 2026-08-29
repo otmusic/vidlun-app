@@ -11,4 +11,13 @@ simple = { limit = 30, period = 60 }
 
 # Secrets are set with `wrangler secret put`, never written here:
 #   wrangler secret put ANTHROPIC_API_KEY
-#   wrangler secret put APP_TOKEN
+#   wrangler secret put TOKEN_SECRET
+
+# node-app-attest verifies Apple's certificate chain with node's crypto,
+# which workerd provides behind this flag.
+compatibility_flags = ["nodejs_compat"]
+
+# Attested device keys and one-time challenges.
+[[kv_namespaces]]
+binding = "ATTEST"
+id = "9bca7fd8b800425aaaf5e44e1fb65587"

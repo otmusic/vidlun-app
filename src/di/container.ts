@@ -30,6 +30,7 @@ import type { IMicrophonePermission } from '../domain/ports/IMicrophonePermissio
 import type { IPurchases, PurchaseOutcome } from '../domain/ports/IPurchases';
 import type { IReminders } from '../domain/ports/IReminders';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
+import { ProxyAuth, attestedFetch } from '../infrastructure/attest/ProxyAuth';
 import { CachedNarrativeGenerator } from '../infrastructure/analysis/CachedNarrativeGenerator';
 import { ClaudeNarrativeGenerator } from '../infrastructure/analysis/ClaudeNarrativeGenerator';
 import { ClaudeObservationWriter } from '../infrastructure/analysis/ClaudeObservationWriter';
@@ -58,7 +59,7 @@ import {
 import {
   readAnthropicApiKey,
   readFakePurchaseOutcome,
-  readProxy,
+  readProxyUrl,
   readRevenueCatKey,
 } from './config';
 
@@ -140,14 +141,15 @@ export function createContainer(dependencies: ContainerDependencies): Container 
 
   /*
    * Through the proxy where one is configured, straight to Anthropic where it
-   * is not. The SDK sends its key as `x-api-key` either way, so the proxy
-   * reads the app's token out of that same header and swaps in the real one —
-   * which is why this is a base URL change and nothing more.
+   * is not. The proxy no longer takes anything the bundle could carry: the
+   * fetch underneath signs every request with a token bought from App Attest,
+   * and the placeholder apiKey below is overwritten by that fetch.
    */
-  const proxy = readProxy();
+  const proxyUrl = readProxyUrl();
   const anthropic = new Anthropic({
-    apiKey: proxy?.token ?? readAnthropicApiKey(),
-    baseURL: proxy === null ? undefined : proxy.baseUrl,
+    apiKey: proxyUrl === null ? readAnthropicApiKey() : 'attested',
+    baseURL: proxyUrl ?? undefined,
+    fetch: proxyUrl === null ? undefined : attestedFetch(new ProxyAuth(proxyUrl)),
     // React Native defines `window`, which the SDK reads as a browser.
     dangerouslyAllowBrowser: true,
   });

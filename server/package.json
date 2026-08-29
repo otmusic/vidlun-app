@@ -1,0 +1,11 @@
+{
+  "name": "vidlun-proxy",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "node-app-attest": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0"
+  }
+}
