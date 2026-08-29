@@ -14,6 +14,24 @@ import type { IReminders, ReminderPlan } from '../../domain/ports/IReminders';
 const DAYS_AHEAD = 7;
 
 export class ExpoReminders implements IReminders {
+  constructor() {
+    /*
+     * Without a handler iOS shows nothing while the app is on screen, and the
+     * person who just set a reminder two minutes ahead to see it work is
+     * exactly the person looking at the app when it fires. Banner only, no
+     * sound: they are already in the journal.
+     */
+    Notifications.setNotificationHandler({
+      handleNotification: () =>
+        Promise.resolve({
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: false,
+          shouldSetBadge: false,
+        }),
+    });
+  }
+
   async schedule(plan: ReminderPlan): Promise<boolean> {
     await this.cancel();
 

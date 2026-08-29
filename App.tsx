@@ -188,22 +188,32 @@ function Vidlun(props: {
       return;
     }
 
-    void container.reminders.schedule({
-      at: { hour: reminderHour, minute: reminderMinute },
-      text: { title: t('reminder.title'), body: t('reminder.body') },
-      now: container.clock.now(),
-      // The last day of the rolling week is today, and the queue is refilled
-      // on every save, so an entry made this evening takes tonight's nudge
-      // away rather than racing it.
-      skipToday: (flow.home?.week.at(-1)?.entryCount ?? 0) > 0,
-    });
+    void container.reminders
+      .schedule({
+        at: { hour: reminderHour, minute: reminderMinute },
+        text: { title: t('reminder.title'), body: t('reminder.body') },
+        now: container.clock.now(),
+        // The last day of the rolling week is today, and the queue is refilled
+        // on every save, so an entry made this evening takes tonight's nudge
+        // away rather than racing it.
+        skipToday: (flow.home?.week.at(-1)?.entryCount ?? 0) > 0,
+      })
+      .then((scheduled) => {
+        /*
+         * Permission refused means nothing will ever arrive, and a switch
+         * left on would be the app promising what it cannot do. Flipping it
+         * back is the honest answer, and it is also the visible one.
+         */
+        if (!scheduled) {
+          onSettingsChange({ ...props.settings, reminderOn: false });
+        }
+      });
   }, [
     container.clock,
     container.reminders,
     flow.home,
-    props.settings.reminderOn,
-    props.settings.reminderHour,
-    props.settings.reminderMinute,
+    onSettingsChange,
+    props.settings,
     t,
   ]);
 
