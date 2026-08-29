@@ -43,6 +43,8 @@ export function SubscriptionScreen(props: {
   readonly onSubscribe: (planId: string) => void;
   readonly onRestore: () => void;
   readonly onDismissOutcome: () => void;
+  readonly onOpenTerms: () => void;
+  readonly onOpenPrivacy: () => void;
   readonly onBack: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
@@ -161,12 +163,18 @@ export function SubscriptionScreen(props: {
             {t('subs.free')}
           </AppText>
           <View style={{ flexDirection: 'row', gap: 20 }}>
-            <AppText variant="secondary" color="accentInk">
-              {t('subs.terms')}
-            </AppText>
-            <AppText variant="secondary" color="accentInk">
-              {t('subs.privacy')}
-            </AppText>
+            {/* Apple asks for these to work, and someone deciding whether to
+                pay is exactly who wants to read them. */}
+            <Pressable accessibilityRole="link" onPress={props.onOpenTerms} hitSlop={10}>
+              <AppText variant="secondary" color="accentInk">
+                {t('subs.terms')}
+              </AppText>
+            </Pressable>
+            <Pressable accessibilityRole="link" onPress={props.onOpenPrivacy} hitSlop={10}>
+              <AppText variant="secondary" color="accentInk">
+                {t('subs.privacy')}
+              </AppText>
+            </Pressable>
           </View>
           <Outlined label={t('subs.notNow')} onPress={props.onBack} />
         </View>

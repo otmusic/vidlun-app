@@ -20,6 +20,7 @@ import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory'
 import type { ReviseEntry } from '@/application/use-cases/ReviseEntry';
 import type { WriteObservation } from '@/application/use-cases/WriteObservation';
 import { MoodEntry, type EntryEdits } from '@/domain/entities/MoodEntry';
+import type { LegalDocumentKind } from '@/i18n/legal';
 import type { StatsView } from '@/presentation/screens/StatsScreen';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
@@ -63,6 +64,12 @@ export type CaptureStage =
       readonly plans: readonly Plan[];
       readonly outcome: PurchaseOutcome | null;
     }
+  /**
+   * The terms or the privacy policy, opened from the paywall and going back to
+   * it. Reachable from nowhere else, which is why leaving is `openSubscription`
+   * rather than a remembered origin.
+   */
+  | { readonly kind: 'legal'; readonly doc: LegalDocumentKind }
   /**
    * The query and the filter live on the stage rather than beside it, so
    * leaving search and coming back starts clean — a screen that remembers what
@@ -173,6 +180,7 @@ export interface CaptureFlow {
   readonly openSearch: () => void;
   readonly search: (query: string, emotionId: string | null) => void;
   readonly openSubscription: () => void;
+  readonly openLegal: (doc: LegalDocumentKind) => void;
   readonly subscribe: (planId: string) => void;
   readonly restorePurchase: () => void;
   readonly dismissPurchaseOutcome: () => void;
@@ -787,6 +795,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         })
         .catch(fail);
     }, [dependencies.purchases, fail]),
+    openLegal: useCallback((doc: LegalDocumentKind) => {
+      setStage({ kind: 'legal', doc });
+    }, []),
     subscribe: useCallback((planId: string) => {
       void dependencies.purchases
         .subscribe(planId)

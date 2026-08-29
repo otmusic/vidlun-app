@@ -1,6 +1,7 @@
 # Vidlun Terms of Use
 
 **Effective:** 29 August 2026
+
 **Provider:** `[LEGAL NAME]`, `[ADDRESS]`, `[EMAIL]`
 
 By installing Vidlun you agree to these terms. If you do not agree, do not use

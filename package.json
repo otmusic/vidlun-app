@@ -48,7 +48,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint . && node scripts/check-english-only.mjs",
+    "legal": "node scripts/build-legal.mjs",
+    "lint": "eslint . && node scripts/check-english-only.mjs && node scripts/build-legal.mjs --check",
     "lint:fix": "eslint . --fix",
     "verify": "npm run typecheck && npm test && npm run lint"
   }

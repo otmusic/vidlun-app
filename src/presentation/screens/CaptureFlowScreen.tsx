@@ -2,6 +2,7 @@ import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings } from '@/domain/ports/ISettings';
 import type { Locale, Translate } from '@/i18n';
+import { legalDocument } from '@/i18n/legal';
 
 import { View } from 'react-native';
 
@@ -21,6 +22,7 @@ import { ReflectionScreen } from './ReflectionScreen';
 import { SavedScreen } from './SavedScreen';
 import { ProfileScreen } from './ProfileScreen';
 import { SearchScreen } from './SearchScreen';
+import { LegalScreen } from './LegalScreen';
 import { SubscriptionScreen } from './SubscriptionScreen';
 import { StatsScreen } from './StatsScreen';
 import { VocabularyScreen } from './VocabularyScreen';
@@ -223,7 +225,18 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           onSubscribe={flow.subscribe}
           onRestore={flow.restorePurchase}
           onDismissOutcome={flow.dismissPurchaseOutcome}
+          onOpenTerms={() => flow.openLegal('terms')}
+          onOpenPrivacy={() => flow.openLegal('privacy')}
           onBack={flow.backHome}
+        />
+      );
+
+    case 'legal':
+      return (
+        <LegalScreen
+          document={legalDocument(flow.stage.doc, props.locale)}
+          t={t}
+          onBack={flow.openSubscription}
         />
       );
 

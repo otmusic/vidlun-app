@@ -1,7 +1,9 @@
 # Vidlun Privacy Policy
 
 **Effective:** 29 August 2026
+
 **Data controller:** `[LEGAL NAME]`, `[ADDRESS]`
+
 **Contact:** `[EMAIL]`
 
 ## The short version
