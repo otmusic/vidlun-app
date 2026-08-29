@@ -46,14 +46,23 @@ export class RevenueCatPurchases implements IPurchases {
   }
 
   async plans(): Promise<readonly Plan[]> {
-    const offering = (await Purchases.getOfferings()).current;
+    let offering;
+
+    try {
+      offering = (await Purchases.getOfferings()).current;
+    } catch {
+      /*
+       * The SDK throws here for what is really "the store would not answer" —
+       * an unsigned agreement, products still propagating, no network. None
+       * of that is the person's to fix, and the screen has a calm sentence
+       * for an empty store; the generic failure screen would tell them
+       * something went wrong with what they did, which is not true.
+       */
+      return [];
+    }
 
     if (offering === null) {
-      /*
-       * No current offering means the product is not configured or the store
-       * is unreachable. Both leave the screen with nothing to price, and
-       * neither is the person's to explain.
-       */
+      // No current offering configured leaves the same nothing to price.
       return [];
     }
 
