@@ -20,12 +20,6 @@ export interface Settings {
    */
   readonly asksFirst: boolean;
   /**
-   * When the free week started, as an ISO date, or null if it never has. The
-   * weekly narrative is the one paid thing in §M5, and until the store exists
-   * this is the whole of the entitlement.
-   */
-  readonly trialStartedAt: string | null;
-  /**
    * The evening nudge. Stored here whether or not anything delivers it yet:
    * scheduling a local notification needs `expo-notifications`, which is a
    * dependency to ask about, and the preference is the person's either way.
@@ -53,7 +47,6 @@ export const DEFAULT_SETTINGS: Settings = {
    * setting because the same section says the mode is entirely optional.
    */
   asksFirst: true,
-  trialStartedAt: null,
   /*
    * Off, and the evening rather than the morning if it is turned on: §8 puts
    * the reminder at the hour someone is usually already home.

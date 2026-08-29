@@ -98,27 +98,6 @@ export function ProfileScreen(props: {
         </Row>
       </Section>
 
-      {/*
-        Development only, and it earns its place: the trial is stored rather
-        than bought, so without this the paid screens can be seen once per
-        install and never again.
-      */}
-      {__DEV__ && settings.trialStartedAt !== null ? (
-        <Section label="dev">
-          <Row
-            title="Reset the trial week"
-            hint={settings.trialStartedAt}
-            onPress={() => {
-              props.onChange({ ...settings, trialStartedAt: null });
-            }}
-          >
-            <AppText variant="body" color="inkFaint">
-              ×
-            </AppText>
-          </Row>
-        </Section>
-      ) : null}
-
       <Section label={t('profile.rhythm')}>
         <Row
           title={t('profile.reminder')}
@@ -705,7 +684,7 @@ function subscriptionHint(entitlement: Entitlement): TranslationKey {
 
   // Never a price: what it costs is said on the screen that sells it, where
   // the store's own numbers are.
-  return entitlement === 'trialSpent' ? 'subs.trialOver' : 'subs.name';
+  return 'subs.name';
 }
 
 function clockOf(settings: Settings): string {

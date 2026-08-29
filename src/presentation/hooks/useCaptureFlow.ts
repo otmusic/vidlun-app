@@ -136,8 +136,6 @@ export interface CaptureDependencies {
   readonly getVocabularyGrowth: GetVocabularyGrowth;
   /** True while the free week runs. The chart and the themes never wait on it. */
   readonly hasNarrativeAccess: boolean;
-  /** True once the free week has been used, so it stops being offered. */
-  readonly trialSpent: boolean;
   /** Injected for the same reason the use cases take one: a test cannot wait a week. */
   readonly clock: IClock;
   readonly purchases: IPurchases;
@@ -516,7 +514,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
                     weeksBack,
                     hasEarlierWeek: earlier.entryCount > 0,
                     hasNarrativeAccess: dependencies.hasNarrativeAccess,
-                    trialSpent: dependencies.trialSpent,
                   },
                 }
               : current,

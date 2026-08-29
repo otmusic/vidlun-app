@@ -40,10 +40,8 @@ export interface StatsView {
   readonly weeksBack: number;
   /** False when nothing was ever written before this week. */
   readonly hasEarlierWeek: boolean;
-  /** True while the free week is running. The purchase after it is M5's. */
+  /** True while a plan or its free days are running. The store decides. */
   readonly hasNarrativeAccess: boolean;
-  /** True once the free week has been used up, so it stops being offered. */
-  readonly trialSpent: boolean;
 }
 
 /**
@@ -377,11 +375,6 @@ function Narrative(props: {
             differs, because that is where the price is said out loud.
           */}
           <Button label={props.t('stats.readAll')} onPress={props.onOpenSubscription} />
-          {props.view.trialSpent ? (
-            <AppText variant="secondary" style={{ color: theme.palette.onPanel, opacity: 0.7 }}>
-              {props.t('subs.trialOver')}
-            </AppText>
-          ) : null}
           {/*
             No price here. This panel is on the free screen and the store's
             numbers live one tap away, where they are the store's own and in

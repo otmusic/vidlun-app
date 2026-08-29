@@ -1,33 +1,25 @@
-import { isTrialLive, isTrialSpent } from './Trial';
+import type { SubscriptionStatus } from '../ports/IPurchases';
 
 /**
- * What someone is entitled to read, in the four states the screens differ on.
+ * What someone is entitled to read, in the three states the screens differ
+ * on. Derived from the store's answer and nothing else: a subscription can
+ * end, start or refund without this app being open, and any flag we wrote
+ * ourselves would outlive the truth.
  *
- * `trialSpent` is deliberately not the same as `none`: the offer changes from
- * "seven days free" to "charged right away", and telling someone their trial
- * is available when it is gone would be a promise the store then breaks.
+ * `trial` is distinct because the profile says the free days are running;
+ * both it and `subscribed` read in full.
  */
-export type Entitlement = 'none' | 'trial' | 'trialSpent' | 'subscribed';
+export type Entitlement = 'none' | 'trial' | 'subscribed';
 
-export function entitlementOf(input: {
-  readonly subscribed: boolean;
-  readonly trialStartedAt: Date | null;
-  readonly now: Date;
-}): Entitlement {
-  // A paid subscription outranks the trial: someone who bought during their
-  // free week has bought, and must not be told the week is running out.
-  if (input.subscribed) {
-    return 'subscribed';
+export function entitlementOf(status: SubscriptionStatus): Entitlement {
+  if (!status.active) {
+    return 'none';
   }
 
-  if (isTrialLive(input.trialStartedAt, input.now)) {
-    return 'trial';
-  }
-
-  return isTrialSpent(input.trialStartedAt, input.now) ? 'trialSpent' : 'none';
+  return status.inTrial ? 'trial' : 'subscribed';
 }
 
 /** Whether the whole weekly narrative and the patterns are open. */
 export function readsInFull(entitlement: Entitlement): boolean {
-  return entitlement === 'trial' || entitlement === 'subscribed';
+  return entitlement !== 'none';
 }

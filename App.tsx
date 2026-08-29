@@ -8,7 +8,7 @@ import { createTranslator, type Locale } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
-import { entitlementOf, readsInFull } from '@/domain/entities/Entitlement';
+import { entitlementOf, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
 import { DEFAULT_SETTINGS, type Settings } from '@/domain/ports/ISettings';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import { SPEECH_MODEL, SpeechModelStore } from '@/infrastructure/transcription/SpeechModelStore';
@@ -109,21 +109,18 @@ function Vidlun(props: {
     },
     [container, onSettingsChange],
   );
-  const now = props.container.clock.now();
-  const trialStartedAt =
-    props.settings.trialStartedAt === null ? null : new Date(props.settings.trialStartedAt);
-
   /*
-   * Asked of the store rather than remembered: a subscription can end without
-   * this app being open, and a flag we wrote ourselves would outlive it.
+   * Asked of the store rather than remembered: a subscription can end, start
+   * or refund without this app being open, and a flag we wrote ourselves
+   * would outlive it. This includes the trial — the store runs it now.
    */
-  const [subscribed, setSubscribed] = useState(false);
+  const [entitlement, setEntitlement] = useState<Entitlement>('none');
 
   const readStatus = useCallback(() => {
     void props.container.purchases
       .status()
       .then((status) => {
-        setSubscribed(status.active);
+        setEntitlement(entitlementOf(status));
       })
       .catch(() => {
         // A store that will not answer is not a reason to lock someone out of
@@ -132,8 +129,6 @@ function Vidlun(props: {
   }, [props.container.purchases]);
 
   useEffect(readStatus, [readStatus]);
-
-  const entitlement = entitlementOf({ subscribed, trialStartedAt, now });
 
 
   const recorder = useMemo(
@@ -168,7 +163,6 @@ function Vidlun(props: {
      * them.
      */
     hasNarrativeAccess: readsInFull(entitlement),
-    trialSpent: entitlement === 'trialSpent',
     clock: container.clock,
     purchases: container.purchases,
     onEntitlementChanged: readStatus,
