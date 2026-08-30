@@ -38,11 +38,13 @@ entries are gone for good** — we hold no copy to restore them from.
 
 ## 4. Subscription
 
-**Free forever:** recording, transcription, emotion names, the journal, search,
-the mood chart and the emotion vocabulary.
+**Free forever:** recording up to one minute, transcription, the emotion names
+the app heard in a recording, the journal, search, the mood chart and the
+emotion vocabulary.
 
-**Paid:** the weekly piece — the one that reads your whole week and speaks about
-it as a whole.
+**Paid:** everything the language model writes about your entries — the weekly
+piece that reads your whole week, the observations on individual entries and
+the week's themes — and recording up to five minutes.
 
 **Plans.** Monthly, with no trial. Annual, with seven free days at the start.
 Lifetime, a single payment that does not renew. The App Store shows the current
