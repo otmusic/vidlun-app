@@ -23,6 +23,13 @@ const PLAN_PERIODS = {
   lifetime: 'subs.once',
 } as const;
 
+/** What the drawing writes under each plan's price note. */
+const PLAN_NOTES = {
+  monthly: 'subs.noteMonthly',
+  annual: 'subs.noteAnnual',
+  lifetime: 'subs.noteLifetime',
+} as const;
+
 /** Where "manage" goes. The store owns cancelling; we only point at it. */
 const APP_STORE_SUBSCRIPTIONS = 'https://apps.apple.com/account/subscriptions';
 
@@ -43,13 +50,16 @@ export function SubscriptionScreen(props: {
   readonly onSubscribe: (planId: string) => void;
   readonly onRestore: () => void;
   readonly onDismissOutcome: () => void;
+  /** Asks the store for the plans again, for when it was quiet the first time. */
+  readonly onRetryPlans: () => void;
   readonly onOpenTerms: () => void;
   readonly onOpenPrivacy: () => void;
   readonly onBack: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { t } = props;
-  const owns = props.entitlement === 'subscribed';
+  // Trial or paid alike: both hold the thing, and both manage it in the store.
+  const owns = props.entitlement !== 'none';
   /*
    * The year is preselected, and that is the whole argument of the screen: the
    * month is here so the year can be read against it, and someone who never
@@ -83,17 +93,17 @@ export function SubscriptionScreen(props: {
             <View
               style={{
                 borderRadius: 22,
-                backgroundColor: theme.palette.panel,
+                backgroundColor: theme.palette.limeSoft,
                 padding: 22,
                 gap: 8,
-                marginBottom: 20,
+                marginBottom: 16,
               }}
             >
-              <AppText variant="kicker" style={{ color: theme.palette.onPanel }}>
-                {t('subs.manageTitle')}
+              <AppText variant="kicker">
+                {t(props.entitlement === 'trial' ? 'subs.trialActive' : 'subs.manageTitle')}
               </AppText>
-              <AppText variant="body" style={{ color: theme.palette.onPanel, opacity: 0.75 }}>
-                {t('subs.manageBody')}
+              <AppText variant="body" color="inkSoft">
+                {t(props.entitlement === 'trial' ? 'subs.trialBody' : 'subs.manageBody')}
               </AppText>
             </View>
             <Outlined
@@ -112,18 +122,32 @@ export function SubscriptionScreen(props: {
         ) : props.plans.length === 0 ? (
           /*
            * Nothing priced means the store has nothing to sell — not
-           * configured, or unreachable. Saying so is better than an empty
-           * space where a price belongs.
+           * configured, or unreachable. A card and a retry, because the
+           * person did nothing wrong and may simply try later.
            */
-          <AppText variant="body" color="inkSoft" style={{ marginBottom: 20 }}>
-            {t('subs.storeQuiet')}
-          </AppText>
+          <>
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: theme.palette.line,
+                backgroundColor: theme.palette.paper,
+                borderRadius: 22,
+                padding: 22,
+                gap: 8,
+                marginBottom: 16,
+              }}
+            >
+              <AppText variant="kicker">{t('subs.storeQuietTitle')}</AppText>
+              <AppText variant="body" color="inkSoft">
+                {t('subs.storeQuietBody')}
+              </AppText>
+            </View>
+            <Outlined label={t('subs.storeQuietRetry')} onPress={props.onRetryPlans} />
+            <Quiet label={t('subs.restore')} onPress={props.onRestore} />
+          </>
         ) : (
           <>
-            <AppText variant="caption" color="inkFaint" style={{ marginBottom: 12 }}>
-              {t('subs.chooseTitle')}
-            </AppText>
-            <View style={{ gap: 10, marginBottom: 20 }}>
+            <View style={{ gap: 10, marginBottom: 14 }}>
               {props.plans.map((plan) => (
                 <PlanCard
                   key={plan.id}
@@ -138,6 +162,15 @@ export function SubscriptionScreen(props: {
                 />
               ))}
             </View>
+            {chosen === undefined ? null : (
+              <AppText variant="secondary" color="inkFaint" style={{ marginBottom: 14 }}>
+                {t(PLAN_NOTES[chosen.kind], {
+                  price: chosen.price,
+                  n: chosen.trialDays,
+                  days: t(countedKey('subs.day', chosen.trialDays, props.locale)),
+                })}
+              </AppText>
+            )}
             <Solid
               label={buyLabel(chosen, t, props.locale)}
               onPress={() => {
@@ -211,51 +244,84 @@ function PlanCard(props: {
   const theme = useTheme();
   const { plan, t } = props;
 
+  const note =
+    plan.trialDays > 0
+      ? t('subs.trialDays', {
+          n: plan.trialDays,
+          days: t(countedKey('subs.day', plan.trialDays, props.locale)),
+        })
+      : plan.kind === 'lifetime'
+        ? t('subs.lifetimeNote')
+        : null;
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: props.chosen }}
       onPress={props.onPress}
       style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
         borderWidth: props.chosen ? 2 : 1,
         borderColor: props.chosen ? theme.palette.ink : theme.palette.line,
-        backgroundColor: theme.palette.paper,
-        borderRadius: 22,
-        paddingVertical: 18,
-        paddingHorizontal: 20,
-        gap: 4,
+        backgroundColor: props.chosen ? theme.palette.lineSoft : theme.palette.paper,
+        borderRadius: 20,
+        paddingVertical: 16,
+        paddingHorizontal: 18,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <AppText variant="body" style={{ fontSize: 16, flex: 1 }}>
-          {t(PLAN_LABELS[plan.kind])}
-        </AppText>
-        {props.saving === null ? null : (
+      <View
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 22,
+          borderWidth: 2,
+          borderColor: props.chosen ? theme.palette.ink : theme.palette.lineStrong,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {props.chosen ? (
           <View
-            style={{
-              borderRadius: 999,
-              backgroundColor: theme.palette.lime,
-              paddingVertical: 4,
-              paddingHorizontal: 10,
-            }}
-          >
-            <AppText variant="caption" style={{ color: theme.palette.ink }}>
-              {t('subs.saving', { percent: props.saving })}
-            </AppText>
-          </View>
+            style={{ width: 10, height: 10, borderRadius: 10, backgroundColor: theme.palette.ink }}
+          />
+        ) : null}
+      </View>
+      <View style={{ flex: 1, gap: 3 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <AppText variant="body" style={{ fontSize: 16 }}>
+            {t(PLAN_LABELS[plan.kind])}
+          </AppText>
+          {props.saving === null ? null : (
+            <View
+              style={{
+                borderRadius: 999,
+                backgroundColor: theme.palette.lime,
+                paddingVertical: 3,
+                paddingHorizontal: 9,
+              }}
+            >
+              <AppText variant="caption" style={{ color: theme.palette.ink, textTransform: 'none' }}>
+                {t('subs.saving', { percent: props.saving })}
+              </AppText>
+            </View>
+          )}
+        </View>
+        {note === null ? null : (
+          <AppText variant="secondary" color="inkSoft">
+            {note}
+          </AppText>
         )}
-        <AppText variant="body" style={{ fontSize: 16 }}>
+      </View>
+      <View style={{ alignItems: 'flex-end', gap: 2 }}>
+        <AppText variant="numeric" style={{ fontSize: 18 }}>
           {plan.price}
         </AppText>
+        <AppText variant="caption" color="inkFaint" style={{ textTransform: 'none' }}>
+          {t(PLAN_PERIODS[plan.kind])}
+        </AppText>
       </View>
-      <AppText variant="caption" color="inkFaint" style={{ textTransform: 'none' }}>
-        {plan.trialDays > 0
-          ? t('subs.trialDays', {
-              n: plan.trialDays,
-              days: t(countedKey('subs.day', plan.trialDays, props.locale)),
-            })
-          : t(PLAN_PERIODS[plan.kind])}
-      </AppText>
     </Pressable>
   );
 }
@@ -265,12 +331,14 @@ function buyLabel(plan: Plan | undefined, t: Translate, locale: Locale): string 
     return t('subs.restore');
   }
 
-  return plan.trialDays > 0
-    ? t('subs.trialDays', {
-        n: plan.trialDays,
-        days: t(countedKey('subs.day', plan.trialDays, locale)),
-      })
-    : `${t('subs.buyFor')} ${plan.price}`;
+  if (plan.trialDays > 0) {
+    return t('subs.ctaTrial', {
+      n: plan.trialDays,
+      days: t(countedKey('subs.day', plan.trialDays, locale)),
+    });
+  }
+
+  return `${t(plan.kind === 'lifetime' ? 'subs.buyOnce' : 'subs.buyFor')} ${plan.price}`;
 }
 
 function Item(props: { readonly label: string }): React.JSX.Element {

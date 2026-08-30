@@ -121,8 +121,11 @@ export function ProfileScreen(props: {
         someone would look for it rather than nowhere. Needs a block of its own
         in `Vidlun.dc.html`.
       */}
-      <Section label={t('turn.eyebrow')}>
-        <Row title={t('settings.asksFirst')} hint={t('settings.asksFirstHint')}>
+      <Section label={t('profile.conversation')}>
+        <Row
+          title={t('settings.asksFirst')}
+          hint={t(settings.asksFirst ? 'settings.asksFirstOn' : 'settings.asksFirstOff')}
+        >
           <Switch
             value={settings.asksFirst}
             onValueChange={(asksFirst) => {
@@ -675,16 +678,10 @@ function Wheel(props: {
  */
 function subscriptionHint(entitlement: Entitlement): TranslationKey {
   if (entitlement === 'subscribed') {
-    return 'subs.manageTitle';
+    return 'subs.statusPaid';
   }
 
-  if (entitlement === 'trial') {
-    return 'subs.trialActive';
-  }
-
-  // Never a price: what it costs is said on the screen that sells it, where
-  // the store's own numbers are.
-  return 'subs.name';
+  return entitlement === 'trial' ? 'subs.statusTrial' : 'subs.statusFree';
 }
 
 function clockOf(settings: Settings): string {

@@ -101,8 +101,15 @@ export function RecordingScreen(props: {
             {formatElapsed(elapsed)}
           </AppText>
           {props.showsLimit ? (
-            <AppText variant="caption" color="tileInk">
+            <AppText variant="caption" color="tileInk" style={{ textTransform: 'none' }}>
               {props.t('record.limitFree')}
+            </AppText>
+          ) : null}
+          {!props.showsLimit && props.limitSeconds - elapsed <= 10 ? (
+            /* The paid five minutes end too, and lime counts the last ten
+               seconds down rather than stopping out of nowhere. */
+            <AppText variant="caption" style={{ color: '#D7F26B', textTransform: 'none' }}>
+              {props.t('record.nearEnd', { n: Math.max(0, props.limitSeconds - elapsed) })}
             </AppText>
           ) : null}
         </View>

@@ -237,6 +237,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           onSubscribe={flow.subscribe}
           onRestore={flow.restorePurchase}
           onDismissOutcome={flow.dismissPurchaseOutcome}
+          onRetryPlans={flow.openSubscription}
           onOpenTerms={() => flow.openLegal('terms')}
           onOpenPrivacy={() => flow.openLegal('privacy')}
           onBack={flow.backHome}

@@ -113,7 +113,9 @@ export function StatsScreen(props: {
           />
           {view.hasNarrativeAccess ? (
             <Themes themes={view.themes} locale={props.locale} t={t} />
-          ) : null}
+          ) : (
+            <TopicsLocked t={t} onOpenSubscription={props.onOpenSubscription} />
+          )}
           <Pressable accessibilityRole="button" onPress={props.onOpenVocabulary} hitSlop={12}>
             <AppText variant="body" color="inkSoft">
               {t('stats.dictLink')}
@@ -346,9 +348,26 @@ function Narrative(props: {
         {props.t('stats.yourWeek')}
       </AppText>
       {hasNarrativeAccess && week.narrative === null ? (
-        <AppText variant="quote" style={{ color: theme.palette.onPanel, opacity: 0.55 }}>
-          {props.t('stats.proseWriting')}
-        </AppText>
+        <View style={{ gap: 12 }}>
+          <AppText variant="body" style={{ color: theme.palette.onPanel, opacity: 0.65 }}>
+            {props.t('stats.proseWriting')}
+          </AppText>
+          {/* Three ghost lines where the paragraphs will land, so the panel
+              does not jump when they do. */}
+          <View style={{ gap: 9 }}>
+            {(['100%', '86%', '62%'] as const).map((width) => (
+              <View
+                key={width}
+                style={{
+                  height: 15,
+                  width,
+                  borderRadius: 7,
+                  backgroundColor: 'rgba(255,255,255,0.10)',
+                }}
+              />
+            ))}
+          </View>
+        </View>
       ) : null}
       {shown.map((paragraph) => (
         <AppText key={paragraph} variant="quote" style={{ color: theme.palette.onPanel }}>
@@ -356,10 +375,15 @@ function Narrative(props: {
         </AppText>
       ))}
       {hasNarrativeAccess ? null : (
+        <AppText variant="quote" style={{ color: theme.palette.onPanel }}>
+          {props.t('stats.narrLockedLead')}
+        </AppText>
+      )}
+      {hasNarrativeAccess ? null : (
         <View
           style={{
             borderTopWidth: 1,
-            borderTopColor: theme.palette.lineSoft,
+            borderTopColor: 'rgba(255,255,255,0.12)',
             marginTop: 8,
             paddingTop: 16,
             gap: 14,
@@ -386,12 +410,27 @@ function Narrative(props: {
             One button either way; the subscription screen is where the offer
             differs, because that is where the price is said out loud.
           */}
-          <Button label={props.t('stats.readAll')} onPress={props.onOpenSubscription} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={props.onOpenSubscription}
+            style={{
+              borderRadius: 999,
+              backgroundColor: theme.palette.lime,
+              paddingVertical: 13,
+              paddingHorizontal: 22,
+            }}
+          >
+            <AppText variant="body" style={{ color: '#16181D' }}>
+              {props.t('stats.readAll')}
+            </AppText>
+          </Pressable>
           {/*
-            No price here. This panel is on the free screen and the store's
-            numbers live one tap away, where they are the store's own and in
-            the buyer's own currency.
+            No price here. The store's numbers live one tap away, where they
+            are the store's own and in the buyer's own currency.
           */}
+          <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.45, textTransform: 'none' }}>
+            {props.t('stats.trialLine')}
+          </AppText>
         </View>
       )}
     </View>
@@ -451,16 +490,93 @@ function Pattern(props: {
         </AppText>
       ) : (
         /*
-         * Named as a thing that exists, never quoted. Telling someone there is
-         * nothing here would be a lie; telling them what it says would be
-         * giving away the one thing sold.
+         * Named as a thing that exists, never quoted. The drawing blurs the
+         * sentence; native text will not blur, so ghost lines stand where it
+         * would be — the same honest tease without the words.
          */
-        <Pressable accessibilityRole="button" onPress={props.onOpenSubscription} hitSlop={8}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={props.onOpenSubscription}
+          style={{ gap: 16 }}
+        >
+          <View style={{ gap: 8 }}>
+            {(['92%', '58%'] as const).map((width) => (
+              <View
+                key={width}
+                style={{
+                  height: 13,
+                  width,
+                  borderRadius: 6,
+                  backgroundColor: theme.palette.skeleton,
+                }}
+              />
+            ))}
+          </View>
           <AppText variant="body" color="accentInk">
-            {props.t('subs.patternLocked')}
+            {props.t('subs.patternLocked')} ›
           </AppText>
         </Pressable>
       )}
+    </View>
+  );
+}
+
+/**
+ * What the topics section looks like unpaid: the silhouette of the donut and
+ * its rows, and the way in. The drawing blurs the real card; ghost shapes are
+ * the native equivalent, and they leak nothing at all.
+ */
+function TopicsLocked(props: {
+  readonly t: Translate;
+  readonly onOpenSubscription: () => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <View style={{ marginBottom: 28 }}>
+      <AppText variant="caption" color="inkFaint" style={{ marginBottom: 14 }}>
+        {props.t('stats.topicsTitle')}
+      </AppText>
+      <Pressable
+        accessibilityRole="button"
+        onPress={props.onOpenSubscription}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.palette.line,
+          backgroundColor: theme.palette.paper,
+          borderRadius: 22,
+          padding: 20,
+          gap: 18,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+          <View
+            style={{
+              width: 74,
+              height: 74,
+              borderRadius: 74,
+              borderWidth: 13,
+              borderColor: theme.palette.skeleton,
+            }}
+          />
+          <View style={{ flex: 1, gap: 11 }}>
+            {(['78%', '60%', '44%'] as const).map((width) => (
+              <View
+                key={width}
+                style={{
+                  height: 12,
+                  width,
+                  borderRadius: 6,
+                  backgroundColor: theme.palette.skeleton,
+                }}
+              />
+            ))}
+          </View>
+        </View>
+        <AppText variant="body" color="accentInk">
+          {props.t('stats.readAll')} ›
+        </AppText>
+      </Pressable>
     </View>
   );
 }

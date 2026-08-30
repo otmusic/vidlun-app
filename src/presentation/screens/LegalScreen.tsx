@@ -5,6 +5,7 @@ import type { Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { RoundBack } from '../components/RoundBack';
+import { useTheme } from '../theme/ThemeProvider';
 import { fonts } from '../theme/tokens';
 import { runsOf } from './emphasis';
 
@@ -41,6 +42,7 @@ export function LegalScreen(props: {
 }
 
 function Block(props: { readonly block: LegalBlock }): React.JSX.Element | null {
+  const theme = useTheme();
   const { block } = props;
 
   if (block.heading !== undefined) {
@@ -67,12 +69,18 @@ function Block(props: { readonly block: LegalBlock }): React.JSX.Element | null 
 
   if (block.bullets !== undefined) {
     return (
-      <View style={{ gap: 8 }}>
+      <View style={{ gap: 11 }}>
         {block.bullets.map((bullet, index) => (
-          <View key={index} style={{ flexDirection: 'row', gap: 10 }}>
-            <AppText variant="body" color="inkFaint">
-              ·
-            </AppText>
+          <View key={index} style={{ flexDirection: 'row', gap: 12 }}>
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 6,
+                marginTop: 9,
+                backgroundColor: theme.palette.accent,
+              }}
+            />
             <View style={{ flex: 1 }}>
               <Sentence text={bullet} />
             </View>
@@ -88,10 +96,18 @@ function Block(props: { readonly block: LegalBlock }): React.JSX.Element | null 
      * and the things said about it, stacked, which is what the columns meant.
      */
     return (
-      <View style={{ gap: 14 }}>
+      <View>
         {block.rows.map((row, index) => (
-          <View key={index} style={{ gap: 2 }}>
-            <AppText variant="label">{row[0]}</AppText>
+          <View
+            key={index}
+            style={{
+              gap: 5,
+              paddingVertical: 14,
+              borderTopWidth: 1,
+              borderTopColor: theme.palette.line,
+            }}
+          >
+            <AppText variant="body">{row[0]}</AppText>
             {row.slice(1).map((cell, cellIndex) => (
               <AppText key={cellIndex} variant="secondary" color="inkSoft">
                 {cell}
