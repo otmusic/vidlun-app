@@ -122,6 +122,47 @@ async function buildEngines(options) {
     });
   }
 
+  if (options.engines.has('whisper-beam')) {
+    const model = await requireModel(options.models, WHISPER_MODEL);
+
+    engines.push({
+      id: 'whisper-beam5',
+      // Beam search over greedy, and the language pinned the way the app
+      // could pin it: both changes cost nothing at runtime.
+      transcribe: (wav) =>
+        timed(async () => {
+          const { stdout } = await run('whisper-cli', [
+            '-m', model, '-f', wav, '-l', 'uk', '-bs', '5',
+            '--no-timestamps', '--output-txt', 'false',
+          ]);
+
+          return stdout.trim();
+        }),
+    });
+  }
+
+  if (options.engines.has('whisper-prompt')) {
+    const model = await requireModel(options.models, WHISPER_MODEL);
+    const prompt = await vocabularyPrompt();
+
+    engines.push({
+      id: 'whisper-prompt',
+      // The person's own emotion vocabulary as the prompt — words the app
+      // legitimately knows before the take, aimed at exactly the rare-word
+      // confusions the takes showed. Whisper reads only the last 224 tokens,
+      // so the list stays short.
+      transcribe: (wav) =>
+        timed(async () => {
+          const { stdout } = await run('whisper-cli', [
+            '-m', model, '-f', wav, '-l', 'uk', '-bs', '5', '--prompt', prompt,
+            '--no-timestamps', '--output-txt', 'false',
+          ]);
+
+          return stdout.trim();
+        }),
+    });
+  }
+
   if (options.engines.has('parakeet')) {
     const model = await requireModel(options.models, PARAKEET_MODEL);
 
@@ -149,6 +190,18 @@ async function buildEngines(options) {
  * charged the cloud for the quota pause in front of it and reported 15 seconds
  * for a call that took three.
  */
+/**
+ * The emotion labels the app ships, trimmed to fit the 224-token window.
+ * Read from the locale file so the words live where words live.
+ */
+async function vocabularyPrompt() {
+  const labels = JSON.parse(
+    await readFile(new URL('../src/i18n/locales/emotions.uk.json', import.meta.url), 'utf8'),
+  );
+
+  return Object.values(labels).slice(0, 40).join(', ');
+}
+
 async function timed(work) {
   const startedAt = Date.now();
 
