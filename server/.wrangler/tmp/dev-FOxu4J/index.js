@@ -29402,7 +29402,8 @@ async function readToken(secret, token, now) {
   if (!timingSafeEqual(await mac(secret, body), givenMac ?? "")) {
     return null;
   }
-  if (Number(expiryPart) * 1e3 < now) {
+  const expiry = Number(expiryPart);
+  if (!Number.isFinite(expiry) || expiry * 1e3 < now) {
     return null;
   }
   return fromBase64url(keyPart ?? "");
@@ -29448,6 +29449,7 @@ __name(fromBase64url, "fromBase64url");
 var UPSTREAM = "https://api.anthropic.com/v1/messages";
 var ALLOWED_MODELS = /* @__PURE__ */ new Set(["claude-haiku-4-5", "claude-sonnet-5"]);
 var MAX_TOKENS_CEILING = 4096;
+var MAX_BODY_BYTES = 64 * 1024;
 var src_default = {
   async fetch(request, env) {
     if (request.method !== "POST") {
@@ -29458,6 +29460,12 @@ var src_default = {
     }
     const path = new URL(request.url).pathname;
     if (path.startsWith("/attest/")) {
+      const limited2 = await env.RATE_LIMIT.limit({
+        key: `attest:${request.headers.get("cf-connecting-ip") ?? "unknown"}`
+      });
+      if (!limited2.success) {
+        return problem(429, "Too many attestation requests from this address.");
+      }
       return attest(path, request, env);
     }
     if (path !== "/v1/messages") {
@@ -29471,9 +29479,13 @@ var src_default = {
     if (!limited.success) {
       return problem(429, "Too many requests from this device.");
     }
+    const rawBody = await request.text();
+    if (rawBody.length > MAX_BODY_BYTES) {
+      return problem(413, "The body is larger than anything this app sends.");
+    }
     let body;
     try {
-      body = await request.json();
+      body = JSON.parse(rawBody);
     } catch {
       return problem(400, "The body was not JSON.");
     }

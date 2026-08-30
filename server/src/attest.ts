@@ -155,7 +155,11 @@ export async function readToken(
     return null;
   }
 
-  if (Number(expiryPart) * 1000 < now) {
+  const expiry = Number(expiryPart);
+
+  // Finite or refused: the MAC already rules a forged expiry out, but a
+  // comparison against NaN answers false, and false must not mean valid.
+  if (!Number.isFinite(expiry) || expiry * 1000 < now) {
     return null;
   }
 

@@ -33,6 +33,13 @@ const ALLOWED_MODELS = new Set(['claude-haiku-4-5', 'claude-sonnet-5']);
 /** Above this nothing the app asks for is legitimate, and the bill is not either. */
 const MAX_TOKENS_CEILING = 4096;
 
+/**
+ * The ceiling on what a request may carry in. `max_tokens` caps only the
+ * answer; input tokens are billed too, and a week of five-minute entries
+ * fits in a tenth of this. Anything larger is not this app talking.
+ */
+const MAX_BODY_BYTES = 64 * 1024;
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method !== 'POST') {
@@ -48,6 +55,19 @@ export default {
     const path = new URL(request.url).pathname;
 
     if (path.startsWith('/attest/')) {
+      /*
+       * Rate-limited by connecting address, not by key: a fresh enclave key
+       * is free to mint, so the register endpoint is exactly where someone
+       * would farm fresh rate-limit buckets. The address bounds how fast.
+       */
+      const limited = await env.RATE_LIMIT.limit({
+        key: `attest:${request.headers.get('cf-connecting-ip') ?? 'unknown'}`,
+      });
+
+      if (!limited.success) {
+        return problem(429, 'Too many attestation requests from this address.');
+      }
+
       return attest(path, request, env);
     }
 
@@ -72,10 +92,16 @@ export default {
       return problem(429, 'Too many requests from this device.');
     }
 
+    const rawBody = await request.text();
+
+    if (rawBody.length > MAX_BODY_BYTES) {
+      return problem(413, 'The body is larger than anything this app sends.');
+    }
+
     let body: unknown;
 
     try {
-      body = await request.json();
+      body = JSON.parse(rawBody);
     } catch {
       return problem(400, 'The body was not JSON.');
     }

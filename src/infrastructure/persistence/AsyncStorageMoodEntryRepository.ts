@@ -19,11 +19,23 @@ export const ENTRY_KEY_PREFIX = 'vidlun.entry.';
 export class AsyncStorageMoodEntryRepository implements IMoodEntryRepository {
   constructor(private readonly store: IKeyValueStore) {}
 
+  /**
+   * The whole journal, kept after the first read and dropped on any write.
+   * Opening the statistics screen reads the journal five times over —
+   * summary, themes, patterns, the week before, the narrative — and each
+   * read was a full AsyncStorage scan with a JSON.parse per entry. Nothing
+   * else writes this store, so a write of our own is the only thing that
+   * can date the copy.
+   */
+  private cache: readonly MoodEntry[] | null = null;
+
   async save(entry: MoodEntry): Promise<void> {
+    this.cache = null;
     await this.store.setItem(keyFor(entry.id), JSON.stringify(toStored(entry)));
   }
 
   async delete(id: string): Promise<void> {
+    this.cache = null;
     await this.store.removeItem(keyFor(id));
   }
 
@@ -47,18 +59,19 @@ export class AsyncStorageMoodEntryRepository implements IMoodEntryRepository {
 
   /** Newest first. */
   private async readAll(): Promise<readonly MoodEntry[]> {
-    const keys = (await this.store.getAllKeys()).filter((key) => key.startsWith(ENTRY_KEY_PREFIX));
-
-    if (keys.length === 0) {
-      return [];
+    if (this.cache !== null) {
+      return this.cache;
     }
 
-    const stored = await this.store.multiGet(keys);
+    const keys = (await this.store.getAllKeys()).filter((key) => key.startsWith(ENTRY_KEY_PREFIX));
+    const stored = keys.length === 0 ? [] : await this.store.multiGet(keys);
 
-    return stored
+    this.cache = stored
       .map(([, value]) => readEntry(value))
       .filter((entry): entry is MoodEntry => entry !== null)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    return this.cache;
   }
 }
 

@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAudioRecorder } from 'expo-audio';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService';
 import { createContainer, type Container } from '@/di/container';
 import { createTranslator, type Locale } from '@/i18n';
@@ -171,10 +171,16 @@ function Vidlun(props: {
   /*
    * Whenever the preference moves, and once when the app opens: a reminder
    * scheduled by a previous install of these settings is not something the
-   * phone forgets on its own.
+   * phone forgets on its own. The latest settings travel through a ref so a
+   * theme or language change does not cancel and reschedule notifications.
    */
+  const settingsRef = useRef(props.settings);
+
+  settingsRef.current = props.settings;
+
+  const { reminderOn, reminderHour, reminderMinute } = props.settings;
+
   useEffect(() => {
-    const { reminderOn, reminderHour, reminderMinute } = props.settings;
 
     if (!reminderOn) {
       void container.reminders.cancel();
@@ -199,7 +205,7 @@ function Vidlun(props: {
          * back is the honest answer, and it is also the visible one.
          */
         if (!scheduled) {
-          onSettingsChange({ ...props.settings, reminderOn: false });
+          onSettingsChange({ ...settingsRef.current, reminderOn: false });
         }
       });
   }, [
@@ -207,7 +213,9 @@ function Vidlun(props: {
     container.reminders,
     flow.home,
     onSettingsChange,
-    props.settings,
+    reminderOn,
+    reminderHour,
+    reminderMinute,
     t,
   ]);
 

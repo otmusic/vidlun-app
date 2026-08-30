@@ -17,6 +17,9 @@ import {
  * secret. The id is a handle that is useless off this phone, and the token
  * expires within a day of anyone reading it.
  */
+/** Waiting longer than this on an auth round trip only delays the entry more. */
+const FETCH_TIMEOUT_MS = 15_000;
+
 const KEY_ID = 'vidlun.attest.keyId';
 const REGISTERED = 'vidlun.attest.registered';
 const TOKEN = 'vidlun.attest.token';
@@ -108,7 +111,10 @@ export class ProxyAuth {
   }
 
   private async challenge(): Promise<string> {
-    const response = await fetch(`${this.baseUrl}/attest/challenge`, { method: 'POST' });
+    const response = await fetch(`${this.baseUrl}/attest/challenge`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     const body = (await response.json()) as { challenge?: string };
 
     if (typeof body.challenge !== 'string') {
@@ -123,6 +129,7 @@ export class ProxyAuth {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     const body = (await response.json()) as { token?: string };
 
