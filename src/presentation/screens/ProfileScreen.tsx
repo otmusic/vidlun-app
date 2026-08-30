@@ -86,18 +86,6 @@ export function ProfileScreen(props: {
         </Row>
       </Section>
 
-      <Section label={t('subs.section')}>
-        <Row
-          title={t('subs.name')}
-          hint={t(subscriptionHint(props.entitlement))}
-          onPress={props.onOpenSubscription}
-        >
-          <AppText variant="body" color="inkFaint">
-            ›
-          </AppText>
-        </Row>
-      </Section>
-
       <Section label={t('profile.rhythm')}>
         <Row
           title={t('profile.reminder')}
@@ -449,7 +437,11 @@ function Row(props: {
         <AppText variant="body" style={{ fontSize: 16 }}>
           {props.title}
         </AppText>
-        <AppText variant="caption" color="inkFaint" style={{ textTransform: 'none' }}>
+        <AppText
+          variant="secondary"
+          color="inkFaint"
+          style={{ fontSize: 13, letterSpacing: 0 }}
+        >
           {props.hint}
         </AppText>
       </View>

@@ -8,11 +8,14 @@ import { AppText } from '../components/AppText';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { RecordButton } from '../components/RecordButton';
+import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
+
 import { WeekStrip } from '../components/WeekStrip';
 import { useTheme } from '../theme/ThemeProvider';
 
 export interface HomeScreenProps {
   readonly home: HomeView | null;
+  readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
   readonly onDelete: (id: string) => void;
   readonly onOpenHistory: () => void;
@@ -79,6 +82,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         >
           <WeekStrip
             week={week}
+            vocabulary={props.vocabulary}
             locale={props.locale}
             noEntryLabel={props.t('home.noEntryThatDay')}
           />

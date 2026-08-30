@@ -2,18 +2,16 @@ import { Pressable, View } from 'react-native';
 
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
-import { emotionKey, type Locale, type Translate, type TranslationKey } from '@/i18n';
+import { emotionKey, type Locale, type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
 import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
 
-const MOOD_LABELS: readonly TranslationKey[] = ['mood.1', 'mood.2', 'mood.3', 'mood.4', 'mood.5'];
-
 /**
- * A rail in the entry's own colour, the day and the mood, the sentence, and
- * the words underneath. The rail is the only colour on the card: it says at a
- * glance what kind of day this was without putting a verdict in words.
+ * A dot in the entry's own colour, the day and time, the first emotion's own
+ * name at the right in the same colour, and the sentence. The colour names
+ * what the entry held; no number and no verdict appears on the card at all.
  */
 export function EntryCard(props: {
   readonly entry: MoodEntry;
@@ -38,32 +36,34 @@ export function EntryCard(props: {
       accessibilityRole="button"
       onPress={props.onOpen}
       style={{
-        flexDirection: 'row',
-        gap: 15,
         borderWidth: 1,
         borderColor: theme.palette.line,
         borderRadius: 22,
         backgroundColor: theme.palette.paper,
         paddingVertical: 18,
         paddingHorizontal: 20,
+        gap: 10,
       }}
     >
-      <View style={{ width: 4, borderRadius: 4, backgroundColor: colour }} />
-      <View style={{ flex: 1, gap: 8, minWidth: 0 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <AppText variant="secondary" color="inkSoft">
-            {dayOf(props.entry.createdAt, props.locale)}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+        <View style={{ width: 9, height: 9, borderRadius: 9, backgroundColor: colour }} />
+        <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13 }}>
+          {`${dayOf(props.entry.createdAt, props.locale)} · ${timeOf(props.entry.createdAt, props.locale)}`}
+        </AppText>
+        {first === undefined ? null : (
+          <AppText
+            variant="secondary"
+            numberOfLines={1}
+            style={{ fontSize: 13, color: colour, marginLeft: 'auto', flexShrink: 1 }}
+          >
+            {props.t(emotionKey(first))}
           </AppText>
-          <AppText variant="secondary" color="inkFaint">
-            ·
-          </AppText>
-          {props.entry.mood === null ? null : (
-            <AppText variant="secondary" style={{ color: colour }}>
-              {props.t(MOOD_LABELS[props.entry.mood.value - 1] ?? 'mood.3')}
-            </AppText>
-          )}
-        </View>
-        <AppText variant="body">{props.entry.cleanTranscript}</AppText>
+        )}
+      </View>
+      <View style={{ gap: 8 }}>
+        <AppText variant="body" style={{ fontSize: 16, lineHeight: 23 }}>
+          {props.entry.cleanTranscript}
+        </AppText>
         {props.showEmotions !== true || props.entry.emotionIds.length === 0 ? null : (
           <AppText variant="secondary" color="inkFaint">
             {props.entry.emotionIds.map((id) => props.t(emotionKey(id))).join(' · ')}
@@ -76,4 +76,8 @@ export function EntryCard(props: {
 
 function dayOf(date: Date, locale: Locale): string {
   return date.toLocaleDateString(locale, { day: 'numeric', month: 'long' });
+}
+
+function timeOf(date: Date, locale: Locale): string {
+  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }

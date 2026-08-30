@@ -304,6 +304,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
       return (
         <HomeScreen
           home={flow.home}
+          vocabulary={props.vocabulary}
           locale={props.locale}
           t={t}
           onRecord={flow.startRecording}

@@ -11,7 +11,7 @@ const MONDAY = new Date(2026, 6, 27, 0, 0);
 
 let nextId = 0;
 
-function entryOn(date: Date, mood: number): MoodEntry {
+function entryOn(date: Date, mood: number, emotionIds: readonly string[] = []): MoodEntry {
   nextId += 1;
 
   return MoodEntry.create({
@@ -22,6 +22,7 @@ function entryOn(date: Date, mood: number): MoodEntry {
     cleanTranscript: 'Something happened today.',
     mood: MoodScore.of(mood),
     confidence: Confidence.of(0.9),
+    emotionIds,
   });
 }
 
@@ -63,6 +64,7 @@ describe('GetWeekSummary', () => {
       date: new Date(2026, 6, 29, 0, 0),
       averageMood: 2.5,
       entryCount: 2,
+      topEmotionId: null,
     });
   });
 
@@ -76,6 +78,7 @@ describe('GetWeekSummary', () => {
       date: new Date(2026, 6, 28, 0, 0),
       averageMood: null,
       entryCount: 0,
+      topEmotionId: null,
     });
   });
 
@@ -143,5 +146,27 @@ describe('GetWeekSummary', () => {
       new Date(2026, 6, 27, 8, 0),
       new Date(2026, 6, 31, 8, 0),
     ]);
+  });
+  it('names the day by its most-named emotion', async () => {
+    const { useCase } = await setup([
+      entryOn(new Date(2026, 6, 29, 9, 0), 3, ['bad.tired']),
+      entryOn(new Date(2026, 6, 29, 20, 0), 4, ['happy.calm', 'bad.tired']),
+    ]);
+
+    const summary = await useCase.execute({ withNarrative: false });
+
+    expect(summary.days[2]?.topEmotionId).toBe('bad.tired');
+  });
+
+  it('lets the later entry name the day when the count is even', async () => {
+    // The fresher word for the day, not the alphabetically luckier one.
+    const { useCase } = await setup([
+      entryOn(new Date(2026, 6, 29, 9, 0), 3, ['happy.calm']),
+      entryOn(new Date(2026, 6, 29, 20, 0), 4, ['bad.tired']),
+    ]);
+
+    const summary = await useCase.execute({ withNarrative: false });
+
+    expect(summary.days[2]?.topEmotionId).toBe('bad.tired');
   });
 });

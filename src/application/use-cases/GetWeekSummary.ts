@@ -4,6 +4,12 @@ import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryReposito
 import type { INarrativeGenerator } from '../../domain/ports/INarrativeGenerator';
 
 export interface DailyMood {
+  /**
+   * The emotion named most often that day, or null on a day with none. The
+   * home strip paints the day in this word's own colour — the drawing colours
+   * days by what they held, not by how high the number was.
+   */
+  readonly topEmotionId: string | null;
   readonly date: Date;
   /** Null on a day with no entry — an untracked day is not a bad day. */
   readonly averageMood: number | null;
@@ -85,10 +91,35 @@ function buildDays(weekStart: Date, entries: readonly MoodEntry[]): readonly Dai
 
     return {
       date,
+      topEmotionId: topEmotion(onThisDay),
       averageMood: averageMood(onThisDay),
       entryCount: onThisDay.length,
     };
   });
+}
+
+/** The most-named emotion of the day; the later entry wins a tie, being the
+ * fresher word for the day. */
+function topEmotion(entries: readonly MoodEntry[]): string | null {
+  const counts = new Map<string, number>();
+
+  for (const entry of entries) {
+    for (const id of entry.emotionIds) {
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+  }
+
+  let best: string | null = null;
+  let bestCount = 0;
+
+  for (const [id, count] of counts) {
+    if (count >= bestCount) {
+      best = id;
+      bestCount = count;
+    }
+  }
+
+  return best;
 }
 
 /**

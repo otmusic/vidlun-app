@@ -21,6 +21,8 @@ export interface ChipProps {
   readonly color?: string;
   readonly tone?: ChipTone;
   readonly selected?: boolean;
+  /** Filled with its own colour outright — the drawing's kept word. */
+  readonly solid?: boolean;
   readonly action?: 'remove' | 'add';
   readonly onPress?: () => void;
   readonly accessibilityLabel?: string;
@@ -48,7 +50,8 @@ export function Chip(props: ChipProps): React.JSX.Element {
    */
   const filled = props.selected === true && props.action === 'add';
   const line = props.color ?? theme.palette[tone.solid];
-  const text = props.color ?? theme.palette[tone.ink];
+  const text =
+    props.solid === true ? theme.palette.onSolid : (props.color ?? theme.palette[tone.ink]);
   /*
    * A selected chip fills with its own colour at a whisper rather than with a
    * shelf colour, so the fill agrees with the ring around it. Eight-digit hex
@@ -65,7 +68,7 @@ export function Chip(props: ChipProps): React.JSX.Element {
         borderRadius: theme.radii.pill,
         paddingHorizontal: 15,
         paddingVertical: theme.spacing.sm,
-        backgroundColor: filled ? fill : 'transparent',
+        backgroundColor: props.solid === true ? line : filled ? fill : 'transparent',
         borderWidth: 1.5,
         borderColor: line,
       }}

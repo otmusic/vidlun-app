@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, View } from 'react-native';
-import { Circle, Svg } from 'react-native-svg';
+import { Circle, Path, Svg } from 'react-native-svg';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
@@ -91,9 +91,12 @@ export function CompareScreen(props: {
       </Block>
 
       <Block surface={theme.palette.voiceSoft}>
-        <AppText variant="caption" color="accentInk">
-          {props.t(heardNothing ? 'compare.lunaNone' : 'compare.luna')}
-        </AppText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Sparkle colour={theme.palette.accentInk} />
+          <AppText variant="caption" color="accentInk">
+            {props.t(heardNothing ? 'compare.lunaNone' : 'compare.luna')}
+          </AppText>
+        </View>
         {heardNothing ? (
           /*
            * Not an empty slot but a finding, and one §6 calls correct and
@@ -143,7 +146,7 @@ export function CompareScreen(props: {
                  * anyone means.
                  */
                 return kept ? (
-                  <Chip key={id} label={label(id)} color={colorOf(id)} />
+                  <Chip key={id} label={label(id)} color={colorOf(id)} solid />
                 ) : (
                   <Chip
                     key={id}
@@ -297,6 +300,18 @@ function MoodRing(props: { readonly value: number }): React.JSX.Element {
         strokeLinecap="round"
         strokeDasharray={`${filled} ${RING_LENGTH}`}
         transform="rotate(-90 36 36)"
+      />
+    </Svg>
+  );
+}
+
+/** The drawing's four-point star beside "Vidlun heard". */
+function Sparkle(props: { readonly colour: string }): React.JSX.Element {
+  return (
+    <Svg viewBox="0 0 24 24" width={13} height={13}>
+      <Path
+        d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"
+        fill={props.colour}
       />
     </Svg>
   );

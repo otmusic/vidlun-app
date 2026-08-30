@@ -53,10 +53,34 @@ function buildWeek(entries: readonly MoodEntry[], today: Date): readonly DailyMo
 
     return {
       date,
+      topEmotionId: topEmotion(onThisDay),
       averageMood: averageMood(onThisDay),
       entryCount: onThisDay.length,
     };
   });
+}
+
+/** The most-named emotion of the day; the later entry wins a tie. */
+function topEmotion(entries: readonly MoodEntry[]): string | null {
+  const counts = new Map<string, number>();
+
+  for (const entry of entries) {
+    for (const id of entry.emotionIds) {
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+  }
+
+  let best: string | null = null;
+  let bestCount = 0;
+
+  for (const [id, count] of counts) {
+    if (count >= bestCount) {
+      best = id;
+      bestCount = count;
+    }
+  }
+
+  return best;
 }
 
 /** Over the entries that said how the day was; null when none of them did. */
