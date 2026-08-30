@@ -128,13 +128,13 @@ function page({ title, body, lang, other, kind }) {
 <style>
 :root {
   --canvas: #FBF7F0; --paper: #FFFCF6; --ink: #16181D; --ink-soft: #6C6F78;
-  --line: #E2DACB; --line-soft: #F7F1E6; --accent-ink: #0B7367;
+  --line: #E2DACB; --line-soft: #F7F1E6; --accent-ink: #3226BF;
   --slot-bg: #F7EEDC; --slot-ink: #8A5D12; --slot-line: #E4D2AE;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --canvas: #14161B; --paper: #1B1E25; --ink: #F2EEE6; --ink-soft: #A9AEB8;
-    --line: #2C313B; --line-soft: #232833; --accent-ink: #6FE4D3;
+    --line: #2C313B; --line-soft: #232833; --accent-ink: #A79BFF;
     --slot-bg: #2E2519; --slot-ink: #F5C766; --slot-line: #4A3B22;
   }
 }

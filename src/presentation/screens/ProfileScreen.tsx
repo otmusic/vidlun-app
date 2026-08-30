@@ -94,7 +94,7 @@ export function ProfileScreen(props: {
             setPickingTime(true);
           }}
         >
-          <AppText variant="body" color="inkSoft">
+          <AppText variant="numeric" style={{ fontSize: 17 }}>
             {clockOf(settings)}
           </AppText>
           <AppText variant="body" color="inkFaint">
@@ -379,7 +379,10 @@ function Tile(props: {
     <View
       style={{ flex: 1, borderRadius: 22, backgroundColor: props.background, padding: 20 }}
     >
-      <AppText variant="kicker" style={props.valueColor === undefined ? undefined : { color: props.valueColor }}>
+      <AppText
+        variant="display"
+        style={[{ fontSize: 26 }, props.valueColor === undefined ? null : { color: props.valueColor }]}
+      >
         {props.value}
       </AppText>
       <AppText variant="secondary" color="inkSoft" style={{ marginTop: 4 }}>
