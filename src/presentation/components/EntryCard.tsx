@@ -5,6 +5,7 @@ import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { emotionKey, type Locale, type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
+import { dayWordOf } from './EntryRow';
 import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -17,6 +18,8 @@ export function EntryCard(props: {
   readonly entry: MoodEntry;
   readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
+  /** What day it is, so the header can say "today" of today. */
+  readonly today: Date;
   readonly t: Translate;
   readonly onOpen: () => void;
   /** The words underneath, which the search results do without. */
@@ -48,7 +51,7 @@ export function EntryCard(props: {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
         <View style={{ width: 9, height: 9, borderRadius: 9, backgroundColor: colour }} />
         <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13 }}>
-          {`${dayOf(props.entry.createdAt, props.locale)} · ${timeOf(props.entry.createdAt, props.locale)}`}
+          {`${dayWordOf(props.entry.createdAt, props.today, props.locale, props.t)} · ${timeOf(props.entry.createdAt, props.locale)}`}
         </AppText>
         {first === undefined ? null : (
           <AppText
@@ -72,10 +75,6 @@ export function EntryCard(props: {
       </View>
     </Pressable>
   );
-}
-
-function dayOf(date: Date, locale: Locale): string {
-  return date.toLocaleDateString(locale, { day: 'numeric', month: 'long' });
 }
 
 function timeOf(date: Date, locale: Locale): string {

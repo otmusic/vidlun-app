@@ -27,6 +27,7 @@ export function SearchScreen(props: {
   readonly emotionId: string | null;
   readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
+  readonly today: Date;
   readonly t: Translate;
   readonly onQuery: (query: string) => void;
   readonly onFilter: (emotionId: string | null) => void;
@@ -146,6 +147,7 @@ export function SearchScreen(props: {
                   entry={entry}
                   vocabulary={props.vocabulary}
                   locale={props.locale}
+                  today={props.today}
                   t={t}
                   onOpen={() => {
                     props.onOpen(entry);

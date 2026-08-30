@@ -26,6 +26,7 @@ export function HistoryScreen(props: {
   readonly days: readonly HistoryDay[] | null;
   readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
+  readonly today: Date;
   readonly t: Translate;
   readonly onOpen: (entry: MoodEntry) => void;
   readonly onRecord: () => void;
@@ -72,6 +73,7 @@ export function HistoryScreen(props: {
               entry={entry}
               vocabulary={props.vocabulary}
               locale={props.locale}
+              today={props.today}
               t={t}
               showEmotions
               onOpen={() => {

@@ -17,6 +17,7 @@ export interface HomeScreenProps {
   readonly home: HomeView | null;
   readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
+  readonly today: Date;
   readonly onDelete: (id: string) => void;
   readonly onOpenHistory: () => void;
   readonly onOpenStats: () => void;
@@ -154,6 +155,9 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
                 <EntryRow
                   key={entry.id}
                   entry={entry}
+                  vocabulary={props.vocabulary}
+                  locale={props.locale}
+                  today={props.today}
                   t={props.t}
                   onOpen={props.onOpen}
                   onDelete={props.onDelete}

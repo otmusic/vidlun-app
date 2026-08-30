@@ -261,6 +261,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           emotionId={flow.stage.emotionId}
           vocabulary={props.vocabulary}
           locale={props.locale}
+          today={props.today}
           t={t}
           onQuery={(query) => {
             flow.search(query, flow.stage.kind === 'search' ? flow.stage.emotionId : null);
@@ -281,6 +282,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           days={flow.history}
           vocabulary={props.vocabulary}
           locale={props.locale}
+          today={props.today}
           t={t}
           onOpen={flow.openEntry}
           onRecord={flow.startRecording}
@@ -306,6 +308,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           home={flow.home}
           vocabulary={props.vocabulary}
           locale={props.locale}
+          today={props.today}
           t={t}
           onRecord={flow.startRecording}
           onWrite={flow.startWriting}
