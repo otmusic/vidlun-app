@@ -44,11 +44,27 @@ const BARS = Array.from({ length: BAR_COUNT }, (_unused, at) => {
  */
 export function RecordingScreen(props: {
   readonly t: Translate;
+  /** Seconds, after which the take stops itself. The paid minute count is longer. */
+  readonly limitSeconds: number;
+  /** True when the shorter limit applies and is worth saying out loud. */
+  readonly showsLimit: boolean;
   readonly onStop: () => void;
   readonly onCancel: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const elapsed = useElapsed();
+  const { onStop } = props;
+
+  /*
+   * Stopped for them, exactly as if they had pressed stop: the take is kept
+   * and goes on to transcription. Cutting the recording and throwing it away
+   * would punish the person for talking too long.
+   */
+  useEffect(() => {
+    if (elapsed >= props.limitSeconds) {
+      onStop();
+    }
+  }, [elapsed, onStop, props.limitSeconds]);
 
   return (
     <View
@@ -84,6 +100,11 @@ export function RecordingScreen(props: {
           <AppText variant="timer" color="onPanel">
             {formatElapsed(elapsed)}
           </AppText>
+          {props.showsLimit ? (
+            <AppText variant="caption" color="tileInk">
+              {props.t('record.limitFree')}
+            </AppText>
+          ) : null}
         </View>
 
         <Waveform still={theme.reduceMotion} />

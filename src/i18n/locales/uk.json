@@ -281,5 +281,7 @@
   "detail.disclaimer": "Vidlun описує сказане й не дає порад, оцінок чи медичних висновків.",
   "detail.toJournal": "У щоденник",
   "detail.audioGone": "Аудіо не збережено — у налаштуваннях вимкнено зберігання записів.",
-  "detail.ofFive": "з 5"
+  "detail.ofFive": "з 5",
+  "stats.proseWriting": "Пишеться…",
+  "record.limitFree": "У безкоштовній версії запис триває до хвилини"
 }

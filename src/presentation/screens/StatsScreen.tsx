@@ -111,7 +111,9 @@ export function StatsScreen(props: {
             t={t}
             onOpenSubscription={props.onOpenSubscription}
           />
-          <Themes themes={view.themes} locale={props.locale} t={t} />
+          {view.hasNarrativeAccess ? (
+            <Themes themes={view.themes} locale={props.locale} t={t} />
+          ) : null}
           <Pressable accessibilityRole="button" onPress={props.onOpenVocabulary} hitSlop={12}>
             <AppText variant="body" color="inkSoft">
               {t('stats.dictLink')}
@@ -323,7 +325,12 @@ function Narrative(props: {
   }
 
   const paragraphs = (week.narrative ?? '').split('\n').filter((line) => line.trim().length > 0);
-  const shown = hasNarrativeAccess ? paragraphs : paragraphs.slice(0, 1);
+  /*
+   * Nothing of the text leaks out unpaid. The drawing once gave the first
+   * paragraph away; the pricing decision of 2026-08-30 closed that — the
+   * model's writing is the paid half, whole.
+   */
+  const shown = hasNarrativeAccess ? paragraphs : [];
 
   return (
     <View
@@ -338,6 +345,11 @@ function Narrative(props: {
       <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.6 }}>
         {props.t('stats.yourWeek')}
       </AppText>
+      {hasNarrativeAccess && week.narrative === null ? (
+        <AppText variant="quote" style={{ color: theme.palette.onPanel, opacity: 0.55 }}>
+          {props.t('stats.proseWriting')}
+        </AppText>
+      ) : null}
       {shown.map((paragraph) => (
         <AppText key={paragraph} variant="quote" style={{ color: theme.palette.onPanel }}>
           {paragraph}

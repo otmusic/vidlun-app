@@ -89,8 +89,20 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
   const { flow, t } = props;
 
   switch (flow.stage.kind) {
-    case 'recording':
-      return <RecordingScreen t={t} onStop={flow.stopRecording} onCancel={flow.cancel} />;
+    case 'recording': {
+      // A minute free, five paid. The cap is a product decision, not audio's.
+      const paid = props.entitlement !== 'none';
+
+      return (
+        <RecordingScreen
+          t={t}
+          limitSeconds={paid ? 300 : 60}
+          showsLimit={!paid}
+          onStop={flow.stopRecording}
+          onCancel={flow.cancel}
+        />
+      );
+    }
 
     case 'writing':
       return <TextEntryScreen t={t} onSubmit={flow.submitText} onCancel={flow.backHome} />;

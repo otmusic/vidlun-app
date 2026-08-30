@@ -384,6 +384,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    */
   const withObservation = useCallback(
     async (draft: MoodEntry) => {
+      // Vidlun's remark is the model writing, and the model's writing is the
+      // paid half. Not asked for rather than hidden: a sentence nobody may
+      // read is a sentence not worth paying Sonnet for.
+      if (!dependencies.hasNarrativeAccess) {
+        return;
+      }
+
       try {
         const spoken = await dependencies.writeObservation.execute(draft);
 
@@ -393,7 +400,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         // card the user is already reading.
       }
     },
-    [dependencies.writeObservation],
+    [dependencies.hasNarrativeAccess, dependencies.writeObservation],
   );
 
   const analyze = useCallback(
@@ -475,12 +482,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
       void dependencies.getWeekSummary
         /*
-         * Asked for by everyone, because the drawing gives the first paragraph
-         * away: locking the whole of someone's own week is the app holding
-         * their words hostage. Generated per visit for now — caching it by
-         * week is debt, and it is a Sonnet call each time.
+         * Without the narrative first: everything else on the screen is read
+         * off the phone in milliseconds, and the narrative is a model call
+         * that was making the whole screen blank for seconds. It is written
+         * in below once it exists — and only for someone who can read it,
+         * since the AI-written week is the paid half of the product.
          */
-        .execute({ withNarrative: true, containing })
+        .execute({ withNarrative: false, containing })
         .then(async (week) => {
           const [themes, patterns, earlier] = await Promise.all([
             dependencies.getWeekThemes.execute({
@@ -518,6 +526,19 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
                 }
               : current,
           );
+
+          if (dependencies.hasNarrativeAccess) {
+            const withProse = await dependencies.getWeekSummary.execute({
+              withNarrative: true,
+              containing,
+            });
+
+            setStage((current) =>
+              current.kind === 'stats' && current.weeksBack === weeksBack && current.view !== null
+                ? { ...current, view: { ...current.view, week: withProse } }
+                : current,
+            );
+          }
         })
         .catch(fail);
     },

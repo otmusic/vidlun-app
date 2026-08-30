@@ -281,5 +281,7 @@
   "detail.disclaimer": "Vidlun describes what was said. It gives no advice, verdicts or medical conclusions.",
   "detail.toJournal": "To the journal",
   "detail.audioGone": "No audio kept — recordings are switched off in settings.",
-  "detail.ofFive": "of 5"
+  "detail.ofFive": "of 5",
+  "stats.proseWriting": "Being written…",
+  "record.limitFree": "A free recording runs up to a minute"
 }
