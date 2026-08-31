@@ -9,10 +9,12 @@ import type {
  * Priced as the owner set them on 2026-08-29, and formatted the way a store
  * would: the screen must never build a price string itself.
  */
+// The store's own US tier prices, so a screenshot of the pretend paywall
+// shows what the App Store review team will themselves be shown.
 const PRETEND_PLANS: readonly Plan[] = [
-  { id: 'monthly', kind: 'monthly', price: '199 ₴', amount: 199, trialDays: 0 },
-  { id: 'annual', kind: 'annual', price: '999 ₴', amount: 999, trialDays: 7 },
-  { id: 'lifetime', kind: 'lifetime', price: '2 999 ₴', amount: 2999, trialDays: 0 },
+  { id: 'monthly', kind: 'monthly', price: '$4.99', amount: 4.99, trialDays: 0 },
+  { id: 'annual', kind: 'annual', price: '$29.99', amount: 29.99, trialDays: 7 },
+  { id: 'lifetime', kind: 'lifetime', price: '$79.99', amount: 79.99, trialDays: 0 },
 ];
 
 /**
