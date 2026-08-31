@@ -19,11 +19,13 @@ const PAGES = [
   { source: 'PRIVACY.en.md', path: 'privacy-en.html', lang: 'en', other: 'privacy.html', kind: 'privacy' },
   { source: 'TERMS.uk.md', path: 'terms.html', lang: 'uk', other: 'terms-en.html', kind: 'terms' },
   { source: 'TERMS.en.md', path: 'terms-en.html', lang: 'en', other: 'terms.html', kind: 'terms' },
+  { source: 'SUPPORT.uk.md', path: 'support.html', lang: 'uk', other: 'support-en.html', kind: 'support' },
+  { source: 'SUPPORT.en.md', path: 'support-en.html', lang: 'en', other: 'support.html', kind: 'support' },
 ];
 
 const LABELS = {
-  uk: { other: 'English', privacy: 'Приватність', terms: 'Умови', toPrivacy: 'privacy.html', toTerms: 'terms.html' },
-  en: { other: 'Українська', privacy: 'Privacy', terms: 'Terms', toPrivacy: 'privacy-en.html', toTerms: 'terms-en.html' },
+  uk: { other: 'English', privacy: 'Приватність', terms: 'Умови', support: 'Підтримка', toPrivacy: 'privacy.html', toTerms: 'terms.html', toSupport: 'support.html' },
+  en: { other: 'Українська', privacy: 'Privacy', terms: 'Terms', support: 'Support', toPrivacy: 'privacy-en.html', toTerms: 'terms-en.html', toSupport: 'support-en.html' },
 };
 
 function escapeHtml(text) {
@@ -113,6 +115,7 @@ function convert(markdown) {
 function page({ title, body, lang, other, kind }) {
   const labels = LABELS[lang];
   const nav = [
+    `<a href="./${labels.toSupport}"${kind === 'support' ? ' aria-current="page"' : ''}>${labels.support}</a>`,
     `<a href="./${labels.toPrivacy}"${kind === 'privacy' ? ' aria-current="page"' : ''}>${labels.privacy}</a>`,
     `<a href="./${labels.toTerms}"${kind === 'terms' ? ' aria-current="page"' : ''}>${labels.terms}</a>`,
     `<a href="./${other}" class="lang">${labels.other}</a>`,
