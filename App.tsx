@@ -20,7 +20,7 @@ import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
 import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
 import { OnboardingScreen } from '@/presentation/screens/OnboardingScreen';
 import { Screen } from '@/presentation/screens/Screen';
-import { ThemeProvider } from '@/presentation/theme/ThemeProvider';
+import { ThemeProvider, useTheme } from '@/presentation/theme/ThemeProvider';
 
 interface Wiring {
   readonly container?: Container;
@@ -63,7 +63,7 @@ export default function App() {
           model={model}
         />
       )}
-        <StatusBar style="auto" />
+        <ThemedStatusBar />
       </ThemeProvider>
     </GestureHandlerRootView>
   );
@@ -289,6 +289,17 @@ function useTranscription(locale: Locale, model: SpeechModelState): ITranscripti
 
     return new OnDeviceTranscriptionService(open, () => locale);
   }, [locale, model, typed]);
+}
+
+/**
+ * The clock and the battery follow the app's own theme, not the phone's:
+ * "auto" asked the system, and a phone in dark mode painted white digits
+ * onto the app's cream canvas.
+ */
+function ThemedStatusBar(): React.JSX.Element {
+  const theme = useTheme();
+
+  return <StatusBar style={theme.isDark ? 'light' : 'dark'} />;
 }
 
 /** Shown when the api key is missing, which is a developer state, not a user one. */
