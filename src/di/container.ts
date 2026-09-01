@@ -34,13 +34,14 @@ import type { IFilePicker } from '../domain/ports/IFilePicker';
 import type { IFileSharer } from '../domain/ports/IFileSharer';
 import type { IScreenLock } from '../domain/ports/IScreenLock';
 import { ExportJournal } from '../application/use-cases/ExportJournal';
+import { GetMonthSummary } from '../application/use-cases/GetMonthSummary';
 import { ImportJournal } from '../application/use-cases/ImportJournal';
 import { ProxyAuth, attestedFetch } from '../infrastructure/attest/ProxyAuth';
 import { BiometricScreenLock } from '../infrastructure/system/BiometricScreenLock';
 import { DocumentFilePicker } from '../infrastructure/files/DocumentFilePicker';
 import { ShareSheetFileSharer } from '../infrastructure/files/ShareSheetFileSharer';
 import { JournalCodec } from '../infrastructure/persistence/JournalCodec';
-import { CachedNarrativeGenerator } from '../infrastructure/analysis/CachedNarrativeGenerator';
+import { CachedNarrativeGenerator, monthKeyFor } from '../infrastructure/analysis/CachedNarrativeGenerator';
 import { ClaudeNarrativeGenerator } from '../infrastructure/analysis/ClaudeNarrativeGenerator';
 import { ClaudeObservationWriter } from '../infrastructure/analysis/ClaudeObservationWriter';
 import { ClaudeReflectionAnalyzer } from '../infrastructure/analysis/ClaudeReflectionAnalyzer';
@@ -87,6 +88,7 @@ export interface Container {
   readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
+  readonly getMonthSummary: GetMonthSummary;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
   readonly searchEntries: SearchEntries;
@@ -213,6 +215,15 @@ export function createContainer(dependencies: ContainerDependencies): Container 
       new CachedNarrativeGenerator(
         new ClaudeNarrativeGenerator(anthropic.messages),
         AsyncStorage,
+      ),
+      clock,
+    ),
+    getMonthSummary: new GetMonthSummary(
+      repository,
+      new CachedNarrativeGenerator(
+        new ClaudeNarrativeGenerator(anthropic.messages, 'month'),
+        AsyncStorage,
+        monthKeyFor,
       ),
       clock,
     ),

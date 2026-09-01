@@ -16,6 +16,8 @@ import { useTheme } from '../theme/ThemeProvider';
 
 export interface HomeScreenProps {
   readonly home: HomeView | null;
+  /** The month for the first-days card, or null off-season. */
+  readonly monthCard: Date | null;
   readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
   readonly today: Date;
@@ -124,6 +126,10 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           </AppText>
         </Pressable>
       </View>
+
+      {props.monthCard === null ? null : (
+        <MonthReadyCard month={props.monthCard} locale={props.locale} t={props.t} onOpen={props.onOpenStats} />
+      )}
 
       {props.home?.echo == null ? null : (
         <EchoFromPast
@@ -276,6 +282,45 @@ function EchoFromPast(props: {
       </View>
       <AppText variant="body" numberOfLines={2} style={{ fontSize: 16, lineHeight: 23 }}>
         {props.entry.cleanTranscript}
+      </AppText>
+    </Pressable>
+  );
+}
+
+/**
+ * The drawing's first-days card: the previous month's piece is ready, and
+ * home says so once — panel-dark, the month's own name, a lime way in.
+ */
+function MonthReadyCard(props: {
+  readonly month: Date;
+  readonly locale: Locale;
+  readonly t: Translate;
+  readonly onOpen: () => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const monthName = props.month.toLocaleDateString(props.locale, { month: 'long' });
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={props.onOpen}
+      style={{
+        borderRadius: 22,
+        backgroundColor: theme.palette.panel,
+        paddingVertical: 20,
+        paddingHorizontal: 22,
+        marginBottom: 20,
+        gap: 10,
+      }}
+    >
+      <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.6 }}>
+        {props.t('stats.monthLabel')}
+      </AppText>
+      <AppText variant="kicker" style={{ color: theme.palette.onPanel, fontSize: 21 }}>
+        {props.t('stats.monthTitle', { month: monthName })}
+      </AppText>
+      <AppText variant="secondary" style={{ color: theme.palette.lime }}>
+        {`${props.t('home.monthCta')} ›`}
       </AppText>
     </Pressable>
   );

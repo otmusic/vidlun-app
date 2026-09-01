@@ -2,6 +2,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { WeekSummary } from '@/application/use-cases/GetWeekSummary';
+import type { MonthSummary } from '@/application/use-cases/GetMonthSummary';
 import type { MoodPattern } from '@/application/use-cases/FindMoodPatterns';
 import type { Theme } from '@/application/use-cases/GetWeekThemes';
 import { countedKey } from '@/i18n/plural';
@@ -36,6 +37,11 @@ export interface StatsView {
   readonly themes: readonly Theme[];
   /** Widest gap first. The card shows one; the rest are only counted. */
   readonly patterns: readonly MoodPattern[];
+  /**
+   * The previous month's piece, present only in a new month's first days on
+   * this week's view — an event, not furniture beside the fresher week.
+   */
+  readonly month: MonthSummary | null;
   /** How many weeks back this is. Zero is the current one. */
   readonly weeksBack: number;
   /** False when nothing was ever written before this week. */
@@ -99,6 +105,15 @@ export function StatsScreen(props: {
           </AppText>
           <Chart week={view.week} locale={props.locale} onOpenDay={props.onOpenDay} />
           <Count count={view.week.entryCount} locale={props.locale} t={t} />
+          {view.month === null ? null : (
+            <MonthPanel
+              month={view.month}
+              locale={props.locale}
+              t={t}
+              hasNarrativeAccess={view.hasNarrativeAccess}
+              onOpenSubscription={props.onOpenSubscription}
+            />
+          )}
           <Narrative
             view={view}
             locale={props.locale}
@@ -124,6 +139,97 @@ export function StatsScreen(props: {
         </>
       )}
     </ScrollView>
+  );
+}
+
+/**
+ * The previous month written back — the weekly panel's longer breath, in the
+ * same dark clothes so it reads as the same voice. Three states from the
+ * drawing: the text, the writing ghosts, and the locked lead for the unpaid.
+ */
+function MonthPanel(props: {
+  readonly month: MonthSummary;
+  readonly locale: Locale;
+  readonly t: Translate;
+  readonly hasNarrativeAccess: boolean;
+  readonly onOpenSubscription: () => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const monthName = props.month.monthStart.toLocaleDateString(props.locale, { month: 'long' });
+  const paragraphs = (props.month.narrative ?? '')
+    .split('\n')
+    .filter((line) => line.trim().length > 0);
+
+  return (
+    <View
+      style={{
+        borderRadius: 22,
+        backgroundColor: theme.palette.panel,
+        padding: 24,
+        marginBottom: 14,
+        gap: 10,
+      }}
+    >
+      <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.6 }}>
+        {props.t('stats.monthLabel')}
+      </AppText>
+      <AppText variant="kicker" style={{ color: theme.palette.onPanel, fontSize: 23 }}>
+        {props.t('stats.monthTitle', { month: monthName })}
+      </AppText>
+      {props.hasNarrativeAccess ? (
+        props.month.narrative === null ? (
+          <View style={{ gap: 9 }}>
+            <AppText variant="body" style={{ color: theme.palette.onPanel, opacity: 0.65 }}>
+              {props.t('stats.proseWriting')}
+            </AppText>
+            {(['100%', '86%', '62%'] as const).map((width) => (
+              <View
+                key={width}
+                style={{
+                  height: 15,
+                  width,
+                  borderRadius: 7,
+                  backgroundColor: 'rgba(255,255,255,0.10)',
+                }}
+              />
+            ))}
+          </View>
+        ) : (
+          paragraphs.map((paragraph) => (
+            <AppText key={paragraph} variant="quote" style={{ color: theme.palette.onPanel }}>
+              {paragraph}
+            </AppText>
+          ))
+        )
+      ) : (
+        <View style={{ gap: 9 }}>
+          <AppText variant="quote" style={{ color: theme.palette.onPanel }}>
+            {props.t('stats.monthLockedLead')}
+          </AppText>
+          {(['100%', '78%'] as const).map((width) => (
+            <View
+              key={width}
+              style={{
+                height: 15,
+                width,
+                borderRadius: 7,
+                backgroundColor: 'rgba(255,255,255,0.10)',
+              }}
+            />
+          ))}
+          <Pressable
+            accessibilityRole="button"
+            onPress={props.onOpenSubscription}
+            hitSlop={8}
+            style={{ paddingTop: 6 }}
+          >
+            <AppText variant="body" style={{ color: theme.palette.lime }}>
+              {`${props.t('stats.readAll')} ›`}
+            </AppText>
+          </Pressable>
+        </View>
+      )}
+    </View>
   );
 }
 

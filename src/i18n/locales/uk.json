@@ -336,5 +336,9 @@
   "ground.quit": "Вийти",
   "ground.endLine": "Все це було поруч.",
   "ground.endFact": "Нічого з цього не збережено — ні слів, ні голосу, ні запису в щоденнику.",
-  "home.echoPast": "Місяць тому цього дня"
+  "home.echoPast": "Місяць тому цього дня",
+  "stats.monthLabel": "Місяць",
+  "stats.monthTitle": "Твій {{month}}",
+  "stats.monthLockedLead": "Vidlun написав про цей місяць.",
+  "home.monthCta": "Читати"
 }

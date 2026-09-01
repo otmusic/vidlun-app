@@ -21,6 +21,7 @@ import type { ReviseEntry } from '@/application/use-cases/ReviseEntry';
 import type { WriteObservation } from '@/application/use-cases/WriteObservation';
 import { MoodEntry, type EntryEdits } from '@/domain/entities/MoodEntry';
 import type { LegalDocumentKind } from '@/i18n/legal';
+import type { GetMonthSummary } from '@/application/use-cases/GetMonthSummary';
 import type { StatsView } from '@/presentation/screens/StatsScreen';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
@@ -141,6 +142,7 @@ export interface CaptureDependencies {
   readonly asksFirst: boolean;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
+  readonly getMonthSummary: GetMonthSummary;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
   readonly searchEntries: SearchEntries;
@@ -157,6 +159,8 @@ export interface CaptureDependencies {
 export interface CaptureFlow {
   readonly stage: CaptureStage;
   readonly home: HomeView | null;
+  /** The month being offered on home's first-days card, or null off-season. */
+  readonly monthCard: Date | null;
   readonly startRecording: () => void;
   readonly stopRecording: () => void;
   readonly cancel: () => void;
@@ -348,6 +352,7 @@ export function whenAnalysisLands(
 export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [stage, setStage] = useState<CaptureStage>({ kind: 'idle' });
   const [home, setHome] = useState<HomeView | null>(null);
+  const [monthCard, setMonthCard] = useState<Date | null>(null);
   const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
   /** Whether the person has declined Vidlun's remaining words on this card. */
   const [keptMine, setKeptMine] = useState(false);
@@ -368,7 +373,25 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         // A missing recent list is not worth blocking the capture path over.
         setHome(null);
       });
-  }, [getHomeView]);
+
+    /*
+     * The first-days card: shown while the previous month's piece is fresh
+     * and that month held enough to write about. The shape only — no prose
+     * is paid for from the home screen.
+     */
+    if (dependencies.getMonthSummary.isFresh()) {
+      void dependencies.getMonthSummary
+        .execute({ withNarrative: false })
+        .then((month) => {
+          setMonthCard(month.hasEnough ? month.monthStart : null);
+        })
+        .catch(() => {
+          setMonthCard(null);
+        });
+    } else {
+      setMonthCard(null);
+    }
+  }, [dependencies.getMonthSummary, getHomeView]);
 
   useEffect(reloadHome, [reloadHome]);
 
@@ -492,6 +515,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
       const containing = weeksAgo(dependencies.clock.now(), weeksBack);
 
+      const monthIsFresh = weeksBack === 0 && dependencies.getMonthSummary.isFresh();
+
       void dependencies.getWeekSummary
         /*
          * Without the narrative first: everything else on the screen is read
@@ -502,7 +527,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
          */
         .execute({ withNarrative: false, containing })
         .then(async (week) => {
-          const [themes, patterns, earlier] = await Promise.all([
+          const [themes, patterns, earlier, month] = await Promise.all([
             dependencies.getWeekThemes.execute({
               weekStart: week.weekStart,
               weekEnd: week.weekEnd,
@@ -519,6 +544,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
               withNarrative: false,
               containing: weeksAgo(dependencies.clock.now(), weeksBack + 1),
             }),
+            monthIsFresh
+              ? dependencies.getMonthSummary.execute({ withNarrative: false })
+              : Promise.resolve(null),
           ]);
 
           setStage((current) =>
@@ -532,6 +560,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
                     themes,
                     patterns,
                     weeksBack,
+                    month: month !== null && month.hasEnough ? month : null,
                     hasEarlierWeek: earlier.entryCount > 0,
                     hasNarrativeAccess: dependencies.hasNarrativeAccess,
                   },
@@ -540,14 +569,23 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           );
 
           if (dependencies.hasNarrativeAccess) {
-            const withProse = await dependencies.getWeekSummary.execute({
-              withNarrative: true,
-              containing,
-            });
+            const [withProse, monthProse] = await Promise.all([
+              dependencies.getWeekSummary.execute({ withNarrative: true, containing }),
+              monthIsFresh && month !== null && month.hasEnough
+                ? dependencies.getMonthSummary.execute({ withNarrative: true })
+                : Promise.resolve(null),
+            ]);
 
             setStage((current) =>
               current.kind === 'stats' && current.weeksBack === weeksBack && current.view !== null
-                ? { ...current, view: { ...current.view, week: withProse } }
+                ? {
+                    ...current,
+                    view: {
+                      ...current.view,
+                      week: withProse,
+                      month: monthProse ?? current.view.month,
+                    },
+                  }
                 : current,
             );
           }
@@ -644,6 +682,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
   return {
     stage,
+    monthCard,
     home,
     startRecording,
     stopRecording: useCallback(() => {

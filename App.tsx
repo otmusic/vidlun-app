@@ -164,6 +164,7 @@ function Vidlun(props: {
     asksFirst: props.settings.asksFirst,
     getHomeView: container.getHomeView,
     getWeekSummary: container.getWeekSummary,
+    getMonthSummary: container.getMonthSummary,
     getWeekThemes: container.getWeekThemes,
     findMoodPatterns: container.findMoodPatterns,
     searchEntries: container.searchEntries,

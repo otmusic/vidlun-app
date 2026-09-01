@@ -27,10 +27,12 @@ export class CachedNarrativeGenerator implements INarrativeGenerator {
   constructor(
     private readonly inner: INarrativeGenerator,
     private readonly store: IKeyValueStore,
+    /** Derives the row's key; the default is the entries' week. */
+    private readonly keyOf: (entries: readonly MoodEntry[]) => string | null = weekKeyFor,
   ) {}
 
   async generate(entries: readonly MoodEntry[]): Promise<string> {
-    const key = keyFor(entries);
+    const key = this.keyOf(entries);
 
     if (key === null) {
       return this.inner.generate(entries);
@@ -55,11 +57,22 @@ export class CachedNarrativeGenerator implements INarrativeGenerator {
   }
 }
 
+/** One row per month, beside the weekly rows under the same prefix. */
+export function monthKeyFor(entries: readonly MoodEntry[]): string | null {
+  const first = entries[0];
+
+  if (first === undefined) {
+    return null;
+  }
+
+  return `${NARRATIVE_KEY_PREFIX}month.${first.createdAt.getFullYear()}-${first.createdAt.getMonth() + 1}`;
+}
+
 /**
  * The week the entries fall in. Null for an empty list, which has no week and
  * nothing to say about one.
  */
-function keyFor(entries: readonly MoodEntry[]): string | null {
+function weekKeyFor(entries: readonly MoodEntry[]): string | null {
   const first = entries[0];
 
   if (first === undefined) {

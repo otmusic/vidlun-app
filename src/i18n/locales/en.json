@@ -336,5 +336,9 @@
   "ground.quit": "Leave",
   "ground.endLine": "All of it was right here.",
   "ground.endFact": "None of it is saved — no words, no voice, no entry in the journal.",
-  "home.echoPast": "A month ago today"
+  "home.echoPast": "A month ago today",
+  "stats.monthLabel": "The month",
+  "stats.monthTitle": "Your {{month}}",
+  "stats.monthLockedLead": "Vidlun has written about this month.",
+  "home.monthCta": "Read"
 }

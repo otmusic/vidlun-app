@@ -6,22 +6,37 @@ import { NARRATIVE_MODEL, readText, type MessagesClient } from './claudeModels';
 /** Two or three sentences on the insights screen; anything longer is not read. */
 const MAX_TOKENS = 1024;
 
-const SYSTEM_PROMPT = `You write the weekly summary in a voice journal.
+/** Which stretch of time the voice is writing about. */
+export type NarrativeSpan = 'week' | 'month';
+
+const PROMPTS: Record<NarrativeSpan, string> = {
+  week: `You write the weekly summary in a voice journal.
 
 Two or three sentences, in the language the entries are written in. Say what the week looked like from the outside: when the good days fell, what came up again and again, what changed between the start and the end.
 
 Notice, do not interpret. You may say "calm came more often in the mornings, tension on working evenings". You may not tell the person what it means about them, what they should do about it, or how well they handled it. No diagnosis, no advice, no praise, no encouragement.
 
-If the week is too thin to say anything true about, say that plainly in one sentence rather than inventing a pattern.`;
+If the week is too thin to say anything true about, say that plainly in one sentence rather than inventing a pattern.`,
+  month: `You write the monthly summary in a voice journal.
+
+Three or four sentences, in the language the entries are written in. Say what the month looked like from the outside: how it moved from its start to its end, what kept returning, which weeks stood apart and how.
+
+Notice, do not interpret. You may say "the first half sounded heavier, and work came up in most of the tired entries". You may not tell the person what it means about them, what they should do about it, or how well they handled it. No diagnosis, no advice, no praise, no encouragement.
+
+If the month is too thin to say anything true about, say that plainly in one sentence rather than inventing a pattern.`,
+};
 
 export class ClaudeNarrativeGenerator implements INarrativeGenerator {
-  constructor(private readonly messages: MessagesClient) {}
+  constructor(
+    private readonly messages: MessagesClient,
+    private readonly span: NarrativeSpan = 'week',
+  ) {}
 
   async generate(entries: readonly MoodEntry[]): Promise<string> {
     const message = await this.messages.create({
       model: NARRATIVE_MODEL,
       max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
+      system: PROMPTS[this.span],
       // Three sentences of observation need no deliberation, and the user is
       // waiting on the insights screen while this runs.
       thinking: { type: 'disabled' },
