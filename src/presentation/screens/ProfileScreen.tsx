@@ -46,6 +46,8 @@ export function ProfileScreen(props: {
   readonly onChange: (settings: Settings) => void;
   readonly entitlement: Entitlement;
   readonly onOpenSubscription: () => void;
+  /** Hands one export file to the share sheet; null label means nothing yet. */
+  readonly onExport: (shape: 'backup' | 'markdown') => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { settings, t } = props;
@@ -126,6 +128,37 @@ export function ProfileScreen(props: {
       </Section>
 
       <Theme settings={settings} t={t} onChange={props.onChange} />
+
+      {/*
+        The paywall's free-forever list promises backup; this is where the
+        promise is kept. Two shapes on purpose: the JSON file is the copy
+        that comes back, the markdown one is for reading somewhere else.
+        No drawing exists for this section yet — it wears Row like the rest.
+      */}
+      <Section label={t('profile.data')}>
+        <Row
+          title={t('profile.backup')}
+          hint={t('profile.backupHint')}
+          onPress={() => {
+            props.onExport('backup');
+          }}
+        >
+          <AppText variant="body" color="inkFaint">
+            ›
+          </AppText>
+        </Row>
+        <Row
+          title={t('profile.exportMd')}
+          hint={t('profile.exportMdHint')}
+          onPress={() => {
+            props.onExport('markdown');
+          }}
+        >
+          <AppText variant="body" color="inkFaint">
+            ›
+          </AppText>
+        </Row>
+      </Section>
 
       <Section label={t('profile.audio')}>
         <Row

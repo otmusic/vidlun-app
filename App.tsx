@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAudioRecorder } from 'expo-audio';
@@ -9,6 +10,7 @@ import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOption
 import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
 import { entitlementOf, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
+import { emotionKey } from '@/i18n';
 import { DEFAULT_SETTINGS, type Settings } from '@/domain/ports/ISettings';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import { SPEECH_MODEL, SpeechModelStore } from '@/infrastructure/transcription/SpeechModelStore';
@@ -219,6 +221,38 @@ function Vidlun(props: {
     t,
   ]);
 
+  /*
+   * The whole journal as a file in the person's hand. Built here because it
+   * needs the container and the translator at once, and the profile screen
+   * needs neither — it only says which of the two shapes was asked for.
+   */
+  const exportJournal = useCallback(
+    (shape: 'backup' | 'markdown') => {
+      void (async () => {
+        const journal = await container.exportJournal.execute({
+          labelOf: (id) => t(emotionKey(id)),
+          dayOf: (date) =>
+            date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }),
+          timeOf: (date) => date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+        });
+
+        if (journal.entryCount === 0) {
+          Alert.alert(t('profile.exportEmpty'));
+
+          return;
+        }
+
+        const day = container.clock.now().toISOString().slice(0, 10);
+
+        await container.fileSharer.share(
+          shape === 'backup' ? `vidlun-backup-${day}.json` : `vidlun-journal-${day}.md`,
+          shape === 'backup' ? journal.json : journal.markdown,
+        );
+      })();
+    },
+    [container, locale, t],
+  );
+
   if (!props.settings.hasOnboarded) {
     return (
       <OnboardingScreen
@@ -240,6 +274,7 @@ function Vidlun(props: {
       settings={props.settings}
       onSettingsChange={changeSettings}
       entitlement={entitlement}
+      onExport={exportJournal}
     />
   );
 }

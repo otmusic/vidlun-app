@@ -30,7 +30,11 @@ import type { IMicrophonePermission } from '../domain/ports/IMicrophonePermissio
 import type { IPurchases, PurchaseOutcome } from '../domain/ports/IPurchases';
 import type { IReminders } from '../domain/ports/IReminders';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
+import type { IFileSharer } from '../domain/ports/IFileSharer';
+import { ExportJournal } from '../application/use-cases/ExportJournal';
 import { ProxyAuth, attestedFetch } from '../infrastructure/attest/ProxyAuth';
+import { ShareSheetFileSharer } from '../infrastructure/files/ShareSheetFileSharer';
+import { JournalCodec } from '../infrastructure/persistence/JournalCodec';
 import { CachedNarrativeGenerator } from '../infrastructure/analysis/CachedNarrativeGenerator';
 import { ClaudeNarrativeGenerator } from '../infrastructure/analysis/ClaudeNarrativeGenerator';
 import { ClaudeObservationWriter } from '../infrastructure/analysis/ClaudeObservationWriter';
@@ -84,6 +88,8 @@ export interface Container {
   readonly purchases: IPurchases;
   readonly reminders: IReminders;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
+  readonly exportJournal: ExportJournal;
+  readonly fileSharer: IFileSharer;
   readonly microphonePermission: IMicrophonePermission;
   readonly haptics: IHaptics;
   readonly vocabulary: EmotionVocabulary;
@@ -208,6 +214,8 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     reminders: new ExpoReminders(),
     purchases: purchasesFor(readRevenueCatKey()),
     getVocabularyGrowth: new GetVocabularyGrowth(repository, vocabulary, clock),
+    exportJournal: new ExportJournal(repository, new JournalCodec(), clock),
+    fileSharer: new ShareSheetFileSharer(),
     microphonePermission: new ExpoMicrophonePermission({
       getRecordingPermissionsAsync,
       requestRecordingPermissionsAsync,

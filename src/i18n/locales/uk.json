@@ -296,5 +296,11 @@
   "settings.asksFirstOff": "Vidlun одразу показує своє слово",
   "stats.narrLockedLead": "Vidlun написав про цей тиждень.",
   "stats.trialLine": "Тижневий наратив живе в підписці. Решта Vidlun — безкоштовна.",
-  "record.nearEnd": "Лишається {{n}} с"
+  "record.nearEnd": "Лишається {{n}} с",
+  "profile.data": "Дані",
+  "profile.backup": "Резервна копія",
+  "profile.backupHint": "Один файл з усіма записами. Поклади в надійне місце.",
+  "profile.exportMd": "Експорт для читання",
+  "profile.exportMdHint": "Текстовий файл, який відкриє будь-який редактор.",
+  "profile.exportEmpty": "Ще нема чого зберігати — щоденник порожній."
 }

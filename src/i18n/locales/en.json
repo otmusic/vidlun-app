@@ -296,5 +296,11 @@
   "settings.asksFirstOff": "Vidlun shows its own word right away",
   "stats.narrLockedLead": "Vidlun has written about this week.",
   "stats.trialLine": "The weekly narrative lives in the subscription. The rest of Vidlun is free.",
-  "record.nearEnd": "{{n}} s left"
+  "record.nearEnd": "{{n}} s left",
+  "profile.data": "Your data",
+  "profile.backup": "Backup",
+  "profile.backupHint": "One file with every entry. Keep it somewhere safe.",
+  "profile.exportMd": "Readable export",
+  "profile.exportMdHint": "A text file any editor can open.",
+  "profile.exportEmpty": "Nothing to save yet — the journal is empty."
 }
