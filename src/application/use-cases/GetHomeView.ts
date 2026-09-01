@@ -13,6 +13,12 @@ export interface HomeView {
    * and a Monday would reset it to almost nothing every seven days.
    */
   readonly week: readonly DailyMood[];
+  /**
+   * The entry written a month ago today, if one exists — the day's last one,
+   * its freshest words. Null on most days, which is what keeps the card an
+   * event rather than furniture.
+   */
+  readonly echo: MoodEntry | null;
 }
 
 /** A streak longer than this stops being a number anyone reads. */
@@ -28,16 +34,37 @@ export class GetHomeView {
 
   async execute(recentLimit: number): Promise<HomeView> {
     const today = startOfDay(this.clock.now());
-    const [recentEntries, window] = await Promise.all([
+    const [recentEntries, window, echo] = await Promise.all([
       this.repository.findRecent(recentLimit),
       this.repository.findBetween(addDays(today, -STREAK_WINDOW_DAYS), addDays(today, 1)),
+      this.findEcho(today),
     ]);
 
     return {
       recentEntries,
       streakDays: countStreak(window, today),
       week: buildWeek(window, today),
+      echo,
     };
+  }
+
+  /**
+   * A calendar month back, same day of the month. On days the previous month
+   * never had — the 31st of March looking for the 31st of February — there is
+   * honestly no "a month ago today", and the answer is silence rather than
+   * the nearest neighbour.
+   */
+  private async findEcho(today: Date): Promise<MoodEntry | null> {
+    const target = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+
+    if (target.getDate() !== today.getDate()) {
+      return null;
+    }
+
+    const thatDay = await this.repository.findBetween(target, addDays(target, 1));
+
+    // Newest first from the repository; the day's last entry speaks for it.
+    return thatDay[0] ?? null;
   }
 }
 

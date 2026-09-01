@@ -115,3 +115,48 @@ describe('GetHomeView week strip', () => {
     expect(view.week[6]?.averageMood).toBe(3);
   });
 });
+
+describe('the echo from a month ago', () => {
+  it('hands back the entry written a month ago today', async () => {
+    const useCase = await setup([entryOn(new Date(2026, 6, 1, 21, 0))]);
+
+    const view = await useCase.execute(3);
+
+    expect(view.echo?.createdAt).toEqual(new Date(2026, 6, 1, 21, 0));
+  });
+
+  it("lets the day's last entry speak for it", async () => {
+    const useCase = await setup([
+      entryOn(new Date(2026, 6, 1, 9, 0)),
+      entryOn(new Date(2026, 6, 1, 22, 15)),
+    ]);
+
+    const view = await useCase.execute(3);
+
+    expect(view.echo?.createdAt.getHours()).toBe(22);
+  });
+
+  it('stays silent on a day the previous month never had', async () => {
+    const repository = new InMemoryMoodEntryRepository();
+
+    // 31 July exists; 31 June does not. Looking from 31 July at "a month
+    // ago" must not slide to 1 July or 30 June.
+    await repository.save(entryOn(new Date(2026, 6, 1, 9, 0)));
+    await repository.save(entryOn(new Date(2026, 5, 30, 9, 0)));
+
+    const view = await new GetHomeView(
+      repository,
+      new FixedClock(new Date(2026, 6, 31, 10, 0)),
+    ).execute(3);
+
+    expect(view.echo).toBeNull();
+  });
+
+  it('stays silent when that day simply held nothing', async () => {
+    const useCase = await setup([entryOn(new Date(2026, 6, 2, 9, 0))]);
+
+    const view = await useCase.execute(3);
+
+    expect(view.echo).toBeNull();
+  });
+});

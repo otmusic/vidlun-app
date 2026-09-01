@@ -2,7 +2,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
-import type { Locale, Translate } from '@/i18n';
+import { emotionKey, type Locale, type Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
@@ -11,6 +11,7 @@ import { RecordButton } from '../components/RecordButton';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 
 import { WeekStrip } from '../components/WeekStrip';
+import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
 
 export interface HomeScreenProps {
@@ -124,6 +125,15 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         </Pressable>
       </View>
 
+      {props.home?.echo == null ? null : (
+        <EchoFromPast
+          entry={props.home.echo}
+          vocabulary={props.vocabulary}
+          t={props.t}
+          onOpen={props.onOpen}
+        />
+      )}
+
       <View style={{ gap: 12 }}>
         <View
           style={{
@@ -205,4 +215,68 @@ function StreakPill(props: { readonly days: number; readonly label: string }): R
 
 function formatToday(locale: Locale): string {
   return new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/**
+ * The drawing's echo card: three dots fading like a sound dying away, the
+ * marker, the old entry's own words. Most days it is simply not there —
+ * which is what makes the day it appears feel like being remembered.
+ */
+function EchoFromPast(props: {
+  readonly entry: MoodEntry;
+  readonly vocabulary: EmotionVocabulary;
+  readonly t: Translate;
+  readonly onOpen: (entry: MoodEntry) => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const first = props.entry.emotionIds[0];
+  const emotion = first === undefined ? undefined : props.vocabulary.find(first);
+  const colour =
+    emotion === undefined
+      ? theme.palette.line
+      : colorForEmotion(props.vocabulary, emotion, theme.isDark ? 'dark' : 'light');
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => {
+        props.onOpen(props.entry);
+      }}
+      style={{
+        borderWidth: 1,
+        borderColor: theme.palette.line,
+        borderRadius: 22,
+        paddingVertical: 18,
+        paddingHorizontal: 20,
+        marginBottom: 20,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <View style={{ width: 7, height: 7, borderRadius: 7, backgroundColor: colour }} />
+          <View
+            style={{ width: 5, height: 5, borderRadius: 5, backgroundColor: colour, opacity: 0.55 }}
+          />
+          <View
+            style={{ width: 3, height: 3, borderRadius: 3, backgroundColor: colour, opacity: 0.3 }}
+          />
+        </View>
+        <AppText variant="caption" color="inkFaint">
+          {props.t('home.echoPast')}
+        </AppText>
+        {first === undefined ? null : (
+          <AppText
+            variant="secondary"
+            numberOfLines={1}
+            style={{ fontSize: 13, color: colour, marginLeft: 'auto', flexShrink: 1 }}
+          >
+            {props.t(emotionKey(first))}
+          </AppText>
+        )}
+      </View>
+      <AppText variant="body" numberOfLines={2} style={{ fontSize: 16, lineHeight: 23 }}>
+        {props.entry.cleanTranscript}
+      </AppText>
+    </Pressable>
+  );
 }

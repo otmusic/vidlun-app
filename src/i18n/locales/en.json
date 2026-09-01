@@ -335,5 +335,6 @@
   "ground.next": "Next",
   "ground.quit": "Leave",
   "ground.endLine": "All of it was right here.",
-  "ground.endFact": "None of it is saved — no words, no voice, no entry in the journal."
+  "ground.endFact": "None of it is saved — no words, no voice, no entry in the journal.",
+  "home.echoPast": "A month ago today"
 }
