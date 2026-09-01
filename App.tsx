@@ -26,6 +26,12 @@ import { OnboardingScreen } from '@/presentation/screens/OnboardingScreen';
 import { Screen } from '@/presentation/screens/Screen';
 import { ThemeProvider, useTheme } from '@/presentation/theme/ThemeProvider';
 
+/**
+ * How long an absence stays forgiven. Under a minute is answering a message;
+ * over it, the phone has plausibly changed hands.
+ */
+const RELOCK_AFTER_MS = 60_000;
+
 interface Wiring {
   readonly container?: Container;
   readonly failure?: string;
@@ -285,11 +291,15 @@ function Vidlun(props: {
   }, [container, t]);
 
   /*
-   * The door. Locked whenever the app comes to the foreground with the lock
-   * switched on; opened by one system prompt. Backgrounding relocks — a
-   * journal left open on a table is exactly what the lock is for.
+   * The door. The relock decision happens on the way back in, not on the way
+   * out: asking the system for Face ID while the app is still in the
+   * background gets silently refused, which is how the door once showed a
+   * button instead of a prompt. A short absence does not relock at all —
+   * stepping out to answer a message and coming straight back is not the
+   * situation the lock exists for.
    */
   const [unlocked, setUnlocked] = useState(!props.settings.appLock);
+  const leftAt = useRef<number | null>(null);
   const tryUnlock = useCallback(() => {
     void container.screenLock.unlock(t('lock.reason')).then(setUnlocked);
   }, [container.screenLock, t]);
@@ -303,7 +313,19 @@ function Vidlun(props: {
 
     const watch = AppState.addEventListener('change', (state) => {
       if (state === 'background') {
-        setUnlocked(false);
+        leftAt.current = Date.now();
+
+        return;
+      }
+
+      if (state === 'active' && leftAt.current !== null) {
+        const awayMs = Date.now() - leftAt.current;
+
+        leftAt.current = null;
+
+        if (awayMs > RELOCK_AFTER_MS) {
+          setUnlocked(false);
+        }
       }
     });
 
@@ -429,18 +451,8 @@ function PrivacyCurtain(): React.JSX.Element | null {
     <BlurView
       intensity={60}
       tint={theme.isDark ? 'dark' : 'light'}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <AppText variant="display">Vidlun</AppText>
-    </BlurView>
+      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+    />
   );
 }
 
@@ -451,9 +463,24 @@ function LockedDoor(props: {
 }): React.JSX.Element {
   const { onUnlock } = props;
 
-  // Asks as soon as the door appears: the person opened the app, and that is
-  // the request. The button below is for a dismissed prompt.
-  useEffect(onUnlock, [onUnlock]);
+  /*
+   * Asks as soon as the door appears, and again whenever the app returns to
+   * the foreground while it is still shut: opening the app is the request.
+   * The button below is only for a prompt someone dismissed by hand.
+   */
+  useEffect(() => {
+    onUnlock();
+
+    const watch = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        onUnlock();
+      }
+    });
+
+    return () => {
+      watch.remove();
+    };
+  }, [onUnlock]);
 
   return (
     <Screen centered>
