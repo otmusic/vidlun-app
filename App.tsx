@@ -1,4 +1,5 @@
 import { Alert, AppState, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAudioRecorder } from 'expo-audio';
@@ -66,6 +67,7 @@ export default function App() {
           model={model}
         />
       )}
+        <PrivacyCurtain />
         <ThemedStatusBar />
       </ThemeProvider>
     </GestureHandlerRootView>
@@ -397,6 +399,49 @@ function useTranscription(locale: Locale, model: SpeechModelState): ITranscripti
 
     return new OnDeviceTranscriptionService(open, () => locale);
   }, [locale, model, typed]);
+}
+
+/**
+ * The curtain over the app-switcher snapshot. iOS photographs the screen the
+ * moment the app resigns active — before backgrounding, before any relock —
+ * so whatever is on screen at that instant is what strangers flip past in
+ * the switcher. This blurs it, the way a journal deserves.
+ */
+function PrivacyCurtain(): React.JSX.Element | null {
+  const theme = useTheme();
+  const [resting, setResting] = useState(AppState.currentState !== 'active');
+
+  useEffect(() => {
+    const watch = AppState.addEventListener('change', (state) => {
+      setResting(state !== 'active');
+    });
+
+    return () => {
+      watch.remove();
+    };
+  }, []);
+
+  if (!resting) {
+    return null;
+  }
+
+  return (
+    <BlurView
+      intensity={60}
+      tint={theme.isDark ? 'dark' : 'light'}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <AppText variant="display">Vidlun</AppText>
+    </BlurView>
+  );
 }
 
 /** The one screen shown while the journal is shut. */
