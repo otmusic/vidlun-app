@@ -89,6 +89,17 @@ export function StatsScreen(props: {
         onForward={props.onLaterWeek}
       />
 
+      {view === null || view.month === null ? null : (
+        <View style={{ marginTop: 26 }}>
+          <MonthPanel
+            month={view.month}
+            locale={props.locale}
+            t={t}
+            hasNarrativeAccess={view.hasNarrativeAccess}
+            onOpenSubscription={props.onOpenSubscription}
+          />
+        </View>
+      )}
       {view === null ? null : view.week.entryCount === 0 ? (
         /* A quiet week is its own screen in the drawing, not an empty card. */
         <View style={{ marginTop: 44, gap: 26, alignItems: 'flex-start' }}>
@@ -105,15 +116,6 @@ export function StatsScreen(props: {
           </AppText>
           <Chart week={view.week} locale={props.locale} onOpenDay={props.onOpenDay} />
           <Count count={view.week.entryCount} locale={props.locale} t={t} />
-          {view.month === null ? null : (
-            <MonthPanel
-              month={view.month}
-              locale={props.locale}
-              t={t}
-              hasNarrativeAccess={view.hasNarrativeAccess}
-              onOpenSubscription={props.onOpenSubscription}
-            />
-          )}
           <Narrative
             view={view}
             locale={props.locale}
