@@ -1,5 +1,6 @@
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import type { INarrativeGenerator } from '../../domain/ports/INarrativeGenerator';
+import { NARRATIVE_PROMPT_VERSION } from './ClaudeNarrativeGenerator';
 import type { IKeyValueStore } from '../persistence/IKeyValueStore';
 
 // Renaming a key strands the data behind it; see ENTRY_KEY_PREFIX.
@@ -90,7 +91,7 @@ function weekKeyFor(entries: readonly MoodEntry[]): string | null {
  * changed would be worse than paying for a fresh one.
  */
 function fingerprintOf(entries: readonly MoodEntry[]): string {
-  return entries
+  return `v${NARRATIVE_PROMPT_VERSION}\n` + entries
     .map((entry) =>
       [
         entry.id,

@@ -16,15 +16,22 @@ Two or three sentences, in the language the entries are written in. Say what the
 
 Notice, do not interpret. You may say "calm came more often in the mornings, tension on working evenings". You may not tell the person what it means about them, what they should do about it, or how well they handled it. No diagnosis, no advice, no praise, no encouragement.
 
-If the week is too thin to say anything true about, say that plainly in one sentence rather than inventing a pattern.`,
+If the week is too thin to say anything true about, say so through the days themselves rather than by counting entries — open with what was said, never with how much of it there is or how hard it is to judge.`,
   month: `You write the monthly summary in a voice journal.
 
 Three or four sentences, in the language the entries are written in. Say what the month looked like from the outside: how it moved from its start to its end, what kept returning, which weeks stood apart and how.
 
 Notice, do not interpret. You may say "the first half sounded heavier, and work came up in most of the tired entries". You may not tell the person what it means about them, what they should do about it, or how well they handled it. No diagnosis, no advice, no praise, no encouragement.
 
-If the month is too thin to say anything true about, say that plainly in one sentence rather than inventing a pattern.`,
+If the month is too thin to say anything true about, say so through the days themselves rather than by counting entries — open with what was said, never with how much of it there is or how hard it is to judge.`,
 };
+
+/**
+ * Bumped whenever a prompt above changes meaningfully. The cache folds this
+ * into its fingerprint, so a new voice rewrites old rows instead of being
+ * hidden behind them.
+ */
+export const NARRATIVE_PROMPT_VERSION = 2;
 
 export class ClaudeNarrativeGenerator implements INarrativeGenerator {
   constructor(
