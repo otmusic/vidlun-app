@@ -24,6 +24,7 @@ import type { LegalDocumentKind } from '@/i18n/legal';
 import type { GetMonthSummary } from '@/application/use-cases/GetMonthSummary';
 import type { StatsView } from '@/presentation/screens/StatsScreen';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
+import { Confidence } from '@/domain/value-objects/Confidence';
 import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
 import type { IClock } from '@/domain/ports/IClock';
 import type { IPurchases, Plan, PurchaseOutcome } from '@/domain/ports/IPurchases';
@@ -440,28 +441,18 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     [dependencies.hasNarrativeAccess, dependencies.writeObservation],
   );
 
-  const analyze = useCallback(
-    (build: () => Promise<MoodEntry>) => {
-      setStage({ kind: 'processing' });
-
-      build()
-        .then((draft) => {
-          setStage({ kind: 'reflecting', proposed: draft, draft });
-          void withObservation(draft);
-        })
-        .catch(fail);
-    },
-    [fail, withObservation],
-  );
-
   /**
    * The question goes up as soon as there are words, and the analysis runs
    * behind it. Whoever finishes second decides what happens next: the person
    * waits a moment, or the model was ready before they were and nothing waits
    * at all.
+   *
+   * Spoken or typed makes no difference here: naming the feeling before
+   * seeing Vidlun's answer is the point of the question, and the words were
+   * the person's own either way.
    */
   const ask = useCallback(
-    (spoken: Spoken) => {
+    (spoken: Spoken, build: () => Promise<MoodEntry>) => {
       // Per card, not per session. Left standing it would put the last entry's
       // refusal on this one's label, and now that it is logged, in its record.
       setKeptMine(false);
@@ -474,8 +465,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           : { kind: 'processing' },
       );
 
-      dependencies.createVoiceEntry
-        .execute(spoken, backfillAt.current ?? undefined)
+      build()
         .then((draft) => {
           setStage((current) => whenAnalysisLands(current, draft, asking));
 
@@ -483,7 +473,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         })
         .catch(fail);
     },
-    [dependencies.asksFirst, dependencies.createVoiceEntry, fail, withObservation],
+    [dependencies.asksFirst, fail, withObservation],
   );
 
   /**
@@ -509,7 +499,10 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         dependencies.haptics.settle();
         takeUri.current = take.uri;
         setStage({ kind: 'processing' });
-        ask(await dependencies.transcribeTake.execute(take));
+
+        const spoken = await dependencies.transcribeTake.execute(take);
+
+        ask(spoken, () => dependencies.createVoiceEntry.execute(spoken, backfillAt.current ?? undefined));
       })
       .catch(fail);
   }, [ask, dependencies, fail]);
@@ -715,9 +708,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     submitText: useCallback(
       (text: string) => {
         takeUri.current = null;
-        analyze(() => dependencies.createTextEntry.execute(text, backfillAt.current ?? undefined));
+        // Full confidence for the same reason CreateTextEntry grants it:
+        // nothing was heard, so nothing was misheard.
+        ask({ text: text.trim(), confidence: Confidence.of(1) }, () =>
+          dependencies.createTextEntry.execute(text, backfillAt.current ?? undefined),
+        );
       },
-      [analyze, dependencies.createTextEntry],
+      [ask, dependencies.createTextEntry],
     ),
     beginEditing: useCallback(() => {
       setStage((current) =>
