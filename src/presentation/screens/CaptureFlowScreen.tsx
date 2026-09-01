@@ -19,6 +19,7 @@ import { CompareScreen } from './CompareScreen';
 import { RecordingScreen } from './RecordingScreen';
 import { TurnScreen } from './TurnScreen';
 import { ReflectionScreen } from './ReflectionScreen';
+import { GroundingScreen } from './GroundingScreen';
 import { SavedScreen } from './SavedScreen';
 import { ProfileScreen } from './ProfileScreen';
 import { SearchScreen } from './SearchScreen';
@@ -166,7 +167,18 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
       );
 
     case 'saved':
-      return <SavedScreen t={t} streakDays={flow.stage.streakDays} onHome={flow.backHome} />;
+      return (
+        <SavedScreen
+          t={t}
+          streakDays={flow.stage.streakDays}
+          offersGrounding={flow.stage.offersGrounding}
+          onGround={flow.startGrounding}
+          onHome={flow.backHome}
+        />
+      );
+
+    case 'grounding':
+      return <GroundingScreen t={t} onLeave={flow.backHome} />;
 
     case 'failed':
       return (

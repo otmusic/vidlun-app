@@ -319,5 +319,21 @@
   "lock.title": "The journal is locked",
   "lock.body": "This is your private place. It opens only to you.",
   "lock.unlock": "Unlock",
-  "lock.reason": "Open your journal"
+  "lock.reason": "Open your journal",
+  "ground.offer": "Got a minute? You can stay with what’s around you.",
+  "ground.offerFact": "None of it will be saved — no words, no voice.",
+  "ground.try": "Try it",
+  "ground.notNow": "Not now",
+  "ground.home": "To home",
+  "ground.ord1": "first of three",
+  "ground.ord2": "second of three",
+  "ground.ord3": "third of three",
+  "ground.step1": "Name five things you see",
+  "ground.step2": "Four sounds you hear",
+  "ground.step3": "Three feelings on your skin",
+  "ground.hint": "Out loud or in a whisper. You can tap a circle instead of a word.",
+  "ground.next": "Next",
+  "ground.quit": "Leave",
+  "ground.endLine": "All of it was right here.",
+  "ground.endFact": "None of it is saved — no words, no voice, no entry in the journal."
 }

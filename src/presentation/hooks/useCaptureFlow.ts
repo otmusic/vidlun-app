@@ -55,7 +55,18 @@ export type CaptureStage =
     }
   | { readonly kind: 'reflecting'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
   | { readonly kind: 'editing'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
-  | { readonly kind: 'saved'; readonly streakDays: number }
+  | {
+      readonly kind: 'saved';
+      readonly streakDays: number;
+      /**
+       * True when the entry sounded overwhelmed — distress, never crisis —
+       * and the saved screen offers a minute of grounding. The drawing gates
+       * it the same way: `hard && !crisis`.
+       */
+      readonly offersGrounding: boolean;
+    }
+  /** The grounding exercise. Keeps nothing, and must never learn to. */
+  | { readonly kind: 'grounding' }
   | { readonly kind: 'history' }
   | { readonly kind: 'settings' }
   /** The one thing sold, and what the store said about buying it. */
@@ -179,6 +190,7 @@ export interface CaptureFlow {
   readonly search: (query: string, emotionId: string | null) => void;
   readonly openSubscription: () => void;
   readonly openLegal: (doc: LegalDocumentKind) => void;
+  readonly startGrounding: () => void;
   readonly subscribe: (planId: string) => void;
   readonly restorePurchase: () => void;
   readonly dismissPurchaseOutcome: () => void;
@@ -621,7 +633,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
 
         setHome(refreshed);
-        setStage({ kind: 'saved', streakDays: refreshed.streakDays });
+        setStage({
+          kind: 'saved',
+          streakDays: refreshed.streakDays,
+          offersGrounding: draft.safetyFlag === 'distress',
+        });
       })
       .catch(fail);
   }, [dependencies, fail, keptMine, stage]);
@@ -815,6 +831,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, [dependencies.purchases, fail]),
     openLegal: useCallback((doc: LegalDocumentKind) => {
       setStage({ kind: 'legal', doc });
+    }, []),
+    startGrounding: useCallback(() => {
+      setStage({ kind: 'grounding' });
     }, []),
     subscribe: useCallback((planId: string) => {
       void dependencies.purchases
