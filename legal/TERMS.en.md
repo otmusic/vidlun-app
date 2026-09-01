@@ -2,7 +2,7 @@
 
 **Effective:** 29 August 2026
 
-**Provider:** `[LEGAL NAME]`, `[ADDRESS]`, `[EMAIL]`
+**Provider:** `[LEGAL NAME]`, `[ADDRESS]`, support@vidlun.app
 
 By installing Vidlun you agree to these terms. If you do not agree, do not use
 the app.
@@ -122,4 +122,4 @@ mandatory rules of your country of residence.
 
 ## 11. Contact
 
-`[EMAIL]`
+support@vidlun.app

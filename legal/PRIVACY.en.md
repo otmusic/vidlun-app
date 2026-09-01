@@ -4,7 +4,7 @@
 
 **Data controller:** `[LEGAL NAME]`, `[ADDRESS]`
 
-**Contact:** `[EMAIL]`
+**Contact:** support@vidlun.app
 
 ## The short version
 
@@ -107,7 +107,7 @@ control.** It is on your phone, not with us:
   you every entry as a file (data portability, right in the app).
 
 For purchase data, which is the only thing held off the phone, write to
-`[EMAIL]`; we answer within 30 days.
+support@vidlun.app; we answer within 30 days.
 
 ## 6. Transfers outside the EEA
 
@@ -126,4 +126,4 @@ the app before the change takes effect.
 
 ## 9. Contact
 
-`[EMAIL]`
+support@vidlun.app

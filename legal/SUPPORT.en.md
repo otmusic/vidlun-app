@@ -41,6 +41,6 @@ already has an entry, tonight’s reminder is deliberately skipped.
 
 ## Contact
 
-Write to `[EMAIL]` — we answer within a few days.
+Write to support@vidlun.app — we answer within a few days.
 
 [Terms of Use](./terms-en.html) · [Privacy Policy](./privacy-en.html)
