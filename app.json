@@ -2,7 +2,7 @@
   "expo": {
     "name": "Vidlun",
     "slug": "vidlun",
-    "version": "0.1.0",
+    "version": "1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -10,11 +10,13 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.vidlun.journal",
       "entitlements": {
-        "com.apple.developer.devicecheck.appattest-environment": "development"
+        "com.apple.developer.devicecheck.appattest-environment": "production"
       },
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Face ID unlocks your journal."
-      }
+        "NSFaceIDUsageDescription": "Face ID unlocks your journal.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.vidlun.journal",

@@ -19,10 +19,13 @@ const BUNDLE_IDENTIFIER = 'com.vidlun.journal';
 const TEAM_IDENTIFIER = 'M3K99W5FFQ';
 
 /**
- * Development builds attest against Apple's sandbox. True until the App
- * Store build exists; the flag stays here so turning it off is one line.
+ * Development builds attest against Apple's sandbox. Off since the release
+ * build: only production attestations register now. Flip back temporarily
+ * if a fresh dev install ever needs to register a new key — already
+ * registered dev keys keep working either way, since assertions verify
+ * against the stored public key, not the environment.
  */
-const ALLOW_DEVELOPMENT = true;
+const ALLOW_DEVELOPMENT = false;
 
 /** A challenge is asked for, used within minutes, and never reused. */
 const CHALLENGE_TTL_SECONDS = 300;
