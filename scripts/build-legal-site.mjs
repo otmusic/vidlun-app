@@ -38,7 +38,7 @@ function inline(text) {
     .replace(/`(\[[^`]+\])`/g, '<code class="slot">$1</code>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/&lt;(https?:\/\/[^&]+?)&gt;/g, '<a href="$1">$1</a>')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2">$1</a>');
+    .replace(/\[([^\]]+)\]\(((?:https?:\/\/|\.\/)[^)]+)\)/g, '<a href="$2">$1</a>');
 }
 
 function convert(markdown) {
