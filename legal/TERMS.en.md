@@ -36,6 +36,10 @@ There is no sign-up. Your entries belong to your phone, not to us. The
 consequence worth knowing: **if you lose the phone or delete the app, the
 entries are gone for good** — we hold no copy to restore them from.
 
+That is what **Backup** in your profile is for: it hands you every entry as
+one file, and the same file restores them on a new phone. Keeping that file
+somewhere safe is yours to do; we never see or hold it.
+
 ## 4. Subscription
 
 **Free forever:** recording up to one minute, transcription, the emotion names

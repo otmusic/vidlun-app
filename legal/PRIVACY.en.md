@@ -81,6 +81,9 @@ yours.
 - **Notifications** — only for the reminder you switch on yourself, at the time
   you choose. The phone schedules it itself; there is no push server, and
   nobody outside can send you a notification through Vidlun.
+- **Face ID** — only if you turn the entry lock on. iOS performs the scan in
+  the phone's secure chip; the app never sees biometric data — only the
+  answer, open or not.
 
 ## 4. Apple backups
 
@@ -99,7 +102,9 @@ control.** It is on your phone, not with us:
 
 - delete one entry — swipe it in the journal;
 - delete all audio — turn off "Keep recordings" in your profile;
-- delete everything — delete the app.
+- delete everything — delete the app;
+- take everything with you — Backup and Readable export in your profile hand
+  you every entry as a file (data portability, right in the app).
 
 For purchase data, which is the only thing held off the phone, write to
 `[EMAIL]`; we answer within 30 days.
