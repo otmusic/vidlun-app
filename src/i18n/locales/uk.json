@@ -302,5 +302,12 @@
   "profile.backupHint": "Один файл з усіма записами. Поклади в надійне місце.",
   "profile.exportMd": "Експорт для читання",
   "profile.exportMdHint": "Текстовий файл, який відкриє будь-який редактор.",
-  "profile.exportEmpty": "Ще нема чого зберігати — щоденник порожній."
+  "profile.exportEmpty": "Ще нема чого зберігати — щоденник порожній.",
+  "profile.restore": "Відновити з копії",
+  "profile.restoreHint": "Обери файл vidlun-backup — записи доллються до наявних.",
+  "profile.restoredTitle": "Відновлено",
+  "profile.restoredBody": "Нових записів: {{n}}. Уже були тут і лишились як є: {{skipped}}.",
+  "profile.restoredNothing": "Усе з цього файлу вже є в щоденнику.",
+  "profile.importBadTitle": "Файл не читається",
+  "profile.importBadBody": "Це не резервна копія Vidlun, або вона зроблена новішою версією застосунку."
 }

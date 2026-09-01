@@ -1,4 +1,5 @@
 import { ExportJournal } from '@/application/use-cases/ExportJournal';
+import { ImportJournal } from '@/application/use-cases/ImportJournal';
 import { MoodEntry } from '@/domain/entities/MoodEntry';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
@@ -107,3 +108,42 @@ describe('JournalCodec.decode', () => {
 function entryFor(id: string): MoodEntry {
   return entry(id, new Date(2026, 7, 30, 9, 0));
 }
+
+describe('ImportJournal', () => {
+  it('merges only what the journal has never seen, and says so', async () => {
+    const repository = new InMemoryMoodEntryRepository();
+    const codec = new JournalCodec();
+
+    await repository.save(entryFor('kept'));
+
+    const file = codec.encode([entryFor('kept'), entryFor('new')], NOW);
+    const outcome = await new ImportJournal(repository, codec).execute(file);
+
+    expect(outcome).toEqual({ imported: 1, skipped: 1 });
+    expect((await repository.findAll()).map((entry) => entry.id).sort()).toEqual(['kept', 'new']);
+  });
+
+  it('imports nothing twice: the second run of the same file is a no-op', async () => {
+    const repository = new InMemoryMoodEntryRepository();
+    const codec = new JournalCodec();
+    const file = codec.encode([entryFor('one')], NOW);
+    const importer = new ImportJournal(repository, codec);
+
+    await importer.execute(file);
+    const second = await importer.execute(file);
+
+    expect(second).toEqual({ imported: 0, skipped: 1 });
+    expect((await repository.findAll())).toHaveLength(1);
+  });
+
+  it('saves nothing at all from a file with one corrupt entry', async () => {
+    const repository = new InMemoryMoodEntryRepository();
+    const codec = new JournalCodec();
+    const broken = codec
+      .encode([entryFor('good'), entryFor('bad')], NOW)
+      .replace('"cleanTranscript": "Something true about the day."', '"cleanTranscript": 5');
+
+    await expect(new ImportJournal(repository, codec).execute(broken)).rejects.toThrow();
+    expect(await repository.findAll()).toHaveLength(0);
+  });
+});

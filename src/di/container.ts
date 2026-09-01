@@ -30,9 +30,12 @@ import type { IMicrophonePermission } from '../domain/ports/IMicrophonePermissio
 import type { IPurchases, PurchaseOutcome } from '../domain/ports/IPurchases';
 import type { IReminders } from '../domain/ports/IReminders';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
+import type { IFilePicker } from '../domain/ports/IFilePicker';
 import type { IFileSharer } from '../domain/ports/IFileSharer';
 import { ExportJournal } from '../application/use-cases/ExportJournal';
+import { ImportJournal } from '../application/use-cases/ImportJournal';
 import { ProxyAuth, attestedFetch } from '../infrastructure/attest/ProxyAuth';
+import { DocumentFilePicker } from '../infrastructure/files/DocumentFilePicker';
 import { ShareSheetFileSharer } from '../infrastructure/files/ShareSheetFileSharer';
 import { JournalCodec } from '../infrastructure/persistence/JournalCodec';
 import { CachedNarrativeGenerator } from '../infrastructure/analysis/CachedNarrativeGenerator';
@@ -89,7 +92,9 @@ export interface Container {
   readonly reminders: IReminders;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
   readonly exportJournal: ExportJournal;
+  readonly importJournal: ImportJournal;
   readonly fileSharer: IFileSharer;
+  readonly filePicker: IFilePicker;
   readonly microphonePermission: IMicrophonePermission;
   readonly haptics: IHaptics;
   readonly vocabulary: EmotionVocabulary;
@@ -215,7 +220,9 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     purchases: purchasesFor(readRevenueCatKey()),
     getVocabularyGrowth: new GetVocabularyGrowth(repository, vocabulary, clock),
     exportJournal: new ExportJournal(repository, new JournalCodec(), clock),
+    importJournal: new ImportJournal(repository, new JournalCodec()),
     fileSharer: new ShareSheetFileSharer(),
+    filePicker: new DocumentFilePicker(),
     microphonePermission: new ExpoMicrophonePermission({
       getRecordingPermissionsAsync,
       requestRecordingPermissionsAsync,

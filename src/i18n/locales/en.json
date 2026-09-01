@@ -302,5 +302,12 @@
   "profile.backupHint": "One file with every entry. Keep it somewhere safe.",
   "profile.exportMd": "Readable export",
   "profile.exportMdHint": "A text file any editor can open.",
-  "profile.exportEmpty": "Nothing to save yet — the journal is empty."
+  "profile.exportEmpty": "Nothing to save yet — the journal is empty.",
+  "profile.restore": "Restore from backup",
+  "profile.restoreHint": "Pick a vidlun-backup file — entries merge into what is here.",
+  "profile.restoredTitle": "Restored",
+  "profile.restoredBody": "New entries: {{n}}. Already here and left as they were: {{skipped}}.",
+  "profile.restoredNothing": "Everything in this file is already in the journal.",
+  "profile.importBadTitle": "This file cannot be read",
+  "profile.importBadBody": "It is not a Vidlun backup, or it was made by a newer version of the app."
 }

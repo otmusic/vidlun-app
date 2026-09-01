@@ -253,6 +253,34 @@ function Vidlun(props: {
     [container, locale, t],
   );
 
+  /*
+   * The backup coming home. Cancelling the picker is silence; an unreadable
+   * file is told apart from an empty result, because "nothing new" and
+   * "could not read it" call for opposite feelings.
+   */
+  const restoreJournal = useCallback(() => {
+    void (async () => {
+      try {
+        const json = await container.filePicker.pickText();
+
+        if (json === null) {
+          return;
+        }
+
+        const outcome = await container.importJournal.execute(json);
+
+        Alert.alert(
+          t('profile.restoredTitle'),
+          outcome.imported === 0
+            ? t('profile.restoredNothing')
+            : t('profile.restoredBody', { n: outcome.imported, skipped: outcome.skipped }),
+        );
+      } catch {
+        Alert.alert(t('profile.importBadTitle'), t('profile.importBadBody'));
+      }
+    })();
+  }, [container, t]);
+
   if (!props.settings.hasOnboarded) {
     return (
       <OnboardingScreen
@@ -275,6 +303,7 @@ function Vidlun(props: {
       onSettingsChange={changeSettings}
       entitlement={entitlement}
       onExport={exportJournal}
+      onRestore={restoreJournal}
     />
   );
 }

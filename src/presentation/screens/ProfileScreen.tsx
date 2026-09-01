@@ -48,6 +48,7 @@ export function ProfileScreen(props: {
   readonly onOpenSubscription: () => void;
   /** Hands one export file to the share sheet; null label means nothing yet. */
   readonly onExport: (shape: 'backup' | 'markdown') => void;
+  readonly onRestore: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { settings, t } = props;
@@ -154,6 +155,11 @@ export function ProfileScreen(props: {
             props.onExport('markdown');
           }}
         >
+          <AppText variant="body" color="inkFaint">
+            ›
+          </AppText>
+        </Row>
+        <Row title={t('profile.restore')} hint={t('profile.restoreHint')} onPress={props.onRestore}>
           <AppText variant="body" color="inkFaint">
             ›
           </AppText>

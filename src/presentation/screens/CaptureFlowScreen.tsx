@@ -39,6 +39,7 @@ export interface CaptureFlowScreenProps {
   readonly t: Translate;
   readonly entitlement: Entitlement;
   readonly onExport: (shape: 'backup' | 'markdown') => void;
+  readonly onRestore: () => void;
 }
 
 /**
@@ -190,6 +191,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           streakDays={flow.home?.streakDays ?? 0}
           settings={props.settings}
           onExport={props.onExport}
+          onRestore={props.onRestore}
           t={t}
           onChange={props.onSettingsChange}
           entitlement={props.entitlement}
