@@ -49,6 +49,8 @@ export function ProfileScreen(props: {
   /** Hands one export file to the share sheet; null label means nothing yet. */
   readonly onExport: (shape: 'backup' | 'markdown') => void;
   readonly onRestore: () => void;
+  /** Resolves false when the phone has no biometrics to lock with. */
+  readonly onEnableLock: () => Promise<boolean>;
 }): React.JSX.Element {
   const theme = useTheme();
   const { settings, t } = props;
@@ -129,6 +131,38 @@ export function ProfileScreen(props: {
       </Section>
 
       <Theme settings={settings} t={t} onChange={props.onChange} />
+
+      {/* No drawing for this section either; it wears Row like the rest. */}
+      <Section label={t('profile.security')}>
+        <Row
+          title={t('profile.appLock')}
+          hint={t(settings.appLock ? 'profile.appLockOn' : 'profile.appLockOff')}
+        >
+          <Switch
+            value={settings.appLock}
+            onValueChange={(appLock) => {
+              if (!appLock) {
+                props.onChange({ ...settings, appLock: false });
+
+                return;
+              }
+
+              /*
+               * Proven before promised: the switch flips on only after one
+               * successful unlock, so nobody locks themselves out behind a
+               * Face ID that was never set up.
+               */
+              void props.onEnableLock().then((unlocked) => {
+                if (unlocked) {
+                  props.onChange({ ...settings, appLock: true });
+                }
+              });
+            }}
+            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
+            accessibilityLabel={t('profile.appLock')}
+          />
+        </Row>
+      </Section>
 
       {/*
         The paywall's free-forever list promises backup; this is where the

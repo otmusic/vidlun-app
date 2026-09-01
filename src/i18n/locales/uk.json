@@ -309,5 +309,15 @@
   "profile.restoredBody": "Нових записів: {{n}}. Уже були тут і лишились як є: {{skipped}}.",
   "profile.restoredNothing": "Усе з цього файлу вже є в щоденнику.",
   "profile.importBadTitle": "Файл не читається",
-  "profile.importBadBody": "Це не резервна копія Vidlun, або вона зроблена новішою версією застосунку."
+  "profile.importBadBody": "Це не резервна копія Vidlun, або вона зроблена новішою версією застосунку.",
+  "profile.security": "Захист",
+  "profile.appLock": "Замок на вхід",
+  "profile.appLockOn": "Щоденник відкривається через Face ID",
+  "profile.appLockOff": "Щоденник відкривається одразу",
+  "profile.appLockUnavailableTitle": "Face ID недоступний",
+  "profile.appLockUnavailableBody": "На цьому телефоні не налаштовано Face ID або код-пароль. Спершу ввімкни їх у Параметрах iOS.",
+  "lock.title": "Щоденник замкнено",
+  "lock.body": "Це твоє приватне місце. Відкриється тільки тобі.",
+  "lock.unlock": "Розблокувати",
+  "lock.reason": "Відкрити щоденник"
 }

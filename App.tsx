@@ -1,11 +1,11 @@
-import { Alert } from 'react-native';
+import { Alert, AppState, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAudioRecorder } from 'expo-audio';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService';
 import { createContainer, type Container } from '@/di/container';
-import { createTranslator, type Locale } from '@/i18n';
+import { createTranslator, type Locale, type Translate } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
@@ -18,6 +18,7 @@ import { OnDeviceTranscriptionService } from '@/infrastructure/transcription/OnD
 import { openParakeetEngine } from '@/infrastructure/transcription/parakeetEngine';
 import { openSpeechEngine } from '@/infrastructure/transcription/whisperEngine';
 import { AppText } from '@/presentation/components/AppText';
+import { Button } from '@/presentation/components/Button';
 import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
 import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
 import { OnboardingScreen } from '@/presentation/screens/OnboardingScreen';
@@ -281,6 +282,44 @@ function Vidlun(props: {
     })();
   }, [container, t]);
 
+  /*
+   * The door. Locked whenever the app comes to the foreground with the lock
+   * switched on; opened by one system prompt. Backgrounding relocks — a
+   * journal left open on a table is exactly what the lock is for.
+   */
+  const [unlocked, setUnlocked] = useState(!props.settings.appLock);
+  const tryUnlock = useCallback(() => {
+    void container.screenLock.unlock(t('lock.reason')).then(setUnlocked);
+  }, [container.screenLock, t]);
+
+  useEffect(() => {
+    if (!props.settings.appLock) {
+      setUnlocked(true);
+
+      return;
+    }
+
+    const watch = AppState.addEventListener('change', (state) => {
+      if (state === 'background') {
+        setUnlocked(false);
+      }
+    });
+
+    return () => {
+      watch.remove();
+    };
+  }, [props.settings.appLock]);
+
+  const enableLock = useCallback(async () => {
+    if (!(await container.screenLock.available())) {
+      Alert.alert(t('profile.appLockUnavailableTitle'), t('profile.appLockUnavailableBody'));
+
+      return false;
+    }
+
+    return container.screenLock.unlock(t('lock.reason'));
+  }, [container.screenLock, t]);
+
   if (!props.settings.hasOnboarded) {
     return (
       <OnboardingScreen
@@ -290,6 +329,10 @@ function Vidlun(props: {
         onDone={() => changeSettings({ ...props.settings, hasOnboarded: true })}
       />
     );
+  }
+
+  if (props.settings.appLock && !unlocked) {
+    return <LockedDoor t={t} onUnlock={tryUnlock} />;
   }
 
   return (
@@ -304,6 +347,7 @@ function Vidlun(props: {
       entitlement={entitlement}
       onExport={exportJournal}
       onRestore={restoreJournal}
+      onEnableLock={enableLock}
     />
   );
 }
@@ -353,6 +397,33 @@ function useTranscription(locale: Locale, model: SpeechModelState): ITranscripti
 
     return new OnDeviceTranscriptionService(open, () => locale);
   }, [locale, model, typed]);
+}
+
+/** The one screen shown while the journal is shut. */
+function LockedDoor(props: {
+  readonly t: Translate;
+  readonly onUnlock: () => void;
+}): React.JSX.Element {
+  const { onUnlock } = props;
+
+  // Asks as soon as the door appears: the person opened the app, and that is
+  // the request. The button below is for a dismissed prompt.
+  useEffect(onUnlock, [onUnlock]);
+
+  return (
+    <Screen centered>
+      <View style={{ alignItems: 'center', gap: 14, paddingHorizontal: 32 }}>
+        <AppText variant="display" align="center">
+          {props.t('lock.title')}
+        </AppText>
+        <AppText variant="body" color="inkSoft" align="center">
+          {props.t('lock.body')}
+        </AppText>
+        <View style={{ height: 10 }} />
+        <Button label={props.t('lock.unlock')} onPress={onUnlock} />
+      </View>
+    </Screen>
+  );
 }
 
 /**

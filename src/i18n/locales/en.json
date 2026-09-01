@@ -309,5 +309,15 @@
   "profile.restoredBody": "New entries: {{n}}. Already here and left as they were: {{skipped}}.",
   "profile.restoredNothing": "Everything in this file is already in the journal.",
   "profile.importBadTitle": "This file cannot be read",
-  "profile.importBadBody": "It is not a Vidlun backup, or it was made by a newer version of the app."
+  "profile.importBadBody": "It is not a Vidlun backup, or it was made by a newer version of the app.",
+  "profile.security": "Protection",
+  "profile.appLock": "Lock on entry",
+  "profile.appLockOn": "The journal opens with Face ID",
+  "profile.appLockOff": "The journal opens right away",
+  "profile.appLockUnavailableTitle": "Face ID is not available",
+  "profile.appLockUnavailableBody": "This phone has no Face ID or passcode set up. Turn them on in iOS Settings first.",
+  "lock.title": "The journal is locked",
+  "lock.body": "This is your private place. It opens only to you.",
+  "lock.unlock": "Unlock",
+  "lock.reason": "Open your journal"
 }

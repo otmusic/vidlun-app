@@ -40,6 +40,7 @@ export interface CaptureFlowScreenProps {
   readonly entitlement: Entitlement;
   readonly onExport: (shape: 'backup' | 'markdown') => void;
   readonly onRestore: () => void;
+  readonly onEnableLock: () => Promise<boolean>;
 }
 
 /**
@@ -192,6 +193,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           settings={props.settings}
           onExport={props.onExport}
           onRestore={props.onRestore}
+          onEnableLock={props.onEnableLock}
           t={t}
           onChange={props.onSettingsChange}
           entitlement={props.entitlement}

@@ -11,6 +11,9 @@
       "bundleIdentifier": "com.vidlun.journal",
       "entitlements": {
         "com.apple.developer.devicecheck.appattest-environment": "development"
+      },
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Face ID unlocks your journal."
       }
     },
     "android": {

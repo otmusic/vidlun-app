@@ -20,6 +20,11 @@ export interface Settings {
    */
   readonly asksFirst: boolean;
   /**
+   * Whether opening the app asks Face ID first. Off by default: the lock is
+   * for people who share a phone or a couch, and it is theirs to want.
+   */
+  readonly appLock: boolean;
+  /**
    * The evening nudge. Stored here whether or not anything delivers it yet:
    * scheduling a local notification needs `expo-notifications`, which is a
    * dependency to ask about, and the preference is the person's either way.
@@ -47,6 +52,7 @@ export const DEFAULT_SETTINGS: Settings = {
    * setting because the same section says the mode is entirely optional.
    */
   asksFirst: true,
+  appLock: false,
   /*
    * Off, and the evening rather than the morning if it is turned on: §8 puts
    * the reminder at the hour someone is usually already home.
