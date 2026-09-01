@@ -1,4 +1,5 @@
 import { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
+import { Confidence } from '@/domain/value-objects/Confidence';
 import { TranscribeTake } from '@/application/use-cases/TranscribeTake';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { NothingWasSaidError } from '@/domain/errors/MoodEntryErrors';
@@ -177,6 +178,20 @@ describe('CreateVoiceEntry', () => {
     expect(entry.createdAt).toEqual(NOW);
     expect(entry.source).toBe('voice');
     expect(entry.wasRevisedByUser).toBe(false);
+  });
+
+  it('stamps the moment it was given instead of now, for the missed day', async () => {
+    const useCase = new CreateVoiceEntry(
+      new StubReflectionAnalyzer(proposal()),
+      vocabulary,
+      new FixedClock(NOW),
+      new SequentialIdGenerator(),
+    );
+
+    const yesterday = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() - 1, 21, 0);
+    const entry = await useCase.execute({ text: 'About yesterday.', confidence: Confidence.of(0.95) }, yesterday);
+
+    expect(entry.createdAt).toEqual(yesterday);
   });
 });
 

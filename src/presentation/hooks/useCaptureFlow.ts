@@ -165,6 +165,8 @@ export interface CaptureFlow {
   readonly stopRecording: () => void;
   readonly cancel: () => void;
   readonly startWriting: () => void;
+  /** Opens the text screen aimed at yesterday evening — the missed day's door. */
+  readonly startYesterday: () => void;
   readonly submitText: (text: string) => void;
   readonly beginEditing: () => void;
   /** Adds or removes one of the person's own words while the card is asking. */
@@ -473,7 +475,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       );
 
       dependencies.createVoiceEntry
-        .execute(spoken)
+        .execute(spoken, backfillAt.current ?? undefined)
         .then((draft) => {
           setStage((current) => whenAnalysisLands(current, draft, asking));
 
@@ -484,7 +486,15 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     [dependencies.asksFirst, dependencies.createVoiceEntry, fail, withObservation],
   );
 
+  /**
+   * Yesterday evening, while the person fills the day they missed; null the
+   * rest of the time. Nine o'clock, because the entry speaks for the whole
+   * day and the evening is where days get summed up.
+   */
+  const backfillAt = useRef<Date | null>(null);
+
   const startRecording = useCallback(() => {
+    backfillAt.current = null;
     dependencies.haptics.tap();
     setStage({ kind: 'recording' });
 
@@ -693,12 +703,19 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       setStage({ kind: 'idle' });
     }, [dependencies.recorder]),
     startWriting: useCallback(() => {
+      backfillAt.current = null;
       setStage({ kind: 'writing' });
     }, []),
+    startYesterday: useCallback(() => {
+      const now = dependencies.clock.now();
+
+      backfillAt.current = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 21, 0);
+      setStage({ kind: 'writing' });
+    }, [dependencies.clock]),
     submitText: useCallback(
       (text: string) => {
         takeUri.current = null;
-        analyze(() => dependencies.createTextEntry.execute(text));
+        analyze(() => dependencies.createTextEntry.execute(text, backfillAt.current ?? undefined));
       },
       [analyze, dependencies.createTextEntry],
     ),

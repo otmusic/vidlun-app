@@ -20,7 +20,7 @@ export class CreateTextEntry {
     private readonly idGenerator: IIdGenerator,
   ) {}
 
-  async execute(text: string): Promise<MoodEntry> {
+  async execute(text: string, at?: Date): Promise<MoodEntry> {
     const typed = text.trim();
 
     if (typed.length === 0) {
@@ -29,7 +29,11 @@ export class CreateTextEntry {
 
     return draftFromProposal({
       id: this.idGenerator.next(),
-      createdAt: this.clock.now(),
+      /*
+       * Yesterday, when the person is filling the day they missed; now
+       * otherwise. The entry belongs to the day it speaks about.
+       */
+      createdAt: at ?? this.clock.now(),
       source: 'text',
       rawTranscript: typed,
       confidence: Confidence.of(1),

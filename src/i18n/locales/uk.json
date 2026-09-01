@@ -340,5 +340,6 @@
   "stats.monthLabel": "Місяць",
   "stats.monthTitle": "Твій {{month}}",
   "stats.monthLockedLead": "Vidlun написав про цей місяць.",
-  "home.monthCta": "Читати"
+  "home.monthCta": "Читати",
+  "home.sayYesterday": "сказати про вчора"
 }

@@ -22,10 +22,14 @@ export class CreateVoiceEntry {
     private readonly idGenerator: IIdGenerator,
   ) {}
 
-  async execute(spoken: Spoken): Promise<MoodEntry> {
+  async execute(spoken: Spoken, at?: Date): Promise<MoodEntry> {
     return draftFromProposal({
       id: this.idGenerator.next(),
-      createdAt: this.clock.now(),
+      /*
+       * Yesterday, when the person is filling the day they missed; now
+       * otherwise. The entry belongs to the day it speaks about.
+       */
+      createdAt: at ?? this.clock.now(),
       source: 'voice',
       rawTranscript: spoken.text,
       confidence: spoken.confidence,

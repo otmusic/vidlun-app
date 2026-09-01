@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, View } from 'react-native';
 
+import type { DailyMood } from '@/application/use-cases/GetWeekSummary';
 import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import { emotionKey, type Locale, type Translate } from '@/i18n';
@@ -16,6 +17,8 @@ import { useTheme } from '../theme/ThemeProvider';
 
 export interface HomeScreenProps {
   readonly home: HomeView | null;
+  /** Opens the text screen aimed at yesterday. Shown only over a hole. */
+  readonly onSayYesterday: () => void;
   /** The month for the first-days card, or null off-season. */
   readonly monthCard: Date | null;
   readonly vocabulary: EmotionVocabulary;
@@ -94,9 +97,33 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             Named rather than left to be discovered: a strip that silently
             opens something is a control nobody knows is there.
           */}
-          <AppText variant="secondary" color="inkFaint" style={{ alignSelf: 'flex-end' }}>
-            {`${props.t('home.weekLink')} ›`}
-          </AppText>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: yesterdayEmpty(week) ? 'space-between' : 'flex-end',
+              alignItems: 'baseline',
+            }}
+          >
+            {yesterdayEmpty(week) ? (
+              /*
+               * The hole in the strip, made closable. Quiet on purpose: the
+               * strip's own philosophy says a missed day is not a failure,
+               * so the way to fill it is an offer, never a nag.
+               */
+              <Pressable
+                accessibilityRole="button"
+                onPress={props.onSayYesterday}
+                hitSlop={10}
+              >
+                <AppText variant="secondary" color="inkFaint">
+                  {props.t('home.sayYesterday')}
+                </AppText>
+              </Pressable>
+            ) : null}
+            <AppText variant="secondary" color="inkFaint">
+              {`${props.t('home.weekLink')} ›`}
+            </AppText>
+          </View>
         </Pressable>
       ) : null}
 
@@ -324,4 +351,9 @@ function MonthReadyCard(props: {
       </AppText>
     </Pressable>
   );
+}
+
+/** True when yesterday sits in the strip with nothing in it. */
+function yesterdayEmpty(week: readonly DailyMood[]): boolean {
+  return week.length >= 2 && week[week.length - 2]?.entryCount === 0;
 }

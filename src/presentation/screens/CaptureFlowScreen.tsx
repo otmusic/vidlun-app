@@ -325,6 +325,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
         <HomeScreen
           home={flow.home}
           monthCard={flow.monthCard}
+          onSayYesterday={flow.startYesterday}
           vocabulary={props.vocabulary}
           locale={props.locale}
           today={props.today}
