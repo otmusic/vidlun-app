@@ -138,6 +138,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           vocabulary={props.vocabulary}
           t={t}
           onAdopt={flow.adopt}
+          onUnkeep={flow.unkeep}
           onKeepMine={flow.keepMine}
           keptMine={flow.keptMine}
           onConfirm={flow.confirm}

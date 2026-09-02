@@ -34,6 +34,7 @@ export function CompareScreen(props: {
   readonly vocabulary: EmotionVocabulary;
   readonly t: Translate;
   readonly onAdopt: (id: string) => void;
+  readonly onUnkeep: (id: string) => void;
   readonly onKeepMine: () => void;
   readonly keptMine: boolean;
   readonly onConfirm: () => void;
@@ -77,14 +78,29 @@ export function CompareScreen(props: {
         <AppText variant="caption" color="inkFaint">
           {props.t('compare.mine')}
         </AppText>
-        {mine.length === 0 ? (
+        {props.draft.emotionIds.length === 0 ? (
           <AppText variant="secondary" color="inkFaint">
             {props.t('compare.mineEmpty')}
           </AppText>
         ) : (
+          /*
+           * The living set, not the frozen answer: an adopted word arrives
+           * here, and every chip — theirs or adopted — comes off with a tap.
+           * That is also the only way past the four-word ceiling, which the
+           * drawing keeps silent: let one go, and the plus below works again.
+           */
           <Row>
-            {mine.map((id) => (
-              <Chip key={id} label={label(id)} color={colorOf(id)} />
+            {props.draft.emotionIds.map((id) => (
+              <Chip
+                key={id}
+                label={label(id)}
+                color={colorOf(id)}
+                solid
+                action="remove"
+                onPress={() => {
+                  props.onUnkeep(id);
+                }}
+              />
             ))}
           </Row>
         )}
