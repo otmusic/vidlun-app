@@ -68,7 +68,10 @@ export function VocabularyScreen(props: {
           marginBottom: 6,
         }}
       >
-        <AppText variant="display">{t('dict.title')}</AppText>
+        {/* Shrinks before the pill moves: the title may wrap, the margin may not. */}
+        <AppText variant="display" style={{ flexShrink: 1 }}>
+          {t('dict.title')}
+        </AppText>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('dict.rangeTitle')}
@@ -319,9 +322,11 @@ function periodLabel(growth: VocabularyGrowth, locale: Locale): string {
 
   last.setDate(last.getDate() - 1);
 
+  // Short in both shapes: the pill shares its row with the title, and a full
+  // month name is what used to push it past the screen's own margin.
   return growth.wide
     ? `${growth.from.toLocaleDateString(locale, { month: 'short' })} – ${last.toLocaleDateString(locale, { month: 'short' })}`
-    : growth.from.toLocaleDateString(locale, { month: 'long' });
+    : growth.from.toLocaleDateString(locale, { month: 'short' });
 }
 
 /**
