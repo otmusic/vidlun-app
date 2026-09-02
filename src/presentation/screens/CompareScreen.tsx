@@ -85,23 +85,27 @@ export function CompareScreen(props: {
         ) : (
           /*
            * The living set, not the frozen answer: an adopted word arrives
-           * here, and every chip — theirs or adopted — comes off with a tap.
-           * That is also the only way past the four-word ceiling, which the
-           * drawing keeps silent: let one go, and the plus below works again.
+           * here and comes off with a tap, which is also the way past the
+           * four-word ceiling. The person's own words sit plain — the card
+           * offers no way to un-say an answer already given; the editor does.
            */
           <Row>
-            {props.draft.emotionIds.map((id) => (
-              <Chip
-                key={id}
-                label={label(id)}
-                color={colorOf(id)}
-                solid
-                action="remove"
-                onPress={() => {
-                  props.onUnkeep(id);
-                }}
-              />
-            ))}
+            {props.draft.emotionIds.map((id) =>
+              mine.includes(id) ? (
+                <Chip key={id} label={label(id)} color={colorOf(id)} solid />
+              ) : (
+                <Chip
+                  key={id}
+                  label={label(id)}
+                  color={colorOf(id)}
+                  solid
+                  action="remove"
+                  onPress={() => {
+                    props.onUnkeep(id);
+                  }}
+                />
+              ),
+            )}
           </Row>
         )}
       </Block>

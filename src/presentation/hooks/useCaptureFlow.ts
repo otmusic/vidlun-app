@@ -188,9 +188,10 @@ export interface CaptureFlow {
   /** Takes one of Vidlun's words into the entry. */
   readonly adopt: (id: string) => void;
   /**
-   * Takes a word back out — their own or an adopted one alike. The drawing
-   * makes every kept chip removable, which is also what frees a slot when the
-   * four-word ceiling stops another adoption.
+   * Takes an adopted word back out. Only Vidlun's words come off here — the
+   * person's own answer stays, editable through the editor instead — and
+   * letting one go is what frees a slot when the four-word ceiling stops
+   * another adoption.
    */
   readonly unkeep: (id: string) => void;
   /** Declines the rest of them, and says so out loud rather than by silence. */
@@ -905,7 +906,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     ),
     unkeep: useCallback((id: string) => {
       setStage((current) => {
-        if (current.kind !== 'comparing' || !current.draft.emotionIds.includes(id)) {
+        if (
+          current.kind !== 'comparing' ||
+          !current.draft.emotionIds.includes(id) ||
+          // Their own answer is not the card's to take back — adopted words
+          // come off here, named ones through the editor.
+          current.draft.selfEmotionIds.includes(id)
+        ) {
           return current;
         }
 
