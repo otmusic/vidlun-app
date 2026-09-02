@@ -8,9 +8,12 @@ import { Unbounded_400Regular } from '@expo-google-fonts/unbounded/400Regular';
 import { Unbounded_500Medium } from '@expo-google-fonts/unbounded/500Medium';
 import { useFonts } from 'expo-font';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo, PixelRatio, useColorScheme, View } from 'react-native';
+import { AccessibilityInfo, Image, PixelRatio, useColorScheme, View } from 'react-native';
 
 import type { ThemeChoice } from '@/domain/ports/ISettings';
+
+import wordmarkDark from '../../../assets/splash/wordmark-dark.png';
+import wordmarkLight from '../../../assets/splash/wordmark-light.png';
 
 import {
   createTypography,
@@ -79,10 +82,28 @@ export function ThemeProvider(props: {
     [isDark, reduceMotion],
   );
 
-  // Showing the canvas rather than nothing keeps the launch from flashing white
-  // on a dark phone, which is the whole point of a separate dark palette.
+  /*
+   * The same wordmark pixels the native launch image shows, in the same spot,
+   * so the frames between the storyboard and the splash overlay are not a
+   * blink. The right margin is the dots-and-gap span of the overlay's
+   * ensemble (27.5 + 9), which the launch image is offset by too.
+   */
   if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: theme.palette.canvas }} />;
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: theme.palette.canvas,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Image
+          source={isDark ? wordmarkDark : wordmarkLight}
+          style={{ width: 129, height: 47, marginRight: 36.5 }}
+        />
+      </View>
+    );
   }
 
   return <ThemeContext.Provider value={theme}>{props.children}</ThemeContext.Provider>;

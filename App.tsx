@@ -19,6 +19,7 @@ import { OnDeviceTranscriptionService } from '@/infrastructure/transcription/OnD
 import { openParakeetEngine } from '@/infrastructure/transcription/parakeetEngine';
 import { openSpeechEngine } from '@/infrastructure/transcription/whisperEngine';
 import { AppText } from '@/presentation/components/AppText';
+import { SplashOverlay } from '@/presentation/components/SplashOverlay';
 import { Button } from '@/presentation/components/Button';
 import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
 import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
@@ -31,6 +32,12 @@ import { ThemeProvider, useTheme } from '@/presentation/theme/ThemeProvider';
  * over it, the phone has plausibly changed hands.
  */
 const RELOCK_AFTER_MS = 60_000;
+
+/** The splash holds at least this long, so a fast open is a beat, not a blink. */
+const MIN_SPLASH_MS = 1_200;
+
+/** Past this the wait stops being a wait; the quiet failure state takes over. */
+const SPLASH_GIVES_UP_MS = 5_000;
 
 interface Wiring {
   readonly container?: Container;
@@ -92,8 +99,18 @@ function Vidlun(props: {
   const t = useMemo(() => createTranslator(locale), [locale]);
   const { onSettingsChange } = props;
 
+  /*
+   * The splash may not lift before this lands: whether the launch goes to
+   * onboarding or to home is written in the settings, and revealing the
+   * default's guess would flash the wrong screen at whoever returns daily.
+   */
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
   useEffect(() => {
-    void container.settings.read().then(onSettingsChange);
+    void container.settings.read().then((read) => {
+      onSettingsChange(read);
+      setSettingsLoaded(true);
+    });
   }, [container.settings, onSettingsChange]);
 
   const { fetch: fetchModel } = props.model;
@@ -345,22 +362,64 @@ function Vidlun(props: {
     return container.screenLock.unlock(t('lock.reason'));
   }, [container.screenLock, t]);
 
-  if (!props.settings.hasOnboarded) {
-    return (
-      <OnboardingScreen
-        t={t}
-        model={props.model.state}
-        onAskMicrophone={() => container.microphonePermission.request()}
-        onDone={() => changeSettings({ ...props.settings, hasOnboarded: true })}
-      />
-    );
-  }
+  /*
+   * The splash lifts when the journal is open — settings read, entries read —
+   * but never before MIN_SPLASH_MS, so a fast phone gets a beat rather than a
+   * blink. A launch that is still not open at SPLASH_GIVES_UP_MS stops
+   * pretending to load and offers the retry instead.
+   */
+  const [splash, setSplash] = useState<'loading' | 'failed' | 'leaving' | 'gone'>('loading');
+  const splashShownAt = useRef(container.clock.now().getTime());
+  const ready = settingsLoaded && flow.home !== null;
 
-  if (props.settings.appLock && !unlocked) {
-    return <LockedDoor t={t} onUnlock={tryUnlock} />;
-  }
+  useEffect(() => {
+    if (splash !== 'loading') {
+      return;
+    }
 
-  return (
+    if (ready) {
+      const shown = container.clock.now().getTime() - splashShownAt.current;
+      const lift = setTimeout(() => {
+        setSplash('leaving');
+      }, Math.max(0, MIN_SPLASH_MS - shown));
+
+      return () => {
+        clearTimeout(lift);
+      };
+    }
+
+    const giveUp = setTimeout(() => {
+      setSplash('failed');
+    }, SPLASH_GIVES_UP_MS);
+
+    return () => {
+      clearTimeout(giveUp);
+    };
+  }, [container.clock, ready, splash]);
+
+  const { reloadHome } = flow;
+
+  const retryOpening = useCallback(() => {
+    splashShownAt.current = container.clock.now().getTime();
+    setSplash('loading');
+    setSettingsLoaded(false);
+    void container.settings.read().then((read) => {
+      onSettingsChange(read);
+      setSettingsLoaded(true);
+    });
+    reloadHome();
+  }, [container.clock, container.settings, onSettingsChange, reloadHome]);
+
+  const screen = !props.settings.hasOnboarded ? (
+    <OnboardingScreen
+      t={t}
+      model={props.model.state}
+      onAskMicrophone={() => container.microphonePermission.request()}
+      onDone={() => changeSettings({ ...props.settings, hasOnboarded: true })}
+    />
+  ) : props.settings.appLock && !unlocked ? (
+    <LockedDoor t={t} onUnlock={tryUnlock} />
+  ) : (
     <CaptureFlowScreen
       flow={flow}
       vocabulary={container.vocabulary}
@@ -374,6 +433,23 @@ function Vidlun(props: {
       onRestore={restoreJournal}
       onEnableLock={enableLock}
     />
+  );
+
+  return (
+    /* The next screen is already under the splash, so leaving is a crossfade. */
+    <View style={{ flex: 1 }}>
+      {screen}
+      {splash === 'gone' ? null : (
+        <SplashOverlay
+          phase={splash}
+          t={t}
+          onRetry={retryOpening}
+          onGone={() => {
+            setSplash('gone');
+          }}
+        />
+      )}
+    </View>
   );
 }
 

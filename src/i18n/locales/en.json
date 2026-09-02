@@ -344,5 +344,7 @@
   "stats.monthTitle": "Your {{month}}",
   "stats.monthLockedLead": "Vidlun has written about this month.",
   "home.monthCta": "Read",
-  "home.sayYesterday": "say about yesterday"
+  "home.sayYesterday": "say about yesterday",
+  "splash.failed": "Couldn't open the journal",
+  "splash.retry": "Try again"
 }

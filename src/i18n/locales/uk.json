@@ -344,5 +344,7 @@
   "stats.monthTitle": "Твій {{month}}",
   "stats.monthLockedLead": "Vidlun написав про цей місяць.",
   "home.monthCta": "Читати",
-  "home.sayYesterday": "сказати про вчора"
+  "home.sayYesterday": "сказати про вчора",
+  "splash.failed": "Не вдалося відкрити щоденник",
+  "splash.retry": "Спробувати ще раз"
 }

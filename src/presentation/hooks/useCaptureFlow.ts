@@ -160,6 +160,8 @@ export interface CaptureDependencies {
 export interface CaptureFlow {
   readonly stage: CaptureStage;
   readonly home: HomeView | null;
+  /** Re-reads the home view; the splash's retry when opening the journal hangs. */
+  readonly reloadHome: () => void;
   /** The month being offered on home's first-days card, or null off-season. */
   readonly monthCard: Date | null;
   readonly startRecording: () => void;
@@ -714,6 +716,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     stage,
     monthCard,
     home,
+    reloadHome,
     startRecording,
     stopRecording: useCallback(() => {
       dependencies.recorder.stop();
