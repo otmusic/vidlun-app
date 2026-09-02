@@ -39,8 +39,14 @@ export function ReflectionScreen(props: ReflectionScreenProps): React.JSX.Elemen
           <AppText variant="quote">{`«${props.draft.cleanTranscript}»`}</AppText>
         </Card>
 
+        {/*
+          * On a hard entry the comparison is skipped and the card holds what
+          * the person named, not what Vidlun heard — so the heading has to
+          * follow the words. Calling their own answer "what I heard" reads as
+          * their words having been thrown away.
+          */}
         <AppText variant="secondary" color="inkSoft">
-          {props.t('reflection.heard')}
+          {props.t(props.draft.selfEmotionIds.length > 0 ? 'reflection.yours' : 'reflection.heard')}
         </AppText>
 
         <EntryChips entry={props.draft} vocabulary={props.vocabulary} t={props.t} />
