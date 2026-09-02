@@ -2,7 +2,7 @@
 
 **Effective:** 29 August 2026
 
-**Data controller:** `[LEGAL NAME]`, `[ADDRESS]`
+**Data controller:** the Vidlun developer, support@vidlun.app
 
 **Contact:** support@vidlun.app
 

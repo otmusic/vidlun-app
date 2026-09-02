@@ -2,7 +2,7 @@
 
 **Effective:** 29 August 2026
 
-**Provider:** `[LEGAL NAME]`, `[ADDRESS]`, support@vidlun.app
+**Provider:** the Vidlun developer, support@vidlun.app
 
 By installing Vidlun you agree to these terms. If you do not agree, do not use
 the app.
@@ -117,7 +117,7 @@ beneficiaries of these terms and may enforce them.
 
 ## 10. Governing law
 
-The law of `[COUNTRY]`. This does not deprive you of the protection of
+The law of Ukraine. This does not deprive you of the protection of
 mandatory rules of your country of residence.
 
 ## 11. Contact
