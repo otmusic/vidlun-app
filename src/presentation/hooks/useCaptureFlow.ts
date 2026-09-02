@@ -178,6 +178,11 @@ export interface CaptureFlow {
   readonly answer: () => void;
   /** "I don't know, show me" — no answer given, and none invented. */
   readonly skipAnswer: () => void;
+  /**
+   * The transcript, fixed by the one person who knows what was said. Throws
+   * the mishearing's analysis away and reads the corrected words instead.
+   */
+  readonly correctWording: (text: string) => void;
   /** Takes one of Vidlun's words into the entry. */
   readonly adopt: (id: string) => void;
   /** Declines the rest of them, and says so out loud rather than by silence. */
@@ -329,6 +334,8 @@ export function whenAnalysisLands(
   current: CaptureStage,
   draft: MoodEntry,
   asking: boolean,
+  /** The transcript this analysis was started for; absent means any. */
+  forText?: string,
 ): CaptureStage {
   /*
    * With the question switched off there is nothing to hold the card back for,
@@ -340,6 +347,16 @@ export function whenAnalysisLands(
   }
 
   if (current.kind !== 'turn') {
+    return current;
+  }
+
+  /*
+   * An analysis of wording the person has since corrected. Dropping it is
+   * the whole correction: the corrected take's own analysis is already
+   * running, and letting this one land would put emotions read off the
+   * mishearing onto words nobody said.
+   */
+  if (forText !== undefined && forText !== current.spoken.text) {
     return current;
   }
 
@@ -451,11 +468,19 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * seeing Vidlun's answer is the point of the question, and the words were
    * the person's own either way.
    */
+  /*
+   * How this card's words become a draft, kept so a corrected transcript can
+   * be re-read the same way the original was — voice stays voice and typed
+   * stays typed without the stage having to know which it is holding.
+   */
+  const rebuild = useRef<((words: Spoken) => Promise<MoodEntry>) | null>(null);
+
   const ask = useCallback(
-    (spoken: Spoken, build: () => Promise<MoodEntry>) => {
+    (spoken: Spoken, build: (words: Spoken) => Promise<MoodEntry>) => {
       // Per card, not per session. Left standing it would put the last entry's
       // refusal on this one's label, and now that it is logged, in its record.
       setKeptMine(false);
+      rebuild.current = build;
 
       const asking = dependencies.asksFirst;
 
@@ -465,9 +490,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           : { kind: 'processing' },
       );
 
-      build()
+      build(spoken)
         .then((draft) => {
-          setStage((current) => whenAnalysisLands(current, draft, asking));
+          setStage((current) => whenAnalysisLands(current, draft, asking, spoken.text));
 
           void withObservation(draft);
         })
@@ -502,7 +527,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
         const spoken = await dependencies.transcribeTake.execute(take);
 
-        ask(spoken, () => dependencies.createVoiceEntry.execute(spoken, backfillAt.current ?? undefined));
+        ask(spoken, (words) =>
+          dependencies.createVoiceEntry.execute(words, backfillAt.current ?? undefined),
+        );
       })
       .catch(fail);
   }, [ask, dependencies, fail]);
@@ -710,8 +737,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         takeUri.current = null;
         // Full confidence for the same reason CreateTextEntry grants it:
         // nothing was heard, so nothing was misheard.
-        ask({ text: text.trim(), confidence: Confidence.of(1) }, () =>
-          dependencies.createTextEntry.execute(text, backfillAt.current ?? undefined),
+        ask({ text: text.trim(), confidence: Confidence.of(1) }, (words) =>
+          dependencies.createTextEntry.execute(words.text, backfillAt.current ?? undefined),
         );
       },
       [ask, dependencies.createTextEntry],
@@ -832,6 +859,41 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           : comparisonOf(current.draft, []);
       });
     }, []),
+    correctWording: useCallback(
+      (text: string) => {
+        const corrected = text.trim();
+
+        if (
+          stage.kind !== 'turn' ||
+          rebuild.current === null ||
+          corrected.length === 0 ||
+          corrected === stage.spoken.text
+        ) {
+          return;
+        }
+
+        /*
+         * Corrected by the person who said it, so nothing is misheard any
+         * more — the same full confidence a typed entry carries, and with it
+         * the same right to the vocabulary's deepest words.
+         */
+        const spoken: Spoken = { text: corrected, confidence: Confidence.of(1) };
+
+        // The draft in hand was read off the mishearing; none of it survives.
+        // Their own named words do — the feeling never depended on the typo.
+        setStage({ ...stage, spoken, draft: null });
+
+        rebuild
+          .current(spoken)
+          .then((draft) => {
+            setStage((current) => whenAnalysisLands(current, draft, true, corrected));
+
+            void withObservation(draft);
+          })
+          .catch(fail);
+      },
+      [fail, stage, withObservation],
+    ),
     adopt: useCallback((id: string) => {
       setStage((current) => {
         if (current.kind !== 'comparing' || current.draft.emotionIds.includes(id)) {

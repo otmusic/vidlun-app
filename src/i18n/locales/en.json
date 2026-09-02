@@ -252,6 +252,8 @@
   "turn.hint": "One or two feelings. There is no right answer.",
   "turn.pick": "pick a feeling",
   "turn.hidden": "what Vidlun heard — after your answer",
+  "turn.fix": "Fix the wording",
+  "turn.fixDone": "Done",
   "turn.next": "Next",
   "turn.skip": "I don't know — just show me",
   "turn.waiting": "One moment — still reading",

@@ -85,4 +85,41 @@ describe('what happens when the analysis lands', () => {
 
     expect(after).toEqual({ kind: 'idle' });
   });
+
+  it("keeps the person's own words on the hard entry's card", () => {
+    const after = whenAnalysisLands(
+      { ...asking, holding: true },
+      analysis({ safetyFlag: 'distress', emotionIds: ['angry', 'fearful.scared'] }),
+      true,
+    );
+
+    // Their answer survives the skipped comparison: the plain card holds what
+    // they named, and what Vidlun heard stays in the proposal.
+    expect(after.kind === 'reflecting' ? after.draft.emotionIds : null).toEqual(['bad.tired']);
+  });
+
+  it('drops an analysis of wording the person has since corrected', () => {
+    const after = whenAnalysisLands(asking, analysis(), true, 'what the recorder misheard');
+
+    // The corrected words' own analysis is on its way; emotions read off the
+    // mishearing must never reach the card, held or shown.
+    expect(after).toEqual(asking);
+  });
+
+  it('never lets a stale analysis answer for someone already waiting', () => {
+    const after = whenAnalysisLands(
+      { ...asking, holding: true },
+      analysis(),
+      true,
+      'what the recorder misheard',
+    );
+
+    expect(after.kind).toBe('turn');
+  });
+
+  it('lands an analysis that matches the wording it was started for', () => {
+    const after = whenAnalysisLands(asking, analysis(), true, asking.spoken.text);
+
+    expect(after.kind === 'turn' ? after.draft : null).not.toBeNull();
+  });
 });
