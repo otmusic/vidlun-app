@@ -12,6 +12,6 @@ import type { PreinstalledModel, SpeechModelDescriptor } from './SpeechModelStor
  */
 export class AssetPackModel implements PreinstalledModel {
   uriFor(model: SpeechModelDescriptor): string | null {
-    return assetPackFileURL(model.assetPackID, model.fileName);
+    return assetPackFileURL(model.fileName);
   }
 }

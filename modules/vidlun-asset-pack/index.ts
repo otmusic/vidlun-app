@@ -1,8 +1,7 @@
 import { requireOptionalNativeModule } from 'expo-modules-core';
 
 interface NativeAssetPack {
-  isAvailable(packID: string): boolean;
-  fileURL(packID: string, path: string): string | null;
+  fileURL(path: string): string | null;
 }
 
 /*
@@ -12,12 +11,11 @@ interface NativeAssetPack {
  */
 const native = requireOptionalNativeModule<NativeAssetPack>('VidlunAssetPack');
 
-/** Whether the pack has been delivered to this device by the system. */
-export function isAssetPackAvailable(packID: string): boolean {
-  return native?.isAvailable(packID) ?? false;
-}
-
-/** Where a file inside a delivered pack lives, or null when it is not here. */
-export function assetPackFileURL(packID: string, path: string): string | null {
-  return native?.fileURL(packID, path) ?? null;
+/**
+ * Where a file inside a delivered asset pack lives, or null when no pack
+ * holding it has arrived on this device. The system searches every pack the
+ * app publishes, so the file name alone is the question.
+ */
+export function assetPackFileURL(path: string): string | null {
+  return native?.fileURL(path) ?? null;
 }
