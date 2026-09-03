@@ -1,7 +1,7 @@
 {
   "assetPackID": "parakeet-tdt-06b-v3-q8",
   "downloadPolicy": {
-    "essential": {
+    "prefetch": {
       "installationEventTypes": ["firstInstallation", "subsequentUpdate"]
     }
   },

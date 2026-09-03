@@ -27,5 +27,8 @@ if [ "$SIZE" -lt 600000000 ]; then
 fi
 
 echo "Packaging..."
-xcrun ba-package "$PACK_DIR/Manifest.json" -o "$OUT"
+# The manifest's file selectors resolve against the working directory, so
+# the tool has to be run from inside the pack.
+cd "$PACK_DIR"
+xcrun ba-package Manifest.json -o "$OUT"
 echo "Asset pack written to $OUT"
