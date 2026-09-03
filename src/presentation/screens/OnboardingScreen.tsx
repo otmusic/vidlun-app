@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
-import type { Translate, TranslationKey } from '@/i18n';
+import type { Locale, Translate, TranslationKey } from '@/i18n';
+import { legalDocument, type LegalDocumentKind } from '@/i18n/legal';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { Blob, WaveMark } from '../components/WaveMark';
 import { useTheme } from '../theme/ThemeProvider';
+import { LegalScreen } from './LegalScreen';
 import { Screen } from './Screen';
 
 const STEPS = ['welcome', 'privacy', 'microphone'] as const;
@@ -45,15 +47,34 @@ const ACTION: Record<Step, TranslationKey> = {
  */
 export function OnboardingScreen(props: {
   readonly t: Translate;
+  readonly locale: Locale;
   readonly model: SpeechModelState;
   readonly onAskMicrophone: () => Promise<PermissionStatus>;
   readonly onDone: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const [index, setIndex] = useState(0);
+  /*
+   * The terms or the privacy policy, opened from the first screen's footer.
+   * Held here rather than in the flow: onboarding runs before the capture
+   * flow exists, and what someone reads before agreeing stays their business.
+   */
+  const [reading, setReading] = useState<LegalDocumentKind | null>(null);
   const { t } = props;
   const step = STEPS[index] ?? 'welcome';
   const isLast = index === STEPS.length - 1;
+
+  if (reading !== null) {
+    return (
+      <LegalScreen
+        document={legalDocument(reading, props.locale)}
+        t={t}
+        onBack={() => {
+          setReading(null);
+        }}
+      />
+    );
+  }
 
   const advance = (): void => {
     if (!isLast) {
@@ -116,7 +137,57 @@ export function OnboardingScreen(props: {
           onPress={props.onDone}
         />
       </View>
+      {step === 'welcome' ? (
+        /* The drawing puts the agreement under the first screen only: the tap
+           it names is this screen's button, and repeating it three times would
+           turn a footnote into a form. */
+        <View style={{ alignItems: 'center', gap: 8, paddingTop: 8, paddingHorizontal: 6 }}>
+          <AppText variant="caption" color="inkFaint" align="center" style={{ textTransform: 'none', letterSpacing: 0 }}>
+            {t('onboarding.legalNote')}
+          </AppText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <FooterLink
+              label={t('onboarding.legalTerms')}
+              onPress={() => {
+                setReading('terms');
+              }}
+            />
+            <View
+              style={{
+                width: 3,
+                height: 3,
+                borderRadius: 999,
+                backgroundColor: theme.palette.line,
+              }}
+            />
+            <FooterLink
+              label={t('onboarding.legalPrivacy')}
+              onPress={() => {
+                setReading('privacy');
+              }}
+            />
+          </View>
+        </View>
+      ) : null}
     </Screen>
+  );
+}
+
+/** A quiet underlined link, as the drawing sets the footer's pair. */
+function FooterLink(props: {
+  readonly label: string;
+  readonly onPress: () => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <Pressable accessibilityRole="link" onPress={props.onPress} hitSlop={10}>
+      <View style={{ borderBottomWidth: 1, borderBottomColor: theme.palette.line, paddingBottom: 1 }}>
+        <AppText variant="caption" color="inkSoft" style={{ textTransform: 'none', letterSpacing: 0 }}>
+          {props.label}
+        </AppText>
+      </View>
+    </Pressable>
   );
 }
 

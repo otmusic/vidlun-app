@@ -413,6 +413,7 @@ function Vidlun(props: {
   const screen = !props.settings.hasOnboarded ? (
     <OnboardingScreen
       t={t}
+      locale={locale}
       model={props.model.state}
       onAskMicrophone={() => container.microphonePermission.request()}
       onDone={() => changeSettings({ ...props.settings, hasOnboarded: true })}
