@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 
 import type { DailyMood } from '@/application/use-cases/GetWeekSummary';
 import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
+import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import { emotionKey, type Locale, type Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
@@ -39,11 +40,19 @@ export interface HomeScreenProps {
   /** A take recorded before the phone could hear is waiting to be read. */
   readonly parked: boolean;
   readonly onContinueParked: () => void;
+  /** Where the microphone stands with the system; `denied` is named, not retried. */
+  readonly mic: PermissionStatus;
 }
 
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const theme = useTheme();
   const canHear = props.voice.kind === 'ready';
+  /*
+   * A refused microphone is the one state the app cannot change from inside:
+   * the tap is left to the flow, which asks when it may, and the line below
+   * points at Settings when it may not.
+   */
+  const micRefused = props.mic === 'denied';
   /** True after a tap on the microphone that could not record yet. */
   const [nudged, setNudged] = useState(false);
   const streak = props.home?.streakDays ?? 0;
@@ -151,7 +160,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           */}
         <RecordButton
           onPress={
-            canHear
+            canHear && !micRefused
               ? props.onRecord
               : () => {
                   setNudged(true);
@@ -159,7 +168,26 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           }
           accessibilityLabel={props.t('home.recordHint')}
         />
-        <VoiceLine voice={props.voice} nudged={nudged} t={props.t} onRetry={props.onRetryVoice} />
+        {micRefused ? (
+          <View style={{ alignItems: 'center', gap: 6 }}>
+            <AppText variant="body" color={nudged ? 'ink' : 'inkSoft'} align="center">
+              {props.t('home.micDenied')}
+            </AppText>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                void Linking.openSettings();
+              }}
+              hitSlop={12}
+            >
+              <AppText variant="label" color="accentInk">
+                {props.t('home.micSettings')}
+              </AppText>
+            </Pressable>
+          </View>
+        ) : (
+          <VoiceLine voice={props.voice} nudged={nudged} t={props.t} onRetry={props.onRetryVoice} />
+        )}
         {/*
           * hitSlop rather than a 44pt box: a padded target here would push the
           * text off the line the design puts it on. The finger still lands on

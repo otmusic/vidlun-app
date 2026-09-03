@@ -10,6 +10,8 @@
   "home.voiceFetching": "Vidlun is downloading what it listens with",
   "home.voiceFailed": "What Vidlun listens with could not be downloaded",
   "home.parkedReady": "Read the entry that waited",
+  "home.micDenied": "Microphone access is off. Voice entries need it allowed in Settings.",
+  "home.micSettings": "Open Settings",
   "parked.title": "Recording kept",
   "parked.body": "Vidlun cannot hear yet — the model is still downloading. The recording will wait and be read as soon as it is in place. You can go.",
   "parked.home": "Home",

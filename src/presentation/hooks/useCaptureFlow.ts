@@ -30,6 +30,7 @@ import type { IClock } from '@/domain/ports/IClock';
 import type { IPurchases, Plan, PurchaseOutcome } from '@/domain/ports/IPurchases';
 import type { IHaptics } from '@/domain/ports/IHaptics';
 import type { IParkedTake, ParkedTake } from '@/domain/ports/IParkedTake';
+import type { IMicrophonePermission, PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 
 export type CaptureStage =
   | { readonly kind: 'idle' }
@@ -146,6 +147,7 @@ export interface CaptureDependencies {
   /** Whether the speech model is on disk. Recording works either way; hearing does not. */
   readonly canHear: boolean;
   readonly parkedTake: IParkedTake;
+  readonly microphonePermission: IMicrophonePermission;
   /**
    * False takes the question out of the capture path entirely: the card is
    * what it was before §3b, and it costs what it cost then.
@@ -178,6 +180,11 @@ export interface CaptureFlow {
   readonly stopRecording: () => void;
   /** The take waiting for the model, if any — shown on home until it is read. */
   readonly parked: ParkedTake | null;
+  /**
+   * Where the microphone stands with the system. `denied` is the one state
+   * a tap cannot fix from inside the app, so home says so instead of trying.
+   */
+  readonly micStatus: PermissionStatus;
   /** Reads the waiting take now that the phone can hear. */
   readonly continueParked: () => void;
   readonly cancel: () => void;
@@ -406,8 +413,19 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    */
   const takeUri = useRef<string | null>(null);
   const [parked, setParked] = useState<ParkedTake | null>(null);
+  const [micStatus, setMicStatus] = useState<PermissionStatus>('undetermined');
 
-  const { getHomeView, parkedTake } = dependencies;
+  const { getHomeView, parkedTake, microphonePermission } = dependencies;
+
+  useEffect(() => {
+    void microphonePermission
+      .status()
+      .then(setMicStatus)
+      .catch(() => {
+        // Not knowing is not a refusal; the tap will ask.
+        setMicStatus('undetermined');
+      });
+  }, [microphonePermission]);
 
   const reloadParked = useCallback(() => {
     void parkedTake
@@ -543,11 +561,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    */
   const backfillAt = useRef<Date | null>(null);
 
-  const startRecording = useCallback(() => {
-    backfillAt.current = null;
-    dependencies.haptics.tap();
-    setStage({ kind: 'recording' });
-
+  const record = useCallback(() => {
     // Not awaited, and its failure is not ours: the take must start now, and
     // an unopened model only means the transcription pays for it later.
     void dependencies.transcribeTake.prepare();
@@ -582,6 +596,39 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       })
       .catch(fail);
   }, [ask, dependencies, fail, reloadParked]);
+
+  const startRecording = useCallback(() => {
+    backfillAt.current = null;
+    dependencies.haptics.tap();
+
+    /*
+     * The recorder throws a raw native exception when the system has not
+     * granted the microphone, whether refused or never asked. Asking is
+     * ours to do — someone who skipped it at onboarding gets the prompt at
+     * the first tap — and a refusal is a state home can name, not a failure
+     * screen quoting Swift.
+     */
+    const withPermission = async (): Promise<boolean> => {
+      const current = await dependencies.microphonePermission.status();
+      const settled =
+        current === 'undetermined' ? await dependencies.microphonePermission.request() : current;
+
+      setMicStatus(settled);
+
+      return settled === 'granted';
+    };
+
+    void withPermission()
+      .then((allowed) => {
+        if (!allowed) {
+          return;
+        }
+
+        setStage({ kind: 'recording' });
+        record();
+      })
+      .catch(fail);
+  }, [dependencies, fail, record]);
 
   const continueParked = useCallback(() => {
     if (!dependencies.canHear) {
@@ -815,6 +862,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       setStage({ kind: 'idle' });
     }, [dependencies.recorder]),
     parked,
+    micStatus,
     continueParked,
     startWriting: useCallback(() => {
       backfillAt.current = null;

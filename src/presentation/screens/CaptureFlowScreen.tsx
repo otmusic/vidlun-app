@@ -346,6 +346,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           onRetryVoice={props.onRetryVoice}
           parked={flow.parked !== null}
           onContinueParked={flow.continueParked}
+          mic={flow.micStatus}
           onDelete={flow.deleteEntry}
           onOpenHistory={flow.openHistory}
           onOpenStats={flow.openStats}

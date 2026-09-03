@@ -182,6 +182,7 @@ function Vidlun(props: {
     asksFirst: props.settings.asksFirst,
     canHear: props.model.state.kind === 'ready',
     parkedTake: container.parkedTake,
+    microphonePermission: container.microphonePermission,
     getHomeView: container.getHomeView,
     getWeekSummary: container.getWeekSummary,
     getMonthSummary: container.getMonthSummary,
