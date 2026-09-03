@@ -478,6 +478,31 @@ function useSpeechModel(): { readonly state: SpeechModelState; readonly fetch: (
     void store.fetch(setState).then(setState);
   }, [store]);
 
+  /*
+   * Paused on the way out, continued on the way back. A transfer left running
+   * in the background would go on — until the system or the person ends the
+   * app, and then all of it is gone: the platform hands back nothing for a
+   * download that was dropped, only for one that was paused. Trading the
+   * minutes it might have kept downloading for never losing the half a
+   * gigabyte already down is the better side of that bargain.
+   */
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  useEffect(() => {
+    const watch = AppState.addEventListener('change', (next) => {
+      if (next === 'background') {
+        void store.pause();
+      } else if (next === 'active' && stateRef.current.kind === 'fetching') {
+        fetch();
+      }
+    });
+
+    return () => {
+      watch.remove();
+    };
+  }, [fetch, store]);
+
   return { state, fetch };
 }
 

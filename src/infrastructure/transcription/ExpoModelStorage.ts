@@ -1,6 +1,13 @@
-import { Directory, File, Paths, type DownloadProgress } from 'expo-file-system';
+import {
+  Directory,
+  DownloadTask,
+  File,
+  Paths,
+  type DownloadPauseState,
+  type DownloadProgress,
+} from 'expo-file-system';
 
-import type { ModelStorage } from './SpeechModelStore';
+import type { ModelDownload, ModelStorage, Progress } from './SpeechModelStore';
 
 /**
  * Half a gigabyte of weights, kept where the system will not reclaim it.
@@ -20,24 +27,29 @@ export class ExpoModelStorage implements ModelStorage {
     return Promise.resolve(file.exists ? (file.size ?? null) : null);
   }
 
-  async download(
-    url: string,
-    name: string,
-    onProgress: (writtenBytes: number, totalBytes: number | null) => void,
-  ): Promise<void> {
+  startDownload(url: string, name: string, onProgress: Progress): ModelDownload {
     this.ensureDirectory();
 
     const task = File.createDownloadTask(url, this.fileFor(name), {
-      onProgress: (progress: DownloadProgress) => {
-        // The header is optional, and -1 is how its absence arrives. Passing
-        // that on as a total would render as a progress bar running backwards.
-        onProgress(progress.bytesWritten, progress.totalBytes > 0 ? progress.totalBytes : null);
-      },
+      onProgress: progressBridge(onProgress),
     });
 
-    // sessionType defaults to 'background' on iOS, so half a gigabyte keeps
-    // arriving while the user reads the rest of onboarding.
-    await task.downloadAsync();
+    return track(task, task.downloadAsync());
+  }
+
+  resumeDownload(saved: string, onProgress: Progress): ModelDownload {
+    this.ensureDirectory();
+
+    /*
+     * The platform's own resume state, kept verbatim since the pause. It
+     * carries the temp file and the server's validators; if either no longer
+     * holds, resuming rejects and the store starts over.
+     */
+    const task = DownloadTask.fromSavable(JSON.parse(saved) as DownloadPauseState, {
+      onProgress: progressBridge(onProgress),
+    });
+
+    return track(task, task.resumeAsync());
   }
 
   async rename(from: string, to: string): Promise<void> {
@@ -58,6 +70,19 @@ export class ExpoModelStorage implements ModelStorage {
     return this.fileFor(name).uri;
   }
 
+  async writeNote(name: string, text: string): Promise<void> {
+    this.ensureDirectory();
+    this.fileFor(name).write(text);
+
+    return Promise.resolve();
+  }
+
+  async readNote(name: string): Promise<string | null> {
+    const file = this.fileFor(name);
+
+    return file.exists ? file.text() : Promise.resolve(null);
+  }
+
   private fileFor(name: string): File {
     return new File(this.directory, name);
   }
@@ -67,4 +92,32 @@ export class ExpoModelStorage implements ModelStorage {
       this.directory.create({ intermediates: true });
     }
   }
+}
+
+function progressBridge(onProgress: Progress): (progress: DownloadProgress) => void {
+  return (progress) => {
+    // The header is optional, and -1 is how its absence arrives. Passing
+    // that on as a total would render as a progress bar running backwards.
+    onProgress(progress.bytesWritten, progress.totalBytes > 0 ? progress.totalBytes : null);
+  };
+}
+
+/**
+ * Wraps a task so the store sees only an outcome and a pause. The task's
+ * promise resolves with the file when done and with null when a pause took
+ * effect; the pause itself yields the state a later launch continues from.
+ */
+function track(task: DownloadTask, transfer: Promise<File | null>): ModelDownload {
+  return {
+    done: transfer.then((file) => (file === null ? 'paused' : 'completed')),
+    pause: async () => {
+      if (task.state !== 'active') {
+        return null;
+      }
+
+      await task.pauseAsync();
+
+      return JSON.stringify(task.savable());
+    },
+  };
 }
