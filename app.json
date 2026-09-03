@@ -16,7 +16,7 @@
         "NSFaceIDUsageDescription": "Face ID unlocks your journal.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "4"
+      "buildNumber": "5"
     },
     "android": {
       "package": "com.vidlun.journal",
