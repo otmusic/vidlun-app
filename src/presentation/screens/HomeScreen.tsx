@@ -158,32 +158,36 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           * back as a failure blaming the recording. Now the tap only turns the
           * line below from soft to ink, and the line says what is happening.
           */}
-        <RecordButton
-          onPress={
-            canHear && !micRefused
-              ? props.onRecord
-              : () => {
-                  setNudged(true);
-                }
-          }
-          accessibilityLabel={props.t('home.recordHint')}
-        />
+        {/* Dimmed, not disabled: the drawing keeps the button present at
+            0.55 while the phone cannot record, so the tap can still answer. */}
+        <View style={{ opacity: canHear && !micRefused ? 1 : 0.55 }}>
+          <RecordButton
+            onPress={
+              canHear && !micRefused
+                ? props.onRecord
+                : () => {
+                    setNudged(true);
+                  }
+            }
+            accessibilityLabel={props.t('home.recordHint')}
+          />
+        </View>
         {micRefused ? (
-          <View style={{ alignItems: 'center', gap: 6 }}>
-            <AppText variant="body" color={nudged ? 'ink' : 'inkSoft'} align="center">
+          <View style={{ alignItems: 'center', gap: 9, width: 258 }}>
+            <AppText
+              variant="secondary"
+              color={nudged ? 'ink' : 'inkSoft'}
+              align="center"
+              style={{ lineHeight: 21 }}
+            >
               {props.t('home.micDenied')}
             </AppText>
-            <Pressable
-              accessibilityRole="button"
+            <QuietLink
+              label={props.t('home.micSettings')}
               onPress={() => {
                 void Linking.openSettings();
               }}
-              hitSlop={12}
-            >
-              <AppText variant="label" color="accentInk">
-                {props.t('home.micSettings')}
-              </AppText>
-            </Pressable>
+            />
           </View>
         ) : (
           <VoiceLine voice={props.voice} nudged={nudged} t={props.t} onRetry={props.onRetryVoice} />
@@ -439,6 +443,9 @@ function VoiceLine(props: {
   readonly t: Translate;
   readonly onRetry: () => void;
 }): React.JSX.Element {
+  const theme = useTheme();
+  const colour = props.nudged ? 'ink' : 'inkSoft';
+
   if (props.voice.kind === 'ready') {
     return (
       <AppText variant="body" color="inkSoft">
@@ -449,15 +456,11 @@ function VoiceLine(props: {
 
   if (props.voice.kind === 'failed') {
     return (
-      <View style={{ alignItems: 'center', gap: 6 }}>
-        <AppText variant="body" color={props.nudged ? 'ink' : 'inkSoft'} align="center">
+      <View style={{ alignItems: 'center', gap: 8, width: 250 }}>
+        <AppText variant="secondary" color={colour} align="center" style={{ lineHeight: 20 }}>
           {props.t('home.voiceFailed')}
         </AppText>
-        <Pressable accessibilityRole="button" onPress={props.onRetry} hitSlop={12}>
-          <AppText variant="label" color="accentInk">
-            {props.t('failure.retry')}
-          </AppText>
-        </Pressable>
+        <QuietLink label={props.t('failure.retry')} onPress={props.onRetry} />
       </View>
     );
   }
@@ -467,11 +470,51 @@ function VoiceLine(props: {
       ? Math.min(99, Math.floor((props.voice.writtenBytes / props.voice.totalBytes) * 100))
       : null;
 
+  /*
+   * The drawing's download state: the line with its percentage, and under it
+   * a hairline bar the accent fills. Two pixels tall on purpose — progress,
+   * not a control.
+   */
   return (
-    <AppText variant="body" color={props.nudged ? 'ink' : 'inkSoft'} align="center">
-      {percent === null
-        ? props.t('home.voiceFetching')
-        : `${props.t('home.voiceFetching')} · ${String(percent)}%`}
-    </AppText>
+    <View style={{ alignItems: 'center', gap: 9, width: 232 }}>
+      <AppText variant="secondary" color={colour} align="center" style={{ lineHeight: 20 }}>
+        {percent === null
+          ? props.t('home.voiceFetching')
+          : `${props.t('home.voiceFetching')} · ${String(percent)}%`}
+      </AppText>
+      <View
+        style={{
+          width: 132,
+          height: 2,
+          borderRadius: 999,
+          backgroundColor: theme.palette.line,
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            height: 2,
+            width: `${percent ?? 0}%`,
+            borderRadius: 999,
+            backgroundColor: theme.palette.accent,
+          }}
+        />
+      </View>
+    </View>
+  );
+}
+
+/** The drawing's underlined accent link, as the voice states set it. */
+function QuietLink(props: { readonly label: string; readonly onPress: () => void }): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <Pressable accessibilityRole="button" onPress={props.onPress} hitSlop={12}>
+      <View style={{ borderBottomWidth: 1, borderBottomColor: theme.palette.accentInk, paddingBottom: 1 }}>
+        <AppText variant="secondary" color="accentInk">
+          {props.label}
+        </AppText>
+      </View>
+    </Pressable>
   );
 }
