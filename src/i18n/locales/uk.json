@@ -7,6 +7,8 @@
   "home.emptyState": "Тут з'являтимуться твої записи. Говори стільки, скільки треба.",
   "home.openHistory": "Усі",
   "home.writeInstead": "Не можеш говорити? Напиши",
+  "home.voiceFetching": "Vidlun завантажує те, чим слухає",
+  "home.voiceFailed": "Не вдалося завантажити те, чим Vidlun слухає",
   "recording.listening": "Слухаю",
   "recording.hint": "Говори спокійно. Можна паузами — це нормально.",
   "recording.stop": "Зупинити запис",

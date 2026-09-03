@@ -7,6 +7,8 @@
   "home.emptyState": "Your entries will appear here. Take as long as you need.",
   "home.openHistory": "All",
   "home.writeInstead": "Can't speak? Write it",
+  "home.voiceFetching": "Vidlun is downloading what it listens with",
+  "home.voiceFailed": "What Vidlun listens with could not be downloaded",
   "recording.listening": "Listening",
   "recording.hint": "Speak calmly. Pauses are fine.",
   "recording.stop": "Stop recording",

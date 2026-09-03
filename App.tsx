@@ -433,6 +433,8 @@ function Vidlun(props: {
       onExport={exportJournal}
       onRestore={restoreJournal}
       onEnableLock={enableLock}
+      voice={props.model.state}
+      onRetryVoice={props.model.fetch}
     />
   );
 

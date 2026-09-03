@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import type { DailyMood } from '@/application/use-cases/GetWeekSummary';
 import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
+import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import { emotionKey, type Locale, type Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
@@ -31,10 +33,16 @@ export interface HomeScreenProps {
   readonly t: Translate;
   readonly onRecord: () => void;
   readonly onWrite: () => void;
+  /** Whether the phone can hear yet: the speech model's state. */
+  readonly voice: SpeechModelState;
+  readonly onRetryVoice: () => void;
 }
 
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const theme = useTheme();
+  const canHear = props.voice.kind === 'ready';
+  /** True after a tap on the microphone that could not record yet. */
+  const [nudged, setNudged] = useState(false);
   const streak = props.home?.streakDays ?? 0;
   const recent = props.home?.recentEntries ?? [];
   const week = props.home?.week ?? [];
@@ -132,10 +140,23 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
       </AppText>
 
       <View style={{ alignItems: 'center', gap: 18, paddingTop: 16, paddingBottom: 34 }}>
-        <RecordButton onPress={props.onRecord} accessibilityLabel={props.t('home.recordHint')} />
-        <AppText variant="body" color="inkSoft">
-          {props.t('home.recordHint')}
-        </AppText>
+        {/*
+          * Until the model is on disk a tap cannot record, and the old path
+          * let it try — the take went through an empty transcription and came
+          * back as a failure blaming the recording. Now the tap only turns the
+          * line below from soft to ink, and the line says what is happening.
+          */}
+        <RecordButton
+          onPress={
+            canHear
+              ? props.onRecord
+              : () => {
+                  setNudged(true);
+                }
+          }
+          accessibilityLabel={props.t('home.recordHint')}
+        />
+        <VoiceLine voice={props.voice} nudged={nudged} t={props.t} onRetry={props.onRetryVoice} />
         {/*
           * hitSlop rather than a 44pt box: a padded target here would push the
           * text off the line the design puts it on. The finger still lands on
@@ -356,4 +377,53 @@ function MonthReadyCard(props: {
 /** True when yesterday sits in the strip with nothing in it. */
 function yesterdayEmpty(week: readonly DailyMood[]): boolean {
   return week.length >= 2 && week[week.length - 2]?.entryCount === 0;
+}
+
+
+/**
+ * The line under the microphone. The hint while the phone can hear; while it
+ * cannot, the download in the drawing's own words — with the percentage when
+ * the server said how much there is — and a retry once it has failed.
+ */
+function VoiceLine(props: {
+  readonly voice: SpeechModelState;
+  readonly nudged: boolean;
+  readonly t: Translate;
+  readonly onRetry: () => void;
+}): React.JSX.Element {
+  if (props.voice.kind === 'ready') {
+    return (
+      <AppText variant="body" color="inkSoft">
+        {props.t('home.recordHint')}
+      </AppText>
+    );
+  }
+
+  if (props.voice.kind === 'failed') {
+    return (
+      <View style={{ alignItems: 'center', gap: 6 }}>
+        <AppText variant="body" color={props.nudged ? 'ink' : 'inkSoft'} align="center">
+          {props.t('home.voiceFailed')}
+        </AppText>
+        <Pressable accessibilityRole="button" onPress={props.onRetry} hitSlop={12}>
+          <AppText variant="label" color="accentInk">
+            {props.t('failure.retry')}
+          </AppText>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const percent =
+    props.voice.kind === 'fetching' && props.voice.totalBytes !== null && props.voice.totalBytes > 0
+      ? Math.min(99, Math.floor((props.voice.writtenBytes / props.voice.totalBytes) * 100))
+      : null;
+
+  return (
+    <AppText variant="body" color={props.nudged ? 'ink' : 'inkSoft'} align="center">
+      {percent === null
+        ? props.t('home.voiceFetching')
+        : `${props.t('home.voiceFetching')} · ${String(percent)}%`}
+    </AppText>
+  );
 }

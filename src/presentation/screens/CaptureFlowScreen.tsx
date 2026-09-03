@@ -1,6 +1,7 @@
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings } from '@/domain/ports/ISettings';
+import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import type { Locale, Translate } from '@/i18n';
 import { legalDocument } from '@/i18n/legal';
 
@@ -42,6 +43,9 @@ export interface CaptureFlowScreenProps {
   readonly onExport: (shape: 'backup' | 'markdown') => void;
   readonly onRestore: () => void;
   readonly onEnableLock: () => Promise<boolean>;
+  /** The speech model's state, so home can say whether the phone can hear yet. */
+  readonly voice: SpeechModelState;
+  readonly onRetryVoice: () => void;
 }
 
 /**
@@ -334,6 +338,8 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           t={t}
           onRecord={flow.startRecording}
           onWrite={flow.startWriting}
+          voice={props.voice}
+          onRetryVoice={props.onRetryVoice}
           onDelete={flow.deleteEntry}
           onOpenHistory={flow.openHistory}
           onOpenStats={flow.openStats}
