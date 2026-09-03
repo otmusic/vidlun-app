@@ -1,0 +1,10 @@
+{
+  "name": "vidlun-asset-pack",
+  "version": "1.0.0",
+  "description": "Reads Vidlun's Apple-hosted asset packs on the device",
+  "main": "index.ts",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Vidlun",
+  "homepage": "https://vidlun.app"
+}

@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
+    "@bacons/apple-targets": "^5.0.0",
     "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
     "@expo-google-fonts/unbounded": "^0.4.1",
     "@expo/vector-icons": "^15.0.2",

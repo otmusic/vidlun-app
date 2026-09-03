@@ -28,9 +28,20 @@ export interface ModelStorage {
   readNote(name: string): Promise<string | null>;
 }
 
+/**
+ * The model as the system may already have delivered it — an Apple-hosted
+ * asset pack on iOS 26 and later. Asked before any download is considered.
+ */
+export interface PreinstalledModel {
+  /** Where the model file is on disk, or null when the system has not brought it. */
+  uriFor(model: SpeechModelDescriptor): string | null;
+}
+
 export interface SpeechModelDescriptor {
   readonly url: string;
   readonly fileName: string;
+  /** The Apple-hosted asset pack carrying this file: letters, digits and hyphens only. */
+  readonly assetPackID: string;
   /** Which of whisper.rn's two engines reads these weights. */
   readonly engine: 'whisper' | 'parakeet';
   /**
@@ -49,6 +60,7 @@ export interface SpeechModelDescriptor {
 export const TURBO_Q5_0: SpeechModelDescriptor = {
   url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin',
   fileName: 'ggml-large-v3-turbo-q5_0.bin',
+  assetPackID: 'whisper-large-v3-turbo-q5',
   engine: 'whisper',
   leastPlausibleBytes: 500 * 1024 * 1024,
 };
@@ -61,6 +73,7 @@ export const TURBO_Q5_0: SpeechModelDescriptor = {
 export const PARAKEET_TDT_Q8: SpeechModelDescriptor = {
   url: 'https://huggingface.co/ggml-org/parakeet-GGUF/resolve/main/ggml-parakeet-tdt-0.6b-v3-q8_0.bin',
   fileName: 'ggml-parakeet-tdt-0.6b-v3-q8_0.bin',
+  assetPackID: 'parakeet-tdt-06b-v3-q8',
   engine: 'parakeet',
   leastPlausibleBytes: 600 * 1024 * 1024,
 };
@@ -91,10 +104,18 @@ export class SpeechModelStore {
 
   constructor(
     private readonly storage: ModelStorage,
+    private readonly preinstalled: PreinstalledModel = { uriFor: () => null },
     private readonly model: SpeechModelDescriptor = SPEECH_MODEL,
   ) {}
 
   async state(): Promise<SpeechModelState> {
+    // Brought by the system with the install: nothing to fetch, ever.
+    const delivered = this.preinstalled.uriFor(this.model);
+
+    if (delivered !== null) {
+      return { kind: 'ready', uri: delivered };
+    }
+
     const size = await this.storage.sizeOf(this.model.fileName);
 
     if (size === null || size < this.model.leastPlausibleBytes) {

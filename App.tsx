@@ -8,6 +8,7 @@ import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService
 import { createContainer, type Container } from '@/di/container';
 import { createTranslator, type Locale, type Translate } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
+import { AssetPackModel } from '@/infrastructure/transcription/AssetPackModel';
 import { ExpoModelStorage } from '@/infrastructure/transcription/ExpoModelStorage';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
 import { entitlementOf, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
@@ -469,7 +470,10 @@ function Vidlun(props: {
  * gigabyte, one of them silent.
  */
 function useSpeechModel(): { readonly state: SpeechModelState; readonly fetch: () => void } {
-  const store = useMemo(() => new SpeechModelStore(new ExpoModelStorage()), []);
+  const store = useMemo(
+    () => new SpeechModelStore(new ExpoModelStorage(), new AssetPackModel()),
+    [],
+  );
   const [state, setState] = useState<SpeechModelState>({ kind: 'absent' });
 
   useEffect(() => {

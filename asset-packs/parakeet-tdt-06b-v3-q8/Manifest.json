@@ -1,0 +1,12 @@
+{
+  "assetPackID": "parakeet-tdt-06b-v3-q8",
+  "downloadPolicy": {
+    "essential": {
+      "installationEventTypes": ["firstInstallation", "subsequentUpdate"]
+    }
+  },
+  "fileSelectors": [
+    { "file": "ggml-parakeet-tdt-0.6b-v3-q8_0.bin" }
+  ],
+  "platforms": ["iOS"]
+}

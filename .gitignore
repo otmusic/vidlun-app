@@ -50,3 +50,7 @@ coverage/
 .env
 .analysis-build/
 server/.dev.vars
+
+# Apple-hosted asset packs: the model weights and the packaged archive are built, not versioned
+asset-packs/**/*.bin
+asset-packs/**/*.aar

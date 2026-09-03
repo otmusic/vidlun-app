@@ -359,3 +359,35 @@ describe('pausing and continuing across launches', () => {
     expect(storage.notes.has(PAUSE_NOTE)).toBe(false);
   });
 });
+
+describe('a model the system delivered with the install', () => {
+  const delivered = { uriFor: () => 'file:///asset-packs/parakeet/model.bin' };
+
+  it('is ready without a byte having been downloaded by the app', async () => {
+    const storage = new FakeStorage();
+    const subject = new SpeechModelStore(storage, delivered);
+
+    expect(await subject.state()).toEqual({
+      kind: 'ready',
+      uri: 'file:///asset-packs/parakeet/model.bin',
+    });
+  });
+
+  it('never starts a download it does not need', async () => {
+    const storage = new FakeStorage();
+    const subject = new SpeechModelStore(storage, delivered);
+
+    expect((await subject.fetch()).kind).toBe('ready');
+    expect(storage.started).toEqual([]);
+    expect(storage.resumed).toEqual([]);
+  });
+
+  it('falls through to the download where the system brought nothing', async () => {
+    const storage = new FakeStorage();
+    const subject = new SpeechModelStore(storage, { uriFor: () => null });
+
+    expect(await subject.state()).toEqual({ kind: 'absent' });
+    expect((await subject.fetch()).kind).toBe('ready');
+    expect(storage.started).toEqual([PARTIAL_NAME]);
+  });
+});

@@ -10,13 +10,20 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.vidlun.journal",
       "entitlements": {
-        "com.apple.developer.devicecheck.appattest-environment": "production"
+        "com.apple.developer.devicecheck.appattest-environment": "production",
+        "com.apple.security.application-groups": [
+          "group.com.vidlun.journal"
+        ]
       },
       "infoPlist": {
         "NSFaceIDUsageDescription": "Face ID unlocks your journal.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "BAHasManagedAssetPacks": true,
+        "BAUsesAppleHosting": true,
+        "BAAppGroupID": "group.com.vidlun.journal"
       },
-      "buildNumber": "5"
+      "buildNumber": "5",
+      "appleTeamId": "M3K99W5FFQ"
     },
     "android": {
       "package": "com.vidlun.journal",
@@ -35,7 +42,8 @@
       "expo-audio",
       "expo-font",
       "expo-localization",
-      "expo-notifications"
+      "expo-notifications",
+      "@bacons/apple-targets"
     ]
   }
 }
