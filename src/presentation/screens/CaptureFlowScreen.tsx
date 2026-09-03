@@ -16,6 +16,7 @@ import { EntryDetailScreen } from './EntryDetailScreen';
 import { HistoryScreen } from './HistoryScreen';
 import { HomeScreen } from './HomeScreen';
 import { ProcessingScreen } from './ProcessingScreen';
+import { ParkedScreen } from './ParkedScreen';
 import { CompareScreen } from './CompareScreen';
 import { RecordingScreen } from './RecordingScreen';
 import { TurnScreen } from './TurnScreen';
@@ -117,6 +118,9 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
 
     case 'processing':
       return <ProcessingScreen t={t} />;
+
+    case 'parked':
+      return <ParkedScreen t={t} voice={props.voice} onHome={flow.backHome} />;
 
     case 'turn':
       return (
@@ -340,6 +344,8 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           onWrite={flow.startWriting}
           voice={props.voice}
           onRetryVoice={props.onRetryVoice}
+          parked={flow.parked !== null}
+          onContinueParked={flow.continueParked}
           onDelete={flow.deleteEntry}
           onOpenHistory={flow.openHistory}
           onOpenStats={flow.openStats}

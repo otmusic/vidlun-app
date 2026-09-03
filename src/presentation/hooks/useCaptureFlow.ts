@@ -29,12 +29,19 @@ import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
 import type { IClock } from '@/domain/ports/IClock';
 import type { IPurchases, Plan, PurchaseOutcome } from '@/domain/ports/IPurchases';
 import type { IHaptics } from '@/domain/ports/IHaptics';
+import type { IParkedTake, ParkedTake } from '@/domain/ports/IParkedTake';
 
 export type CaptureStage =
   | { readonly kind: 'idle' }
   | { readonly kind: 'recording' }
   | { readonly kind: 'writing' }
   | { readonly kind: 'processing' }
+  /**
+   * A take recorded before the phone could hear, kept until it can. The
+   * screen shows the download and lets the person leave; the take waits for
+   * them on home either way.
+   */
+  | { readonly kind: 'parked' }
   /**
    * The card, asking before it answers. One stage rather than two screens: the
    * question and the hold are the same card in two states, and a person who
@@ -136,6 +143,9 @@ export interface CaptureDependencies {
   readonly findRecording: FindRecording;
   /** False stops a confirmed take from being kept at all. */
   readonly keepRecordings: boolean;
+  /** Whether the speech model is on disk. Recording works either way; hearing does not. */
+  readonly canHear: boolean;
+  readonly parkedTake: IParkedTake;
   /**
    * False takes the question out of the capture path entirely: the card is
    * what it was before §3b, and it costs what it cost then.
@@ -166,6 +176,10 @@ export interface CaptureFlow {
   readonly monthCard: Date | null;
   readonly startRecording: () => void;
   readonly stopRecording: () => void;
+  /** The take waiting for the model, if any — shown on home until it is read. */
+  readonly parked: ParkedTake | null;
+  /** Reads the waiting take now that the phone can hear. */
+  readonly continueParked: () => void;
   readonly cancel: () => void;
   readonly startWriting: () => void;
   /** Opens the text screen aimed at yesterday evening — the missed day's door. */
@@ -391,8 +405,20 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * path on disk is not that.
    */
   const takeUri = useRef<string | null>(null);
+  const [parked, setParked] = useState<ParkedTake | null>(null);
 
-  const { getHomeView } = dependencies;
+  const { getHomeView, parkedTake } = dependencies;
+
+  const reloadParked = useCallback(() => {
+    void parkedTake
+      .parked()
+      .then(setParked)
+      .catch(() => {
+        setParked(null);
+      });
+  }, [parkedTake]);
+
+  useEffect(reloadParked, [reloadParked]);
 
   const reloadHome = useCallback(() => {
     void getHomeView
@@ -531,6 +557,20 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       .then(async (take) => {
         // Fires for a tap and for the ceiling alike: the person may not be looking.
         dependencies.haptics.settle();
+
+        /*
+         * Said before the phone could hear. The moment is not lost for it:
+         * the take is kept and read when the model lands — this launch or
+         * the next — and the entry keeps the time it was spoken.
+         */
+        if (!dependencies.canHear) {
+          await dependencies.parkedTake.park(take, dependencies.clock.now());
+          reloadParked();
+          setStage({ kind: 'parked' });
+
+          return;
+        }
+
         takeUri.current = take.uri;
         setStage({ kind: 'processing' });
 
@@ -541,7 +581,49 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         );
       })
       .catch(fail);
+  }, [ask, dependencies, fail, reloadParked]);
+
+  const continueParked = useCallback(() => {
+    if (!dependencies.canHear) {
+      return;
+    }
+
+    setStage({ kind: 'processing' });
+
+    void dependencies.parkedTake
+      .parked()
+      .then(async (waiting) => {
+        if (waiting === null) {
+          setParked(null);
+          setStage({ kind: 'idle' });
+
+          return;
+        }
+
+        backfillAt.current = waiting.recordedAt;
+        takeUri.current = waiting.recording.uri;
+        // Ours now: a take read into a card is no longer waiting, whatever
+        // becomes of the card.
+        await dependencies.parkedTake.clear();
+        setParked(null);
+
+        const spoken = await dependencies.transcribeTake.execute(waiting.recording);
+
+        ask(spoken, (words) => dependencies.createVoiceEntry.execute(words, waiting.recordedAt));
+      })
+      .catch(fail);
   }, [ask, dependencies, fail]);
+
+  /*
+   * The person is still on the parked screen when the model lands: go on
+   * without a tap. Anywhere else, home offers the take instead — a card
+   * appearing over whatever they were doing is not the product's manners.
+   */
+  useEffect(() => {
+    if (dependencies.canHear && stage.kind === 'parked') {
+      continueParked();
+    }
+  }, [continueParked, dependencies.canHear, stage.kind]);
 
   /**
    * The week and its themes. The vocabulary is a separate screen and a
@@ -732,6 +814,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       dependencies.recorder.cancel();
       setStage({ kind: 'idle' });
     }, [dependencies.recorder]),
+    parked,
+    continueParked,
     startWriting: useCallback(() => {
       backfillAt.current = null;
       setStage({ kind: 'writing' });

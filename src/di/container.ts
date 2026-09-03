@@ -53,6 +53,9 @@ import { AsyncStorageRevisionLog } from '../infrastructure/persistence/AsyncStor
 import { FileRecordingStore } from '../infrastructure/persistence/FileRecordingStore';
 import { detectLocale } from '../infrastructure/settings/deviceLocale';
 import { SettingsStore } from '../infrastructure/settings/SettingsStore';
+import { ExpoParkedFiles } from '../infrastructure/persistence/ExpoParkedFiles';
+import { FileParkedTake } from '../infrastructure/persistence/FileParkedTake';
+import type { IParkedTake } from '../domain/ports/IParkedTake';
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { ExpoReminders } from '../infrastructure/system/ExpoReminders';
@@ -84,6 +87,8 @@ export interface Container {
   readonly forgetOldRecordings: ForgetOldRecordings;
   readonly findRecording: FindRecording;
   readonly settings: SettingsStore;
+  /** The take recorded before the phone could hear, if one waits. */
+  readonly parkedTake: IParkedTake;
   readonly forgetAllRecordings: () => Promise<void>;
   readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
@@ -205,6 +210,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     forgetOldRecordings: new ForgetOldRecordings(recordings, clock),
     findRecording: new FindRecording(recordings),
     settings: new SettingsStore(AsyncStorage, detectLocale),
+    parkedTake: new FileParkedTake(AsyncStorage, new ExpoParkedFiles()),
     // Everything up to now, which is everything: turning the setting off is a
     // request to be rid of the voice, not only to stop adding to it.
     forgetAllRecordings: () => recordings.discardBefore(clock.now()),

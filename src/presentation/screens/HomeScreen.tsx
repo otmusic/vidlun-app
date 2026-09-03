@@ -36,6 +36,9 @@ export interface HomeScreenProps {
   /** Whether the phone can hear yet: the speech model's state. */
   readonly voice: SpeechModelState;
   readonly onRetryVoice: () => void;
+  /** A take recorded before the phone could hear is waiting to be read. */
+  readonly parked: boolean;
+  readonly onContinueParked: () => void;
 }
 
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
@@ -173,6 +176,23 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             {props.t('home.writeInstead')}
           </AppText>
         </Pressable>
+        {/*
+          * Offered, not sprung: the take said before the phone could hear is
+          * read when the person asks, not the moment the model lands under
+          * whatever they were doing.
+          */}
+        {props.parked && canHear ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={props.onContinueParked}
+            hitSlop={12}
+            style={{ paddingVertical: 6 }}
+          >
+            <AppText variant="label" color="accentInk">
+              {`${props.t('home.parkedReady')} ›`}
+            </AppText>
+          </Pressable>
+        ) : null}
       </View>
 
       {props.monthCard === null ? null : (

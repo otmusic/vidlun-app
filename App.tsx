@@ -179,6 +179,8 @@ function Vidlun(props: {
     findRecording: container.findRecording,
     keepRecordings: props.settings.keepRecordings,
     asksFirst: props.settings.asksFirst,
+    canHear: props.model.state.kind === 'ready',
+    parkedTake: container.parkedTake,
     getHomeView: container.getHomeView,
     getWeekSummary: container.getWeekSummary,
     getMonthSummary: container.getMonthSummary,
