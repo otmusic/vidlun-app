@@ -498,7 +498,14 @@ function useSpeechModel(): { readonly state: SpeechModelState; readonly fetch: (
 
   useEffect(() => {
     const watch = AppState.addEventListener('change', (next) => {
-      if (next === 'background') {
+      /*
+       * On the way out of `active`, not only into `background`: an app swiped
+       * away from the switcher never reaches `background` — it goes inactive
+       * when the switcher opens and is then killed — and that was exactly the
+       * download that restarted from the first byte. Pausing on a brief
+       * inactive costs a resume a moment later; missing the kill costs it all.
+       */
+      if (next === 'inactive' || next === 'background') {
         void store.pause();
       } else if (next === 'active' && stateRef.current.kind === 'fetching') {
         fetch();

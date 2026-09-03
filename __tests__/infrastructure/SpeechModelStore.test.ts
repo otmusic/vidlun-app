@@ -75,8 +75,15 @@ class FakeStorage implements ModelStorage {
     return this.script(name, onProgress, 0);
   }
 
+  /** True models a platform refusing the pause state it handed back. */
+  resumeRefused = false;
+
   resumeDownload(saved: string, onProgress: Progress): ModelDownload {
     this.resumed.push(saved);
+
+    if (this.resumeRefused) {
+      throw new Error('Cannot restore task: DownloadPauseState has no resumeData');
+    }
 
     return this.script(PARTIAL_NAME, onProgress, 120_000_000);
   }
@@ -348,6 +355,17 @@ describe('pausing and continuing across launches', () => {
 
     await expect(subject.pause()).resolves.toBeUndefined();
     expect(storage.notes.size).toBe(0);
+  });
+
+  it('starts over when the platform refuses the pause state it gave', async () => {
+    const { storage, subject } = setup();
+    storage.notes.set(PAUSE_NOTE, '{"resumeData":"opaque"}');
+    storage.resumeRefused = true;
+
+    expect((await subject.fetch()).kind).toBe('ready');
+    expect(storage.resumed).toHaveLength(1);
+    expect(storage.started).toEqual([PARTIAL_NAME]);
+    expect(storage.notes.has(PAUSE_NOTE)).toBe(false);
   });
 
   it('forgets the pause once the model is whole', async () => {

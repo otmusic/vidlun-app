@@ -117,7 +117,17 @@ function track(task: DownloadTask, transfer: Promise<File | null>): ModelDownloa
 
       await task.pauseAsync();
 
-      return JSON.stringify(task.savable());
+      /*
+       * The platform gives resume data only for a transfer it can continue —
+       * nothing before the first bytes, nothing for a server it cannot ask
+       * for a range. A saved state without it cannot be restored at all, so
+       * it is not saved: starting over is the honest answer there.
+       */
+      const saved = task.savable();
+
+      return typeof saved.resumeData === 'string' && saved.resumeData.length > 0
+        ? JSON.stringify(saved)
+        : null;
     },
   };
 }

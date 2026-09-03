@@ -179,21 +179,34 @@ export class SpeechModelStore {
 
     const saved = await this.storage.readNote(this.pauseNote());
 
-    if (saved === null) {
+    let download: ModelDownload | null = null;
+
+    if (saved !== null) {
+      await this.storage.remove(this.pauseNote());
+
+      try {
+        download = this.storage.resumeDownload(saved, report);
+      } catch {
+        // A saved state the platform will not take back — it can refuse one
+        // it wrote itself — is a fresh start, not a failure to report.
+        download = null;
+      }
+    }
+
+    if (download === null) {
       // A part with nothing to continue it from is a part of a download that
       // died, and the platform cannot pick that up. Starting over is slower
       // but never silently wrong.
       await this.storage.remove(partial);
-      this.current = this.storage.startDownload(this.model.url, partial, report);
-    } else {
-      await this.storage.remove(this.pauseNote());
-      this.current = this.storage.resumeDownload(saved, report);
+      download = this.storage.startDownload(this.model.url, partial, report);
     }
+
+    this.current = download;
 
     let outcome: 'completed' | 'paused';
 
     try {
-      outcome = await this.current.done;
+      outcome = await download.done;
     } catch {
       await this.storage.remove(partial);
 
