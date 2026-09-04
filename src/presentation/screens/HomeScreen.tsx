@@ -6,6 +6,7 @@ import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
+import type { ParkedTake } from '@/domain/ports/IParkedTake';
 import { emotionKey, type Locale, type Translate } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
@@ -13,6 +14,7 @@ import { AppText } from '../components/AppText';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { RecordButton } from '../components/RecordButton';
+import { CheckShape } from '../components/Shapes';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 
 import { WeekStrip } from '../components/WeekStrip';
@@ -39,9 +41,11 @@ export interface HomeScreenProps {
   readonly voice: SpeechModelState;
   /** Starts the model download, or tries it again after a failure. */
   readonly onFetchVoice: () => void;
-  /** A take recorded before the phone could hear is waiting to be read. */
-  readonly parked: boolean;
+  /** A take recorded before the phone could hear, waiting to be read. */
+  readonly parked: ParkedTake | null;
   readonly onContinueParked: () => void;
+  /** Opens the waiting screen: where the download stands, or the offer to start it. */
+  readonly onShowParked: () => void;
   /** Where the microphone stands with the system; `denied` is named, not retried. */
   readonly mic: PermissionStatus;
 }
@@ -216,7 +220,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           * read when the person asks, not the moment the model lands under
           * whatever they were doing.
           */}
-        {props.parked && canHear ? (
+        {props.parked !== null && canHear ? (
           <Pressable
             accessibilityRole="button"
             onPress={props.onContinueParked}
@@ -227,6 +231,22 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
               {`${props.t('home.parkedReady')} ›`}
             </AppText>
           </Pressable>
+        ) : null}
+        {/*
+          * Until the model lands the take has to be seen to be waiting: a
+          * recording that vanished into a download is one the person will
+          * assume is lost. The card leads to the waiting screen, which says
+          * where the download stands or offers to start it.
+          */}
+        {props.parked !== null && !canHear ? (
+          <ParkedWaitingCard
+            take={props.parked}
+            voice={props.voice}
+            locale={props.locale}
+            today={props.today}
+            t={props.t}
+            onPress={props.onShowParked}
+          />
         ) : null}
       </View>
 
@@ -424,6 +444,71 @@ function MonthReadyCard(props: {
       </AppText>
       <AppText variant="secondary" style={{ color: theme.palette.lime }}>
         {`${props.t('home.monthCta')} ›`}
+      </AppText>
+    </Pressable>
+  );
+}
+
+/**
+ * The take said before the phone could hear, shown waiting under the
+ * microphone: when it was said, and what it is waiting for.
+ */
+function ParkedWaitingCard(props: {
+  readonly take: ParkedTake;
+  readonly voice: SpeechModelState;
+  readonly locale: Locale;
+  readonly today: Date;
+  readonly t: Translate;
+  readonly onPress: () => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const at = props.take.recordedAt;
+  const time = at.toLocaleTimeString(props.locale, { hour: '2-digit', minute: '2-digit' });
+  const sameDay = at.toDateString() === props.today.toDateString();
+  const when = sameDay
+    ? time
+    : `${at.toLocaleDateString(props.locale, { day: 'numeric', month: 'short' })}, ${time}`;
+  const moving = props.voice.kind === 'fetching';
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={props.onPress}
+      style={{
+        alignSelf: 'stretch',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        marginTop: 4,
+        borderRadius: 22,
+        borderWidth: 1,
+        borderColor: theme.palette.line,
+        backgroundColor: theme.palette.paper,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+      }}
+    >
+      <View
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 17,
+          borderWidth: 1.5,
+          borderColor: theme.palette.line,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <CheckShape color={theme.palette.accentInk} size={14} />
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <AppText variant="body">{props.t('home.parkedWaitingAt', { time: when })}</AppText>
+        <AppText variant="secondary" color="inkSoft" style={{ lineHeight: 19 }}>
+          {props.t(moving ? 'home.parkedWaitingFetching' : 'home.parkedWaitingAbsent')}
+        </AppText>
+      </View>
+      <AppText variant="body" color="inkFaint">
+        ›
       </AppText>
     </Pressable>
   );

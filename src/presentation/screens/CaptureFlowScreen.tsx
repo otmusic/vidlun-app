@@ -356,8 +356,9 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           onWrite={flow.startWriting}
           voice={props.voice}
           onFetchVoice={props.onFetchVoice}
-          parked={flow.parked !== null}
+          parked={flow.parked}
           onContinueParked={flow.continueParked}
+          onShowParked={flow.showParked}
           mic={flow.micStatus}
           onDelete={flow.deleteEntry}
           onOpenHistory={flow.openHistory}

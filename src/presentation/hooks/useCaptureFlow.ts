@@ -187,6 +187,8 @@ export interface CaptureFlow {
   readonly micStatus: PermissionStatus;
   /** Reads the waiting take now that the phone can hear. */
   readonly continueParked: () => void;
+  /** Opens the waiting screen for a parked take: where the download stands, or the offer to start it. */
+  readonly showParked: () => void;
   readonly cancel: () => void;
   readonly startWriting: () => void;
   /** Opens the text screen aimed at yesterday evening — the missed day's door. */
@@ -880,6 +882,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     parked,
     micStatus,
     continueParked,
+    showParked: useCallback(() => {
+      setStage({ kind: 'parked' });
+    }, []),
     startWriting: useCallback(() => {
       backfillAt.current = null;
       setStage({ kind: 'writing' });
