@@ -23,10 +23,14 @@ binding = "ATTEST"
 id = "9bca7fd8b800425aaaf5e44e1fb65587"
 
 # Feedback from the app is mailed on, never stored. The sender must be on this
-# zone (Email Routing is on for vidlun.app); the recipient is the support
-# address, which routes to the owner's inbox.
+# zone (Email Routing is on for vidlun.app). The recipient has to be one of
+# the zone's *verified destination addresses* — the inbox support@vidlun.app
+# routes to, not support@ itself: a routing address is not a destination, and
+# sending to it fails with E_RECIPIENT_NOT_ALLOWED (measured 2026-09-04).
+# The binding is pinned to that one address so no bug can mail anywhere else.
 [[send_email]]
 name = "EMAIL"
+destination_address = "alexanderkharchenko02@gmail.com"
 
 [vars]
-FEEDBACK_TO = "support@vidlun.app"
+FEEDBACK_TO = "alexanderkharchenko02@gmail.com"

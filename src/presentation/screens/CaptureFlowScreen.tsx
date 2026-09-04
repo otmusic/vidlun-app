@@ -48,7 +48,8 @@ export interface CaptureFlowScreenProps {
   readonly onFeedback: (text: string) => Promise<void>;
   /** The speech model's state, so home can say whether the phone can hear yet. */
   readonly voice: SpeechModelState;
-  readonly onRetryVoice: () => void;
+  /** Starts the model download, or tries it again after a failure. */
+  readonly onFetchVoice: () => void;
 }
 
 /**
@@ -122,7 +123,14 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
       return <ProcessingScreen t={t} />;
 
     case 'parked':
-      return <ParkedScreen t={t} voice={props.voice} onHome={flow.backHome} />;
+      return (
+        <ParkedScreen
+          t={t}
+          voice={props.voice}
+          onFetchVoice={props.onFetchVoice}
+          onHome={flow.backHome}
+        />
+      );
 
     case 'turn':
       return (
@@ -347,7 +355,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           onRecord={flow.startRecording}
           onWrite={flow.startWriting}
           voice={props.voice}
-          onRetryVoice={props.onRetryVoice}
+          onFetchVoice={props.onFetchVoice}
           parked={flow.parked !== null}
           onContinueParked={flow.continueParked}
           mic={flow.micStatus}

@@ -64,6 +64,11 @@ export class FileParkedTake implements IParkedTake {
     };
   }
 
+  async release(): Promise<void> {
+    // The file stays where it is; the next park removes it before moving in.
+    await this.store.removeItem(KEY);
+  }
+
   async clear(): Promise<void> {
     this.files.removeKept();
     await this.store.removeItem(KEY);

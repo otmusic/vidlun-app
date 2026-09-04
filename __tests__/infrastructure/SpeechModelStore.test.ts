@@ -378,6 +378,49 @@ describe('pausing and continuing across launches', () => {
   });
 });
 
+describe('a launch, which may continue a download but never start one', () => {
+  it('continues a download paused on an earlier launch without being asked again', async () => {
+    const { storage, subject } = setup();
+    storage.notes.set(PAUSE_NOTE, '{"resumeData":"opaque"}');
+
+    expect((await subject.resume())?.kind).toBe('ready');
+    expect(storage.resumed).toEqual(['{"resumeData":"opaque"}']);
+    expect(storage.started).toEqual([]);
+  });
+
+  it('starts nothing when there is no pause to continue', async () => {
+    const { storage, subject } = setup();
+
+    expect(await subject.resume()).toBeNull();
+    expect(storage.started).toEqual([]);
+    expect(storage.resumed).toEqual([]);
+  });
+
+  it('reports progress while continuing, as a fetch would', async () => {
+    const { storage, subject } = setup();
+    storage.notes.set(PAUSE_NOTE, '{"resumeData":"opaque"}');
+    const seen: SpeechModelState[] = [];
+
+    await subject.resume((state) => seen.push(state));
+
+    expect(seen[0]?.kind).toBe('fetching');
+  });
+
+  it('joins a fetch already running rather than starting a second', async () => {
+    const { storage, subject } = setup();
+    storage.autoComplete = false;
+
+    const fetching = subject.fetch();
+    await settle();
+    const resuming = subject.resume();
+    storage.downloads[0]?.complete();
+
+    expect((await resuming)?.kind).toBe('ready');
+    expect((await fetching).kind).toBe('ready');
+    expect(storage.started).toHaveLength(1);
+  });
+});
+
 describe('a model the system delivered with the install', () => {
   const delivered = { uriFor: () => 'file:///asset-packs/parakeet/model.bin' };
 

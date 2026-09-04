@@ -144,6 +144,25 @@ export class SpeechModelStore {
   }
 
   /**
+   * What a launch may do: continue a download an earlier launch paused, and
+   * nothing else. Null when there is no pause to continue — the network is
+   * not touched, because the one tap that started the download is the
+   * consent to half a gigabyte over whatever connection the phone is on,
+   * and opening the app is not.
+   */
+  async resume(
+    onProgress: (state: SpeechModelState) => void = () => {},
+  ): Promise<SpeechModelState | null> {
+    if (this.inFlight !== null) {
+      return this.inFlight;
+    }
+
+    const saved = await this.storage.readNote(this.pauseNote());
+
+    return saved === null ? null : this.fetch(onProgress);
+  }
+
+  /**
    * Stops a running download and keeps what is needed to continue it. Nothing
    * to stop is not an error: the app pauses on the way to the background
    * whether or not anything was downloading.

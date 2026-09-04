@@ -655,17 +655,27 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
         backfillAt.current = waiting.recordedAt;
         takeUri.current = waiting.recording.uri;
-        // Ours now: a take read into a card is no longer waiting, whatever
-        // becomes of the card.
-        await dependencies.parkedTake.clear();
         setParked(null);
 
         const spoken = await dependencies.transcribeTake.execute(waiting.recording);
 
+        /*
+         * Released only now, and released rather than cleared: the file is
+         * what the model just read and what the entry will keep as its
+         * recording. Clearing it before the read handed the model a path
+         * with nothing behind it — "Invalid WAV file" on a take that was
+         * fine. A take the model could not read stays parked: a later
+         * launch, or a re-downloaded model, may still manage it.
+         */
+        await dependencies.parkedTake.release();
+
         ask(spoken, (words) => dependencies.createVoiceEntry.execute(words, waiting.recordedAt));
       })
-      .catch(fail);
-  }, [ask, dependencies, fail]);
+      .catch((error: unknown) => {
+        reloadParked();
+        fail(error);
+      });
+  }, [ask, dependencies, fail, reloadParked]);
 
   /*
    * The person is still on the parked screen when the model lands: go on

@@ -22,7 +22,7 @@ export interface Env {
   readonly ATTEST: AttestStore;
   /** Cloudflare's send-email binding, bound in wrangler.toml. */
   readonly EMAIL: { send(message: FeedbackMail): Promise<unknown> };
-  /** Where a person's note lands; a routing address on this zone. */
+  /** Where a person's note lands: the inbox behind support@vidlun.app, as a verified destination address. */
   readonly FEEDBACK_TO: string;
 }
 

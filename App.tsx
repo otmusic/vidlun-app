@@ -114,14 +114,6 @@ function Vidlun(props: {
     });
   }, [container.settings, onSettingsChange]);
 
-  const { fetch: fetchModel } = props.model;
-
-  useEffect(() => {
-    // Starts as soon as the app opens, onboarding or not. Nothing waits on it,
-    // and the sooner it begins the sooner voice works.
-    fetchModel();
-  }, [fetchModel]);
-
   const changeSettings = useCallback(
     (next: Settings) => {
       onSettingsChange(next);
@@ -423,6 +415,7 @@ function Vidlun(props: {
       t={t}
       locale={locale}
       model={props.model.state}
+      onFetchModel={props.model.fetch}
       onAskMicrophone={() => container.microphonePermission.request()}
       onDone={() => changeSettings({ ...props.settings, hasOnboarded: true })}
     />
@@ -443,7 +436,7 @@ function Vidlun(props: {
       onEnableLock={enableLock}
       onFeedback={(text) => container.feedback.send(text)}
       voice={props.model.state}
-      onRetryVoice={props.model.fetch}
+      onFetchVoice={props.model.fetch}
     />
   );
 
@@ -480,8 +473,26 @@ function useSpeechModel(): { readonly state: SpeechModelState; readonly fetch: (
   );
   const [state, setState] = useState<SpeechModelState>({ kind: 'absent' });
 
+  /*
+   * A launch reads what is on disk and continues a download an earlier
+   * launch paused; it starts none. 668 MB over whatever connection the phone
+   * happens to be on is the person's call — made once, by the tap on the
+   * onboarding screen or on home's own line, never by the app opening.
+   */
   useEffect(() => {
-    void store.state().then(setState);
+    void store.state().then((known) => {
+      setState(known);
+
+      if (known.kind === 'ready') {
+        return;
+      }
+
+      void store.resume(setState).then((continued) => {
+        if (continued !== null) {
+          setState(continued);
+        }
+      });
+    });
   }, [store]);
 
   const fetch = useCallback(() => {

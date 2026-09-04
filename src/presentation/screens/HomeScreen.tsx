@@ -37,7 +37,8 @@ export interface HomeScreenProps {
   readonly onWrite: () => void;
   /** Whether the phone can hear yet: the speech model's state. */
   readonly voice: SpeechModelState;
-  readonly onRetryVoice: () => void;
+  /** Starts the model download, or tries it again after a failure. */
+  readonly onFetchVoice: () => void;
   /** A take recorded before the phone could hear is waiting to be read. */
   readonly parked: boolean;
   readonly onContinueParked: () => void;
@@ -192,7 +193,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             />
           </View>
         ) : (
-          <VoiceLine voice={props.voice} nudged={nudged} t={props.t} onRetry={props.onRetryVoice} />
+          <VoiceLine voice={props.voice} nudged={nudged} t={props.t} onFetch={props.onFetchVoice} />
         )}
         {/*
           * hitSlop rather than a 44pt box: a padded target here would push the
@@ -437,13 +438,15 @@ function yesterdayEmpty(week: readonly DailyMood[]): boolean {
 /**
  * The line under the microphone. The hint while the phone can hear; while it
  * cannot, the download in the drawing's own words — with the percentage when
- * the server said how much there is — and a retry once it has failed.
+ * the server said how much there is — a retry once it has failed, and the
+ * offer to start it where nothing has: the app never starts 668 MB by
+ * itself, so someone who said "later" at onboarding finds the way here.
  */
 function VoiceLine(props: {
   readonly voice: SpeechModelState;
   readonly nudged: boolean;
   readonly t: Translate;
-  readonly onRetry: () => void;
+  readonly onFetch: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const colour = props.nudged ? 'ink' : 'inkSoft';
@@ -456,13 +459,15 @@ function VoiceLine(props: {
     );
   }
 
-  if (props.voice.kind === 'failed') {
+  if (props.voice.kind === 'absent' || props.voice.kind === 'failed') {
+    const failed = props.voice.kind === 'failed';
+
     return (
       <View style={{ alignItems: 'center', gap: 8, width: 250 }}>
         <AppText variant="secondary" color={colour} align="center" style={{ lineHeight: 20 }}>
-          {props.t('home.voiceFailed')}
+          {props.t(failed ? 'home.voiceFailed' : 'home.voiceAbsent')}
         </AppText>
-        <QuietLink label={props.t('failure.retry')} onPress={props.onRetry} />
+        <QuietLink label={props.t(failed ? 'failure.retry' : 'home.voiceDownload')} onPress={props.onFetch} />
       </View>
     );
   }

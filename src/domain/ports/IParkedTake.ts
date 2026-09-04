@@ -19,6 +19,12 @@ export interface IParkedTake {
   park(recording: AudioRecording, recordedAt: Date): Promise<void>;
   /** Null when nothing waits, or when what waited is no longer on disk. */
   parked(): Promise<ParkedTake | null>;
+  /**
+   * Forgets the take without touching its file. Once the model has read it,
+   * the recording belongs to the entry being made from it, and deleting it
+   * here would pull the audio out from under that entry.
+   */
+  release(): Promise<void>;
   /** Silent when there is nothing to clear. */
   clear(): Promise<void>;
 }

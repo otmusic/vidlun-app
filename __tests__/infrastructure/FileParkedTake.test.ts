@@ -121,6 +121,27 @@ describe('a take kept for a phone that cannot hear yet', () => {
     expect(files.present()).toBe(false);
   });
 
+  it('keeps the file when released: the recording is the entry\'s now', async () => {
+    const { files, subject } = setup();
+    await subject.park({ uri: SCRATCH, durationMs: 18_400 }, SPOKEN_AT);
+
+    await subject.release();
+
+    expect(await subject.parked()).toBeNull();
+    expect(files.present()).toBe(true);
+  });
+
+  it('lets the next park replace a released file', async () => {
+    const { files, subject } = setup();
+    await subject.park({ uri: SCRATCH, durationMs: 18_400 }, SPOKEN_AT);
+    await subject.release();
+
+    await subject.park({ uri: 'file:///scratch/take-2.wav', durationMs: 5_000 }, SPOKEN_AT);
+
+    expect(files.movedFrom).toHaveLength(2);
+    expect((await subject.parked())?.recording.durationMs).toBe(5_000);
+  });
+
   it('clears without complaint when nothing is parked', async () => {
     const { subject } = setup();
 
