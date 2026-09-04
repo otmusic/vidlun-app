@@ -177,12 +177,7 @@ export function OnboardingScreen(props: {
             </AppText>
           </View>
         ) : null}
-        {step === 'microphone' ? (
-          <>
-            <Lede>{t('onboarding.micBody')}</Lede>
-            <ModelProgress state={props.model} t={t} />
-          </>
-        ) : null}
+        {step === 'microphone' ? <Lede>{t('onboarding.micBody')}</Lede> : null}
       </View>
 
       <View style={{ gap: 4 }}>
@@ -337,44 +332,6 @@ function SizeCard(props: { readonly t: Translate }): React.JSX.Element {
       </AppText>
       <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13.5, lineHeight: 19 }}>
         {props.t('onboarding.modelWifi')}
-      </AppText>
-    </View>
-  );
-}
-
-/**
- * Progress, never a gate. 668 MB over a phone connection is the wrong thing
- * to make someone wait for before their first entry, and the text path needs
- * none of it. Silent when nothing was started: "later" was an answer.
- */
-function ModelProgress(props: {
-  readonly state: SpeechModelState;
-  readonly t: Translate;
-}): React.JSX.Element | null {
-  const theme = useTheme();
-
-  if (props.state.kind === 'ready') {
-    return (
-      <AppText variant="secondary" color="inkFaint">
-        {props.t('onboarding.downloadReady')}
-      </AppText>
-    );
-  }
-
-  if (props.state.kind !== 'fetching') {
-    return null;
-  }
-
-  const done = Math.round(props.state.writtenBytes / 1_000_000);
-  const total = props.state.totalBytes === null ? '?' : Math.round(props.state.totalBytes / 1_000_000);
-
-  return (
-    <View style={{ gap: theme.spacing.xs }}>
-      <AppText variant="secondary" color="inkSoft">
-        {props.t('onboarding.downloading', { done, total })}
-      </AppText>
-      <AppText variant="secondary" color="inkFaint">
-        {props.t('onboarding.downloadLater')}
       </AppText>
     </View>
   );

@@ -56,8 +56,8 @@ import { SettingsStore } from '../infrastructure/settings/SettingsStore';
 import { ExpoParkedFiles } from '../infrastructure/persistence/ExpoParkedFiles';
 import { FileParkedTake } from '../infrastructure/persistence/FileParkedTake';
 import type { IParkedTake } from '../domain/ports/IParkedTake';
-import type { IFeedbackSender } from '../domain/ports/IFeedbackSender';
 import { FeedbackUndeliveredError } from '../domain/errors/FeedbackErrors';
+import { FeedbackOutbox } from '../infrastructure/feedback/FeedbackOutbox';
 import { ProxyFeedbackSender } from '../infrastructure/feedback/ProxyFeedbackSender';
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
@@ -92,8 +92,8 @@ export interface Container {
   readonly settings: SettingsStore;
   /** The take recorded before the phone could hear, if one waits. */
   readonly parkedTake: IParkedTake;
-  /** Mails a person's note to support through the proxy. */
-  readonly feedback: IFeedbackSender;
+  /** Keeps a person's note to support and mails it through the proxy when it can. */
+  readonly feedback: FeedbackOutbox;
   readonly forgetAllRecordings: () => Promise<void>;
   readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
@@ -220,13 +220,19 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     settings: new SettingsStore(AsyncStorage, detectLocale),
     parkedTake: new FileParkedTake(AsyncStorage, new ExpoParkedFiles()),
     /*
-     * Without a proxy there is no way to mail anything, and a note that
-     * silently went nowhere would be worse than one refused out loud.
+     * Through an outbox, so the sheet closes on the tap and a note the
+     * network refused goes at the next chance. Without a proxy there is no
+     * way to mail anything: the sender refuses out loud and the note waits
+     * in the outbox rather than silently going nowhere.
      */
-    feedback:
+    feedback: new FeedbackOutbox(
+      AsyncStorage,
       proxyUrl === null || proxyFetch === null
-        ? { send: () => Promise.reject(new FeedbackUndeliveredError(0)) }
+        ? { send: (): Promise<void> => Promise.reject(new FeedbackUndeliveredError(0)) }
         : new ProxyFeedbackSender(proxyUrl, proxyFetch),
+      idGenerator,
+      clock,
+    ),
     // Everything up to now, which is everything: turning the setting off is a
     // request to be rid of the voice, not only to stop adding to it.
     forgetAllRecordings: () => recordings.discardBefore(clock.now()),

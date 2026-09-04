@@ -114,6 +114,25 @@ function Vidlun(props: {
     });
   }, [container.settings, onSettingsChange]);
 
+  /*
+   * Notes to support leave from an outbox, so the sheet never waits on the
+   * network: whatever could not go last time goes at the next opening or
+   * the next return to the foreground.
+   */
+  useEffect(() => {
+    void container.feedback.flush();
+
+    const watch = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void container.feedback.flush();
+      }
+    });
+
+    return () => {
+      watch.remove();
+    };
+  }, [container.feedback]);
+
   const changeSettings = useCallback(
     (next: Settings) => {
       onSettingsChange(next);
