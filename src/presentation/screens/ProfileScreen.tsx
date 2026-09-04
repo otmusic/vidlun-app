@@ -8,6 +8,7 @@ import type { Translate, TranslationKey } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
+import { FeedbackSheet } from '../components/FeedbackSheet';
 import { useTheme } from '../theme/ThemeProvider';
 
 /** The bar floats over this screen, so the last row needs room under it. */
@@ -52,10 +53,13 @@ export function ProfileScreen(props: {
   readonly onRestore: () => void;
   /** Resolves false when the phone has no biometrics to lock with. */
   readonly onEnableLock: () => Promise<boolean>;
+  /** Mails a note to support; rejects when it could not be delivered. */
+  readonly onFeedback: (text: string) => Promise<void>;
 }): React.JSX.Element {
   const theme = useTheme();
   const { settings, t } = props;
   const [pickingTime, setPickingTime] = useState(false);
+  const [writingFeedback, setWritingFeedback] = useState(false);
 
   return (
     <ScrollView
@@ -237,6 +241,18 @@ export function ProfileScreen(props: {
       </Section>
 
 
+      <Section label={t('profile.feedbackSection')}>
+        <Row
+          title={t('profile.feedbackTitle')}
+          hint={t('profile.feedbackHint')}
+          onPress={() => {
+            setWritingFeedback(true);
+          }}
+        >
+          <Pill label={t('profile.feedbackAction')} />
+        </Row>
+      </Section>
+
       {/*
         No card around this one, unlike every other section: the drawing has the
         label sitting straight above the pill, and wrapping it produced a border
@@ -287,6 +303,22 @@ export function ProfileScreen(props: {
           );
         })}
       </View>
+
+      <FeedbackSheet
+
+        open={writingFeedback}
+
+        t={t}
+
+        onSend={props.onFeedback}
+
+        onClose={() => {
+
+          setWritingFeedback(false);
+
+        }}
+
+      />
 
       <TimeSheet
         open={pickingTime}

@@ -56,6 +56,9 @@ import { SettingsStore } from '../infrastructure/settings/SettingsStore';
 import { ExpoParkedFiles } from '../infrastructure/persistence/ExpoParkedFiles';
 import { FileParkedTake } from '../infrastructure/persistence/FileParkedTake';
 import type { IParkedTake } from '../domain/ports/IParkedTake';
+import type { IFeedbackSender } from '../domain/ports/IFeedbackSender';
+import { FeedbackUndeliveredError } from '../domain/errors/FeedbackErrors';
+import { ProxyFeedbackSender } from '../infrastructure/feedback/ProxyFeedbackSender';
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { ExpoReminders } from '../infrastructure/system/ExpoReminders';
@@ -89,6 +92,8 @@ export interface Container {
   readonly settings: SettingsStore;
   /** The take recorded before the phone could hear, if one waits. */
   readonly parkedTake: IParkedTake;
+  /** Mails a person's note to support through the proxy. */
+  readonly feedback: IFeedbackSender;
   readonly forgetAllRecordings: () => Promise<void>;
   readonly writeObservation: WriteObservation;
   readonly getHomeView: GetHomeView;
@@ -167,10 +172,13 @@ export function createContainer(dependencies: ContainerDependencies): Container 
    * and the placeholder apiKey below is overwritten by that fetch.
    */
   const proxyUrl = readProxyUrl();
+  // One attested fetch for everything that talks to the proxy, so the token
+  // is bought once and renewed in one place.
+  const proxyFetch = proxyUrl === null ? null : attestedFetch(new ProxyAuth(proxyUrl));
   const anthropic = new Anthropic({
     apiKey: proxyUrl === null ? readAnthropicApiKey() : 'attested',
     baseURL: proxyUrl ?? undefined,
-    fetch: proxyUrl === null ? undefined : attestedFetch(new ProxyAuth(proxyUrl)),
+    fetch: proxyFetch ?? undefined,
     // React Native defines `window`, which the SDK reads as a browser.
     dangerouslyAllowBrowser: true,
   });
@@ -211,6 +219,14 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     findRecording: new FindRecording(recordings),
     settings: new SettingsStore(AsyncStorage, detectLocale),
     parkedTake: new FileParkedTake(AsyncStorage, new ExpoParkedFiles()),
+    /*
+     * Without a proxy there is no way to mail anything, and a note that
+     * silently went nowhere would be worse than one refused out loud.
+     */
+    feedback:
+      proxyUrl === null || proxyFetch === null
+        ? { send: () => Promise.reject(new FeedbackUndeliveredError(0)) }
+        : new ProxyFeedbackSender(proxyUrl, proxyFetch),
     // Everything up to now, which is everything: turning the setting off is a
     // request to be rid of the voice, not only to stop adding to it.
     forgetAllRecordings: () => recordings.discardBefore(clock.now()),

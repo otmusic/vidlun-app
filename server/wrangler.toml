@@ -21,3 +21,12 @@ compatibility_flags = ["nodejs_compat"]
 [[kv_namespaces]]
 binding = "ATTEST"
 id = "9bca7fd8b800425aaaf5e44e1fb65587"
+
+# Feedback from the app is mailed on, never stored. The sender must be on this
+# zone (Email Routing is on for vidlun.app); the recipient is the support
+# address, which routes to the owner's inbox.
+[[send_email]]
+name = "EMAIL"
+
+[vars]
+FEEDBACK_TO = "support@vidlun.app"

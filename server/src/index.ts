@@ -20,7 +20,21 @@ export interface Env {
   readonly RATE_LIMIT: { limit(input: { key: string }): Promise<{ success: boolean }> };
   /** Attested device keys and one-time challenges. */
   readonly ATTEST: AttestStore;
+  /** Cloudflare's send-email binding, bound in wrangler.toml. */
+  readonly EMAIL: { send(message: FeedbackMail): Promise<unknown> };
+  /** Where a person's note lands; a routing address on this zone. */
+  readonly FEEDBACK_TO: string;
 }
+
+interface FeedbackMail {
+  readonly to: string;
+  readonly from: string;
+  readonly subject: string;
+  readonly text: string;
+}
+
+/** A note is a paragraph or two; anything longer is not a person typing. */
+const MAX_FEEDBACK_CHARS = 4_000;
 
 const UPSTREAM = 'https://api.anthropic.com/v1/messages';
 
@@ -71,7 +85,7 @@ export default {
       return attest(path, request, env);
     }
 
-    if (path !== '/v1/messages') {
+    if (path !== '/v1/messages' && path !== '/feedback') {
       return problem(404, 'No such path.');
     }
 
@@ -106,6 +120,10 @@ export default {
       return problem(400, 'The body was not JSON.');
     }
 
+    if (path === '/feedback') {
+      return feedback(body, env);
+    }
+
     const refusal = checkBody(body);
 
     if (refusal !== null) {
@@ -135,6 +153,50 @@ export default {
 };
 
 /** What the caller may ask for, checked before any of it costs anything. */
+/**
+ * Mails a person's note to the support inbox. Nothing is kept here: the
+ * message goes out and the request is forgotten, which is the one promise
+ * this worker makes about everything it touches. Only the text and the build
+ * it came from travel — the app sends nothing from the journal, and this
+ * would refuse a body large enough to carry it.
+ */
+async function feedback(body: unknown, env: Env): Promise<Response> {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return problem(400, 'The body was not an object.');
+  }
+
+  const record = body as Record<string, unknown>;
+  const text = typeof record['text'] === 'string' ? record['text'].trim() : '';
+
+  if (text.length === 0 || text.length > MAX_FEEDBACK_CHARS) {
+    return problem(400, 'The note is empty or longer than a note.');
+  }
+
+  const app =
+    typeof record['app'] === 'object' && record['app'] !== null
+      ? (record['app'] as Record<string, unknown>)
+      : {};
+  const field = (name: string): string => {
+    const value = app[name];
+
+    return typeof value === 'string' ? value.slice(0, 64) : 'unknown';
+  };
+  const build = `Vidlun ${field('version')} (${field('build')}) · ${field('platform')}`;
+
+  try {
+    await env.EMAIL.send({
+      to: env.FEEDBACK_TO,
+      from: 'feedback@vidlun.app',
+      subject: `Vidlun feedback · ${build}`,
+      text: `${text}\n\n—\n${build}`,
+    });
+  } catch {
+    return problem(502, 'The note could not be mailed right now.');
+  }
+
+  return answer({ status: 'sent' });
+}
+
 function checkBody(body: unknown): string | null {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) {
     return 'The body was not an object.';

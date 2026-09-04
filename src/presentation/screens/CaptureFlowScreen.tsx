@@ -44,6 +44,8 @@ export interface CaptureFlowScreenProps {
   readonly onExport: (shape: 'backup' | 'markdown') => void;
   readonly onRestore: () => void;
   readonly onEnableLock: () => Promise<boolean>;
+  /** Mails a note to support; rejects when it could not be delivered. */
+  readonly onFeedback: (text: string) => Promise<void>;
   /** The speech model's state, so home can say whether the phone can hear yet. */
   readonly voice: SpeechModelState;
   readonly onRetryVoice: () => void;
@@ -216,6 +218,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           onExport={props.onExport}
           onRestore={props.onRestore}
           onEnableLock={props.onEnableLock}
+          onFeedback={props.onFeedback}
           t={t}
           onChange={props.onSettingsChange}
           entitlement={props.entitlement}
