@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { emotionKey, type Translate } from '@/i18n';
@@ -9,6 +9,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Chip } from '../components/Chip';
 import { EmotionPicker } from '../components/EmotionPicker';
+import { FixWording } from '../components/FixWording';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
@@ -37,8 +38,6 @@ export function TurnScreen(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
-  /** Null while reading; the text being fixed while fixing. */
-  const [fixing, setFixing] = useState<string | null>(null);
   const scheme = theme.isDark ? 'dark' : 'light';
 
   return (
@@ -56,55 +55,19 @@ export function TurnScreen(props: {
       </AppText>
 
       <Card tone="quiet">
-        {fixing === null ? (
-          <View style={{ gap: theme.spacing.sm }}>
-            <AppText variant="quote">{`«${props.transcript}»`}</AppText>
-            {/*
-              * The one repair only the speaker can make. It lives on the card
-              * rather than in a step of its own so the entry that was heard
-              * right — most of them — pays nothing for the one that was not.
-              */}
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setFixing(props.transcript);
-              }}
-              hitSlop={8}
-              style={{ alignSelf: 'flex-start' }}
-            >
-              <AppText variant="secondary" color="inkFaint">
-                {props.t('turn.fix')}
-              </AppText>
-            </Pressable>
-          </View>
-        ) : (
-          <View style={{ gap: theme.spacing.sm }}>
-            <TextInput
-              value={fixing}
-              onChangeText={setFixing}
-              multiline
-              autoFocus
-              style={{
-                ...theme.type.quote,
-                color: theme.palette.ink,
-                backgroundColor: theme.palette.lineSoft,
-                borderRadius: theme.radii.card,
-                padding: theme.spacing.md,
-              }}
-            />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                props.onCorrect(fixing);
-                setFixing(null);
-              }}
-              hitSlop={8}
-              style={{ alignSelf: 'flex-start' }}
-            >
-              <AppText variant="body">{props.t('turn.fixDone')}</AppText>
-            </Pressable>
-          </View>
-        )}
+        {/*
+          * The one repair only the speaker can make. It lives on the card
+          * rather than in a step of its own so the entry that was heard
+          * right — most of them — pays nothing for the one that was not.
+          */}
+        <FixWording
+          text={props.transcript}
+          t={props.t}
+          onFix={props.onCorrect}
+          style={{ gap: theme.spacing.sm }}
+        >
+          <AppText variant="quote">{`«${props.transcript}»`}</AppText>
+        </FixWording>
       </Card>
 
       <AppText variant="display">{props.t('turn.question')}</AppText>
