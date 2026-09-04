@@ -156,21 +156,20 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
 
       <View style={{ alignItems: 'center', gap: 18, paddingTop: 16, paddingBottom: 34 }}>
         {/*
-          * Until the model is on disk a tap cannot record, and the old path
-          * let it try — the take went through an empty transcription and came
-          * back as a failure blaming the recording. Now the tap only turns the
-          * line below from soft to ink, and the line says what is happening.
+          * Recording does not wait for the model. Said before the phone can
+          * hear, a take is kept and read when it can — the line below says
+          * so while the download runs. Only a refused microphone stops the
+          * tap, and then the tap only turns that line to ink: the fix is in
+          * Settings, not here.
           */}
-        {/* Dimmed, not disabled: the drawing keeps the button present at
-            0.55 while the phone cannot record, so the tap can still answer. */}
-        <View style={{ opacity: canHear && !micRefused ? 1 : 0.55 }}>
+        <View style={{ opacity: micRefused ? 0.55 : 1 }}>
           <RecordButton
             onPress={
-              canHear && !micRefused
-                ? props.onRecord
-                : () => {
+              micRefused
+                ? () => {
                     setNudged(true);
                   }
+                : props.onRecord
             }
             accessibilityLabel={props.t('home.recordHint')}
           />

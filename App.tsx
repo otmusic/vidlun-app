@@ -403,6 +403,10 @@ function Vidlun(props: {
 
   const { reloadHome } = flow;
 
+  const splashGone = useCallback(() => {
+    setSplash('gone');
+  }, []);
+
   const retryOpening = useCallback(() => {
     splashShownAt.current = container.clock.now().getTime();
     setSplash('loading');
@@ -451,9 +455,7 @@ function Vidlun(props: {
           phase={splash}
           t={t}
           onRetry={retryOpening}
-          onGone={() => {
-            setSplash('gone');
-          }}
+          onGone={splashGone}
         />
       )}
     </View>

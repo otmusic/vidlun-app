@@ -91,28 +91,51 @@ export function SplashOverlay(props: {
     };
   }, [halo, loading, quiet]);
 
-  const { onGone } = props;
   const leaving = props.phase === 'leaving';
+  /*
+   * Read through a ref so the fade below depends on nothing the parent
+   * re-renders. It used to depend on the callback itself, which the parent
+   * recreated every render — and the download's progress re-renders it
+   * several times a second, so the fade restarted each time, never reported
+   * itself finished, and the overlay stayed mounted, transparent, on top of
+   * the very button it had already revealed.
+   */
+  const onGone = useRef(props.onGone);
+  onGone.current = props.onGone;
 
   useEffect(() => {
     if (!leaving) {
       return;
     }
 
+    const duration = quiet ? 200 : 420;
+    let gone = false;
+    const leave = (): void => {
+      if (!gone) {
+        gone = true;
+        onGone.current();
+      }
+    };
+
     Animated.timing(screen, {
       toValue: 0,
-      duration: quiet ? 200 : 420,
+      duration,
       easing: Easing.ease,
       useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) {
-        onGone();
-      }
-    });
-  }, [leaving, onGone, quiet, screen]);
+    }).start(leave);
+    // Whatever the animation reports, the overlay is gone when its time is.
+    const deadline = setTimeout(leave, duration + 60);
+
+    return () => {
+      clearTimeout(deadline);
+    };
+  }, [leaving, quiet, screen]);
 
   return (
     <Animated.View
+      // Touches fall through the moment the fade starts: the screen beneath
+      // is already the one the person is looking at.
+      pointerEvents={leaving ? 'none' : 'auto'}
       style={{
         position: 'absolute',
         top: 0,
