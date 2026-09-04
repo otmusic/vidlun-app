@@ -35,7 +35,21 @@ export interface ModelStorage {
 export interface PreinstalledModel {
   /** Where the model file is on disk, or null when the system has not brought it. */
   uriFor(model: SpeechModelDescriptor): string | null;
+  /**
+   * Asks the system to bring the pack now — the install may not have, or
+   * may not have finished. Resolves with the file's location once it is
+   * there, or null when the system cannot bring it at all (an older iOS, no
+   * such pack published), so the caller downloads by itself. Rejects when
+   * the system knew the pack and could not deliver it.
+   */
+  bring(model: SpeechModelDescriptor, onProgress: Progress): Promise<string | null>;
 }
+
+/** Where nothing was installed with the app and nothing can be asked for. */
+export const NO_PREINSTALLED_MODEL: PreinstalledModel = {
+  uriFor: () => null,
+  bring: () => Promise.resolve(null),
+};
 
 export interface SpeechModelDescriptor {
   readonly url: string;
@@ -104,7 +118,7 @@ export class SpeechModelStore {
 
   constructor(
     private readonly storage: ModelStorage,
-    private readonly preinstalled: PreinstalledModel = { uriFor: () => null },
+    private readonly preinstalled: PreinstalledModel = NO_PREINSTALLED_MODEL,
     private readonly model: SpeechModelDescriptor = SPEECH_MODEL,
   ) {}
 
@@ -213,6 +227,24 @@ export class SpeechModelStore {
     }
 
     if (download === null) {
+      /*
+       * Nothing of our own to continue: the system is asked first. On iOS 26
+       * the pack rides the App Store's own bandwidth, resumes by itself, and
+       * needs no file of ours to be renamed into place. Only where the system
+       * cannot bring it does the download below begin.
+       */
+      let brought: string | null;
+
+      try {
+        brought = await this.preinstalled.bring(this.model, report);
+      } catch {
+        return { kind: 'failed', reason: 'unreachable' };
+      }
+
+      if (brought !== null) {
+        return { kind: 'ready', uri: brought };
+      }
+
       // A part with nothing to continue it from is a part of a download that
       // died, and the platform cannot pick that up. Starting over is slower
       // but never silently wrong.

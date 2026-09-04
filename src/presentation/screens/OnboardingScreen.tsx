@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
@@ -68,15 +68,15 @@ export function OnboardingScreen(props: {
   readonly onDone: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
-  const [index, setIndex] = useState(0);
+  const [step, setStep] = useState<Step>('welcome');
   /*
-   * Decided once, at the start: the model may land while these screens are
-   * up, and a rail that lost a mark halfway through would move the person
-   * backwards.
+   * Read as it stands rather than remembered from the first render: the
+   * system may deliver the model while the welcome screen is up — a pack
+   * that came with the install is found a moment after launch — and the
+   * download step must then not be asked of anyone.
    */
-  const [steps] = useState<readonly Step[]>(() =>
-    props.model.kind === 'ready' ? DELIVERED : WITH_DOWNLOAD,
-  );
+  const steps = props.model.kind === 'ready' ? DELIVERED : WITH_DOWNLOAD;
+  const index = Math.max(0, steps.indexOf(step));
   /*
    * The terms or the privacy policy, opened from the first screen's footer.
    * Held here rather than in the flow: onboarding runs before the capture
@@ -84,8 +84,17 @@ export function OnboardingScreen(props: {
    */
   const [reading, setReading] = useState<LegalDocumentKind | null>(null);
   const { t } = props;
-  const step = steps[index] ?? 'welcome';
   const isLast = index === steps.length - 1;
+  const modelReady = props.model.kind === 'ready';
+
+  /* Landed while the download screen was up: there is nothing left to ask. */
+  useEffect(() => {
+    if (step === 'model' && modelReady) {
+      setStep('privacy');
+    }
+  }, [modelReady, step]);
+
+  const next = (): Step => steps[index + 1] ?? 'microphone';
 
   if (reading !== null) {
     return (
@@ -104,7 +113,7 @@ export function OnboardingScreen(props: {
       // The tap is the consent. The transfer runs on under the screens that
       // follow, and home carries its progress from there.
       props.onFetchModel();
-      setIndex(index + 1);
+      setStep('privacy');
 
       return;
     }
@@ -120,7 +129,7 @@ export function OnboardingScreen(props: {
     }
 
     if (!isLast) {
-      setIndex(index + 1);
+      setStep(next());
 
       return;
     }
@@ -190,7 +199,7 @@ export function OnboardingScreen(props: {
             label={t('onboarding.modelLater')}
             variant="ghost"
             onPress={() => {
-              setIndex(index + 1);
+              setStep('privacy');
             }}
           />
         ) : (

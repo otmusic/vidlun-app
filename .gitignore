@@ -54,3 +54,7 @@ server/.dev.vars
 # Apple-hosted asset packs: the model weights and the packaged archive are built, not versioned
 asset-packs/**/*.bin
 asset-packs/**/*.aar
+
+# The speech model and the asset pack built from it: 668 MB each, fetched by scripts/build-asset-pack.sh
+asset-packs/*.aar
+asset-packs/dev-server/

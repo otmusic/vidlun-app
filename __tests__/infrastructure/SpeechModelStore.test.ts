@@ -422,7 +422,10 @@ describe('a launch, which may continue a download but never start one', () => {
 });
 
 describe('a model the system delivered with the install', () => {
-  const delivered = { uriFor: () => 'file:///asset-packs/parakeet/model.bin' };
+  const delivered = {
+    uriFor: () => 'file:///asset-packs/parakeet/model.bin',
+    bring: () => Promise.resolve(null),
+  };
 
   it('is ready without a byte having been downloaded by the app', async () => {
     const storage = new FakeStorage();
@@ -445,10 +448,87 @@ describe('a model the system delivered with the install', () => {
 
   it('falls through to the download where the system brought nothing', async () => {
     const storage = new FakeStorage();
-    const subject = new SpeechModelStore(storage, { uriFor: () => null });
+    const subject = new SpeechModelStore(storage, {
+      uriFor: () => null,
+      bring: () => Promise.resolve(null),
+    });
 
     expect(await subject.state()).toEqual({ kind: 'absent' });
     expect((await subject.fetch()).kind).toBe('ready');
     expect(storage.started).toEqual([PARTIAL_NAME]);
+  });
+});
+
+describe('a model the system can be asked to bring', () => {
+  const PACK_URI = 'file:///asset-packs/parakeet/model.bin';
+
+  /** The system, scripted: brings the pack, knows nothing, or fails. */
+  function system(outcome: 'brings' | 'unknown' | 'fails') {
+    let onDisk: string | null = null;
+    const asked: string[] = [];
+
+    return {
+      asked,
+      uriFor: () => onDisk,
+      bring: (model: { assetPackID: string }, onProgress: Progress): Promise<string | null> => {
+        asked.push(model.assetPackID);
+
+        if (outcome === 'unknown') {
+          return Promise.resolve(null);
+        }
+
+        if (outcome === 'fails') {
+          return Promise.reject(new Error('the store could not be reached'));
+        }
+
+        onProgress(200_000_000, WHOLE);
+        onProgress(WHOLE, WHOLE);
+        onDisk = PACK_URI;
+
+        return Promise.resolve(PACK_URI);
+      },
+    };
+  }
+
+  it('asks the system for the pack before downloading anything itself', async () => {
+    const storage = new FakeStorage();
+    const subject = new SpeechModelStore(storage, system('brings'));
+    const seen: SpeechModelState[] = [];
+
+    const outcome = await subject.fetch((state) => seen.push(state));
+
+    expect(outcome).toEqual({ kind: 'ready', uri: PACK_URI });
+    expect(storage.started).toEqual([]);
+    // The system's transfer is the progress on screen, in the same shape.
+    expect(seen[0]).toEqual({ kind: 'fetching', writtenBytes: 200_000_000, totalBytes: WHOLE });
+  });
+
+  it('downloads by itself where the system knows no such pack', async () => {
+    const storage = new FakeStorage();
+    const asked = system('unknown');
+    const subject = new SpeechModelStore(storage, asked);
+
+    expect((await subject.fetch()).kind).toBe('ready');
+    expect(asked.asked).toEqual([SPEECH_MODEL.assetPackID]);
+    expect(storage.started).toEqual([PARTIAL_NAME]);
+  });
+
+  it('reports a system transfer that failed rather than starting its own', async () => {
+    const storage = new FakeStorage();
+    const subject = new SpeechModelStore(storage, system('fails'));
+
+    expect(await subject.fetch()).toEqual({ kind: 'failed', reason: 'unreachable' });
+    expect(storage.started).toEqual([]);
+  });
+
+  it('continues its own paused download instead of asking the system again', async () => {
+    const storage = new FakeStorage();
+    storage.notes.set(PAUSE_NOTE, '{"resumeData":"opaque"}');
+    const asked = system('brings');
+    const subject = new SpeechModelStore(storage, asked);
+
+    expect((await subject.fetch()).kind).toBe('ready');
+    expect(asked.asked).toEqual([]);
+    expect(storage.resumed).toHaveLength(1);
   });
 });
