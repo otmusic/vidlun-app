@@ -5,10 +5,12 @@ import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import type { Locale, Translate } from '@/i18n';
 import { legalDocument } from '@/i18n/legal';
 
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { FeedbackSheet } from '../components/FeedbackSheet';
 import { TabBar, type Tab } from '../components/TabBar';
 import type { CaptureFlow } from '../hooks/useCaptureFlow';
 import { EditScreen } from './EditScreen';
@@ -65,9 +67,15 @@ const TAB_FOR_STAGE: Partial<Record<CaptureFlow['stage']['kind'], Tab>> = {
 
 export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Element {
   const tab = TAB_FOR_STAGE[props.flow.stage.kind];
+  /*
+   * The note-to-support sheet is held here, above the tab bar, rather than
+   * inside the profile: it covers the bar while open, and drawing it in the
+   * tree instead of a Modal is what lets "Send" take the first tap.
+   */
+  const [writingFeedback, setWritingFeedback] = useState(false);
 
   if (tab === undefined) {
-    return <Stage {...props} />;
+    return <Stage {...props} onWriteFeedback={() => {}} />;
   }
 
   /*
@@ -77,7 +85,12 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
    */
   return (
     <View style={{ flex: 1 }}>
-      <Stage {...props} />
+      <Stage
+        {...props}
+        onWriteFeedback={() => {
+          setWritingFeedback(true);
+        }}
+      />
       <TabBar
         active={tab}
         t={props.t}
@@ -93,11 +106,21 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
           }
         }}
       />
+      <FeedbackSheet
+        open={writingFeedback}
+        t={props.t}
+        onSend={props.onFeedback}
+        onClose={() => {
+          setWritingFeedback(false);
+        }}
+      />
     </View>
   );
 }
 
-function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
+function Stage(
+  props: CaptureFlowScreenProps & { readonly onWriteFeedback: () => void },
+): React.JSX.Element {
   const { flow, t } = props;
 
   switch (flow.stage.kind) {
@@ -226,7 +249,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
           onExport={props.onExport}
           onRestore={props.onRestore}
           onEnableLock={props.onEnableLock}
-          onFeedback={props.onFeedback}
+          onWriteFeedback={props.onWriteFeedback}
           t={t}
           onChange={props.onSettingsChange}
           entitlement={props.entitlement}
