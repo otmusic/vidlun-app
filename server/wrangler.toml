@@ -1,6 +1,9 @@
 name = "vidlun-proxy"
 main = "src/index.ts"
 compatibility_date = "2026-08-28"
+# node-app-attest verifies Apple's certificate chain with node's crypto,
+# which workerd provides behind this flag.
+compatibility_flags = ["nodejs_compat"]
 
 # Per device, per minute. Generous for a person writing a journal and mean for
 # anyone who found the URL: an entry costs two calls, a week's narrative one.
@@ -13,9 +16,6 @@ simple = { limit = 30, period = 60 }
 #   wrangler secret put ANTHROPIC_API_KEY
 #   wrangler secret put TOKEN_SECRET
 
-# node-app-attest verifies Apple's certificate chain with node's crypto,
-# which workerd provides behind this flag.
-compatibility_flags = ["nodejs_compat"]
 
 # Attested device keys and one-time challenges.
 [[kv_namespaces]]
