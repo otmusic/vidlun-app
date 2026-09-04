@@ -206,6 +206,12 @@ export interface CaptureFlow {
    * the mishearing's analysis away and reads the corrected words instead.
    */
   readonly correctWording: (text: string) => void;
+  /**
+   * The same repair on an entry already saved: the corrected words are read
+   * afresh and the card comes back for one more look before the entry is
+   * written over — same id, same moment, same audio.
+   */
+  readonly fixEntryWording: (entry: MoodEntry, text: string) => void;
   /** Takes one of Vidlun's words into the entry. */
   readonly adopt: (id: string) => void;
   /**
@@ -1001,6 +1007,42 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           : comparisonOf(current.draft, []);
       });
     }, []),
+    fixEntryWording: useCallback(
+      (entry: MoodEntry, text: string) => {
+        const corrected = text.trim();
+
+        if (corrected.length === 0 || corrected === entry.cleanTranscript) {
+          return;
+        }
+
+        takeUri.current = null;
+        setKeptMine(false);
+        setStage({ kind: 'processing' });
+
+        dependencies.createVoiceEntry
+          .execute({ text: corrected, confidence: Confidence.of(1) }, entry.createdAt)
+          .then((reread) => {
+            /*
+             * A fresh reading of the corrected words, wearing the old entry's
+             * identity: the id keeps the audio and the place in history, the
+             * source keeps a typed entry typed. What the person named before
+             * seeing any answer was named for the misheard sentence, so the
+             * new reading stands on its own and the card asks nothing.
+             */
+            const draft = MoodEntry.create({
+              ...reread.toProps(),
+              id: entry.id,
+              source: entry.source,
+              createdAt: entry.createdAt,
+            });
+
+            setStage({ kind: 'reflecting', proposed: draft, draft });
+            void withObservation(draft);
+          })
+          .catch(fail);
+      },
+      [dependencies.createVoiceEntry, fail, withObservation],
+    ),
     correctWording: useCallback(
       (text: string) => {
         const corrected = text.trim();

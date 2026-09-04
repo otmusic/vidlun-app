@@ -5,6 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings, ThemeChoice } from '@/domain/ports/ISettings';
 import type { Translate, TranslationKey } from '@/i18n';
+import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
 import { useTheme } from '../theme/ThemeProvider';
@@ -68,12 +69,12 @@ export function ProfileScreen(props: {
       <View style={{ flexDirection: 'row', gap: 12, marginBottom: 26 }}>
         <Tile
           value={props.entryCount === null ? '—' : String(props.entryCount)}
-          unit={t('profile.entriesUnit')}
+          unit={t(countedKey('profile.entries', props.entryCount ?? 0, settings.locale))}
           background={theme.palette.limeSoft}
         />
         <Tile
           value={String(props.streakDays)}
-          unit={t('profile.streakUnit')}
+          unit={t(countedKey('profile.streak', props.streakDays, settings.locale))}
           background={theme.palette.voiceSoft}
           valueColor={theme.palette.accentInk}
         />
@@ -85,9 +86,25 @@ export function ProfileScreen(props: {
           hint={t(subscriptionHint(props.entitlement))}
           onPress={props.onOpenSubscription}
         >
-          <AppText variant="body" color="inkFaint">
-            ›
-          </AppText>
+          <Pill label={t('profile.open')} />
+        </Row>
+      </Section>
+
+      {/* The card's question is §M6's whole point, so whether it is asked
+          belongs where someone would look for it. Drawn in the third round. */}
+      <Section label={t('profile.conversation')}>
+        <Row
+          title={t('settings.asksFirst')}
+          hint={t(settings.asksFirst ? 'settings.asksFirstOn' : 'settings.asksFirstOff')}
+        >
+          <Switch
+            value={settings.asksFirst}
+            onValueChange={(asksFirst) => {
+              props.onChange({ ...settings, asksFirst });
+            }}
+            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
+            accessibilityLabel={t('settings.asksFirst')}
+          />
         </Row>
       </Section>
 
@@ -108,97 +125,7 @@ export function ProfileScreen(props: {
         </Row>
       </Section>
 
-      {/*
-        Not in the drawing, and added at the owner's request: the card's
-        question is §M6's whole point, so whether it is asked belongs where
-        someone would look for it rather than nowhere. Needs a block of its own
-        in `Vidlun.dc.html`.
-      */}
-      <Section label={t('profile.conversation')}>
-        <Row
-          title={t('settings.asksFirst')}
-          hint={t(settings.asksFirst ? 'settings.asksFirstOn' : 'settings.asksFirstOff')}
-        >
-          <Switch
-            value={settings.asksFirst}
-            onValueChange={(asksFirst) => {
-              props.onChange({ ...settings, asksFirst });
-            }}
-            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
-            accessibilityLabel={t('settings.asksFirst')}
-          />
-        </Row>
-      </Section>
-
       <Theme settings={settings} t={t} onChange={props.onChange} />
-
-      {/* No drawing for this section either; it wears Row like the rest. */}
-      <Section label={t('profile.security')}>
-        <Row
-          title={t('profile.appLock')}
-          hint={t(settings.appLock ? 'profile.appLockOn' : 'profile.appLockOff')}
-        >
-          <Switch
-            value={settings.appLock}
-            onValueChange={(appLock) => {
-              if (!appLock) {
-                props.onChange({ ...settings, appLock: false });
-
-                return;
-              }
-
-              /*
-               * Proven before promised: the switch flips on only after one
-               * successful unlock, so nobody locks themselves out behind a
-               * Face ID that was never set up.
-               */
-              void props.onEnableLock().then((unlocked) => {
-                if (unlocked) {
-                  props.onChange({ ...settings, appLock: true });
-                }
-              });
-            }}
-            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
-            accessibilityLabel={t('profile.appLock')}
-          />
-        </Row>
-      </Section>
-
-      {/*
-        The paywall's free-forever list promises backup; this is where the
-        promise is kept. Two shapes on purpose: the JSON file is the copy
-        that comes back, the markdown one is for reading somewhere else.
-        No drawing exists for this section yet — it wears Row like the rest.
-      */}
-      <Section label={t('profile.data')}>
-        <Row
-          title={t('profile.backup')}
-          hint={t('profile.backupHint')}
-          onPress={() => {
-            props.onExport('backup');
-          }}
-        >
-          <AppText variant="body" color="inkFaint">
-            ›
-          </AppText>
-        </Row>
-        <Row
-          title={t('profile.exportMd')}
-          hint={t('profile.exportMdHint')}
-          onPress={() => {
-            props.onExport('markdown');
-          }}
-        >
-          <AppText variant="body" color="inkFaint">
-            ›
-          </AppText>
-        </Row>
-        <Row title={t('profile.restore')} hint={t('profile.restoreHint')} onPress={props.onRestore}>
-          <AppText variant="body" color="inkFaint">
-            ›
-          </AppText>
-        </Row>
-      </Section>
 
       <Section label={t('profile.audio')}>
         <Row
@@ -239,6 +166,76 @@ export function ProfileScreen(props: {
       <AppText variant="secondary" color="inkFaint" style={{ marginTop: 10, marginBottom: 26 }}>
         {t('profile.audioNote')}
       </AppText>
+
+      {/* No drawing for this section either; it wears Row like the rest. */}
+      <Section label={t('profile.security')}>
+        <Row
+          title={t('profile.appLock')}
+          hint={t(settings.appLock ? 'profile.appLockOn' : 'profile.appLockOff')}
+        >
+          <Switch
+            value={settings.appLock}
+            onValueChange={(appLock) => {
+              if (!appLock) {
+                props.onChange({ ...settings, appLock: false });
+
+                return;
+              }
+
+              /*
+               * Proven before promised: the switch flips on only after one
+               * successful unlock, so nobody locks themselves out behind a
+               * Face ID that was never set up.
+               */
+              void props.onEnableLock().then((unlocked) => {
+                if (unlocked) {
+                  props.onChange({ ...settings, appLock: true });
+                }
+              });
+            }}
+            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
+            accessibilityLabel={t('profile.appLock')}
+          />
+        </Row>
+      </Section>
+
+      {/*
+        The paywall's free-forever list promises backup; this is where the
+        promise is kept. Two shapes on purpose: the JSON file is the copy
+        that comes back, the markdown one is for reading somewhere else.
+        No drawing exists for this section yet — it wears Row like the rest.
+      */}
+      {/*
+        The drawing's backup card shows a copy in iCloud with a "manage"
+        pill. There is no iCloud copy: the backup is a file the person keeps
+        where they choose, and a row claiming otherwise would be the one lie
+        the settings screen must not tell. The card wears the drawing's
+        shape — rows with pill actions — around what actually exists.
+      */}
+      <Section label={t('profile.backupSection')}>
+        <Row
+          title={t('profile.backup')}
+          hint={t('profile.backupHint')}
+          onPress={() => {
+            props.onExport('backup');
+          }}
+        >
+          <Pill label={t('profile.backupAction')} />
+        </Row>
+        <Row
+          title={t('profile.exportMd')}
+          hint={t('profile.exportMdHint')}
+          onPress={() => {
+            props.onExport('markdown');
+          }}
+        >
+          <Pill label={t('profile.exportAction')} />
+        </Row>
+        <Row title={t('profile.restore')} hint={t('profile.restoreHint')} onPress={props.onRestore}>
+          <Pill label={t('profile.restoreAction')} />
+        </Row>
+      </Section>
+
 
       {/*
         No card around this one, unlike every other section: the drawing has the
@@ -439,6 +436,27 @@ function ThemeGlyph(props: {
         />
       )}
     </Svg>
+  );
+}
+
+/** The drawing's row action: an ink ring with the verb inside, never filled. */
+function Pill(props: { readonly label: string }): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <View
+      style={{
+        borderWidth: 1.5,
+        borderColor: theme.palette.ink,
+        borderRadius: 999,
+        paddingVertical: 10,
+        paddingHorizontal: 18,
+      }}
+    >
+      <AppText variant="secondary" style={{ color: theme.palette.ink }}>
+        {props.label}
+      </AppText>
+    </View>
   );
 }
 

@@ -1,4 +1,5 @@
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { Circle, Svg } from 'react-native-svg';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
@@ -6,6 +7,7 @@ import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import { emotionKey, type Locale, type Translate, type TranslationKey } from '@/i18n';
 
 import { AppText } from '../components/AppText';
+import { Icon } from '../components/Icon';
 import { BackButton } from '../components/BackButton';
 import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
@@ -34,9 +36,13 @@ export function EntryDetailScreen(props: {
   readonly t: Translate;
   readonly onDelete: (id: string) => void;
   readonly onBack: () => void;
+  /** The sentence, fixed by the one person who knows what was said; it is re-read. */
+  readonly onFix: (entry: MoodEntry, text: string) => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { entry, t } = props;
+  /** Null while reading; the text being fixed while fixing. */
+  const [fixing, setFixing] = useState<string | null>(null);
   const scheme = theme.isDark ? 'dark' : 'light';
 
   const confirmDelete = (): void => {
@@ -75,9 +81,92 @@ export function EntryDetailScreen(props: {
         </Pressable>
       </View>
 
-      <AppText variant="display" style={{ fontSize: 23, lineHeight: 31, marginBottom: 16 }}>
-        {`«${entry.cleanTranscript}»`}
-      </AppText>
+      {fixing === null ? (
+        <View style={{ gap: 12, marginBottom: 14 }}>
+          <AppText variant="display" style={{ fontSize: 23, lineHeight: 31 }}>
+            {`«${entry.cleanTranscript}»`}
+          </AppText>
+          {/*
+            * The drawing's repair pill: a pencil and the words, in a ring of
+            * the line colour. Recognition is the one thing on this card the
+            * person can check and the model cannot.
+            */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setFixing(entry.cleanTranscript);
+            }}
+            hitSlop={8}
+            style={{
+              alignSelf: 'flex-start',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 7,
+              borderWidth: 1,
+              borderColor: theme.palette.line,
+              backgroundColor: theme.palette.paper,
+              borderRadius: 999,
+              paddingVertical: 9,
+              paddingHorizontal: 15,
+            }}
+          >
+            <Icon name="edit-3" size={14} color="inkSoft" />
+            <AppText variant="secondary" color="inkSoft">
+              {t('detail.fix')}
+            </AppText>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={{ gap: 12, marginBottom: 14 }}>
+          <TextInput
+            value={fixing}
+            onChangeText={setFixing}
+            multiline
+            autoFocus
+            style={{
+              ...theme.type.quote,
+              minHeight: 5 * 25,
+              color: theme.palette.ink,
+              backgroundColor: theme.palette.paper,
+              borderWidth: 1.5,
+              borderColor: theme.palette.ink,
+              borderRadius: 20,
+              paddingVertical: 16,
+              paddingHorizontal: 18,
+              textAlignVertical: 'top',
+            }}
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                const text = fixing;
+
+                setFixing(null);
+                props.onFix(entry, text);
+              }}
+              hitSlop={8}
+              style={{
+                borderRadius: 999,
+                backgroundColor: theme.palette.solid,
+                paddingVertical: 11,
+                paddingHorizontal: 22,
+              }}
+            >
+              <AppText variant="secondary" style={{ color: theme.palette.onSolid }}>
+                {t('detail.fixDone')}
+              </AppText>
+            </Pressable>
+            <AppText
+              variant="caption"
+              color="inkFaint"
+              style={{ flex: 1, textTransform: 'none', letterSpacing: 0, fontSize: 12.5 }}
+            >
+              {t('detail.fixHint')}
+            </AppText>
+          </View>
+        </View>
+      )}
 
       {props.recordingUri === null ? <AudioGone t={t} /> : <Playback uri={props.recordingUri} t={t} />}
 

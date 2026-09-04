@@ -322,6 +322,7 @@ function Stage(props: CaptureFlowScreenProps): React.JSX.Element {
         <EntryDetailScreen
           entry={flow.stage.entry}
           recordingUri={flow.stage.recordingUri}
+          onFix={flow.fixEntryWording}
           vocabulary={props.vocabulary}
           locale={props.locale}
           t={t}

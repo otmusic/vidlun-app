@@ -113,24 +113,40 @@ export function PeriodSheet(props: {
           </AppText>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 20 }}>
-            {PRESETS.map((preset) => (
-              <Pressable
-                key={preset.key}
-                accessibilityRole="button"
-                onPress={() => {
-                  props.onApply(preset.period(props.today));
-                }}
-                style={{
-                  borderWidth: 1.5,
-                  borderColor: theme.palette.line,
-                  borderRadius: 999,
-                  paddingVertical: 8,
-                  paddingHorizontal: 14,
-                }}
-              >
-                <AppText variant="secondary">{t(preset.key)}</AppText>
-              </Pressable>
-            ))}
+            {PRESETS.map((preset) => {
+              /*
+               * A period that ends before the first entry was written holds
+               * nothing, and a live button into it reads as months the person
+               * failed to fill. Faint and inert instead, like the calendar's
+               * own arrows.
+               */
+              const period = preset.period(props.today);
+              const reachable = period.to > startOfDay(props.earliest);
+
+              return (
+                <Pressable
+                  key={preset.key}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: !reachable }}
+                  disabled={!reachable}
+                  onPress={() => {
+                    props.onApply(period);
+                  }}
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: theme.palette.line,
+                    borderRadius: 999,
+                    paddingVertical: 8,
+                    paddingHorizontal: 14,
+                    opacity: reachable ? 1 : 0.55,
+                  }}
+                >
+                  <AppText variant="secondary" color={reachable ? 'ink' : 'inkFaint'}>
+                    {t(preset.key)}
+                  </AppText>
+                </Pressable>
+              );
+            })}
           </View>
 
           <View

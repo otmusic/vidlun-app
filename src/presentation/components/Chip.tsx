@@ -1,4 +1,5 @@
 import { Pressable, View } from 'react-native';
+import { Path, Svg } from 'react-native-svg';
 
 import { useTheme } from '../theme/ThemeProvider';
 import type { Palette } from '../theme/tokens';
@@ -37,6 +38,27 @@ const TONE_COLORS: Record<ChipTone, { soft: keyof Palette; ink: keyof Palette; s
     warm: { soft: 'warmSoft', ink: 'warmInk', solid: 'warm' },
   };
 
+/**
+ * Whether a colour is light enough that paper-coloured text would sink into
+ * it. The drawing reads this off the colour itself rather than off the theme,
+ * because an emotion's hue is the same on both grounds and only some of them
+ * are pale.
+ */
+function isLightTone(hex: string): boolean {
+  const value = hex.replace('#', '').slice(0, 6);
+
+  if (value.length !== 6) {
+    return false;
+  }
+
+  const channel = (at: number): number => parseInt(value.slice(at, at + 2), 16) / 255;
+  const linear = (c: number): number => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const luminance =
+    0.2126 * linear(channel(0)) + 0.7152 * linear(channel(2)) + 0.0722 * linear(channel(4));
+
+  return luminance > 0.45;
+}
+
 export function Chip(props: ChipProps): React.JSX.Element {
   const theme = useTheme();
   const tone = TONE_COLORS[props.tone ?? 'neutral'];
@@ -50,23 +72,37 @@ export function Chip(props: ChipProps): React.JSX.Element {
    */
   const filled = props.selected === true && props.action === 'add';
   const line = props.color ?? theme.palette[tone.solid];
+  /*
+   * On a solid chip the text takes the ink that reads on that colour: paper
+   * on a deep one, ink on a pale one. The remove mark then sits in a circle
+   * of the same text colour at a whisper, so it is visible on every chip —
+   * the old single-colour glyph vanished on the very chips it was for.
+   */
+  const solidOnLight = props.solid === true && isLightTone(line);
   const text =
-    props.solid === true ? theme.palette.onSolid : (props.color ?? theme.palette[tone.ink]);
+    props.solid === true
+      ? solidOnLight
+        ? theme.palette.ink
+        : theme.palette.onSolid
+      : (props.color ?? theme.palette[tone.ink]);
+  const removeCircle = solidOnLight ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.26)';
   /*
    * A selected chip fills with its own colour at a whisper rather than with a
    * shelf colour, so the fill agrees with the ring around it. Eight-digit hex
    * is the only way to say "this colour, faintly" without a second token.
    */
   const fill = props.color === undefined ? theme.palette[tone.soft] : `${props.color}22`;
+  const removable = props.action === 'remove';
 
   const body = (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.xs,
+        gap: removable ? 8 : theme.spacing.xs,
         borderRadius: theme.radii.pill,
-        paddingHorizontal: 15,
+        paddingLeft: removable ? 16 : 15,
+        paddingRight: removable ? 9 : 15,
         paddingVertical: theme.spacing.sm,
         backgroundColor: props.solid === true ? line : filled ? fill : 'transparent',
         borderWidth: 1.5,
@@ -76,7 +112,32 @@ export function Chip(props: ChipProps): React.JSX.Element {
       <AppText variant="secondary" style={{ color: text }}>
         {props.label}
       </AppText>
-      {props.action === 'remove' ? <Icon name="x" size={12} color={tone.ink} /> : null}
+      {removable ? (
+        props.solid === true ? (
+          <View
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: 10,
+              backgroundColor: removeCircle,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Svg viewBox="0 0 12 12" width={9} height={9}>
+              <Path
+                d="M2 2l8 8M10 2l-8 8"
+                stroke={text}
+                strokeWidth={2}
+                strokeLinecap="round"
+                fill="none"
+              />
+            </Svg>
+          </View>
+        ) : (
+          <Icon name="x" size={12} color={tone.ink} />
+        )
+      ) : null}
     </View>
   );
 

@@ -13,7 +13,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { LegalScreen } from './LegalScreen';
 import { Screen } from './Screen';
 
-const STEPS = ['welcome', 'privacy', 'microphone'] as const;
+const STEPS = ['welcome', 'privacy', 'microphone', 'model'] as const;
 
 type Step = (typeof STEPS)[number];
 
@@ -21,18 +21,21 @@ const KICKER: Record<Step, TranslationKey> = {
   welcome: 'onboarding.step1Kicker',
   privacy: 'onboarding.step2Kicker',
   microphone: 'onboarding.step3Kicker',
+  model: 'onboarding.step4Kicker',
 };
 
 const HEADLINE: Record<Step, TranslationKey> = {
   welcome: 'onboarding.welcomeTitle',
   privacy: 'onboarding.privacyTitle',
   microphone: 'onboarding.micTitle',
+  model: 'onboarding.modelTitle',
 };
 
 const ACTION: Record<Step, TranslationKey> = {
   welcome: 'onboarding.welcomeAction',
   privacy: 'onboarding.privacyAction',
   microphone: 'onboarding.micAllow',
+  model: 'onboarding.modelAction',
 };
 
 /**
@@ -76,16 +79,35 @@ export function OnboardingScreen(props: {
     );
   }
 
+  /*
+   * The last screen explains the one-time download. Where the system has
+   * already delivered the model — an asset pack with the install — there is
+   * nothing to explain, and the microphone step is the end.
+   */
+  const endsAfterMicrophone = props.model.kind === 'ready';
+
   const advance = (): void => {
+    if (step === 'microphone') {
+      // The answer does not gate anything: someone who says no still has a
+      // working journal, and asking twice would be worse than either outcome.
+      void props.onAskMicrophone().finally(() => {
+        if (endsAfterMicrophone) {
+          props.onDone();
+        } else {
+          setIndex(index + 1);
+        }
+      });
+
+      return;
+    }
+
     if (!isLast) {
       setIndex(index + 1);
 
       return;
     }
 
-    // The answer does not gate anything: someone who says no still has a
-    // working journal, and asking twice would be worse than either outcome.
-    void props.onAskMicrophone().finally(props.onDone);
+    props.onDone();
   };
 
   return (
@@ -127,15 +149,35 @@ export function OnboardingScreen(props: {
             <ModelProgress state={props.model} t={t} />
           </>
         ) : null}
+        {step === 'model' ? (
+          <>
+            <View style={{ gap: 16, maxWidth: 320 }}>
+              <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
+                {t('onboarding.modelBody1')}
+              </AppText>
+              <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
+                {t('onboarding.modelBody2')}
+              </AppText>
+              <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
+                {t('onboarding.modelBody3')}
+              </AppText>
+            </View>
+            <DownloadCard state={props.model} t={t} />
+          </>
+        ) : null}
       </View>
 
       <View style={{ gap: 4 }}>
         <Button label={t(ACTION[step])} onPress={advance} />
-        <Button
-          label={t(isLast ? 'onboarding.micLater' : 'onboarding.skip')}
-          variant="ghost"
-          onPress={props.onDone}
-        />
+        {/* The drawing gives the download screen no way out but "understood":
+            there is nothing to skip, only something to know. */}
+        {step === 'model' ? null : (
+          <Button
+            label={t(step === 'microphone' ? 'onboarding.micLater' : 'onboarding.skip')}
+            variant="ghost"
+            onPress={props.onDone}
+          />
+        )}
       </View>
       {step === 'welcome' ? (
         /* The drawing puts the agreement under the first screen only: the tap
@@ -250,6 +292,56 @@ function Lede(props: { readonly children: React.ReactNode }): React.JSX.Element 
  * thing to make someone wait for before their first entry, and the text path
  * needs none of it.
  */
+/**
+ * The drawing's tinted card on the download screen: the line with its
+ * percentage over a three-point bar the ink fills. Where the model is already
+ * whole it simply says so.
+ */
+function DownloadCard(props: {
+  readonly state: SpeechModelState;
+  readonly t: Translate;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const percent =
+    props.state.kind === 'fetching' && props.state.totalBytes !== null && props.state.totalBytes > 0
+      ? Math.min(99, Math.floor((props.state.writtenBytes / props.state.totalBytes) * 100))
+      : props.state.kind === 'ready'
+        ? 100
+        : null;
+
+  return (
+    <View
+      style={{
+        gap: 9,
+        paddingVertical: 16,
+        paddingHorizontal: 18,
+        borderRadius: 20,
+        backgroundColor: theme.palette.limeSoft,
+      }}
+    >
+      <AppText variant="caption" color="inkSoft" style={{ textTransform: 'none', letterSpacing: 0 }}>
+        {props.state.kind === 'ready'
+          ? props.t('onboarding.downloadReady')
+          : percent === null
+            ? props.t('home.voiceFetching')
+            : `${props.t('home.voiceFetching')} · ${String(percent)}%`}
+      </AppText>
+      <View
+        style={{ height: 3, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.10)', overflow: 'hidden' }}
+      >
+        <View
+          style={{
+            height: 3,
+            width: `${percent ?? 0}%`,
+            borderRadius: 999,
+            backgroundColor: theme.palette.ink,
+          }}
+        />
+      </View>
+    </View>
+  );
+}
+
 function ModelProgress(props: {
   readonly state: SpeechModelState;
   readonly t: Translate;

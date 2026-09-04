@@ -7,6 +7,7 @@ import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import { emotionKey, type Locale, type Translate } from '@/i18n';
+import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
@@ -92,7 +93,9 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           * their first day has not failed at anything, and a counter that opens
           * at zero is the app saying otherwise.
           */}
-        {streak > 0 ? <StreakPill days={streak} label={props.t('home.streakUnit')} /> : null}
+        {streak > 0 ? (
+          <StreakPill days={streak} label={props.t(countedKey('home.streak', streak, props.locale))} />
+        ) : null}
       </View>
 
       {week.length > 0 ? (
