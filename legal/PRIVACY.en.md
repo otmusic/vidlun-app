@@ -1,6 +1,6 @@
 # Vidlun Privacy Policy
 
-**Effective:** 29 August 2026
+**Effective:** 4 September 2026
 
 **Data controller:** the Vidlun developer, support@vidlun.app
 
@@ -11,7 +11,8 @@
 - **Audio never leaves your phone.** Speech recognition runs entirely on the
   device, offline.
 - Only the **text** of a transcript leaves — so a language model can name the
-  feelings and write the weekly piece.
+  feelings and write the weekly piece. And what you write to us yourself in
+  the feedback form — but only when you tap "Send".
 - **No accounts, no sign-up, no analytics, no trackers, no advertising.**
 - We have no server that stores your entries. We physically cannot read them.
 
@@ -65,15 +66,42 @@ Lawful basis: performance of contract. See <https://www.revenuecat.com/privacy>.
 
 ### 2.3 Downloading the speech model
 
-Once after installation, the app downloads a speech model (about 600 MB) from
-huggingface.co. That host sees your network address and the fact of the
-download. Nothing of yours is sent to it.
+Once, after you tap "Download" in the app, it downloads a speech model (about
+670 MB) from huggingface.co. The app never starts that download on its own.
+That host sees your network address and the fact of the download. Nothing of
+yours is sent to it.
 
 ### 2.4 Network data
 
 Cloudflare, as the network intermediary, sees the address a request came from.
 It is used only to rate-limit requests and is not stored alongside anything of
 yours.
+
+### 2.5 Feedback
+
+**What exactly.** Only what you type yourself into the "Write to us" form in
+your profile, plus the app version and the iOS version — the first thing
+support asks.
+
+**Where to.** Through the same Cloudflare Workers proxy, as an email to our
+support mailbox. Cloudflare delivers the email; the mailbox is hosted by
+Google (Gmail).
+
+**Why.** So we can read it and, where needed, reply. It happens only when you
+tap "Send"; the app never writes on its own.
+
+**Lawful basis** (GDPR Art. 6(1)(f)): our legitimate interest in answering the
+messages we are sent.
+
+**How long.** On the phone, only until the email has gone (with no connection
+the note waits in the app and goes at the next launch). The proxy stores
+nothing. The email stays in the support mailbox while we deal with it and is
+deleted no later than a year after it arrived.
+
+**What is never sent:** entries, transcripts, audio, feelings, mood — nothing
+from the journal. The form does not know who you are: the email carries no
+name, no email address and no device identifier. If you leave your address in
+the text, we use it only to reply.
 
 ## 3. Permissions the app asks for
 
