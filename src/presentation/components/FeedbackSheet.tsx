@@ -62,18 +62,16 @@ export function FeedbackSheet(props: {
         {/*
           * The keyboard rises over a sheet pinned to the bottom, so the sheet
           * rises with it: "Send" under the keys is a note that cannot be
-          * sent. A tap on the sheet's own text puts the keyboard away — a
-          * multiline field has no other way off it — and the sheet scrolls
-          * on a phone too short for both.
+          * sent. Taps always reach the buttons — the scroll view is not
+          * allowed to spend the first one on putting the keyboard away, which
+          * made "Send" a two-tap button — and the keyboard goes with a drag
+          * down over the sheet, or with the sheet itself.
           */}
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{ flex: 1, justifyContent: 'flex-end', pointerEvents: 'box-none' }}
         >
-          <Pressable
-            onPress={() => {
-              Keyboard.dismiss();
-            }}
+          <View
             style={{
               backgroundColor: theme.palette.paper,
               borderTopLeftRadius: 28,
@@ -83,7 +81,8 @@ export function FeedbackSheet(props: {
           >
             <ScrollView
               bounces={false}
-              keyboardShouldPersistTaps="handled"
+              keyboardShouldPersistTaps="always"
+              keyboardDismissMode="interactive"
               style={{ maxHeight: windowHeight - 80 }}
               contentContainerStyle={{ paddingTop: 24, paddingHorizontal: 20, paddingBottom: 30 }}
             >
@@ -155,7 +154,7 @@ export function FeedbackSheet(props: {
                 </Pressable>
               </View>
             </ScrollView>
-          </Pressable>
+          </View>
         </KeyboardAvoidingView>
       </View>
     </Modal>

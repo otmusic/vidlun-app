@@ -183,33 +183,20 @@ export function SubscriptionScreen(props: {
           </>
         )}
 
-        <View
-          style={{
-            borderTopWidth: 1,
-            borderTopColor: theme.palette.line,
-            marginTop: 28,
-            paddingTop: 20,
-            gap: 16,
-          }}
-        >
-          <AppText variant="secondary" color="inkSoft">
-            {t('subs.free')}
-          </AppText>
-          <View style={{ flexDirection: 'row', gap: 20 }}>
-            {/* Apple asks for these to work, and someone deciding whether to
-                pay is exactly who wants to read them. */}
-            <Pressable accessibilityRole="link" onPress={props.onOpenTerms} hitSlop={10}>
-              <AppText variant="secondary" color="accentInk">
-                {t('subs.terms')}
-              </AppText>
-            </Pressable>
-            <Pressable accessibilityRole="link" onPress={props.onOpenPrivacy} hitSlop={10}>
-              <AppText variant="secondary" color="accentInk">
-                {t('subs.privacy')}
-              </AppText>
-            </Pressable>
-          </View>
-          <Outlined label={t('subs.notNow')} onPress={props.onBack} />
+        {/* Apple asks for these to work, and someone deciding whether to pay
+            is exactly who wants to read them. Nothing else follows: the way
+            out is the round back button at the top. */}
+        <View style={{ flexDirection: 'row', gap: 20, marginTop: 18 }}>
+          <Pressable accessibilityRole="link" onPress={props.onOpenTerms} hitSlop={10}>
+            <AppText variant="secondary" color="accentInk">
+              {t('subs.terms')}
+            </AppText>
+          </Pressable>
+          <Pressable accessibilityRole="link" onPress={props.onOpenPrivacy} hitSlop={10}>
+            <AppText variant="secondary" color="accentInk">
+              {t('subs.privacy')}
+            </AppText>
+          </Pressable>
         </View>
       </ScrollView>
 
