@@ -2,7 +2,7 @@
   "title": "Vidlun Privacy Policy",
   "blocks": [
     {
-      "text": "*Effective:* 4 September 2026"
+      "text": "*Effective:* 7 September 2026"
     },
     {
       "text": "*Data controller:* the Vidlun developer, support@vidlun.app"
@@ -29,7 +29,7 @@
         [
           "Voice recordings",
           "the app's documents folder",
-          "365 days, then deleted automatically; immediately if \"Keep recordings\" is off"
+          "thirteen months, then deleted automatically; immediately if \"Keep recordings\" is off"
         ],
         [
           "Transcript, emotions, mood, topics, time",

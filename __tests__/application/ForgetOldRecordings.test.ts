@@ -4,7 +4,7 @@ import { FixedClock, InMemoryRecordingStore } from './fakes';
 const NOW = new Date('2026-08-25T12:00:00.000Z');
 
 describe('ForgetOldRecordings', () => {
-  it('sweeps everything older than a year', async () => {
+  it('sweeps everything older than thirteen months', async () => {
     const recordings = new InMemoryRecordingStore();
 
     await new ForgetOldRecordings(recordings, new FixedClock(NOW)).execute();
@@ -13,7 +13,7 @@ describe('ForgetOldRecordings', () => {
 
     expect(cutoff).not.toBeNull();
     expect(cutoff?.getUTCFullYear()).toBe(2025);
-    expect(cutoff?.getUTCMonth()).toBe(7);
+    expect(cutoff?.getUTCMonth()).toBe(6);
     expect(cutoff?.getUTCDate()).toBe(25);
   });
 

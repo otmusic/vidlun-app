@@ -84,12 +84,14 @@ how the day went, and ending the take there is the app deciding you had
 finished. A pause is part of speaking. There is still a ceiling, far past any
 real entry, so a recording left running in a pocket cannot fill the disk.
 
-**The recording is kept for a year, then only the audio is deleted.** A
+**The recording is kept for thirteen months, then only the audio is deleted.** A
 transcript loses the thing a voice journal was for: "I'm fine" said evenly and
 said barely holding together read identically on the page. Hearing yourself six
 months back is worth more than reading yourself, and it is the same argument as
 M6 — the product is for learning to recognise your own states, and tone is part
-of the evidence. After a year the audio goes and the entry stays whole: mood,
+of the evidence. Thirteen months rather than twelve, so the yearly echo can
+still play the voice on its anniversary (owner's decision, 2026-09-07). After
+that the audio goes and the entry stays whole: mood,
 emotions, transcript, everything the history is made of.
 
 This is the journal, and only the journal. The grounding exercise (M8) still
@@ -299,7 +301,7 @@ Seven roots: `happy`, `surprised`, `bad`, `fearful`, `angry`, `disgusted`,
 | **Choosing a heavy emotion is not itself a crisis signal.** The flag comes from content analysis only. | People are allowed to feel bad without the product reacting. |
 | **Drafts are not persisted.** `CreateVoiceEntry` returns an entry; only `ConfirmEntry` writes it. | The card is a proposal. |
 | **Every user revision is logged** (proposed ids vs final ids). | Training data for v2 personalization; must be collected from day one. |
-| **Audio belongs to the entry and outlives neither it nor a year.** Deleting an entry deletes its recording; a recording older than a year is deleted on its own. | Keeping a voice after someone removed the entry it belonged to is the kind of thing that ends trust in a journal permanently. |
+| **Audio belongs to the entry and outlives neither it nor thirteen months.** Deleting an entry deletes its recording; a recording older than thirteen months is deleted on its own. | Keeping a voice after someone removed the entry it belonged to is the kind of thing that ends trust in a journal permanently. |
 | **`proposedEmotionIds` is set once, at creation, and never changes.** It is Vidlun's own answer and defaults to nothing else. | M6 has to render an entry without revealing the analysis, and every entry needs the proposal — not just the corrected ones the revision log covers. The draft now starts from what the person named, so defaulting the proposal to `emotionIds` would file their guess as the model's. |
 | **`selfEmotionIds` is what the person named before seeing Vidlun's answer, and it is written once.** Empty is a real value, not a missing one: naming nothing is an answer. | It is the only unaided measurement the entry carries. The moment the person adopts one of Vidlun's chips, `emotionIds` stops being theirs alone, and emotional granularity — M6's core value signal — would be measured off Vidlun's vocabulary rather than the person's. |
 
@@ -558,7 +560,7 @@ reason the speaking is not.
 Insights screen (free daily trend + paywalled weekly narrative), onboarding
 (privacy screen before the microphone permission request), settings with
 reminder time picker, local notifications, playback of a kept recording, and
-the year-old-audio sweep.
+the old-audio sweep (thirteen months).
 
 Keeping recordings is a setting, not a question at onboarding. Asking someone
 where their voice goes before they have said anything into the app is the worst

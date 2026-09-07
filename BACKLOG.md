@@ -925,6 +925,11 @@ and still saves nothing.
 | 2b.6 | The setting. | **Done.** In settings, not at onboarding. Defaults to keeping. Switching it off deletes what is already kept, and says so first. |
 | 2b.7 | Onboarding copy. | **Done.** The privacy screen says recordings stay a year and the written entry stays for good. "Nothing is kept" stopped being true when we decided to keep the audio, and this is where that gets said rather than discovered. |
 
+**Thirteen months since 2026-09-07.** The owner chose the simplest of three
+options so that the yearly echo (design round 4) can play the voice on its
+anniversary: `ForgetOldRecordings` now cuts at thirteen calendar months, the
+onboarding, profile and privacy copy say so, and the sweep test moved with it.
+
 **Kept as WAV, deliberately.** Roughly 32 KB a second, so a daily habit
 approaches 360 MB before the sweep starts reclaiming. Compressing would mean
 adding something that transcodes, and the year bounds the total either way.
