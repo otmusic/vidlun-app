@@ -1299,8 +1299,9 @@ app, and `VidlunShortcuts` gives Siri "Record in Vidlun" and the Action
 Button something to be set to. The app side is `useRecordLink`: the link
 waits for the journal to be open — not over onboarding, not behind the
 lock, not mid-card — and then starts a take. Verified on the simulator from
-a cold start; on hardware, the Control Center button and Siri are still to
-be tried. The widget carries two strings of its own in Swift (the record
+a cold start, and on the owner's iPhone 14 Pro (iOS 26.6.1) the same day:
+the widgets open the take and Siri runs "Record in Vidlun". The widget
+carries two strings of its own in Swift (the record
 label and the home question) because an extension cannot read the app's
 dictionary; if the design changes `wRecord` or `homeQ`, change them there
 too. No streak on the widget, by design: a zero reads as a reproach.
@@ -1318,10 +1319,10 @@ journal, and a list with an add button on statistics. `MarkMilestone`
 marks today or renames; `ForgetMilestone` removes. The sheet is drawn in
 the tree, not in a `Modal`, for the reason §2b's feedback sheet is.
 
-**Still to try on the phone:** the Control Center button (a control
-widget cannot be exercised in the simulator's Control Center by the
-tooling), "Record in Vidlun" through Siri, the Action Button binding, and
-the Lock Screen widgets in their tinted rendering.
+**Not yet seen working:** the Action Button binding — the owner's phone
+is a 14 Pro and has no Action Button, so it waits for a tester with a 15
+Pro or later. The Control Center button was built and installed with the
+rest but has not been reported on either way.
 
 ---
 
