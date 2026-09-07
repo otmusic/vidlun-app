@@ -1284,6 +1284,41 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3j. The speech model as an Apple-hosted asset pack — uploaded 2026-09-07
+
+The 668 MB Parakeet model now sits in App Store Connect as asset pack
+`parakeet-tdt-06b-v3-q8`, version 1, state COMPLETE (App Store Connect ids
+in `scripts/asc-submit.py status`). Upload went through `xcrun altool
+--upload-asset-pack` with the App Store Connect key — the same delivery
+pipeline Transporter uses, which is not installed on the build Mac.
+
+**Policy: prefetch, on first installation and every update.** Not essential:
+an essential pack rides inside the App Store install, so first launch would
+wait on 668 MB and the text path — which needs no model — would wait with
+it. Prefetch keeps the install small, the system fetches the model in the
+background under the App Store's own cellular rules, and the app's own
+download offer stays as the fallback for a phone that has not got it yet.
+
+**Where it stands.** Internal TestFlight: `READY_FOR_TESTING` — builds 22
+and 23 in the "Test Vidlun" group can download it from Apple now, which is
+the first real end-to-end delivery test; the simulator only ever saw
+`ba-serve`. External TestFlight: `READY_FOR_BETA_SUBMISSION`. App Store:
+`PREPARE_FOR_SUBMISSION` — an asset pack reaches customers through a review
+submission, alone or with an app version, and App Store Connect takes one
+submission per platform at a time. Version 1.0 (build 19) is waiting for
+review, so nothing more can be submitted until it is decided.
+
+**The 1.0.1 plan, once 1.0 is decided.** Bump `expo.version` to 1.0.1,
+build 24, upload; then `scripts/asc-submit.py submit --version 1.0.1
+--build 24` creates the version, attaches the build, opens a review
+submission with the version and the pack, and asks once before submitting.
+`plan` with the same arguments prints the calls without making them. Build
+19 already carries `BAHasManagedAssetPacks`, so once the pack is approved
+it also reaches 1.0 users; 1.0.1 is the vehicle for the widgets, the year
+echo and the milestones rather than a requirement of the pack.
+
+---
+
 ## 3i. The first wave after 1.0 — built 2026-09-07
 
 Design round 4 drew three things and the brief put them in this order:
