@@ -28,7 +28,7 @@ module.exports = {
     onSolid: { light: '#FBF7F0', dark: '#14161B' },
     lime: { light: '#D7F26B', dark: '#D7F26B' },
   },
-  entitlements: {
-    'com.apple.security.application-groups': ['group.com.vidlun.journal'],
-  },
+  // No app group: nothing here reads the journal, and an entitlement the
+  // widget does not use is one more capability to provision and explain.
+  entitlements: {},
 };
