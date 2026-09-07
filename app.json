@@ -44,6 +44,7 @@
       "expo-localization",
       "expo-notifications",
       "@bacons/apple-targets"
-    ]
+    ],
+    "scheme": "vidlun"
   }
 }

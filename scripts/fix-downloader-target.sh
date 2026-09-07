@@ -19,4 +19,4 @@ sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 17.0;/IPHONEOS_DEPLOYMENT_TARGET = 26.
 sed -i '' -E "s/CURRENT_PROJECT_VERSION = \"?[0-9]+\"?;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/g" "$PBX"
 
 echo "deployment 26.0: $(grep -c 'IPHONEOS_DEPLOYMENT_TARGET = 26.0' "$PBX") (expect 2)"
-echo "version $BUILD_NUMBER: $(grep -c "CURRENT_PROJECT_VERSION = $BUILD_NUMBER;" "$PBX") (expect 4)"
+echo "version $BUILD_NUMBER: $(grep -c "CURRENT_PROJECT_VERSION = $BUILD_NUMBER;" "$PBX") (expect 6: app, downloader, widget)"

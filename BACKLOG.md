@@ -1284,6 +1284,47 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3i. The first wave after 1.0 — built 2026-09-07
+
+Design round 4 drew three things and the brief put them in this order:
+widgets, then the echo from a year ago, then milestones. All three are in
+the code as of build 22; the widgets are the only native piece.
+
+**Record without opening.** `targets/widget` is a WidgetKit extension
+(iOS 18 and up) with the Lock Screen circle, the rectangular Lock Screen
+widget, the small Home Screen tile and a Control Center button. Every one of
+them opens `vidlun://record`; the Control Center button and Siri go through
+`RecordIntent`, which lives in `_shared/` so the same intent exists in the
+app, and `VidlunShortcuts` gives Siri "Record in Vidlun" and the Action
+Button something to be set to. The app side is `useRecordLink`: the link
+waits for the journal to be open — not over onboarding, not behind the
+lock, not mid-card — and then starts a take. Verified on the simulator from
+a cold start; on hardware, the Control Center button and Siri are still to
+be tried. The widget carries two strings of its own in Swift (the record
+label and the home question) because an extension cannot read the app's
+dictionary; if the design changes `wRecord` or `homeQ`, change them there
+too. No streak on the widget, by design: a zero reads as a reproach.
+
+**The echo from a year ago, with its voice.** `GetHomeView` now finds the
+same day one year back and hands the card the recording when the thirteen
+month retention still has it. The card plays it in place through the
+inline `Playback` variant; a take past its date shows the crossed
+microphone and says so. 29 February has no anniversary and gets no card.
+
+**Milestones.** A labelled day (24 characters at most), kept in its own
+AsyncStorage record, never inside an entry. Shown as a tick under the
+week strip, a label with a hairline through the chart, a rule row in the
+journal, and a list with an add button on statistics. `MarkMilestone`
+marks today or renames; `ForgetMilestone` removes. The sheet is drawn in
+the tree, not in a `Modal`, for the reason §2b's feedback sheet is.
+
+**Still to try on the phone:** the Control Center button (a control
+widget cannot be exercised in the simulator's Control Center by the
+tooling), "Record in Vidlun" through Siri, the Action Button binding, and
+the Lock Screen widgets in their tinted rendering.
+
+---
+
 ## 4. Deliberate debt
 
 | # | Debt | Why it matters |

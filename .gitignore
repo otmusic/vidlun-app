@@ -58,3 +58,6 @@ asset-packs/**/*.aar
 # The speech model and the asset pack built from it: 668 MB each, fetched by scripts/build-asset-pack.sh
 asset-packs/*.aar
 asset-packs/dev-server/
+
+# The widget colour catalog is generated from expo-target.config.js on every prebuild
+/targets/widget/Assets.xcassets

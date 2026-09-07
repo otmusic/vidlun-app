@@ -23,6 +23,7 @@ import { AppText } from '@/presentation/components/AppText';
 import { SplashOverlay } from '@/presentation/components/SplashOverlay';
 import { Button } from '@/presentation/components/Button';
 import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
+import { useRecordLink } from '@/presentation/hooks/useRecordLink';
 import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
 import { OnboardingScreen } from '@/presentation/screens/OnboardingScreen';
 import { Screen } from '@/presentation/screens/Screen';
@@ -335,6 +336,16 @@ function Vidlun(props: {
    * situation the lock exists for.
    */
   const [unlocked, setUnlocked] = useState(!props.settings.appLock);
+
+  /*
+   * "Record in Vidlun" from a widget, Siri, the Control Center or the Action
+   * Button arrives as a URL and waits for the journal to be open: not over
+   * onboarding, not behind the lock, not in the middle of a card.
+   */
+  useRecordLink({
+    ready: props.settings.hasOnboarded && unlocked && flow.stage.kind === 'idle',
+    onRecord: flow.startRecording,
+  });
   const leftAt = useRef<number | null>(null);
   const tryUnlock = useCallback(() => {
     void container.screenLock.unlock(t('lock.reason')).then(setUnlocked);
