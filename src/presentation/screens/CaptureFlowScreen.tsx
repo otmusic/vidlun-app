@@ -11,6 +11,7 @@ import { View } from 'react-native';
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
 import { FeedbackSheet } from '../components/FeedbackSheet';
+import { MilestoneSheet } from '../components/MilestoneSheet';
 import { TabBar, type Tab } from '../components/TabBar';
 import type { CaptureFlow } from '../hooks/useCaptureFlow';
 import { EditScreen } from './EditScreen';
@@ -68,15 +69,12 @@ const TAB_FOR_STAGE: Partial<Record<CaptureFlow['stage']['kind'], Tab>> = {
 export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Element {
   const tab = TAB_FOR_STAGE[props.flow.stage.kind];
   /*
-   * The note-to-support sheet is held here, above the tab bar, rather than
-   * inside the profile: it covers the bar while open, and drawing it in the
-   * tree instead of a Modal is what lets "Send" take the first tap.
+   * The sheets are held here, above the tab bar, rather than inside the
+   * screens that open them: they cover the bar while open, and drawing
+   * them in the tree instead of a Modal is what lets a button take the
+   * first tap while the keyboard is up.
    */
   const [writingFeedback, setWritingFeedback] = useState(false);
-
-  if (tab === undefined) {
-    return <Stage {...props} onWriteFeedback={() => {}} />;
-  }
 
   /*
    * The bar floats over the screen rather than beside it, so the content keeps
@@ -91,20 +89,31 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
           setWritingFeedback(true);
         }}
       />
-      <TabBar
-        active={tab}
+      {tab === undefined ? null : (
+        <TabBar
+          active={tab}
+          t={props.t}
+          onSelect={(next) => {
+            if (next === 'home') {
+              props.flow.backHome();
+            } else if (next === 'journal') {
+              props.flow.openHistory();
+            } else if (next === 'search') {
+              props.flow.openSearch();
+            } else if (next === 'me') {
+              props.flow.openSettings();
+            }
+          }}
+        />
+      )}
+      <MilestoneSheet
+        open={props.flow.milestoneSheet}
+        locale={props.locale}
+        today={props.today}
         t={props.t}
-        onSelect={(next) => {
-          if (next === 'home') {
-            props.flow.backHome();
-          } else if (next === 'journal') {
-            props.flow.openHistory();
-          } else if (next === 'search') {
-            props.flow.openSearch();
-          } else if (next === 'me') {
-            props.flow.openSettings();
-          }
-        }}
+        onSave={props.flow.saveMilestone}
+        onDelete={props.flow.deleteMilestone}
+        onClose={props.flow.closeMilestone}
       />
       <FeedbackSheet
         open={writingFeedback}
@@ -269,6 +278,11 @@ function Stage(
           onOpenVocabulary={flow.openVocabulary}
           onOpenDay={flow.openHistory}
           onOpenSubscription={flow.openSubscription}
+          milestones={flow.milestones}
+          onMarkMilestone={() => {
+            flow.openMilestone();
+          }}
+          onEditMilestone={flow.openMilestone}
         />
       );
 
@@ -348,6 +362,8 @@ function Stage(
           t={t}
           onOpen={flow.openEntry}
           onRecord={flow.startRecording}
+          milestones={flow.milestones}
+          onEditMilestone={flow.openMilestone}
         />
       );
 
@@ -383,6 +399,7 @@ function Stage(
           onContinueParked={flow.continueParked}
           onShowParked={flow.showParked}
           mic={flow.micStatus}
+          milestones={flow.milestones}
           onDelete={flow.deleteEntry}
           onOpenHistory={flow.openHistory}
           onOpenStats={flow.openStats}

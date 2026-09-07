@@ -3,7 +3,7 @@ import { MoodEntry } from '@/domain/entities/MoodEntry';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
 import { InMemoryMoodEntryRepository } from '@/infrastructure/persistence/InMemoryMoodEntryRepository';
-import { FixedClock } from './fakes';
+import { FixedClock, InMemoryRecordingStore } from './fakes';
 
 /** Saturday 1 August 2026, mid-morning. */
 const TODAY = new Date(2026, 7, 1, 10, 0);
@@ -35,7 +35,7 @@ async function setup(entries: readonly MoodEntry[]) {
     await repository.save(entry);
   }
 
-  return new GetHomeView(repository, new FixedClock(TODAY));
+  return new GetHomeView(repository, new FixedClock(TODAY), new InMemoryRecordingStore());
 }
 
 describe('GetHomeView', () => {
@@ -147,6 +147,7 @@ describe('the echo from a month ago', () => {
     const view = await new GetHomeView(
       repository,
       new FixedClock(new Date(2026, 6, 31, 10, 0)),
+      new InMemoryRecordingStore(),
     ).execute(3);
 
     expect(view.echo).toBeNull();
@@ -158,5 +159,50 @@ describe('the echo from a month ago', () => {
     const view = await useCase.execute(3);
 
     expect(view.echo).toBeNull();
+  });
+});
+
+describe('the echo from a year ago', () => {
+  it('brings back that day and its voice when the phone still has it', async () => {
+    const repository = new InMemoryMoodEntryRepository();
+    const recordings = new InMemoryRecordingStore();
+    const thatDay = entryOn(new Date(2025, 7, 1, 8, 40));
+    await repository.save(thatDay);
+    await recordings.keep(thatDay.id, 'file:///recordings/that-day.wav');
+
+    const view = await new GetHomeView(repository, new FixedClock(TODAY), recordings).execute(3);
+
+    expect(view.yearEcho?.entry.id).toBe(thatDay.id);
+    expect(view.yearEcho?.recordingUri).toBe('file:///recordings/that-day.wav');
+  });
+
+  it('brings back the words alone once the voice is gone', async () => {
+    const useCase = await setup([entryOn(new Date(2025, 7, 1, 8, 40))]);
+
+    const view = await useCase.execute(3);
+
+    expect(view.yearEcho?.recordingUri).toBeNull();
+  });
+
+  it('takes the last entry of that day', async () => {
+    const morning = entryOn(new Date(2025, 7, 1, 8, 0));
+    const evening = entryOn(new Date(2025, 7, 1, 21, 0));
+    const useCase = await setup([morning, evening]);
+
+    expect((await useCase.execute(3)).yearEcho?.entry.id).toBe(evening.id);
+  });
+
+  it('is silent when that day held nothing, or on a leap day', async () => {
+    const useCase = await setup([entryOn(new Date(2025, 7, 2, 9, 0))]);
+
+    expect((await useCase.execute(3)).yearEcho).toBeNull();
+
+    const leap = await new GetHomeView(
+      new InMemoryMoodEntryRepository(),
+      new FixedClock(new Date(2028, 1, 29, 10, 0)),
+      new InMemoryRecordingStore(),
+    ).execute(3);
+
+    expect(leap.yearEcho).toBeNull();
   });
 });

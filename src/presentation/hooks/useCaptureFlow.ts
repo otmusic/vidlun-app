@@ -29,7 +29,12 @@ import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
 import type { IClock } from '@/domain/ports/IClock';
 import type { IPurchases, Plan, PurchaseOutcome } from '@/domain/ports/IPurchases';
 import type { IHaptics } from '@/domain/ports/IHaptics';
+import type { Milestone } from '@/domain/entities/Milestone';
 import type { IParkedTake, ParkedTake } from '@/domain/ports/IParkedTake';
+import type { ForgetMilestone } from '@/application/use-cases/ForgetMilestone';
+import type { GetMilestones } from '@/application/use-cases/GetMilestones';
+import type { MarkMilestone } from '@/application/use-cases/MarkMilestone';
+import type { MilestoneSheetState } from '../components/MilestoneSheet';
 import type { IMicrophonePermission, PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 
 export type CaptureStage =
@@ -160,6 +165,9 @@ export interface CaptureDependencies {
   readonly findMoodPatterns: FindMoodPatterns;
   readonly searchEntries: SearchEntries;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
+  readonly getMilestones: GetMilestones;
+  readonly markMilestone: MarkMilestone;
+  readonly forgetMilestone: ForgetMilestone;
   /** True while the free week runs. The chart and the themes never wait on it. */
   readonly hasNarrativeAccess: boolean;
   /** Injected for the same reason the use cases take one: a test cannot wait a week. */
@@ -189,6 +197,14 @@ export interface CaptureFlow {
   readonly continueParked: () => void;
   /** Opens the waiting screen for a parked take: where the download stands, or the offer to start it. */
   readonly showParked: () => void;
+  /** Every milestone, oldest first; the strip, the chart and the journal mark from it. */
+  readonly milestones: readonly Milestone[];
+  readonly milestoneSheet: MilestoneSheetState | null;
+  /** Opens the sheet: for today when called bare, for the given one to rename or delete. */
+  readonly openMilestone: (milestone?: Milestone) => void;
+  readonly closeMilestone: () => void;
+  readonly saveMilestone: (label: string) => void;
+  readonly deleteMilestone: () => void;
   readonly cancel: () => void;
   readonly startWriting: () => void;
   /** Opens the text screen aimed at yesterday evening — the missed day's door. */
@@ -422,8 +438,21 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const takeUri = useRef<string | null>(null);
   const [parked, setParked] = useState<ParkedTake | null>(null);
   const [micStatus, setMicStatus] = useState<PermissionStatus>('undetermined');
+  const [milestones, setMilestones] = useState<readonly Milestone[]>([]);
+  const [milestoneSheet, setMilestoneSheet] = useState<MilestoneSheetState | null>(null);
 
-  const { getHomeView, parkedTake, microphonePermission } = dependencies;
+  const { getHomeView, parkedTake, microphonePermission, getMilestones } = dependencies;
+
+  const reloadMilestones = useCallback(() => {
+    void getMilestones
+      .execute()
+      .then(setMilestones)
+      .catch(() => {
+        setMilestones([]);
+      });
+  }, [getMilestones]);
+
+  useEffect(reloadMilestones, [reloadMilestones]);
 
   useEffect(() => {
     void microphonePermission
@@ -885,6 +914,43 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     showParked: useCallback(() => {
       setStage({ kind: 'parked' });
     }, []),
+    milestones,
+    milestoneSheet,
+    openMilestone: useCallback((milestone?: Milestone) => {
+      setMilestoneSheet({ editing: milestone ?? null });
+    }, []),
+    closeMilestone: useCallback(() => {
+      setMilestoneSheet(null);
+    }, []),
+    saveMilestone: useCallback(
+      (label: string) => {
+        void dependencies.markMilestone
+          .execute(label, milestoneSheet?.editing?.id ?? null)
+          .then(() => {
+            setMilestoneSheet(null);
+            reloadMilestones();
+          })
+          .catch(fail);
+      },
+      [dependencies.markMilestone, fail, milestoneSheet, reloadMilestones],
+    ),
+    deleteMilestone: useCallback(() => {
+      const editing = milestoneSheet?.editing;
+
+      if (editing === undefined || editing === null) {
+        setMilestoneSheet(null);
+
+        return;
+      }
+
+      void dependencies.forgetMilestone
+        .execute(editing.id)
+        .then(() => {
+          setMilestoneSheet(null);
+          reloadMilestones();
+        })
+        .catch(fail);
+    }, [dependencies.forgetMilestone, fail, milestoneSheet, reloadMilestones]),
     startWriting: useCallback(() => {
       backfillAt.current = null;
       setStage({ kind: 'writing' });

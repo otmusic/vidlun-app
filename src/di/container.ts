@@ -57,6 +57,10 @@ import { ExpoParkedFiles } from '../infrastructure/persistence/ExpoParkedFiles';
 import { FileParkedTake } from '../infrastructure/persistence/FileParkedTake';
 import type { IParkedTake } from '../domain/ports/IParkedTake';
 import { FeedbackUndeliveredError } from '../domain/errors/FeedbackErrors';
+import { ForgetMilestone } from '../application/use-cases/ForgetMilestone';
+import { GetMilestones } from '../application/use-cases/GetMilestones';
+import { MarkMilestone } from '../application/use-cases/MarkMilestone';
+import { AsyncStorageMilestones } from '../infrastructure/persistence/AsyncStorageMilestones';
 import { FeedbackOutbox } from '../infrastructure/feedback/FeedbackOutbox';
 import { ProxyFeedbackSender } from '../infrastructure/feedback/ProxyFeedbackSender';
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
@@ -105,6 +109,9 @@ export interface Container {
   readonly purchases: IPurchases;
   readonly reminders: IReminders;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
+  readonly getMilestones: GetMilestones;
+  readonly markMilestone: MarkMilestone;
+  readonly forgetMilestone: ForgetMilestone;
   readonly exportJournal: ExportJournal;
   readonly importJournal: ImportJournal;
   readonly fileSharer: IFileSharer;
@@ -203,6 +210,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
   const repository = new AsyncStorageMoodEntryRepository(AsyncStorage);
   const revisionLog = new AsyncStorageRevisionLog(AsyncStorage);
   const recordings = new FileRecordingStore();
+  const milestones = new AsyncStorageMilestones(AsyncStorage);
 
   return {
     vocabulary,
@@ -237,7 +245,10 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     // request to be rid of the voice, not only to stop adding to it.
     forgetAllRecordings: () => recordings.discardBefore(clock.now()),
     writeObservation: new WriteObservation(observationWriter),
-    getHomeView: new GetHomeView(repository, clock),
+    getHomeView: new GetHomeView(repository, clock, recordings),
+    getMilestones: new GetMilestones(milestones),
+    markMilestone: new MarkMilestone(milestones, clock, idGenerator),
+    forgetMilestone: new ForgetMilestone(milestones),
     getWeekSummary: new GetWeekSummary(
       repository,
       new CachedNarrativeGenerator(

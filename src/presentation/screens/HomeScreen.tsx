@@ -6,6 +6,7 @@ import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
+import type { Milestone } from '@/domain/entities/Milestone';
 import type { ParkedTake } from '@/domain/ports/IParkedTake';
 import { emotionKey, type Locale, type Translate } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
@@ -18,6 +19,7 @@ import { CheckShape } from '../components/Shapes';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 
 import { WeekStrip } from '../components/WeekStrip';
+import { YearEchoCard } from '../components/YearEchoCard';
 import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -48,6 +50,8 @@ export interface HomeScreenProps {
   readonly onShowParked: () => void;
   /** Where the microphone stands with the system; `denied` is named, not retried. */
   readonly mic: PermissionStatus;
+  /** Every milestone; the strip marks the days in its week. */
+  readonly milestones: readonly Milestone[];
 }
 
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
@@ -120,6 +124,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             vocabulary={props.vocabulary}
             locale={props.locale}
             noEntryLabel={props.t('home.noEntryThatDay')}
+            milestones={props.milestones}
           />
           {/*
             Named rather than left to be discovered: a strip that silently
@@ -254,11 +259,22 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         <MonthReadyCard month={props.monthCard} locale={props.locale} t={props.t} onOpen={props.onOpenStats} />
       )}
 
+      {props.home?.yearEcho == null ? null : (
+        <YearEchoCard
+          echo={props.home.yearEcho}
+          vocabulary={props.vocabulary}
+          locale={props.locale}
+          t={props.t}
+          onOpen={props.onOpen}
+        />
+      )}
+
       {props.home?.echo == null ? null : (
         <EchoFromPast
           entry={props.home.echo}
           vocabulary={props.vocabulary}
           t={props.t}
+          alsoYear={props.home.yearEcho !== null}
           onOpen={props.onOpen}
         />
       )}
@@ -355,6 +371,8 @@ function EchoFromPast(props: {
   readonly entry: MoodEntry;
   readonly vocabulary: EmotionVocabulary;
   readonly t: Translate;
+  /** True when the year-ago card sits above; the label then reads as "and". */
+  readonly alsoYear: boolean;
   readonly onOpen: (entry: MoodEntry) => void;
 }): React.JSX.Element {
   const theme = useTheme();
@@ -391,7 +409,7 @@ function EchoFromPast(props: {
           />
         </View>
         <AppText variant="caption" color="inkFaint">
-          {props.t('home.echoPast')}
+          {props.t(props.alsoYear ? 'home.echoAlsoPast' : 'home.echoPast')}
         </AppText>
         {first === undefined ? null : (
           <AppText

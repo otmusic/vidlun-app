@@ -1,6 +1,7 @@
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import type { HistoryDay } from '@/application/use-cases/GetHistory';
+import type { Milestone } from '@/domain/entities/Milestone';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { Locale, Translate } from '@/i18n';
@@ -30,10 +31,14 @@ export function HistoryScreen(props: {
   readonly t: Translate;
   readonly onOpen: (entry: MoodEntry) => void;
   readonly onRecord: () => void;
+  /** Every milestone; each sits as a rule between the days before and after it. */
+  readonly milestones: readonly Milestone[];
+  readonly onEditMilestone: (milestone: Milestone) => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { t } = props;
   const entries = (props.days ?? []).flatMap((day) => day.entries);
+  const rows = interleave(entries, props.milestones);
 
   return (
     <ScrollView
@@ -67,20 +72,44 @@ export function HistoryScreen(props: {
         </View>
       ) : (
         <View style={{ gap: 12 }}>
-          {entries.map((entry) => (
-            <EntryCard
-              key={entry.id}
-              entry={entry}
-              vocabulary={props.vocabulary}
-              locale={props.locale}
-              today={props.today}
-              t={t}
-              showEmotions
-              onOpen={() => {
-                props.onOpen(entry);
-              }}
-            />
-          ))}
+          {rows.map((row) =>
+            row.kind === 'entry' ? (
+              <EntryCard
+                key={row.entry.id}
+                entry={row.entry}
+                vocabulary={props.vocabulary}
+                locale={props.locale}
+                today={props.today}
+                t={t}
+                showEmotions
+                onOpen={() => {
+                  props.onOpen(row.entry);
+                }}
+              />
+            ) : (
+              /* The drawing's rule with the milestone's name in it: the
+                 entries above came after, the ones below came before. */
+              <Pressable
+                key={`milestone-${row.milestone.id}`}
+                accessibilityRole="button"
+                onPress={() => {
+                  props.onEditMilestone(row.milestone);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6, paddingHorizontal: 4 }}
+              >
+                <View style={{ flex: 1, height: 1, backgroundColor: theme.palette.ink, opacity: 0.35 }} />
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+                  <AppText variant="secondary" style={{ fontSize: 13.5, fontWeight: '500' }}>
+                    {row.milestone.label}
+                  </AppText>
+                  <AppText variant="secondary" color="inkSoft" style={{ fontSize: 12.5 }}>
+                    {row.milestone.day.toLocaleDateString(props.locale, { day: 'numeric', month: 'long' })}
+                  </AppText>
+                </View>
+                <View style={{ flex: 1, height: 1, backgroundColor: theme.palette.ink, opacity: 0.35 }} />
+              </Pressable>
+            ),
+          )}
         </View>
       )}
     </ScrollView>
@@ -94,4 +123,22 @@ function periodOf(entries: readonly MoodEntry[], locale: Locale): string {
   return oldest === undefined
     ? ''
     : oldest.createdAt.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+}
+
+type Row =
+  | { readonly kind: 'entry'; readonly entry: MoodEntry; readonly at: number }
+  | { readonly kind: 'milestone'; readonly milestone: Milestone; readonly at: number };
+
+/**
+ * Entries and milestones on one line, newest first. A milestone sorts just
+ * below the last entry of its day, so reading down the page it separates
+ * that day's entries from the ones before it — after above, before below.
+ */
+function interleave(entries: readonly MoodEntry[], milestones: readonly Milestone[]): readonly Row[] {
+  const rows: Row[] = [
+    ...entries.map((entry): Row => ({ kind: 'entry', entry, at: entry.createdAt.getTime() })),
+    ...milestones.map((milestone): Row => ({ kind: 'milestone', milestone, at: milestone.day.getTime() - 1 })),
+  ];
+
+  return rows.sort((a, b) => b.at - a.at);
 }

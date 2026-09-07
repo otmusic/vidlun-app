@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import type { DailyMood } from '@/application/use-cases/GetWeekSummary';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
+import type { Milestone } from '@/domain/entities/Milestone';
 import type { Locale } from '@/i18n';
 
 import { AppText } from './AppText';
@@ -19,9 +20,12 @@ export function WeekStrip(props: {
   readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
   readonly noEntryLabel: string;
+  /** Days with a milestone carry the drawing's small ink tick under the box. */
+  readonly milestones?: readonly Milestone[];
 }): React.JSX.Element {
   const theme = useTheme();
   const scheme = theme.isDark ? 'dark' : 'light';
+  const milestones = props.milestones ?? [];
 
   return (
     <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -69,6 +73,17 @@ export function WeekStrip(props: {
                 }}
               />
             </View>
+            {milestones.some((milestone) => milestone.marks(day.date)) ? (
+              <View
+                style={{
+                  width: 1.5,
+                  height: 8,
+                  marginTop: -3,
+                  borderRadius: 1,
+                  backgroundColor: theme.palette.ink,
+                }}
+              />
+            ) : null}
           </View>
         );
       })}

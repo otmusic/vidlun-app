@@ -201,6 +201,9 @@ function Vidlun(props: {
     findMoodPatterns: container.findMoodPatterns,
     searchEntries: container.searchEntries,
     getVocabularyGrowth: container.getVocabularyGrowth,
+    getMilestones: container.getMilestones,
+    markMilestone: container.markMilestone,
+    forgetMilestone: container.forgetMilestone,
     /*
      * The free week is the whole entitlement so far. Buying what comes after
      * it is M5's, and lands behind this same pair of flags rather than beside

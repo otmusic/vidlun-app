@@ -6,9 +6,11 @@ import type { MonthSummary } from '@/application/use-cases/GetMonthSummary';
 import type { MoodPattern } from '@/application/use-cases/FindMoodPatterns';
 import type { Theme } from '@/application/use-cases/GetWeekThemes';
 import { countedKey } from '@/i18n/plural';
+import type { Milestone } from '@/domain/entities/Milestone';
 import type { Locale, Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
+import { Icon } from '../components/Icon';
 import { toneFor } from '../components/MoodScale';
 import { Button } from '../components/Button';
 import { RoundBack } from '../components/RoundBack';
@@ -68,6 +70,10 @@ export function StatsScreen(props: {
   readonly onOpenVocabulary: () => void;
   readonly onOpenDay: () => void;
   readonly onOpenSubscription: () => void;
+  /** Every milestone; the chart marks the week's, the list shows them all. */
+  readonly milestones: readonly Milestone[];
+  readonly onMarkMilestone: () => void;
+  readonly onEditMilestone: (milestone: Milestone) => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { view, t } = props;
@@ -114,8 +120,20 @@ export function StatsScreen(props: {
           <AppText variant="caption" color="inkFaint" style={{ marginBottom: 14 }}>
             {t('stats.moodByDay')}
           </AppText>
-          <Chart week={view.week} locale={props.locale} onOpenDay={props.onOpenDay} />
+          <Chart
+            week={view.week}
+            milestones={props.milestones}
+            locale={props.locale}
+            onOpenDay={props.onOpenDay}
+          />
           <Count count={view.week.entryCount} locale={props.locale} t={t} />
+          <Milestones
+            milestones={props.milestones}
+            locale={props.locale}
+            t={t}
+            onMark={props.onMarkMilestone}
+            onEdit={props.onEditMilestone}
+          />
           <Narrative
             view={view}
             locale={props.locale}
@@ -329,12 +347,30 @@ function Step(props: {
 
 function Chart(props: {
   readonly week: WeekSummary;
+  readonly milestones: readonly Milestone[];
   readonly locale: Locale;
   readonly onOpenDay: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  /* The drawing's milestone: a label above the day and a hairline down through its bar. */
+  const marked = props.week.days.map((day) => props.milestones.find((m) => m.marks(day.date)) ?? null);
 
   return (
+    <>
+    {marked.some((m) => m !== null) ? (
+      <View style={{ flexDirection: 'row', gap: 6, marginBottom: 4 }}>
+        {marked.map((milestone, at) => (
+          <AppText
+            key={at}
+            variant="secondary"
+            align="center"
+            style={{ flex: 1, fontSize: 11, lineHeight: 13, fontWeight: '500' }}
+          >
+            {milestone?.label ?? ''}
+          </AppText>
+        ))}
+      </View>
+    ) : null}
     <View
       style={{
         flexDirection: 'row',
@@ -344,11 +380,25 @@ function Chart(props: {
         marginBottom: 8,
       }}
     >
-      {props.week.days.map((day) => (
+      {props.week.days.map((day, at) => (
         <View key={day.date.toISOString()} style={{ flex: 1, alignItems: 'center', gap: 9 }}>
           <View
             style={{ flex: 1, width: '100%', justifyContent: 'flex-end', alignItems: 'center' }}
           >
+            {marked[at] === null ? null : (
+              <View
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: 0,
+                  bottom: -6,
+                  width: 1,
+                  marginLeft: -0.5,
+                  backgroundColor: theme.palette.ink,
+                  opacity: 0.6,
+                }}
+              />
+            )}
             {day.averageMood === null ? (
               <View
                 accessibilityLabel={weekdayOf(day.date, props.locale)}
@@ -378,6 +428,92 @@ function Chart(props: {
           </AppText>
         </View>
       ))}
+    </View>
+    </>
+  );
+}
+
+/**
+ * The line itself, newest first, and the way to add to it. The hint under
+ * the dashed button is how anyone learns milestones exist, so it goes once
+ * the first is marked.
+ */
+function Milestones(props: {
+  readonly milestones: readonly Milestone[];
+  readonly locale: Locale;
+  readonly t: Translate;
+  readonly onMark: () => void;
+  readonly onEdit: (milestone: Milestone) => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const newestFirst = [...props.milestones].reverse();
+
+  return (
+    <View>
+      {newestFirst.length === 0 ? null : (
+        <>
+          <AppText variant="caption" color="inkFaint" style={{ fontSize: 11.5, marginBottom: 8 }}>
+            {props.t('stats.milestones')}
+          </AppText>
+          <View style={{ marginBottom: 8 }}>
+            {newestFirst.map((milestone) => (
+              <Pressable
+                key={milestone.id}
+                accessibilityRole="button"
+                onPress={() => {
+                  props.onEdit(milestone);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: theme.palette.line,
+                  paddingVertical: 13,
+                  paddingHorizontal: 2,
+                  minHeight: 44,
+                }}
+              >
+                <View style={{ width: 1.5, height: 16, borderRadius: 1, backgroundColor: theme.palette.ink }} />
+                <AppText variant="body" style={{ flex: 1 }} numberOfLines={1}>
+                  {milestone.label}
+                </AppText>
+                <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13 }}>
+                  {milestone.day.toLocaleDateString(props.locale, { day: 'numeric', month: 'long' })}
+                </AppText>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      )}
+      <Pressable
+        accessibilityRole="button"
+        onPress={props.onMark}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          borderWidth: 1,
+          borderStyle: 'dashed',
+          borderColor: theme.palette.line,
+          borderRadius: 18,
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+          marginBottom: 26,
+        }}
+      >
+        <Icon name="plus" size={16} color="ink" />
+        <View style={{ flex: 1, gap: 3 }}>
+          <AppText variant="body" style={{ fontSize: 14.5 }}>
+            {props.t('milestone.mark')}
+          </AppText>
+          {newestFirst.length === 0 ? (
+            <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13, lineHeight: 19 }}>
+              {props.t('milestone.hint')}
+            </AppText>
+          ) : null}
+        </View>
+      </Pressable>
     </View>
   );
 }

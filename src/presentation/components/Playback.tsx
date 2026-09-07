@@ -25,8 +25,15 @@ const WAVE = [
 export function Playback(props: {
   readonly uri: string;
   readonly t: Translate;
+  /**
+   * `card` is the entry screen's own player; `inline` is the drawing's
+   * smaller pill inside the year-ago card, on the canvas colour with no
+   * border of its own.
+   */
+  readonly variant?: 'card' | 'inline';
 }): React.JSX.Element {
   const theme = useTheme();
+  const inline = props.variant === 'inline';
   const player = useAudioPlayer(props.uri);
   const status = useAudioPlayerStatus(player);
   const played = status.duration > 0 ? status.currentTime / status.duration : 0;
@@ -48,25 +55,38 @@ export function Playback(props: {
 
   return (
     <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 14,
-        borderWidth: 1,
-        borderColor: theme.palette.line,
-        borderRadius: 26,
-        backgroundColor: theme.palette.paper,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-      }}
+      style={
+        inline
+          ? {
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              borderRadius: 999,
+              backgroundColor: theme.palette.canvas,
+              paddingVertical: 6,
+              paddingLeft: 6,
+              paddingRight: 16,
+            }
+          : {
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 14,
+              borderWidth: 1,
+              borderColor: theme.palette.line,
+              borderRadius: 26,
+              backgroundColor: theme.palette.paper,
+              paddingVertical: 14,
+              paddingHorizontal: 16,
+            }
+      }
     >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={props.t(status.playing ? 'detail.pause' : 'detail.play')}
         onPress={toggle}
         style={({ pressed }) => ({
-          width: 46,
-          height: 46,
+          width: inline ? 40 : 46,
+          height: inline ? 40 : 46,
           borderRadius: 23,
           backgroundColor: theme.palette.solid,
           alignItems: 'center',
@@ -88,13 +108,15 @@ export function Playback(props: {
         * waveform is already the shape of the take, and a second indicator
         * would be two ways of saying where you are.
         */}
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 3, height: 34 }}>
+      <View
+        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 3, height: inline ? 28 : 34 }}
+      >
         {WAVE.map((height, at) => (
           <View
             key={at}
             style={{
               flex: 1,
-              height,
+              height: inline ? Math.round(height * (28 / 34)) : height,
               borderRadius: 2,
               backgroundColor:
                 at / WAVE.length <= played ? theme.palette.accent : theme.palette.line,
@@ -103,7 +125,11 @@ export function Playback(props: {
         ))}
       </View>
 
-      <AppText variant="secondary" color="inkSoft" style={{ fontVariant: ['tabular-nums'] }}>
+      <AppText
+        variant="secondary"
+        color="inkSoft"
+        style={{ fontVariant: ['tabular-nums'], fontSize: inline ? 13 : undefined }}
+      >
         {clock(status.playing ? status.currentTime : status.duration)}
       </AppText>
     </View>

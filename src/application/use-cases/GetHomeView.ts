@@ -1,7 +1,14 @@
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import type { IClock } from '../../domain/ports/IClock';
 import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryRepository';
+import type { IRecordingStore } from '../../domain/ports/IRecordingStore';
 import type { DailyMood } from './GetWeekSummary';
+
+/** The entry a year ago today, and its voice where it was kept. */
+export interface YearEcho {
+  readonly entry: MoodEntry;
+  readonly recordingUri: string | null;
+}
 
 export interface HomeView {
   /** Newest first. */
@@ -19,6 +26,12 @@ export interface HomeView {
    * event rather than furniture.
    */
   readonly echo: MoodEntry | null;
+  /**
+   * The entry written a year ago today, with its recording when the phone
+   * still has it. The one thing a text journal cannot do: hearing yourself
+   * a year back is not the same as reading it.
+   */
+  readonly yearEcho: YearEcho | null;
 }
 
 /** A streak longer than this stops being a number anyone reads. */
@@ -30,14 +43,16 @@ export class GetHomeView {
   constructor(
     private readonly repository: IMoodEntryRepository,
     private readonly clock: IClock,
+    private readonly recordings: IRecordingStore,
   ) {}
 
   async execute(recentLimit: number): Promise<HomeView> {
     const today = startOfDay(this.clock.now());
-    const [recentEntries, window, echo] = await Promise.all([
+    const [recentEntries, window, echo, yearEcho] = await Promise.all([
       this.repository.findRecent(recentLimit),
       this.repository.findBetween(addDays(today, -STREAK_WINDOW_DAYS), addDays(today, 1)),
       this.findEcho(today),
+      this.findYearEcho(today),
     ]);
 
     return {
@@ -45,7 +60,29 @@ export class GetHomeView {
       streakDays: countStreak(window, today),
       week: buildWeek(window, today),
       echo,
+      yearEcho,
     };
+  }
+
+  /**
+   * The same day a year back — the day's last entry, as the monthly echo
+   * does. The 29th of February has no such day most years, and then there
+   * is honestly nothing to echo.
+   */
+  private async findYearEcho(today: Date): Promise<YearEcho | null> {
+    const target = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+
+    if (target.getDate() !== today.getDate()) {
+      return null;
+    }
+
+    const entry = (await this.repository.findBetween(target, addDays(target, 1)))[0];
+
+    if (entry === undefined) {
+      return null;
+    }
+
+    return { entry, recordingUri: await this.recordings.find(entry.id) };
   }
 
   /**
