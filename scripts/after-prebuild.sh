@@ -17,8 +17,15 @@ bash scripts/fix-downloader-target.sh
 # entitlements whenever the app has one (an empty list when the target config
 # says so). A team profile without the App Groups capability refuses to sign
 # an entitlements file that so much as mentions the key, so it goes.
+# (plistlib rather than plutil: plutil reads the dots in the key as a path.)
 WIDGET_ENTITLEMENTS=ios/.targets/widget/generated.entitlements
-if plutil -extract "com.apple.security.application-groups" raw "$WIDGET_ENTITLEMENTS" >/dev/null 2>&1; then
-  plutil -remove "com.apple.security.application-groups" "$WIDGET_ENTITLEMENTS"
-fi
-echo "widget app groups: $(plutil -p "$WIDGET_ENTITLEMENTS" | grep -c application-groups) (expect 0)"
+python3 - "$WIDGET_ENTITLEMENTS" <<'PY'
+import plistlib, sys
+path = sys.argv[1]
+with open(path, 'rb') as handle:
+    entitlements = plistlib.load(handle)
+entitlements.pop('com.apple.security.application-groups', None)
+with open(path, 'wb') as handle:
+    plistlib.dump(entitlements, handle)
+PY
+echo "widget app groups: $(grep -c application-groups "$WIDGET_ENTITLEMENTS") (expect 0)"
