@@ -30,5 +30,8 @@ module.exports = {
   },
   // No app group: nothing here reads the journal, and an entitlement the
   // widget does not use is one more capability to provision and explain.
-  entitlements: {},
+  // The key has to be present, or the plugin copies the app's groups in;
+  // `scripts/after-prebuild.sh` then drops the empty key from the generated
+  // entitlements, because a profile without the capability rejects even that.
+  entitlements: { 'com.apple.security.application-groups': [] },
 };
