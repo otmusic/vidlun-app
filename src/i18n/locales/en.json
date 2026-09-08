@@ -154,7 +154,7 @@
   "feed.echoMany": "echoes",
   "feed.noneYet": "No echoes yet",
   "feed.emptyTitle": "It’s quiet here",
-  "feed.emptyBody": "Say one sentence about today and the first card appears.",
+  "feed.emptyBody": "Say how you are today, and the first card will appear here.",
   "feed.record": "Record",
   "search.title": "Search",
   "search.placeholder": "A word from a sentence",

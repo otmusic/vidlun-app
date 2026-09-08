@@ -1336,8 +1336,14 @@ waits for the journal to be open — not over onboarding, not behind the
 lock, not mid-card — and then starts a take. Verified on the simulator from
 a cold start, and on the owner's iPhone 14 Pro (iOS 26.6.1) the same day:
 the widgets open the take, the Control Center button does too, and Siri
-runs "Record in Vidlun". The widget carries two strings of its own in
-Swift (the record
+runs "Record in Vidlun" — but on a cold start Siri landed on the home
+screen (2026-09-08). Siri opens the app first and only then runs the
+intent, and the URL the intent opened arrived before JavaScript was
+listening, which React Native drops. The intent now leaves a request
+behind instead (a flag in the app's defaults and a notification, read
+through `modules/vidlun-record-request`); the widgets keep their URL,
+which the system launches the app with. The widget carries two strings of
+its own in Swift (the record
 label and the home question) because an extension cannot read the app's
 dictionary; if the design changes `wRecord` or `homeQ`, change them there
 too. No streak on the widget, by design: a zero reads as a reproach.

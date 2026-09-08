@@ -63,7 +63,7 @@ struct RecordControl: ControlWidget {
   var body: some ControlWidgetConfiguration {
     StaticControlConfiguration(kind: "com.vidlun.journal.widget.control") {
       ControlWidgetButton(action: RecordIntent()) {
-        Label(Copy.record, systemImage: "mic")
+        Label(Copy.record, systemImage: "mic.fill")
       }
     }
     .displayName("Record in Vidlun")

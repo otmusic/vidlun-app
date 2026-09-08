@@ -1,0 +1,10 @@
+{
+  "name": "vidlun-record-request",
+  "version": "1.0.0",
+  "description": "Carries a request to record, made from Siri or a system control, into the app",
+  "main": "index.ts",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Vidlun",
+  "homepage": "https://vidlun.app"
+}

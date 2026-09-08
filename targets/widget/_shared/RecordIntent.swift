@@ -2,13 +2,20 @@ import AppIntents
 import Foundation
 
 /*
- * The one thing the widgets, the Control Center button, Siri and the Action
- * Button all do: open the app straight on the recording screen. It arrives
- * in the app as a URL, the same way a tap on a widget does, so there is one
- * path into a take from outside the app and one place that handles it.
+ * The one thing the Control Center button, Siri, the Shortcuts app and the
+ * Action Button all do: open the app straight on the recording screen.
+ *
+ * `openAppWhenRun` makes the system open the app first and run this inside
+ * it. The request is then left as a note the app reads on its own time — a
+ * flag in the app's defaults plus a notification — rather than as a URL: a
+ * URL handed to an app that has just launched arrives before its JavaScript
+ * is listening and is dropped, which is how Siri opened the home screen. The
+ * widgets keep their URL; the system launches the app with it, and a launch
+ * URL is never dropped.
  *
  * Shared with the app target on purpose: an intent that opens the app has to
- * exist on both sides, or the system cannot resolve it.
+ * exist on both sides, or the system cannot resolve it. The two names are
+ * repeated in `modules/vidlun-record-request`, which the widget never links.
  */
 @available(iOS 18.0, *)
 struct RecordIntent: AppIntent {
@@ -18,8 +25,11 @@ struct RecordIntent: AppIntent {
   static let isDiscoverable = true
 
   @MainActor
-  func perform() async throws -> some IntentResult & OpensIntent {
-    return .result(opensIntent: OpenURLIntent(URL(string: "vidlun://record")!))
+  func perform() async throws -> some IntentResult {
+    UserDefaults.standard.set(true, forKey: "vidlun.recordRequested")
+    NotificationCenter.default.post(name: Notification.Name("VidlunRecordRequested"), object: nil)
+
+    return .result()
   }
 }
 
