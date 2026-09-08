@@ -152,7 +152,7 @@ export function SubscriptionScreen(props: {
                 <PlanCard
                   key={plan.id}
                   plan={plan}
-                  chosen={plan.id === chosenId}
+                  chosen={chosen !== undefined && plan.id === chosen.id}
                   saving={savingAgainstMonthly(plan, props.plans)}
                   locale={props.locale}
                   t={t}
