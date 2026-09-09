@@ -81,10 +81,16 @@ struct RecordView: View {
 
   @ViewBuilder private var content: some View {
     switch family {
+    /*
+     * The Lock Screen draws accessory widgets in its own vibrant style: a
+     * faint disc and a translucent glyph over the wallpaper. A thin outline
+     * disappears there, so these two families get the filled glyph with a
+     * heavier stroke, the way the system's own circular widgets are drawn.
+     */
     case .accessoryCircular:
       ZStack {
         AccessoryWidgetBackground()
-        MicGlyph(color: .primary, lineWidth: 2.6).frame(width: 22, height: 27)
+        MicGlyph(color: .primary, lineWidth: 3.4, filled: true).frame(width: 26, height: 32)
       }
       .widgetAccentable()
       .containerBackground(for: .widget) { Color.clear }
@@ -92,8 +98,8 @@ struct RecordView: View {
     case .accessoryRectangular:
       HStack(spacing: 12) {
         ZStack {
-          Circle().fill(.primary.opacity(0.18))
-          MicGlyph(color: .primary, lineWidth: 2.6).frame(width: 16, height: 20)
+          Circle().fill(.primary.opacity(0.22))
+          MicGlyph(color: .primary, lineWidth: 3, filled: true).frame(width: 18, height: 22)
         }
         .frame(width: 38, height: 38)
         .widgetAccentable()
@@ -131,24 +137,37 @@ struct RecordView: View {
 }
 
 /// The microphone from the drawing's 28x34 box: a capsule, the cup, the stem.
+/// `filled` paints the capsule solid, for places that draw everything
+/// translucent and would swallow an outline.
 struct MicGlyph: View {
   let color: Color
   let lineWidth: CGFloat
+  var filled = false
 
   var body: some View {
     GeometryReader { geo in
       let sx = geo.size.width / 28
       let sy = geo.size.height / 34
-      Path { path in
-        path.addRoundedRect(in: CGRect(x: 9 * sx, y: 2 * sy, width: 10 * sx, height: 15 * sy), cornerSize: CGSize(width: 5 * sx, height: 5 * sy))
-        path.move(to: CGPoint(x: 4.5 * sx, y: 15.5 * sy))
-        path.addArc(center: CGPoint(x: 14 * sx, y: 15.5 * sy), radius: 9.5 * sx, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: true)
-        path.move(to: CGPoint(x: 14 * sx, y: 25 * sy))
-        path.addLine(to: CGPoint(x: 14 * sx, y: 31 * sy))
-        path.move(to: CGPoint(x: 9 * sx, y: 31.5 * sy))
-        path.addLine(to: CGPoint(x: 19 * sx, y: 31.5 * sy))
+      let capsule = CGRect(x: 9 * sx, y: 2 * sy, width: 10 * sx, height: 15 * sy)
+      let corner = CGSize(width: 5 * sx, height: 5 * sy)
+      ZStack {
+        if filled {
+          Path { path in
+            path.addRoundedRect(in: capsule, cornerSize: corner)
+          }
+          .fill(color)
+        }
+        Path { path in
+          path.addRoundedRect(in: capsule, cornerSize: corner)
+          path.move(to: CGPoint(x: 4.5 * sx, y: 15.5 * sy))
+          path.addArc(center: CGPoint(x: 14 * sx, y: 15.5 * sy), radius: 9.5 * sx, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: true)
+          path.move(to: CGPoint(x: 14 * sx, y: 25 * sy))
+          path.addLine(to: CGPoint(x: 14 * sx, y: 31 * sy))
+          path.move(to: CGPoint(x: 9 * sx, y: 31.5 * sy))
+          path.addLine(to: CGPoint(x: 19 * sx, y: 31.5 * sy))
+        }
+        .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
       }
-      .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
     }
   }
 }
