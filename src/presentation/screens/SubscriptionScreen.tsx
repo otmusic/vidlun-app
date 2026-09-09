@@ -8,6 +8,7 @@ import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
 import { RoundBack } from '../components/RoundBack';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 import { savingAgainstMonthly } from './planSaving';
 
@@ -57,6 +58,7 @@ export function SubscriptionScreen(props: {
   readonly onBack: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(70);
   const { t } = props;
   // Trial or paid alike: both hold the thing, and both manage it in the store.
   const owns = props.entitlement !== 'none';
@@ -72,7 +74,7 @@ export function SubscriptionScreen(props: {
   return (
     <View style={{ flex: 1, backgroundColor: theme.palette.canvas }}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: 70, paddingHorizontal: 22, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: 40 }}
       >
         <RoundBack t={t} onPress={props.onBack} />
 

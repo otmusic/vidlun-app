@@ -23,7 +23,7 @@ growth view and the way back into old entries stay post-MVP.
 |---|---|
 | **Stay on Expo SDK 57.** Do not downgrade to 54. | Held. The new Mac removed the Xcode ceiling, and the device build works — a downgrade would have been reverted. |
 | Expo Go is not used at all. | It is frozen at SDK 54 while the project is 57. Moot now: a local development build installs straight onto the device. |
-| Fonts load through `expo-font` + `@expo-google-fonts`, imported per weight. | The package root requires every weight, which put 36 font files in the bundle instead of 6. |
+| Fonts are built into the binary through the `expo-font` config plugin, five files in `assets/fonts/` named by PostScript name (since 2026-09-09; before that `@expo-google-fonts` loaded them at launch). | Loading at launch gated the first frame on five file reads after the splash; embedded, they are there from the first frame and both platforms register the same family names. |
 | Haptics sit behind `IHaptics`. | §2 names haptics platform-sensitive; the Android build must be a new adapter. |
 | The capture path is a state machine, not a navigation library. | The flow is linear, and §2 forbids a state library until a milestone needs one. |
 | **`proposedEmotionIds` lives on `MoodEntry`, not only in the revision log.** | The log only records corrected entries. M6 has to render *any* entry without revealing the analysis, so the proposal is needed on every one. |
@@ -1281,6 +1281,38 @@ the ability to say whether the wait is still what the brief asks for.
 
 One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 `__DEV__` wiring in the composition root.
+
+---
+
+## 3l. First frame, large type, every phone's own bar — built 2026-09-09
+
+Audit items three and four.
+
+**Fonts are in the binary.** The five faces sit in `assets/fonts/` under
+their PostScript names and go in through the `expo-font` config plugin, so
+the theme provider no longer waits on `useFonts` before drawing anything;
+the wordmark placeholder that bridged that wait is gone with it. The
+`@expo-google-fonts` packages are out; the splash script reads the same
+file the app does.
+
+**Dynamic Type is capped where the screen is dense, not where it is read.**
+`typeScaleCap` in `tokens.ts` gives each style its ceiling — headlines
+1.2, the chrome 1.3–1.5, entries and the narrative 2 — and `AppText`
+passes it as `maxFontSizeMultiplier`; a component in a tighter spot
+(the streak pill, the two links under the strip) passes its own. Found on
+the way: `createTypography` multiplied line heights by the font scale, and
+React Native multiplies them again, so large type came out with lines twice
+as far apart as the text; the tokens now hold the drawing's line heights
+and let the platform scale once. The home header and the strip's link row
+wrap instead of clipping.
+
+**Safe area is measured.** `react-native-safe-area-context` is in, the app
+sits in a `SafeAreaProvider`, and `useDrawnTop(drawn)` turns a number from
+the drawing (70, 74, 82, measured on a Dynamic Island phone with a 59pt bar)
+into this device's bar plus the same margin. `Screen` and the eleven
+screens that padded their own ScrollViews use it; the tab bar sits over the
+home indicator by the drawn 8pt, or at 12pt where there is none. Checked on
+an iPhone SE simulator.
 
 ---
 

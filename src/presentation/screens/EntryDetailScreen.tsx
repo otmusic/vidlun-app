@@ -13,6 +13,7 @@ import { moodTone } from '../components/emotionTone';
 import { Playback } from '../components/Playback';
 import { WaveMark } from '../components/WaveMark';
 import { colorForEmotion } from '../theme/emotionColor';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
 const MOOD_LABELS: readonly TranslationKey[] = ['mood.1', 'mood.2', 'mood.3', 'mood.4', 'mood.5'];
@@ -38,6 +39,7 @@ export function EntryDetailScreen(props: {
   readonly onFix: (entry: MoodEntry, text: string) => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(70);
   const { entry, t } = props;
   const scheme = theme.isDark ? 'dark' : 'light';
 
@@ -52,7 +54,7 @@ export function EntryDetailScreen(props: {
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
       contentContainerStyle={{
-        paddingTop: 70,
+        paddingTop: top,
         paddingHorizontal: 22,
         paddingBottom: 40,
         gap: 14,

@@ -8,6 +8,7 @@ import type { Translate, TranslationKey } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
 /** The bar floats over this screen, so the last row needs room under it. */
@@ -57,13 +58,14 @@ export function ProfileScreen(props: {
   readonly onWriteFeedback: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(70);
   const { settings, t } = props;
   const [pickingTime, setPickingTime] = useState(false);
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: 70, paddingHorizontal: 22, paddingBottom: BOTTOM_ROOM }}
+      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: BOTTOM_ROOM }}
     >
       <AppText variant="display" style={{ marginBottom: 22 }}>
         {t('profile.title')}

@@ -15,6 +15,7 @@ import { toneFor } from '../components/MoodScale';
 import { Button } from '../components/Button';
 import { RoundBack } from '../components/RoundBack';
 
+import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
 /** Straight off the drawing, not rounded to a grid: the chart is 156 tall. */
@@ -76,12 +77,13 @@ export function StatsScreen(props: {
   readonly onEditMilestone: (milestone: Milestone) => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(70);
   const { view, t } = props;
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: 70, paddingHorizontal: 22, paddingBottom: 40 }}
+      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: 40 }}
     >
       <RoundBack t={t} onPress={props.onBack} />
       <PeriodHeader

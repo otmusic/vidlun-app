@@ -10,7 +10,7 @@ import AppKit
 import CoreText
 import Foundation
 
-let fontPath = "node_modules/@expo-google-fonts/unbounded/500Medium/Unbounded_500Medium.ttf"
+let fontPath = "assets/fonts/Unbounded-Medium.ttf"
 let outDir = "assets/splash"
 let fontSize: CGFloat = 34
 // The design sets letter-spacing -0.03em on the wordmark.

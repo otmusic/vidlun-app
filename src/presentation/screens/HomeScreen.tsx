@@ -21,6 +21,7 @@ import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { WeekStrip } from '../components/WeekStrip';
 import { YearEchoCard } from '../components/YearEchoCard';
 import { colorForEmotion } from '../theme/emotionColor';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
 export interface HomeScreenProps {
@@ -56,6 +57,7 @@ export interface HomeScreenProps {
 
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(70);
   const canHear = props.voice.kind === 'ready';
   /*
    * A refused microphone is the one state the app cannot change from inside:
@@ -79,11 +81,13 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: 70, paddingHorizontal: 22, paddingBottom: 118 }}
+      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: 118 }}
     >
       <View
         style={{
           flexDirection: 'row',
+          // Wraps rather than clips: at large type the pill drops under the date.
+          flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 12,
@@ -133,6 +137,8 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           <View
             style={{
               flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 12,
               justifyContent: yesterdayEmpty(week) ? 'space-between' : 'flex-end',
               alignItems: 'baseline',
             }}
@@ -148,12 +154,13 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
                 onPress={props.onSayYesterday}
                 hitSlop={10}
               >
-                <AppText variant="secondary" color="inkFaint">
+                <AppText variant="secondary" color="inkFaint" maxScale={1.3}>
                   {props.t('home.sayYesterday')}
                 </AppText>
               </Pressable>
             ) : null}
-            <AppText variant="secondary" color="inkFaint">
+            {/* Two links share this row; past 1.3 they run into each other. */}
+            <AppText variant="secondary" color="inkFaint" maxScale={1.3}>
               {`${props.t('home.weekLink')} ›`}
             </AppText>
           </View>
@@ -348,10 +355,11 @@ function StreakPill(props: { readonly days: number; readonly label: string }): R
       }}
     >
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.palette.accent }} />
-      <AppText variant="numeric" style={{ fontSize: 14 }}>
+      {/* The pill shares a row with the date; past 1.2 the two no longer fit side by side. */}
+      <AppText variant="numeric" maxScale={1.2} style={{ fontSize: 14 }}>
         {String(props.days)}
       </AppText>
-      <AppText variant="secondary" color="inkSoft" style={{ fontSize: 12 }}>
+      <AppText variant="secondary" color="inkSoft" maxScale={1.2} style={{ fontSize: 12 }}>
         {props.label}
       </AppText>
     </View>

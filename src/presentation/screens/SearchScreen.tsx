@@ -8,6 +8,7 @@ import { emotionKey, type Locale, type Translate } from '@/i18n';
 import { AppText } from '../components/AppText';
 import { EntryCard } from '../components/EntryCard';
 import { colorForEmotion } from '../theme/emotionColor';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
 /** The bar floats over this screen, so the last card needs room under it. */
@@ -35,6 +36,7 @@ export function SearchScreen(props: {
   readonly onOpen: (entry: MoodEntry) => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(70);
   const scheme = theme.isDark ? 'dark' : 'light';
   const { result, t } = props;
 
@@ -49,7 +51,7 @@ export function SearchScreen(props: {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: 70, paddingHorizontal: 22, paddingBottom: BOTTOM_ROOM }}
+      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: BOTTOM_ROOM }}
       keyboardShouldPersistTaps="handled"
     >
       <AppText variant="display" style={{ marginBottom: 18 }}>

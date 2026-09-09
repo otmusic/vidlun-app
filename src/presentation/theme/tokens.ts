@@ -183,13 +183,41 @@ export const LIST_ROW_HEIGHT = 52;
  * tabular figures does not have that problem.
  */
 export const fonts = {
-  display: 'Unbounded_500Medium',
-  displayLight: 'Unbounded_400Regular',
-  numeric: 'Unbounded_500Medium',
-  body: 'IBMPlexSans_400Regular',
-  label: 'IBMPlexSans_500Medium',
-  strong: 'IBMPlexSans_600SemiBold',
+  // PostScript names: the files are built into the binary (see app.json), and
+  // that is the name the system registers them under. Both platforms agree
+  // because the files in assets/fonts are named the same way.
+  display: 'Unbounded-Medium',
+  displayLight: 'Unbounded-Regular',
+  numeric: 'Unbounded-Medium',
+  body: 'IBMPlexSans-Regular',
+  label: 'IBMPlexSans-Medium',
+  strong: 'IBMPlexSans-SemiBold',
 } as const;
+
+/**
+ * How far Dynamic Type may enlarge each style, as a multiple of its size.
+ *
+ * The lines meant to be read — an entry, the narrative, body text — follow
+ * the system all the way up: that is what the setting is for. The chrome
+ * around them is capped: a headline at three times its size is one word per
+ * line, and a plan card or the week strip has nowhere to grow into. The
+ * line heights below use the same caps, so a style never gets a taller line
+ * than the text the cap allows.
+ */
+export const typeScaleCap: Readonly<Record<keyof Typography, number>> = {
+  hero: 1.2,
+  display: 1.25,
+  kicker: 1.3,
+  lede: 1.5,
+  numeric: 1.3,
+  timer: 1.2,
+  narrative: 2,
+  quote: 2,
+  body: 2,
+  label: 1.4,
+  secondary: 1.5,
+  caption: 1.3,
+};
 
 export interface TextStyle {
   readonly fontFamily: string;
@@ -227,11 +255,14 @@ export interface Typography {
 }
 
 /**
- * Line heights are multiplied by the system font scale so that text containers
- * grow with Dynamic Type instead of clipping. Nothing here sets a fixed height.
+ * Line heights are the drawing's ratios at the drawing's size. React Native
+ * multiplies both the size and the line height by the Dynamic Type factor
+ * (capped per style by `typeScaleCap`, through AppText), so nothing here may
+ * scale them too: doing so once put every large-type line twice as far apart
+ * as the text it carried. Nothing here sets a fixed height.
  */
-export function createTypography(fontScale: number): Typography {
-  const scaled = (size: number, ratio: number): number => Math.round(size * ratio * fontScale);
+export function createTypography(): Typography {
+  const scaled = (size: number, ratio: number): number => Math.round(size * ratio);
 
   return {
     // Unbounded is a wide face; without the negative tracking the headline

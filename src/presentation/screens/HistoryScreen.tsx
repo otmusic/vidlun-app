@@ -11,6 +11,7 @@ import { AppText } from '../components/AppText';
 import { EntryCard } from '../components/EntryCard';
 import { Button } from '../components/Button';
 import { WaveMark } from '../components/WaveMark';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
 /** The bar floats over this screen, so the last card needs room under it. */
@@ -36,6 +37,7 @@ export function HistoryScreen(props: {
   readonly onEditMilestone: (milestone: Milestone) => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(70);
   const { t } = props;
   const entries = (props.days ?? []).flatMap((day) => day.entries);
   const rows = interleave(entries, props.milestones);
@@ -43,7 +45,7 @@ export function HistoryScreen(props: {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: 70, paddingHorizontal: 22, paddingBottom: BOTTOM_ROOM }}
+      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: BOTTOM_ROOM }}
     >
       <AppText variant="display" style={{ marginBottom: 6 }}>
         {t('feed.title')}

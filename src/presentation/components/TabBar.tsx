@@ -1,4 +1,5 @@
 import { Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Circle, Path, Svg } from 'react-native-svg';
 
 import type { Translate, TranslationKey } from '@/i18n';
@@ -30,6 +31,7 @@ export function TabBar(props: {
   readonly onSelect: (tab: Tab) => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
@@ -37,7 +39,8 @@ export function TabBar(props: {
         position: 'absolute',
         left: 14,
         right: 14,
-        bottom: 26,
+        // 26 in the drawing, on a 34pt home indicator; the same 8pt below it here.
+        bottom: Math.max(12, insets.bottom - 8),
         height: 66,
         borderRadius: theme.radii.pill,
         backgroundColor: theme.palette.bar,

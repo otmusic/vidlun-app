@@ -45,7 +45,18 @@
           "microphonePermission": "Vidlun records your voice only while you speak a journal entry: tap the microphone, say how your day went, and the words are recognised on your device. The recording stays in your journal so you can listen to it again. It is never uploaded."
         }
       ],
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Unbounded-Regular.ttf",
+            "./assets/fonts/Unbounded-Medium.ttf",
+            "./assets/fonts/IBMPlexSans-Regular.ttf",
+            "./assets/fonts/IBMPlexSans-Medium.ttf",
+            "./assets/fonts/IBMPlexSans-SemiBold.ttf"
+          ]
+        }
+      ],
       "expo-localization",
       "expo-notifications",
       "@bacons/apple-targets"

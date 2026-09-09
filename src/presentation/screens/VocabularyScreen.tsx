@@ -10,6 +10,7 @@ import { AppText } from '../components/AppText';
 import { PeriodSheet, type Period } from '../components/PeriodSheet';
 import { RoundBack } from '../components/RoundBack';
 import { colorForEmotion } from '../theme/emotionColor';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
 /** Four fit a row on the narrowest phone before the list starts wrapping oddly. */
@@ -34,6 +35,7 @@ export function VocabularyScreen(props: {
   readonly onPeriodChange: (period: Period) => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(70);
   const scheme = theme.isDark ? 'dark' : 'light';
   const [pickingPeriod, setPickingPeriod] = useState(false);
   /** The list is trimmed to what fits; the rest are one tap away, not gone. */
@@ -55,7 +57,7 @@ export function VocabularyScreen(props: {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: 70, paddingHorizontal: 22, paddingBottom: 40 }}
+      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: 40 }}
     >
       {/* Back to the week, which is where this screen is reached from. */}
       <RoundBack t={t} onPress={props.onSeeWeek} />

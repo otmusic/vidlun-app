@@ -5,6 +5,7 @@ import type { Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
 const BAR_COUNT = 21;
@@ -52,6 +53,7 @@ export function RecordingScreen(props: {
   readonly onCancel: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(56);
   const elapsed = useElapsed();
   const { onStop } = props;
 
@@ -71,7 +73,7 @@ export function RecordingScreen(props: {
       style={{
         flex: 1,
         backgroundColor: theme.palette.canvas,
-        paddingTop: 56,
+        paddingTop: top,
         paddingHorizontal: 12,
         paddingBottom: 34,
       }}

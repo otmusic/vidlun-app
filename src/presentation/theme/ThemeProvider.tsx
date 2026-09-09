@@ -1,19 +1,7 @@
-// Imported per weight, not from the package root: the root module `require`s
-// every weight the family ships, which pulled 36 font files into the bundle
-// instead of the 6 this app draws with.
-import { IBMPlexSans_400Regular } from '@expo-google-fonts/ibm-plex-sans/400Regular';
-import { IBMPlexSans_500Medium } from '@expo-google-fonts/ibm-plex-sans/500Medium';
-import { IBMPlexSans_600SemiBold } from '@expo-google-fonts/ibm-plex-sans/600SemiBold';
-import { Unbounded_400Regular } from '@expo-google-fonts/unbounded/400Regular';
-import { Unbounded_500Medium } from '@expo-google-fonts/unbounded/500Medium';
-import { useFonts } from 'expo-font';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo, Image, PixelRatio, useColorScheme, View } from 'react-native';
+import { AccessibilityInfo, useColorScheme } from 'react-native';
 
 import type { ThemeChoice } from '@/domain/ports/ISettings';
-
-import wordmarkDark from '../../../assets/splash/wordmark-dark.png';
-import wordmarkLight from '../../../assets/splash/wordmark-light.png';
 
 import {
   createTypography,
@@ -59,13 +47,6 @@ export function ThemeProvider(props: {
 }): React.JSX.Element {
   const scheme = useColorScheme();
   const reduceMotion = useReduceMotion();
-  const [fontsLoaded] = useFonts({
-    Unbounded_400Regular,
-    Unbounded_500Medium,
-    IBMPlexSans_400Regular,
-    IBMPlexSans_500Medium,
-    IBMPlexSans_600SemiBold,
-  });
 
   const choice = props.choice ?? 'system';
   const isDark = choice === 'system' ? scheme === 'dark' : choice === 'dark';
@@ -73,7 +54,7 @@ export function ThemeProvider(props: {
   const theme = useMemo<Theme>(
     () => ({
       palette: isDark ? darkPalette : lightPalette,
-      type: createTypography(PixelRatio.getFontScale()),
+      type: createTypography(),
       spacing,
       radii,
       isDark,
@@ -83,29 +64,11 @@ export function ThemeProvider(props: {
   );
 
   /*
-   * The same wordmark pixels the native launch image shows, in the same spot,
-   * so the frames between the storyboard and the splash overlay are not a
-   * blink. The right margin is the dots-and-gap span of the overlay's
-   * ensemble (27.5 + 9), which the launch image is offset by too.
+   * No font gate any more: the five faces are built into the binary (see
+   * app.json) and are there from the first frame, so the launch image hands
+   * straight to the app. The wordmark placeholder that used to bridge the
+   * wait went with it.
    */
-  if (!fontsLoaded) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: theme.palette.canvas,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Image
-          source={isDark ? wordmarkDark : wordmarkLight}
-          style={{ width: 129, height: 47, marginRight: 36.5 }}
-        />
-      </View>
-    );
-  }
-
   return <ThemeContext.Provider value={theme}>{props.children}</ThemeContext.Provider>;
 }
 

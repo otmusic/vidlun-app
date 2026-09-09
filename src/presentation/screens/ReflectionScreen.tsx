@@ -9,6 +9,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { EntryChips } from '../components/EntryChips';
 import { useTheme } from '../theme/ThemeProvider';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 
 export interface ReflectionScreenProps {
   readonly draft: MoodEntry;
@@ -20,13 +21,14 @@ export interface ReflectionScreenProps {
 
 export function ReflectionScreen(props: ReflectionScreenProps): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(64);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.palette.canvas }}>
       <ScrollView
         contentContainerStyle={{
           padding: theme.spacing.lg,
-          paddingTop: 64,
+          paddingTop: top,
           gap: theme.spacing.md,
           flexGrow: 1,
         }}

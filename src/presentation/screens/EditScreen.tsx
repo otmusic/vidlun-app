@@ -15,6 +15,7 @@ import { EMOTION_GROUPS, groupOf, type EmotionGroup } from '../components/emotio
 import { colorForEmotion } from '../theme/emotionColor';
 import { MoodScale } from '../components/MoodScale';
 import { useTheme } from '../theme/ThemeProvider';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 
 export interface EditScreenProps {
   readonly draft: MoodEntry;
@@ -32,6 +33,7 @@ const GROUP_LABELS: Record<EmotionGroup, TranslationKey> = {
 
 export function EditScreen(props: EditScreenProps): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(64);
   const [transcript, setTranscript] = useState(props.draft.cleanTranscript);
   /*
    * Null until the person picks one. An entry that never said how the day was
@@ -57,7 +59,11 @@ export function EditScreen(props: EditScreenProps): React.JSX.Element {
   return (
     <View style={{ flex: 1, backgroundColor: theme.palette.canvas }}>
       <ScrollView
-        contentContainerStyle={{ padding: theme.spacing.lg, paddingTop: 64, gap: theme.spacing.md }}
+        contentContainerStyle={{
+          padding: theme.spacing.lg,
+          paddingTop: top,
+          gap: theme.spacing.md,
+        }}
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

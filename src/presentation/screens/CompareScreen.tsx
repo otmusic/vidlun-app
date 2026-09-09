@@ -12,6 +12,7 @@ import { Chip } from '../components/Chip';
 import { moodTone } from '../components/emotionTone';
 import { WaveMark } from '../components/WaveMark';
 import { colorForEmotion } from '../theme/emotionColor';
+import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 import { differenceBetween } from './difference';
 
@@ -42,6 +43,7 @@ export function CompareScreen(props: {
   readonly onBack: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const top = useDrawnTop(70);
   const scheme = theme.isDark ? 'dark' : 'light';
   const mine = props.draft.selfEmotionIds;
   const difference = differenceBetween(mine, props.proposed.emotionIds);
@@ -60,7 +62,7 @@ export function CompareScreen(props: {
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
       contentContainerStyle={{
-        paddingTop: 70,
+        paddingTop: top,
         paddingHorizontal: 22,
         paddingBottom: 34,
         gap: 10,

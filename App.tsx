@@ -2,6 +2,7 @@ import { Alert, AppState, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAudioRecorder } from 'expo-audio';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService';
@@ -69,6 +70,7 @@ export default function App() {
   return (
     /* Gesture handler needs a root of its own, or a swipe never reaches a row. */
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
       <ThemeProvider choice={settings.theme}>
       {wiring.container === undefined ? (
         <SetupNeeded detail={wiring.failure ?? ''} />
@@ -85,6 +87,7 @@ export default function App() {
         <PrivacyCurtain />
         <ThemedStatusBar />
       </ThemeProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
