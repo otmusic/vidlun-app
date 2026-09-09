@@ -1284,6 +1284,28 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3m. The journal and search scroll a window, not the whole year — built 2026-09-09
+
+Audit item five, and the last of the first batch.
+
+`HistoryScreen` and `SearchScreen` render through `FlatList`: a handful of
+rows past the screen edge rather than every card the journal holds, the
+12pt between cards as a separator, the title and the empty state as the
+list's own header and empty component. The journal's `interleave` of
+entries and milestones runs once per journal (`useMemo`), not once per
+frame, and both row renderers depend only on what a row reads, so a
+re-render of the screen does not re-render every visible card.
+
+Search changed shape a little on the way: the field and the filters stay
+put and only the results scroll. A search box that scrolls away has to be
+scrolled back to before every second try, and a list that owns the
+keyboard's field re-mounts it on every keystroke.
+
+Debt 4.14 (the whole journal read in one query) stands; the repository's
+cache makes it one read, and the list no longer pays for it twice.
+
+---
+
 ## 3l. First frame, large type, every phone's own bar — built 2026-09-09
 
 Audit items three and four.

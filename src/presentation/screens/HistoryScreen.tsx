@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, View } from 'react-native';
+import { useCallback, useMemo } from 'react';
+import { FlatList, Pressable, View, type ListRenderItem } from 'react-native';
 
 import type { HistoryDay } from '@/application/use-cases/GetHistory';
 import type { Milestone } from '@/domain/entities/Milestone';
@@ -38,84 +39,109 @@ export function HistoryScreen(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
-  const { t } = props;
-  const entries = (props.days ?? []).flatMap((day) => day.entries);
-  const rows = interleave(entries, props.milestones);
+  const { t, onOpen, onEditMilestone } = props;
+  const entries = useMemo(() => (props.days ?? []).flatMap((day) => day.entries), [props.days]);
+  // Sorted once per journal, not once per frame: a year of entries is a
+  // few hundred rows, and the list re-renders on every scroll tick.
+  const rows = useMemo(() => interleave(entries, props.milestones), [entries, props.milestones]);
+
+  const renderRow = useCallback<ListRenderItem<Row>>(
+    ({ item: row }) =>
+      row.kind === 'entry' ? (
+        <EntryCard
+          entry={row.entry}
+          vocabulary={props.vocabulary}
+          locale={props.locale}
+          today={props.today}
+          t={t}
+          showEmotions
+          onOpen={() => {
+            onOpen(row.entry);
+          }}
+        />
+      ) : (
+        /* The drawing's rule with the milestone's name in it: the
+           entries above came after, the ones below came before. */
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            onEditMilestone(row.milestone);
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6, paddingHorizontal: 4 }}
+        >
+          <View style={{ flex: 1, height: 1, backgroundColor: theme.palette.ink, opacity: 0.35 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+            <AppText variant="secondary" style={{ fontSize: 13.5, fontWeight: '500' }}>
+              {row.milestone.label}
+            </AppText>
+            <AppText variant="secondary" color="inkSoft" style={{ fontSize: 12.5 }}>
+              {row.milestone.day.toLocaleDateString(props.locale, { day: 'numeric', month: 'long' })}
+            </AppText>
+          </View>
+          <View style={{ flex: 1, height: 1, backgroundColor: theme.palette.ink, opacity: 0.35 }} />
+        </Pressable>
+      ),
+    [onEditMilestone, onOpen, props.locale, props.today, props.vocabulary, t, theme.palette.ink],
+  );
 
   return (
-    <ScrollView
+    /*
+     * A list that renders what is on screen and a little past it, rather
+     * than every card the journal holds: the journal grows by one a day and
+     * must not get slower for it.
+     */
+    <FlatList
+      data={rows}
+      keyExtractor={keyOf}
+      renderItem={renderRow}
+      ItemSeparatorComponent={Gap}
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
       contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: BOTTOM_ROOM }}
-    >
-      <AppText variant="display" style={{ marginBottom: 6 }}>
-        {t('feed.title')}
-      </AppText>
-      <AppText variant="secondary" color="inkSoft" style={{ marginBottom: 26 }}>
-        {entries.length === 0
-          ? t('feed.noneYet')
-          : t('feed.summary', {
-              n: entries.length,
-              unit: t(countedKey('feed.echo', entries.length, props.locale)),
-              period: periodOf(entries, props.locale),
-            })}
-      </AppText>
-
-      {props.days === null ? null : entries.length === 0 ? (
-        <View style={{ alignItems: 'center', gap: 18, paddingVertical: 64, paddingHorizontal: 12 }}>
-          {/* The mark itself, quiet: the screen is empty and should look it. */}
-          <View style={{ opacity: 0.3 }}>
-            <WaveMark width={156} color={theme.palette.ink} echoColor={theme.palette.ink} />
-          </View>
-          <AppText variant="kicker">{t('feed.emptyTitle')}</AppText>
-          <AppText variant="body" color="inkSoft" align="center" style={{ maxWidth: 250 }}>
-            {t('feed.emptyBody')}
+      initialNumToRender={8}
+      maxToRenderPerBatch={8}
+      windowSize={7}
+      ListHeaderComponent={
+        <View>
+          <AppText variant="display" style={{ marginBottom: 6 }}>
+            {t('feed.title')}
           </AppText>
-          <Button label={t('feed.record')} onPress={props.onRecord} />
+          <AppText variant="secondary" color="inkSoft" style={{ marginBottom: 26 }}>
+            {entries.length === 0
+              ? t('feed.noneYet')
+              : t('feed.summary', {
+                  n: entries.length,
+                  unit: t(countedKey('feed.echo', entries.length, props.locale)),
+                  period: periodOf(entries, props.locale),
+                })}
+          </AppText>
         </View>
-      ) : (
-        <View style={{ gap: 12 }}>
-          {rows.map((row) =>
-            row.kind === 'entry' ? (
-              <EntryCard
-                key={row.entry.id}
-                entry={row.entry}
-                vocabulary={props.vocabulary}
-                locale={props.locale}
-                today={props.today}
-                t={t}
-                showEmotions
-                onOpen={() => {
-                  props.onOpen(row.entry);
-                }}
-              />
-            ) : (
-              /* The drawing's rule with the milestone's name in it: the
-                 entries above came after, the ones below came before. */
-              <Pressable
-                key={`milestone-${row.milestone.id}`}
-                accessibilityRole="button"
-                onPress={() => {
-                  props.onEditMilestone(row.milestone);
-                }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6, paddingHorizontal: 4 }}
-              >
-                <View style={{ flex: 1, height: 1, backgroundColor: theme.palette.ink, opacity: 0.35 }} />
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-                  <AppText variant="secondary" style={{ fontSize: 13.5, fontWeight: '500' }}>
-                    {row.milestone.label}
-                  </AppText>
-                  <AppText variant="secondary" color="inkSoft" style={{ fontSize: 12.5 }}>
-                    {row.milestone.day.toLocaleDateString(props.locale, { day: 'numeric', month: 'long' })}
-                  </AppText>
-                </View>
-                <View style={{ flex: 1, height: 1, backgroundColor: theme.palette.ink, opacity: 0.35 }} />
-              </Pressable>
-            ),
-          )}
-        </View>
-      )}
-    </ScrollView>
+      }
+      ListEmptyComponent={
+        props.days === null ? null : (
+          <View style={{ alignItems: 'center', gap: 18, paddingVertical: 64, paddingHorizontal: 12 }}>
+            {/* The mark itself, quiet: the screen is empty and should look it. */}
+            <View style={{ opacity: 0.3 }}>
+              <WaveMark width={156} color={theme.palette.ink} echoColor={theme.palette.ink} />
+            </View>
+            <AppText variant="kicker">{t('feed.emptyTitle')}</AppText>
+            <AppText variant="body" color="inkSoft" align="center" style={{ maxWidth: 250 }}>
+              {t('feed.emptyBody')}
+            </AppText>
+            <Button label={t('feed.record')} onPress={props.onRecord} />
+          </View>
+        )
+      }
+    />
   );
+}
+
+function keyOf(row: Row): string {
+  return row.kind === 'entry' ? row.entry.id : `milestone-${row.milestone.id}`;
+}
+
+/** The drawing's 12pt between cards, as a separator rather than a gap the list cannot see. */
+function Gap(): React.JSX.Element {
+  return <View style={{ height: 12 }} />;
 }
 
 /** The month the journal reaches back to, which is what the summary is about. */

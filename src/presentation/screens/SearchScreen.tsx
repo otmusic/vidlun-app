@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useCallback } from 'react';
+import { FlatList, Pressable, TextInput, View, type ListRenderItem } from 'react-native';
 
 import type { SearchResult } from '@/application/use-cases/SearchEntries';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
@@ -38,7 +39,7 @@ export function SearchScreen(props: {
   const theme = useTheme();
   const top = useDrawnTop(70);
   const scheme = theme.isDark ? 'dark' : 'light';
-  const { result, t } = props;
+  const { result, t, onOpen } = props;
 
   const colourOf = (id: string): string => {
     const emotion = props.vocabulary.find(id);
@@ -48,12 +49,29 @@ export function SearchScreen(props: {
       : colorForEmotion(props.vocabulary, emotion, scheme);
   };
 
+  const renderEntry = useCallback<ListRenderItem<MoodEntry>>(
+    ({ item: entry }) => (
+      <EntryCard
+        entry={entry}
+        vocabulary={props.vocabulary}
+        locale={props.locale}
+        today={props.today}
+        t={t}
+        onOpen={() => {
+          onOpen(entry);
+        }}
+      />
+    ),
+    [onOpen, props.locale, props.today, props.vocabulary, t],
+  );
+
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: BOTTOM_ROOM }}
-      keyboardShouldPersistTaps="handled"
-    >
+    /*
+     * The field and the filters stay put and only the results scroll: a
+     * search box that scrolls away is one to scroll back to before every
+     * second try, and a list that owns the keyboard's field re-mounts it.
+     */
+    <View style={{ flex: 1, backgroundColor: theme.palette.canvas, paddingTop: top, paddingHorizontal: 22 }}>
       <AppText variant="display" style={{ marginBottom: 18 }}>
         {t('search.title')}
       </AppText>
@@ -112,15 +130,29 @@ export function SearchScreen(props: {
         ))}
       </View>
 
-      {result === null ? null : (
-        <>
-          <AppText variant="caption" color="inkFaint" style={{ marginBottom: 12 }}>
-            {result.entries.length === 0
-              ? t('search.nothing')
-              : t('search.found', { n: result.entries.length })}
-          </AppText>
-
-          {result.entries.length === 0 ? (
+      <FlatList
+        data={result?.entries ?? []}
+        keyExtractor={keyOf}
+        renderItem={renderEntry}
+        ItemSeparatorComponent={Gap}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: BOTTOM_ROOM }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        ListHeaderComponent={
+          result === null ? null : (
+            <AppText variant="caption" color="inkFaint" style={{ marginBottom: 12 }}>
+              {result.entries.length === 0
+                ? t('search.nothing')
+                : t('search.found', { n: result.entries.length })}
+            </AppText>
+          )
+        }
+        ListEmptyComponent={
+          result === null ? null : (
             <View style={{ alignItems: 'center', gap: 12, paddingVertical: 52, paddingHorizontal: 12 }}>
               <AppText variant="kicker">{t('search.nothingTitle')}</AppText>
               <AppText variant="body" color="inkSoft" align="center" style={{ maxWidth: 240 }}>
@@ -141,27 +173,20 @@ export function SearchScreen(props: {
                 <AppText variant="body">{t('search.reset')}</AppText>
               </Pressable>
             </View>
-          ) : (
-            <View style={{ gap: 12 }}>
-              {result.entries.map((entry) => (
-                <EntryCard
-                  key={entry.id}
-                  entry={entry}
-                  vocabulary={props.vocabulary}
-                  locale={props.locale}
-                  today={props.today}
-                  t={t}
-                  onOpen={() => {
-                    props.onOpen(entry);
-                  }}
-                />
-              ))}
-            </View>
-          )}
-        </>
-      )}
-    </ScrollView>
+          )
+        }
+      />
+    </View>
   );
+}
+
+function keyOf(entry: MoodEntry): string {
+  return entry.id;
+}
+
+/** The drawing's 12pt between cards. */
+function Gap(): React.JSX.Element {
+  return <View style={{ height: 12 }} />;
 }
 
 /**
