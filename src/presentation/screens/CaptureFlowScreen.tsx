@@ -224,6 +224,7 @@ function Stage(
           t={t}
           streakDays={flow.stage.streakDays}
           offersGrounding={flow.stage.offersGrounding}
+          unheard={flow.stage.unheard}
           onGround={flow.startGrounding}
           onHome={flow.backHome}
         />

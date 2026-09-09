@@ -27,6 +27,7 @@ const asking: CaptureStage = {
   chosen: ['bad.tired'],
   draft: null,
   holding: false,
+  unheard: false,
 };
 
 describe('what happens when the analysis lands', () => {
@@ -44,6 +45,7 @@ describe('what happens when the analysis lands', () => {
       spoken: asking.spoken,
       chosen: ['bad.tired'],
       holding: false,
+      unheard: false,
     });
   });
 

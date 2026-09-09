@@ -4,6 +4,7 @@ import { Animated, Easing, View } from 'react-native';
 import type { Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
+import { useAfter } from '../hooks/useAfter';
 import { useTheme } from '../theme/ThemeProvider';
 import { Screen } from './Screen';
 
@@ -12,7 +13,11 @@ import { Screen } from './Screen';
  * happening; an outline of the card says what it will be, which is why the
  * same three or four seconds read as shorter here.
  */
+const SLOW_AFTER_MS = 5000;
+
 export function ProcessingScreen(props: { readonly t: Translate }): React.JSX.Element {
+  // Five seconds is where a wait starts to look like a hang.
+  const slow = useAfter(SLOW_AFTER_MS);
   const theme = useTheme();
 
   return (
@@ -60,7 +65,7 @@ export function ProcessingScreen(props: { readonly t: Translate }): React.JSX.El
       </View>
 
       <AppText variant="secondary" color="inkFaint">
-        {props.t('processing.hint')}
+        {props.t(slow ? 'processing.still' : 'processing.hint')}
       </AppText>
     </Screen>
   );

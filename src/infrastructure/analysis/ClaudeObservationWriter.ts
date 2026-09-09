@@ -1,6 +1,6 @@
 import { AnalysisRefusedError, UnreadableAnalysisError } from '../../domain/errors/AnalysisErrors';
 import type { IObservationWriter } from '../../domain/ports/IObservationWriter';
-import { readText, OBSERVATION_MODEL, type MessagesClient } from './claudeModels';
+import { OBSERVATION_MODEL, PATIENT_TIMEOUT_MS, readText, type MessagesClient } from './claudeModels';
 
 /** One short sentence needs no more room than this. */
 const MAX_TOKENS = 512;
@@ -47,7 +47,7 @@ export class ClaudeObservationWriter implements IObservationWriter {
       system: [{ type: 'text', text: OBSERVATION_PROMPT, cache_control: { type: 'ephemeral' } }],
       output_config: { format: { type: 'json_schema', schema: OBSERVATION_SCHEMA } },
       messages: [{ role: 'user', content: transcript }],
-    });
+    }, { timeout: PATIENT_TIMEOUT_MS });
 
     if (message.stop_reason === 'refusal') {
       throw new AnalysisRefusedError(message.stop_details?.explanation ?? 'no reason given');

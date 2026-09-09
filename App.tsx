@@ -194,6 +194,9 @@ function Vidlun(props: {
     asksFirst: props.settings.asksFirst,
     canHear: props.model.state.kind === 'ready',
     parkedTake: container.parkedTake,
+    createUnheardEntry: container.createUnheardEntry,
+    unheardEntries: container.unheardEntries,
+    hearUnheardEntries: container.hearUnheardEntries,
     microphonePermission: container.microphonePermission,
     getHomeView: container.getHomeView,
     getWeekSummary: container.getWeekSummary,
@@ -346,6 +349,20 @@ function Vidlun(props: {
     ready: props.settings.hasOnboarded && unlocked && flow.stage.kind === 'idle',
     onRecord: flow.startRecording,
   });
+
+  // Entries saved without Vidlun's answer are listened to each time the app
+  // comes back to the front; the hook does the first pass on open.
+  useEffect(() => {
+    const watch = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        flow.hearUnheard();
+      }
+    });
+
+    return () => {
+      watch.remove();
+    };
+  }, [flow.hearUnheard]);
   const leftAt = useRef<number | null>(null);
   const tryUnlock = useCallback(() => {
     void container.screenLock.unlock(t('lock.reason')).then(setUnlocked);

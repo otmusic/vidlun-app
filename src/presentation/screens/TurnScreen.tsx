@@ -12,6 +12,7 @@ import { EmotionPicker } from '../components/EmotionPicker';
 import { FixWording } from '../components/FixWording';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { colorForEmotion } from '../theme/emotionColor';
+import { useAfter } from '../hooks/useAfter';
 import { useTheme } from '../theme/ThemeProvider';
 
 /**
@@ -22,6 +23,8 @@ import { useTheme } from '../theme/ThemeProvider';
  * would give the answer away. The transcript is the person's own words, so it
  * stays.
  */
+const SLOW_AFTER_MS = 5000;
+
 export function TurnScreen(props: {
   readonly transcript: string;
   readonly chosen: readonly string[];
@@ -36,6 +39,8 @@ export function TurnScreen(props: {
   readonly onNext: () => void;
   readonly onSkip: () => void;
 }): React.JSX.Element {
+  // Five seconds of holding is where a wait starts to look like a hang.
+  const slow = useAfter(SLOW_AFTER_MS, props.holding);
   const theme = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
   const scheme = theme.isDark ? 'dark' : 'light';
@@ -138,7 +143,7 @@ export function TurnScreen(props: {
       <View style={{ gap: theme.spacing.xs, marginTop: theme.spacing.sm }}>
         {props.holding ? (
           <AppText variant="secondary" color="inkFaint" align="center">
-            {props.t('turn.waiting')}
+            {props.t(slow ? 'processing.still' : 'turn.waiting')}
           </AppText>
         ) : null}
         {/*

@@ -5,8 +5,24 @@ import type Anthropic from '@anthropic-ai/sdk';
  * in plain Node against a hand-written fake instead of the network.
  */
 export interface MessagesClient {
-  create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message>;
+  create(
+    params: Anthropic.MessageCreateParamsNonStreaming,
+    options?: RequestPatience,
+  ): Promise<Anthropic.Message>;
 }
+
+/** How long one attempt may take. Absent means the client's own default. */
+export interface RequestPatience {
+  readonly timeout: number;
+}
+
+/**
+ * The capture path answers in two seconds when the network is there, so the
+ * client gives an attempt twenty seconds and one more try — see the
+ * container. The two slower writers get more: Sonnet composing a paragraph
+ * takes four seconds on a good day, and nobody is waiting on a card for it.
+ */
+export const PATIENT_TIMEOUT_MS = 45_000;
 
 /**
  * Per-entry analysis. Cheap and fast, because it runs on the capture path.

@@ -14,6 +14,8 @@ export function SavedScreen(props: {
   readonly streakDays: number;
   /** True after an entry that sounded overwhelmed; the card below appears. */
   readonly offersGrounding: boolean;
+  /** True when the entry was saved without Vidlun's answer, which is still owed. */
+  readonly unheard: boolean;
   readonly onGround: () => void;
   readonly onHome: () => void;
 }): React.JSX.Element {
@@ -35,6 +37,11 @@ export function SavedScreen(props: {
           <CheckShape color={theme.palette.calm} size={36} />
         </View>
         <AppText variant="display">{props.t('saved.title')}</AppText>
+        {props.unheard ? (
+          <AppText variant="secondary" color="inkSoft">
+            {props.t('saved.unheard')}
+          </AppText>
+        ) : null}
         {props.streakDays > 0 ? (
           <Chip label={props.t('saved.streak', { count: props.streakDays })} tone="warm" />
         ) : null}

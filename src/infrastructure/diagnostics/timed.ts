@@ -6,7 +6,7 @@ import type {
   ITranscriptionService,
   TranscriptionResult,
 } from '../../domain/ports/ITranscriptionService';
-import type { MessagesClient } from '../analysis/claudeModels';
+import type { MessagesClient, RequestPatience } from '../analysis/claudeModels';
 
 /** Where a stage timing goes. Injected so a test can read it without a console. */
 export type ReportTiming = (stage: string, ms: number) => void;
@@ -85,7 +85,10 @@ export class TimedMessagesClient implements MessagesClient {
     private readonly report: ReportTiming = logTiming,
   ) {}
 
-  create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message> {
-    return timed(params.model, this.report, () => this.inner.create(params));
+  create(
+    params: Anthropic.MessageCreateParamsNonStreaming,
+    options?: RequestPatience,
+  ): Promise<Anthropic.Message> {
+    return timed(params.model, this.report, () => this.inner.create(params, options));
   }
 }

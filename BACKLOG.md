@@ -1284,6 +1284,41 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3k. Nothing said is lost to the network — built 2026-09-09
+
+The first two items of the September audit, together because they are one
+failure seen twice.
+
+**A failed analysis used to cost the entry.** `ask` caught the analyzer's
+rejection with the generic failure screen, whose "Try again" went home, and
+the words the person had just spoken went with it. Now `ask` takes a third
+builder: `CreateUnheardEntry` makes the draft from the words alone (no mood,
+no words of Vidlun's, nothing cleaned up) and the card goes on as it was —
+the person names their word, and `saveUnheard` writes the entry as theirs
+through `ConfirmEntry` with an empty proposal, then remembers the id in
+`AsyncStorageUnheardEntries`. The saved screen says so in one line. If the
+failure lands on a card already being held, the answer is saved as it
+stands; with the question switched off it is saved at once with no words.
+
+**Heard later.** `HearUnheardEntries` runs on open and each time the app
+comes to the front (App.tsx holds the AppState listener, because the hook
+must stay importable in plain Node). Oldest first, stopping at the first the
+network will not carry. Vidlun's late answer fills only what the person left
+blank: their words, a corrected transcript, a mood they set, tags they wrote
+all stay, and the answer takes its usual place as the proposal. The
+observation is not written late; that stays the card's affair.
+
+**The client no longer waits ten minutes.** `timeout: 20_000, maxRetries: 1`
+on the Anthropic client; the two Sonnet writers pass `PATIENT_TIMEOUT_MS`
+(45 s) per call. After five seconds of holding, the card and the processing
+screen change their line to "still working" (`processing.still`).
+
+Not covered: the recorder failing, or the save itself failing, still land on
+the failure screen, which now only ever sees things that are not the
+network's fault.
+
+---
+
 ## 3j. The speech model as an Apple-hosted asset pack — uploaded 2026-09-07
 
 The 668 MB Parakeet model now sits in App Store Connect as asset pack

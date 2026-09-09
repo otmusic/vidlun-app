@@ -71,6 +71,10 @@ import { FakePurchases } from '../infrastructure/purchases/FakePurchases';
 import { RevenueCatPurchases } from '../infrastructure/purchases/RevenueCatPurchases';
 import { UnavailablePurchases } from '../infrastructure/purchases/UnavailablePurchases';
 import { UuidGenerator } from '../infrastructure/system/UuidGenerator';
+import { CreateUnheardEntry } from '../application/use-cases/CreateUnheardEntry';
+import { HearUnheardEntries } from '../application/use-cases/HearUnheardEntries';
+import type { IUnheardEntries } from '../domain/ports/IUnheardEntries';
+import { AsyncStorageUnheardEntries } from '../infrastructure/persistence/AsyncStorageUnheardEntries';
 import {
   TimedMessagesClient,
   TimedReflectionAnalyzer,
@@ -96,6 +100,9 @@ export interface Container {
   readonly settings: SettingsStore;
   /** The take recorded before the phone could hear, if one waits. */
   readonly parkedTake: IParkedTake;
+  readonly createUnheardEntry: CreateUnheardEntry;
+  readonly unheardEntries: IUnheardEntries;
+  readonly hearUnheardEntries: HearUnheardEntries;
   /** Keeps a person's note to support and mails it through the proxy when it can. */
   readonly feedback: FeedbackOutbox;
   readonly forgetAllRecordings: () => Promise<void>;
@@ -188,6 +195,15 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     fetch: proxyFetch ?? undefined,
     // React Native defines `window`, which the SDK reads as a browser.
     dangerouslyAllowBrowser: true,
+    /*
+     * The SDK's own default is ten minutes, which on a phone with one bar is
+     * ten minutes of "composing the echo". Haiku answers the capture path in
+     * two seconds when the network is there; twenty is already generous, and
+     * one more attempt covers the dropped packet without doubling the wait.
+     * The slower writers ask for more per call — see PATIENT_TIMEOUT_MS.
+     */
+    timeout: 20_000,
+    maxRetries: 1,
   });
 
   /*
@@ -211,6 +227,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
   const revisionLog = new AsyncStorageRevisionLog(AsyncStorage);
   const recordings = new FileRecordingStore();
   const milestones = new AsyncStorageMilestones(AsyncStorage);
+  const unheard = new AsyncStorageUnheardEntries(AsyncStorage);
 
   return {
     vocabulary,
@@ -227,6 +244,9 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     findRecording: new FindRecording(recordings),
     settings: new SettingsStore(AsyncStorage, detectLocale),
     parkedTake: new FileParkedTake(AsyncStorage, new ExpoParkedFiles()),
+    createUnheardEntry: new CreateUnheardEntry(clock, idGenerator),
+    unheardEntries: unheard,
+    hearUnheardEntries: new HearUnheardEntries(unheard, repository, analyzer, vocabulary),
     /*
      * Through an outbox, so the sheet closes on the tap and a note the
      * network refused goes at the next chance. Without a proxy there is no

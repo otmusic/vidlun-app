@@ -1,7 +1,7 @@
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import { AnalysisRefusedError, UnreadableAnalysisError } from '../../domain/errors/AnalysisErrors';
 import type { INarrativeGenerator } from '../../domain/ports/INarrativeGenerator';
-import { NARRATIVE_MODEL, readText, type MessagesClient } from './claudeModels';
+import { NARRATIVE_MODEL, PATIENT_TIMEOUT_MS, readText, type MessagesClient } from './claudeModels';
 
 /** Two or three sentences on the insights screen; anything longer is not read. */
 const MAX_TOKENS = 1024;
@@ -49,7 +49,7 @@ export class ClaudeNarrativeGenerator implements INarrativeGenerator {
       thinking: { type: 'disabled' },
       output_config: { effort: 'low' },
       messages: [{ role: 'user', content: describeWeek(entries) }],
-    });
+    }, { timeout: PATIENT_TIMEOUT_MS });
 
     if (message.stop_reason === 'refusal') {
       throw new AnalysisRefusedError(message.stop_details?.explanation ?? 'no reason given');
