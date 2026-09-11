@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
@@ -40,11 +40,14 @@ const HEADLINE: Record<Step, TranslationKey> = {
   microphone: 'onboarding.micTitle',
 };
 
+/** The drawing's side margin on these screens. */
+const SIDE_INSET = 28;
+
 const ACTION: Record<Step, TranslationKey> = {
   welcome: 'onboarding.welcomeAction',
   model: 'onboarding.modelAction',
   privacy: 'onboarding.privacyAction',
-  microphone: 'onboarding.micAllow',
+  microphone: 'onboarding.micContinue',
 };
 
 /**
@@ -54,9 +57,13 @@ const ACTION: Record<Step, TranslationKey> = {
  * that has not said where the recording goes is the moment people decide an
  * app is not trustworthy.
  *
- * The frame never moves: rail, kicker, then the same two buttons in the same
- * place. Only the middle changes, so the screens read as one thing with an
- * end rather than separate demands.
+ * The frame never moves: rail, kicker, then the button in the same place.
+ * Only the middle changes, so the screens read as one thing with an end
+ * rather than separate demands. Only the model screen has a second button:
+ * the privacy screen is where the person agrees to the text of an entry
+ * going to the analysis (App Review 5.1.2(i) wants that said and agreed to
+ * before anything is sent), so nothing may skip past it, and the last screen
+ * leads only into the system's microphone question (5.1.1(iv)).
  */
 export function OnboardingScreen(props: {
   readonly t: Translate;
@@ -138,19 +145,29 @@ export function OnboardingScreen(props: {
   };
 
   return (
-    <Screen inset={{ top: 74, sides: 28, bottom: 40 }} style={{ gap: 0 }}>
+    <Screen inset={{ top: 74, sides: SIDE_INSET, bottom: 40 }} style={{ gap: 0 }}>
       <ProgressRail reached={index} of={steps.length} />
 
       <AppText variant="kicker" style={{ marginTop: 24 }}>
         {t(KICKER[step])}
       </AppText>
 
-      <View
-        style={{
-          flex: 1,
+      {/* Centred where there is room, scrolling where there is not: an SE holds
+          neither the model screen nor the privacy screen in one view, and a
+          headline hidden under the button was how the third review saw them. */}
+      <ScrollView
+        /* The scroller reaches into the side margins so the headline's blob,
+           drawn past the text's left edge, is not clipped at the margin. */
+        style={{ flex: 1, marginHorizontal: -SIDE_INSET }}
+        contentContainerStyle={{
+          flexGrow: 1,
           justifyContent: 'center',
           gap: step === 'welcome' ? 34 : 26,
+          paddingTop: 20,
+          paddingBottom: 16,
+          paddingHorizontal: SIDE_INSET,
         }}
+        showsVerticalScrollIndicator={false}
       >
         {step === 'welcome' ? (
           <WaveMark width={214} color={theme.palette.ink} echoColor={theme.palette.accent} />
@@ -179,15 +196,15 @@ export function OnboardingScreen(props: {
               {t('onboarding.privacyOnDevice')}
             </AppText>
             <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
-              {t('onboarding.privacyKeep')}
+              {t('onboarding.privacyAi')}
             </AppText>
             <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
-              {t('onboarding.privacyDelete')}
+              {t('onboarding.privacyKeep')}
             </AppText>
           </View>
         ) : null}
         {step === 'microphone' ? <Lede>{t('onboarding.micBody')}</Lede> : null}
-      </View>
+      </ScrollView>
 
       <View style={{ gap: 4 }}>
         <Button label={t(ACTION[step])} onPress={advance} />
@@ -202,13 +219,7 @@ export function OnboardingScreen(props: {
               setStep('privacy');
             }}
           />
-        ) : (
-          <Button
-            label={t(step === 'microphone' ? 'onboarding.micLater' : 'onboarding.skip')}
-            variant="ghost"
-            onPress={props.onDone}
-          />
-        )}
+        ) : null}
       </View>
       {step === 'welcome' ? (
         /* The drawing puts the agreement under the first screen only: the tap

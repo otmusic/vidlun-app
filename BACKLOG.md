@@ -1284,6 +1284,125 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3o. The third rejection — 2026-09-11
+
+App Review turned 1.0 (build 28) down again, on an iPad Air, for two things
+neither earlier review had raised.
+
+5.1.1(iv): the onboarding screen before the microphone prompt had an
+"Allow" button and a "Later, I'll write" way past it. Apple reads the first
+as mimicking the system dialog and the second as delaying the request;
+the rule is that the only door out of a permission message is the system's
+own question. The screen now has one button, "Continue" / "Далі"
+(`onboarding.micContinue`), and the body says that iOS asks next and that
+the answer can be changed in Settings. `onboarding.micAllow` and
+`onboarding.micLater` are gone. The drawing still shows the two-button
+version of this screen and needs the same change (rule 6, Apple's
+exception). Someone who declines still has the typed entry and the Settings
+link on home, as before.
+
+2.5.4: `UIBackgroundModes` carried `audio`, which the expo-audio config
+plugin adds by default (`enableBackgroundPlayback: true`). Nothing in the app
+plays or records in the background, so `app.json` now sets it to false and
+the key is gone from the generated Info.plist. Recording while the screen is
+locked would be a real feature behind that key (`enableBackgroundRecording`),
+and if it is ever wanted it needs a screen recording for App Review with it.
+
+Build 31 (still version 1.0) carries both and was uploaded on 2026-09-11.
+
+The guideline check that followed found one more gap, 5.1.2(i) as amended
+on 2025-11-13: personal data shared with a third-party AI must be disclosed
+in the app and agreed to before it is sent. The text of every entry goes to
+Anthropic, the description and the policy said so, but the onboarding
+privacy screen said only that the voice never leaves the phone, and the
+welcome screen's "Skip" went around it. Build 32 added the line; build 33 cut the
+screen to three short ones the owner could live with — the voice stays on
+the phone, the text of an entry goes to Anthropic (Claude) to name the
+feeling and write the week, recordings stay 13 months and any entry can be
+deleted with its voice (`onboarding.privacyOnDevice`, `privacyAi`,
+`privacyKeep`; `privacyDelete` is gone). The button is "I agree" /
+"Погоджуюсь" (`onboarding.privacyAction`), and no screen skips it any more
+(`onboarding.skip` is gone). "Not used for training" and the country stay
+in the policy, not on the screen. Still owed under
+5.1.1(ii): a way to withdraw that consent inside the app — a Profile switch
+that keeps entries unanalysed — which needs its own copy for the card and
+the narrative, so it waits for the next release. The drawing shows the old
+privacy screen and a welcome "Skip"; both need the same edit. Reply and
+review-notes drafts: scratchpad `review-reply-3.txt`, `review-notes-33.txt`.
+
+Found on the way, and likely what the reviewer's iPad showed: the
+onboarding frame did not scroll, so on an SE-sized window the model screen
+and the privacy screen overflowed — the headline ran under the kicker and
+the size card under the button. The middle of the frame is a ScrollView
+now (centred where there is room; it reaches into the side margins so the
+headline's blob is not clipped), and the rail, kicker and button stay put.
+
+---
+
+## 3n. iPhone Duo — analysed 2026-09-10, the foundation built
+
+Apple showed iPhone Duo on 2026-09-09: a 5.4″ outer display (1398×2034 px,
+about 466×678 pt at 3×) and a 7.6″ inner one (1878×2670 px, about 890×626 pt
+open like a book, 626×890 held in portrait), iOS 27.1, on sale 23 October.
+The rules that matter here, from the five Tech Talks and the new HIG page
+"Designing for iPhone Duo": one compact and one regular layout rather than a
+layout per pose; the inner display is regular in both dimensions and ignores
+`UISupportedInterfaceOrientations`; safe areas are asymmetric because the
+status bar, the Dynamic Island and the system bars stand along one side, and
+each app in Split View gets its own side; system tab bars and toolbars go
+vertical on the outer display and on the open device in landscape; nothing
+interactive sits on the fold, scrolling content excepted; sheets and alerts
+move off the fold on their own.
+
+What the current build does there: it runs (Apple: no recompile needed; only
+the strip beside the status bar stays unused until the 27.1 SDK). The outer
+display is a wider, shorter iPhone — fine. The inner display in landscape is
+the problem: every screen becomes one 890pt column, and everything centred —
+the record button, the stop button, the middle of the floating TabBar, the
+card's actions, every sheet — lands on the fold. Held in portrait the fold is
+horizontal, and the bottom-third rule already keeps the primary action below
+it.
+
+The toolchain gate: anything built with the iOS 27 SDK must use the UIScene
+life cycle or it does not launch ("UIScene life cycle is required for apps
+built with this SDK"). Expo 57.0.15's prebuild template still hands React
+Native a `UIWindow` from `AppDelegate` with no `UIApplicationSceneManifest`
+(expo/expo#46663 is open), and RN 0.86's `RCTReactNativeFactory` has no scene
+API. So Xcode 27 RC (out 2026-09-09) gives nothing yet; Xcode 27.1 beta — the
+Duo simulator in Device Hub, `ReservedRegion`, edge to edge on the inner
+display — is due later in September and final around late October. Whether
+to wait for Expo's scene support or migrate ourselves is the owner's call;
+the report recommends waiting unless nothing has shipped by the end of
+October.
+
+Built today, design-neutral: `useDrawnSides` — each side of a screen is the
+device's own side safe area plus the drawn margin (22; 20 for sheets; 12 for
+the recording tile; `theme.spacing.lg` for edit and reflection), each side
+independent of the other. The `Screen` canvas, the scrolling screens, search,
+recording, both sheet components, the profile's time sheet, the purchase
+outcome modal and the TabBar's 14pt edges go through it. On today's phones
+the side insets are zero, so nothing moved. `scripts/sim-wide.sh` builds the
+simulator app as universal with landscape allowed and installs it on the
+iPad mini simulator (1133×744), the nearest stand-in for the inner display
+until Xcode 27.1.
+
+Not built, waiting on the drawing (rule 6): the regular-width screens — Home
+as two pages (greeting and the record button on the left, the day on the
+right), journal and search as list plus entry, statistics in two columns, the
+recording and the card split across the fold, sheets as cards off the fold,
+the TabBar as a vertical pill beside the system controls wherever a side
+inset exists. Then, with the 27.1 SDK: measure `insets.top` on the outer
+display (its status bar is on the side, so `useDrawnTop` may need a floor), a
+small native module for reserved regions instead of "the fold is at the
+middle", and every pose plus Split View in the simulator. The Ukrainian
+report is artifact 64243338-f461-484a-ac2a-ea010512639e.
+
+Decisions not to make: no landscape on ordinary iPhones, no multiple scenes
+(`UIApplicationSupportsMultipleScenes`), no layout per pose, no hinge-angle
+effects.
+
+---
+
 ## 3m. The journal and search scroll a window, not the whole year — built 2026-09-09
 
 Audit item five, and the last of the first batch.
