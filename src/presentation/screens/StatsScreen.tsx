@@ -15,6 +15,7 @@ import { toneFor } from '../components/MoodScale';
 import { Button } from '../components/Button';
 import { RoundBack } from '../components/RoundBack';
 
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -78,12 +79,13 @@ export function StatsScreen(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
+  const sides = useDrawnSides();
   const { view, t } = props;
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: 40 }}
+      contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: 40 }}
     >
       <RoundBack t={t} onPress={props.onBack} />
       <PeriodHeader

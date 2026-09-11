@@ -10,6 +10,7 @@ import { AppText } from '../components/AppText';
 import { PeriodSheet, type Period } from '../components/PeriodSheet';
 import { RoundBack } from '../components/RoundBack';
 import { colorForEmotion } from '../theme/emotionColor';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -36,6 +37,7 @@ export function VocabularyScreen(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
+  const sides = useDrawnSides();
   const scheme = theme.isDark ? 'dark' : 'light';
   const [pickingPeriod, setPickingPeriod] = useState(false);
   /** The list is trimmed to what fits; the rest are one tap away, not gone. */
@@ -57,7 +59,7 @@ export function VocabularyScreen(props: {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: 40 }}
+      contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: 40 }}
     >
       {/* Back to the week, which is where this screen is reached from. */}
       <RoundBack t={t} onPress={props.onSeeWeek} />

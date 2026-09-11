@@ -4,6 +4,7 @@ import { Modal, Pressable, View } from 'react-native';
 import type { Locale, Translate, TranslationKey } from '@/i18n';
 
 import { AppText } from './AppText';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useTheme } from '../theme/ThemeProvider';
 
 /** A period, `from` inclusive and `to` exclusive, matching the use case. */
@@ -68,6 +69,7 @@ export function PeriodSheet(props: {
   readonly onClose: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const sides = useDrawnSides(20);
   const { t } = props;
   const [month, setMonth] = useState(() => startOfMonth(props.period.from));
   const [from, setFrom] = useState<Date | null>(props.period.from);
@@ -104,7 +106,7 @@ export function PeriodSheet(props: {
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             paddingTop: 24,
-            paddingHorizontal: 20,
+            ...sides,
             paddingBottom: 26,
           }}
         >

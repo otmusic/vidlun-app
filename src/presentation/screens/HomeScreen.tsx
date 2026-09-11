@@ -21,6 +21,7 @@ import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { WeekStrip } from '../components/WeekStrip';
 import { YearEchoCard } from '../components/YearEchoCard';
 import { colorForEmotion } from '../theme/emotionColor';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -58,6 +59,7 @@ export interface HomeScreenProps {
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
+  const sides = useDrawnSides();
   const canHear = props.voice.kind === 'ready';
   /*
    * A refused microphone is the one state the app cannot change from inside:
@@ -81,7 +83,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: 118 }}
+      contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: 118 }}
     >
       <View
         style={{

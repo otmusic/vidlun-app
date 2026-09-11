@@ -9,6 +9,7 @@ import { emotionKey, type Locale, type Translate } from '@/i18n';
 import { AppText } from '../components/AppText';
 import { EntryCard } from '../components/EntryCard';
 import { colorForEmotion } from '../theme/emotionColor';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -38,6 +39,7 @@ export function SearchScreen(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
+  const sides = useDrawnSides();
   const scheme = theme.isDark ? 'dark' : 'light';
   const { result, t, onOpen } = props;
 
@@ -71,7 +73,7 @@ export function SearchScreen(props: {
      * search box that scrolls away is one to scroll back to before every
      * second try, and a list that owns the keyboard's field re-mounts it.
      */
-    <View style={{ flex: 1, backgroundColor: theme.palette.canvas, paddingTop: top, paddingHorizontal: 22 }}>
+    <View style={{ flex: 1, backgroundColor: theme.palette.canvas, paddingTop: top, ...sides }}>
       <AppText variant="display" style={{ marginBottom: 18 }}>
         {t('search.title')}
       </AppText>

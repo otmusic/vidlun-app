@@ -8,6 +8,7 @@ import type { Translate, TranslationKey } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -59,13 +60,14 @@ export function ProfileScreen(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
+  const sides = useDrawnSides();
   const { settings, t } = props;
   const [pickingTime, setPickingTime] = useState(false);
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: BOTTOM_ROOM }}
+      contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: BOTTOM_ROOM }}
     >
       <AppText variant="display" style={{ marginBottom: 22 }}>
         {t('profile.title')}
@@ -584,6 +586,7 @@ function TimeSheet(props: {
   readonly onDone: (settings: Settings) => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const sides = useDrawnSides(20);
   const { settings, t } = props;
   const [draft, setDraft] = useState({
     hour: settings.reminderHour,
@@ -627,7 +630,7 @@ function TimeSheet(props: {
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             paddingTop: 24,
-            paddingHorizontal: 20,
+            ...sides,
             paddingBottom: 26,
             gap: 18,
           }}

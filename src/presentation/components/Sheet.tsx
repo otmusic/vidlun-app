@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useTheme } from '../theme/ThemeProvider';
 
 /**
@@ -31,6 +32,7 @@ export function Sheet(props: {
   readonly children: React.ReactNode;
 }): React.JSX.Element | null {
   const theme = useTheme();
+  const sides = useDrawnSides(20);
   /* Zero is below the screen, one is in place. */
   const rise = useRef(new Animated.Value(0)).current;
 
@@ -92,7 +94,7 @@ export function Sheet(props: {
             transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [360, 0] }) }],
           }}
         >
-          <View style={{ paddingTop: 24, paddingHorizontal: 20, paddingBottom: 30, gap: 12 }}>
+          <View style={{ paddingTop: 24, ...sides, paddingBottom: 30, gap: 12 }}>
             {props.children}
           </View>
         </Animated.View>

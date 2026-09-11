@@ -13,6 +13,7 @@ import { FixWording } from '../components/FixWording';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { colorForEmotion } from '../theme/emotionColor';
 import { useAfter } from '../hooks/useAfter';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -44,6 +45,7 @@ export function TurnScreen(props: {
   const slow = useAfter(SLOW_AFTER_MS, props.holding);
   const theme = useTheme();
   const top = useDrawnTop(70);
+  const sides = useDrawnSides();
   const [pickerOpen, setPickerOpen] = useState(false);
   const scheme = theme.isDark ? 'dark' : 'light';
 
@@ -52,7 +54,7 @@ export function TurnScreen(props: {
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
       contentContainerStyle={{
         paddingTop: top,
-        paddingHorizontal: 22,
+        ...sides,
         paddingBottom: 40,
         gap: theme.spacing.md,
       }}

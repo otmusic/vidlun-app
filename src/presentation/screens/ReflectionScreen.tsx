@@ -9,6 +9,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { EntryChips } from '../components/EntryChips';
 import { useTheme } from '../theme/ThemeProvider';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 
 export interface ReflectionScreenProps {
@@ -22,6 +23,7 @@ export interface ReflectionScreenProps {
 export function ReflectionScreen(props: ReflectionScreenProps): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(64);
+  const sides = useDrawnSides(theme.spacing.lg);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.palette.canvas }}>
@@ -29,6 +31,7 @@ export function ReflectionScreen(props: ReflectionScreenProps): React.JSX.Elemen
         contentContainerStyle={{
           padding: theme.spacing.lg,
           paddingTop: top,
+          ...sides,
           gap: theme.spacing.md,
           flexGrow: 1,
         }}

@@ -13,6 +13,7 @@ import { moodTone } from '../components/emotionTone';
 import { Playback } from '../components/Playback';
 import { WaveMark } from '../components/WaveMark';
 import { colorForEmotion } from '../theme/emotionColor';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -40,6 +41,7 @@ export function EntryDetailScreen(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
+  const sides = useDrawnSides();
   const { entry, t } = props;
   const scheme = theme.isDark ? 'dark' : 'light';
 
@@ -55,7 +57,7 @@ export function EntryDetailScreen(props: {
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
       contentContainerStyle={{
         paddingTop: top,
-        paddingHorizontal: 22,
+        ...sides,
         paddingBottom: 40,
         gap: 14,
       }}

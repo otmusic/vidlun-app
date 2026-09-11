@@ -15,6 +15,7 @@ import { EMOTION_GROUPS, groupOf, type EmotionGroup } from '../components/emotio
 import { colorForEmotion } from '../theme/emotionColor';
 import { MoodScale } from '../components/MoodScale';
 import { useTheme } from '../theme/ThemeProvider';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 
 export interface EditScreenProps {
@@ -34,6 +35,7 @@ const GROUP_LABELS: Record<EmotionGroup, TranslationKey> = {
 export function EditScreen(props: EditScreenProps): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(64);
+  const sides = useDrawnSides(theme.spacing.lg);
   const [transcript, setTranscript] = useState(props.draft.cleanTranscript);
   /*
    * Null until the person picks one. An entry that never said how the day was
@@ -62,6 +64,7 @@ export function EditScreen(props: EditScreenProps): React.JSX.Element {
         contentContainerStyle={{
           padding: theme.spacing.lg,
           paddingTop: top,
+          ...sides,
           gap: theme.spacing.md,
         }}
         keyboardShouldPersistTaps="handled"

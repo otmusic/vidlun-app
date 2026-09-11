@@ -1,6 +1,7 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -30,6 +31,7 @@ export function Screen(props: {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const top = useDrawnTop(props.inset?.top ?? 70);
+  const sides = useDrawnSides(props.inset?.sides ?? 22);
   const bottom = props.inset?.bottom ?? 40;
 
   return (
@@ -38,7 +40,7 @@ export function Screen(props: {
         {
           flex: 1,
           backgroundColor: theme.palette.canvas,
-          paddingHorizontal: props.inset?.sides ?? 22,
+          ...sides,
           paddingTop: top,
           paddingBottom: Math.max(16, insets.bottom + bottom - DRAWN_BOTTOM_SAFE_AREA),
           gap: theme.spacing.sm,

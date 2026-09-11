@@ -5,6 +5,7 @@ import type { Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { RoundBack } from '../components/RoundBack';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts } from '../theme/tokens';
@@ -25,10 +26,11 @@ export function LegalScreen(props: {
   readonly onBack: () => void;
 }): React.JSX.Element {
   const top = useDrawnTop(70);
+  const sides = useDrawnSides();
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: 60 }}
+      contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: 60 }}
     >
       <RoundBack t={props.t} onPress={props.onBack} />
       <AppText variant="display" style={{ marginBottom: 26 }}>

@@ -12,6 +12,7 @@ import { AppText } from '../components/AppText';
 import { EntryCard } from '../components/EntryCard';
 import { Button } from '../components/Button';
 import { WaveMark } from '../components/WaveMark';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -39,6 +40,7 @@ export function HistoryScreen(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
+  const sides = useDrawnSides();
   const { t, onOpen, onEditMilestone } = props;
   const entries = useMemo(() => (props.days ?? []).flatMap((day) => day.entries), [props.days]);
   // Sorted once per journal, not once per frame: a year of entries is a
@@ -96,7 +98,7 @@ export function HistoryScreen(props: {
       renderItem={renderRow}
       ItemSeparatorComponent={Gap}
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
-      contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: BOTTOM_ROOM }}
+      contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: BOTTOM_ROOM }}
       initialNumToRender={8}
       maxToRenderPerBatch={8}
       windowSize={7}

@@ -8,6 +8,7 @@ import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
 import { RoundBack } from '../components/RoundBack';
+import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 import { savingAgainstMonthly } from './planSaving';
@@ -59,6 +60,7 @@ export function SubscriptionScreen(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
+  const sides = useDrawnSides();
   const { t } = props;
   // Trial or paid alike: both hold the thing, and both manage it in the store.
   const owns = props.entitlement !== 'none';
@@ -74,7 +76,7 @@ export function SubscriptionScreen(props: {
   return (
     <View style={{ flex: 1, backgroundColor: theme.palette.canvas }}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: top, paddingHorizontal: 22, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: 40 }}
       >
         <RoundBack t={t} onPress={props.onBack} />
 
@@ -363,6 +365,7 @@ function OutcomeSheet(props: {
   readonly onClose: () => void;
 }): React.JSX.Element | null {
   const theme = useTheme();
+  const sides = useDrawnSides();
   const { outcome, t } = props;
 
   if (outcome === null || outcome === 'cancelled' || outcome === 'bought') {
@@ -379,7 +382,7 @@ function OutcomeSheet(props: {
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={props.onClose}>
-      <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 22 }}>
+      <View style={{ flex: 1, justifyContent: 'center', ...sides }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('buy.close')}

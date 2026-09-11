@@ -37,8 +37,9 @@ export function TabBar(props: {
     <View
       style={{
         position: 'absolute',
-        left: 14,
-        right: 14,
+        // 14 from the edge in the drawing; iPhone Duo keeps one side for the status bar.
+        left: 14 + insets.left,
+        right: 14 + insets.right,
         // 26 in the drawing, on a 34pt home indicator; the same 8pt below it here.
         bottom: Math.max(12, insets.bottom - 8),
         height: 66,
