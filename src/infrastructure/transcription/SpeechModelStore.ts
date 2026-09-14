@@ -43,12 +43,15 @@ export interface PreinstalledModel {
    * the system knew the pack and could not deliver it.
    */
   bring(model: SpeechModelDescriptor, onProgress: Progress): Promise<string | null>;
+  /** Takes a delivered pack off the device; nothing delivered is nothing to do. */
+  remove(model: SpeechModelDescriptor): Promise<void>;
 }
 
 /** Where nothing was installed with the app and nothing can be asked for. */
 export const NO_PREINSTALLED_MODEL: PreinstalledModel = {
   uriFor: () => null,
   bring: () => Promise.resolve(null),
+  remove: () => Promise.resolve(),
 };
 
 export interface SpeechModelDescriptor {
@@ -193,6 +196,26 @@ export class SpeechModelStore {
     if (saved !== null) {
       await this.storage.writeNote(this.pauseNote(), saved);
     }
+  }
+
+  /**
+   * Takes the model off the device — the file this app downloaded and the
+   * pack the system delivered, whichever is there — and reports it absent.
+   * A download still running is let finish first: the row that offers
+   * removal is not shown while one runs, and a half-written file removed
+   * under a transfer is the kind of thing that ends in a corrupt model.
+   */
+  async remove(): Promise<SpeechModelState> {
+    if (this.inFlight !== null) {
+      await this.inFlight.catch(() => undefined);
+    }
+
+    await this.preinstalled.remove(this.model);
+    await this.storage.remove(this.model.fileName);
+    await this.storage.remove(this.pauseNote());
+    this.lastSeen = { kind: 'absent' };
+
+    return { kind: 'absent' };
   }
 
   private async run(

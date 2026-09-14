@@ -9,6 +9,7 @@ export interface AssetPackProgress {
 interface NativeAssetPack {
   fileURL(path: string): string | null;
   ensure(assetPackID: string): Promise<boolean>;
+  remove(assetPackID: string): Promise<void>;
   addListener(event: 'progress', listener: (progress: AssetPackProgress) => void): { remove(): void };
 }
 
@@ -51,4 +52,12 @@ export function requestAssetPack(
   return native.ensure(assetPackID).finally(() => {
     watching.remove();
   });
+}
+
+/**
+ * Takes a delivered pack off the device. Nothing to remove — no module, an
+ * older iOS, a pack that never arrived — is nothing to do, not a failure.
+ */
+export function removeAssetPack(assetPackID: string): Promise<void> {
+  return native?.remove(assetPackID) ?? Promise.resolve();
 }

@@ -2,6 +2,7 @@ import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings } from '@/domain/ports/ISettings';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
+import type { SpeechEngine } from '@/domain/speech/SpeechEngine';
 import type { Locale, Translate } from '@/i18n';
 import { legalDocument } from '@/i18n/legal';
 
@@ -51,8 +52,13 @@ export interface CaptureFlowScreenProps {
   readonly onFeedback: (text: string) => Promise<void>;
   /** The speech model's state, so home can say whether the phone can hear yet. */
   readonly voice: SpeechModelState;
+  /** What reads a take for this person, and whether the phone could read English by itself. */
+  readonly engine: SpeechEngine;
+  readonly appleAvailable: boolean;
   /** Starts the model download, or tries it again after a failure. */
   readonly onFetchVoice: () => void;
+  /** Takes the model off the device. */
+  readonly onRemoveVoice: () => void;
 }
 
 /**
@@ -264,6 +270,11 @@ function Stage(
           onChange={props.onSettingsChange}
           entitlement={props.entitlement}
           onOpenSubscription={flow.openSubscription}
+          engine={props.engine}
+          appleAvailable={props.appleAvailable}
+          model={props.voice}
+          onFetchModel={props.onFetchVoice}
+          onRemoveModel={props.onRemoveVoice}
         />
       );
 
@@ -395,6 +406,7 @@ function Stage(
           onRecord={flow.startRecording}
           onWrite={flow.startWriting}
           voice={props.voice}
+          engine={props.engine}
           onFetchVoice={props.onFetchVoice}
           parked={flow.parked}
           onContinueParked={flow.continueParked}

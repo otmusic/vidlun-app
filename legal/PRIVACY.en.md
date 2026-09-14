@@ -9,7 +9,8 @@
 ## The short version
 
 - **Audio never leaves your phone.** Speech recognition runs entirely on the
-  device, offline.
+  device, offline: Ukrainian by the Vidlun model, English by Apple's built-in
+  on-device recognition.
 - Only the **text** of a transcript leaves — so a language model can name the
   feelings and write the weekly piece. And what you write to us yourself in
   the feedback form — but only when you tap "Send".

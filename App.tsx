@@ -19,6 +19,12 @@ import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
 import { SPEECH_MODEL, SpeechModelStore } from '@/infrastructure/transcription/SpeechModelStore';
 import { OnDeviceTranscriptionService } from '@/infrastructure/transcription/OnDeviceTranscriptionService';
 import { openParakeetEngine } from '@/infrastructure/transcription/parakeetEngine';
+import {
+  APPLE_SPEECH_LOCALE,
+  AppleTranscriptionService,
+} from '@/infrastructure/transcription/AppleTranscriptionService';
+import { engineFor, type SpeechEngine } from '@/domain/speech/SpeechEngine';
+import { appleSpeech } from './modules/vidlun-speech';
 import { openSpeechEngine } from '@/infrastructure/transcription/whisperEngine';
 import { AppText } from '@/presentation/components/AppText';
 import { SplashOverlay } from '@/presentation/components/SplashOverlay';
@@ -56,7 +62,19 @@ export default function App() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const locale = settings.locale;
   const model = useSpeechModel();
-  const transcription = useTranscription(locale, model.state);
+  const appleAvailable = useAppleSpeech();
+  const engine = engineFor(settings.speechLanguage, appleAvailable);
+  const transcription = useTranscription(locale, model.state, engine);
+
+  /*
+   * The phone's own language assets are brought in ahead of the first take,
+   * not under it: the first entry of the day must not be the slow one.
+   */
+  useEffect(() => {
+    if (engine === 'apple') {
+      void transcription.prepare();
+    }
+  }, [engine, transcription]);
   const nativeRecorder = useAudioRecorder(SPEECH_RECORDING_OPTIONS);
 
   const wiring = useMemo<Wiring>(() => {
@@ -82,6 +100,8 @@ export default function App() {
           settings={settings}
           onSettingsChange={setSettings}
           model={model}
+          engine={engine}
+          appleAvailable={appleAvailable}
         />
       )}
         <PrivacyCurtain />
@@ -98,7 +118,14 @@ function Vidlun(props: {
   readonly locale: Locale;
   readonly settings: Settings;
   readonly onSettingsChange: (settings: Settings) => void;
-  readonly model: { readonly state: SpeechModelState; readonly fetch: () => void };
+  readonly model: {
+    readonly state: SpeechModelState;
+    readonly fetch: () => void;
+    readonly remove: () => void;
+  };
+  /** What reads this person's takes, and whether the phone could read English by itself. */
+  readonly engine: SpeechEngine;
+  readonly appleAvailable: boolean;
 }): React.JSX.Element {
   const { container, locale } = props;
   const t = useMemo(() => createTranslator(locale), [locale]);
@@ -195,7 +222,7 @@ function Vidlun(props: {
     findRecording: container.findRecording,
     keepRecordings: props.settings.keepRecordings,
     asksFirst: props.settings.asksFirst,
-    canHear: props.model.state.kind === 'ready',
+    canHear: props.engine === 'apple' || props.model.state.kind === 'ready',
     parkedTake: container.parkedTake,
     createUnheardEntry: container.createUnheardEntry,
     unheardEntries: container.unheardEntries,
@@ -468,6 +495,7 @@ function Vidlun(props: {
       t={t}
       locale={locale}
       model={props.model.state}
+      engine={props.engine}
       onFetchModel={props.model.fetch}
       onAskMicrophone={() => container.microphonePermission.request()}
       onDone={() => changeSettings({ ...props.settings, hasOnboarded: true })}
@@ -489,7 +517,10 @@ function Vidlun(props: {
       onEnableLock={enableLock}
       onFeedback={(text) => container.feedback.send(text)}
       voice={props.model.state}
+      engine={props.engine}
+      appleAvailable={props.appleAvailable}
       onFetchVoice={props.model.fetch}
+      onRemoveVoice={props.model.remove}
     />
   );
 
@@ -519,7 +550,11 @@ function Vidlun(props: {
  * reads the same state. Two of them would mean two downloads of half a
  * gigabyte, one of them silent.
  */
-function useSpeechModel(): { readonly state: SpeechModelState; readonly fetch: () => void } {
+function useSpeechModel(): {
+  readonly state: SpeechModelState;
+  readonly fetch: () => void;
+  readonly remove: () => void;
+} {
   const store = useMemo(
     () => new SpeechModelStore(new ExpoModelStorage(), new AssetPackModel()),
     [],
@@ -584,7 +619,11 @@ function useSpeechModel(): { readonly state: SpeechModelState; readonly fetch: (
     };
   }, [fetch, store]);
 
-  return { state, fetch };
+  const remove = useCallback(() => {
+    void store.remove().then(setState);
+  }, [store]);
+
+  return { state, fetch, remove };
 }
 
 /**
@@ -592,10 +631,19 @@ function useSpeechModel(): { readonly state: SpeechModelState; readonly fetch: (
  * a working text journal rather than a broken voice one, which is the whole
  * reason half a gigabyte is not allowed to block anything.
  */
-function useTranscription(locale: Locale, model: SpeechModelState): ITranscriptionService {
+function useTranscription(
+  locale: Locale,
+  model: SpeechModelState,
+  engine: SpeechEngine,
+): ITranscriptionService {
   const typed = useMemo(() => new ManualTranscriptionService(), []);
 
   return useMemo(() => {
+    // The phone reads English by itself, and needs nothing on disk for it.
+    if (engine === 'apple' && appleSpeech !== null) {
+      return new AppleTranscriptionService(appleSpeech);
+    }
+
     if (model.kind !== 'ready') {
       return typed;
     }
@@ -606,7 +654,28 @@ function useTranscription(locale: Locale, model: SpeechModelState): ITranscripti
         : openSpeechEngine(model.uri);
 
     return new OnDeviceTranscriptionService(open, () => locale);
-  }, [locale, model, typed]);
+  }, [engine, locale, model, typed]);
+}
+
+/**
+ * Whether this phone can read English by itself — iOS 26 and later. Asked
+ * once, off the main thread; until the answer lands the model is assumed,
+ * which is a moment of the four-screen onboarding before it settles on three.
+ */
+function useAppleSpeech(): boolean {
+  const [available, setAvailable] = useState(false);
+
+  useEffect(() => {
+    if (appleSpeech === null) {
+      return;
+    }
+
+    void appleSpeech.isAvailable(APPLE_SPEECH_LOCALE).then(setAvailable, () => {
+      setAvailable(false);
+    });
+  }, []);
+
+  return available;
 }
 
 /**

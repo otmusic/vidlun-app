@@ -1,4 +1,4 @@
-import { assetPackFileURL, requestAssetPack } from '../../../modules/vidlun-asset-pack';
+import { assetPackFileURL, removeAssetPack, requestAssetPack } from '../../../modules/vidlun-asset-pack';
 import type { PreinstalledModel, Progress, SpeechModelDescriptor } from './SpeechModelStore';
 
 /**
@@ -40,5 +40,9 @@ export class AssetPackModel implements PreinstalledModel {
 
     // Delivered by the system's account, but the file is what counts.
     return delivered ? this.uriFor(model) : null;
+  }
+
+  remove(model: SpeechModelDescriptor): Promise<void> {
+    return removeAssetPack(model.assetPackID);
   }
 }

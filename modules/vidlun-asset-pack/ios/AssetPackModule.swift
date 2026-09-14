@@ -84,5 +84,24 @@ public class AssetPackModule: Module {
       #endif
       return false
     }
+
+    /*
+     * Removes a delivered pack. A pack the system does not hold is nothing
+     * to remove rather than an error: the caller is clearing the model off
+     * the device and only cares that it is gone afterwards.
+     */
+    AsyncFunction("remove") { (assetPackID: String) async throws in
+      #if canImport(BackgroundAssets)
+      if #available(iOS 26, *) {
+        let manager = AssetPackManager.shared
+
+        guard (try? await manager.assetPack(withID: assetPackID)) != nil else {
+          return
+        }
+
+        try await manager.remove(assetPackWithID: assetPackID)
+      }
+      #endif
+    }
   }
 }

@@ -425,6 +425,7 @@ describe('a model the system delivered with the install', () => {
   const delivered = {
     uriFor: () => 'file:///asset-packs/parakeet/model.bin',
     bring: () => Promise.resolve(null),
+    remove: () => Promise.resolve(),
   };
 
   it('is ready without a byte having been downloaded by the app', async () => {
@@ -446,11 +447,32 @@ describe('a model the system delivered with the install', () => {
     expect(storage.resumed).toEqual([]);
   });
 
+  it('takes the model off the device: the pack, the file, and any pause left behind', async () => {
+    const storage = new FakeStorage();
+    storage.files.set(SPEECH_MODEL.fileName, WHOLE);
+    storage.notes.set(PAUSE_NOTE, '{"resumeData":"opaque"}');
+    const removedPacks: string[] = [];
+    const subject = new SpeechModelStore(storage, {
+      uriFor: () => null,
+      bring: () => Promise.resolve(null),
+      remove: (model) => {
+        removedPacks.push(model.assetPackID);
+
+        return Promise.resolve();
+      },
+    });
+
+    expect(await subject.remove()).toEqual({ kind: 'absent' });
+    expect(removedPacks).toEqual([SPEECH_MODEL.assetPackID]);
+    expect(storage.removed).toEqual(expect.arrayContaining([SPEECH_MODEL.fileName, PAUSE_NOTE]));
+  });
+
   it('falls through to the download where the system brought nothing', async () => {
     const storage = new FakeStorage();
     const subject = new SpeechModelStore(storage, {
       uriFor: () => null,
       bring: () => Promise.resolve(null),
+      remove: () => Promise.resolve(),
     });
 
     expect(await subject.state()).toEqual({ kind: 'absent' });
@@ -470,6 +492,7 @@ describe('a model the system can be asked to bring', () => {
     return {
       asked,
       uriFor: () => onDisk,
+      remove: (): Promise<void> => Promise.resolve(),
       bring: (model: { assetPackID: string }, onProgress: Progress): Promise<string | null> => {
         asked.push(model.assetPackID);
 

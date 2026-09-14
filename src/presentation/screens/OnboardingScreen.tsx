@@ -3,6 +3,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
+import type { SpeechEngine } from '@/domain/speech/SpeechEngine';
 import type { Locale, Translate, TranslationKey } from '@/i18n';
 import { legalDocument, type LegalDocumentKind } from '@/i18n/legal';
 
@@ -16,15 +17,15 @@ import { Screen } from './Screen';
 type Step = 'welcome' | 'model' | 'privacy' | 'microphone';
 
 /*
- * The download comes second, straight after the welcome. The tap on that
- * screen is the person's consent to 668 MB over whatever connection they are
- * on — nothing downloads before it — and going second gives the transfer the
- * two screens that follow to make headway before home. Where the system
- * delivered the model with the install there is nothing to ask, and the step
- * is not shown.
+ * The download comes last, as the drawing has it, and only for people whose
+ * language needs the model: the phone reads English by itself, and asking
+ * someone for 668 MB they will never use is where the app ends for them.
+ * The tap on that screen is the consent to the transfer over whatever
+ * connection the phone is on — nothing downloads before it. Where the system
+ * delivered the model with the install there is nothing to ask either.
  */
-const WITH_DOWNLOAD: readonly Step[] = ['welcome', 'model', 'privacy', 'microphone'];
-const DELIVERED: readonly Step[] = ['welcome', 'privacy', 'microphone'];
+const WITH_DOWNLOAD: readonly Step[] = ['welcome', 'privacy', 'microphone', 'model'];
+const WITHOUT_MODEL: readonly Step[] = ['welcome', 'privacy', 'microphone'];
 
 const KICKER: Record<Step, TranslationKey> = {
   welcome: 'onboarding.step1Kicker',
@@ -69,6 +70,8 @@ export function OnboardingScreen(props: {
   readonly t: Translate;
   readonly locale: Locale;
   readonly model: SpeechModelState;
+  /** What will read this person's takes; `apple` needs no download at all. */
+  readonly engine: SpeechEngine;
   /** Starts the one-time download. Called from the tap that means it, never on its own. */
   readonly onFetchModel: () => void;
   readonly onAskMicrophone: () => Promise<PermissionStatus>;
@@ -82,7 +85,7 @@ export function OnboardingScreen(props: {
    * that came with the install is found a moment after launch — and the
    * download step must then not be asked of anyone.
    */
-  const steps = props.model.kind === 'ready' ? DELIVERED : WITH_DOWNLOAD;
+  const steps = props.engine === 'apple' || props.model.kind === 'ready' ? WITHOUT_MODEL : WITH_DOWNLOAD;
   const index = Math.max(0, steps.indexOf(step));
   /*
    * The terms or the privacy policy, opened from the first screen's footer.
@@ -96,10 +99,11 @@ export function OnboardingScreen(props: {
 
   /* Landed while the download screen was up: there is nothing left to ask. */
   useEffect(() => {
+    // The download finished under the last screen: there is nothing left to say.
     if (step === 'model' && modelReady) {
-      setStep('privacy');
+      props.onDone();
     }
-  }, [modelReady, step]);
+  }, [modelReady, props, step]);
 
   const next = (): Step => steps[index + 1] ?? 'microphone';
 
@@ -115,12 +119,20 @@ export function OnboardingScreen(props: {
     );
   }
 
+  /* Whether the tap that starts the download has been made. */
+  const fetching = props.model.kind === 'fetching' || props.model.kind === 'failed';
+
   const advance = (): void => {
     if (step === 'model') {
-      // The tap is the consent. The transfer runs on under the screens that
-      // follow, and home carries its progress from there.
+      if (fetching) {
+        // The transfer runs on under home, which carries its progress from here.
+        props.onDone();
+
+        return;
+      }
+
+      // The tap is the consent; the screen stays to show the transfer start.
       props.onFetchModel();
-      setStep('privacy');
 
       return;
     }
@@ -129,7 +141,11 @@ export function OnboardingScreen(props: {
       // The answer does not gate anything: someone who says no still has a
       // working journal, and asking twice would be worse than either outcome.
       void props.onAskMicrophone().finally(() => {
-        props.onDone();
+        if (isLast) {
+          props.onDone();
+        } else {
+          setStep(next());
+        }
       });
 
       return;
@@ -177,6 +193,9 @@ export function OnboardingScreen(props: {
         {step === 'model' ? (
           <>
             <View style={{ gap: 16, maxWidth: 320 }}>
+              <AppText variant="body" color="ink" style={{ fontSize: 16, lineHeight: 25 }}>
+                {t('onboarding.modelWhy')}
+              </AppText>
               <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
                 {t('onboarding.modelBody1')}
               </AppText>
@@ -187,7 +206,7 @@ export function OnboardingScreen(props: {
                 {t('onboarding.modelBody3')}
               </AppText>
             </View>
-            <SizeCard t={t} />
+            {fetching ? <ProgressCard model={props.model} t={t} /> : <SizeCard t={t} />}
           </>
         ) : null}
         {step === 'privacy' ? (
@@ -207,18 +226,14 @@ export function OnboardingScreen(props: {
       </ScrollView>
 
       <View style={{ gap: 4 }}>
-        <Button label={t(ACTION[step])} onPress={advance} />
-        {step === 'model' ? (
-          /* Consent has to be refusable. Later means the next screen, not the
-             end: the microphone still has to be asked for, and home offers
-             the download again in its own line. */
-          <Button
-            label={t('onboarding.modelLater')}
-            variant="ghost"
-            onPress={() => {
-              setStep('privacy');
-            }}
-          />
+        <Button
+          label={t(step === 'model' && fetching ? 'onboarding.modelDone' : ACTION[step])}
+          onPress={advance}
+        />
+        {step === 'model' && !fetching ? (
+          /* Consent has to be refusable. Later is home, which offers the
+             download again in its own line. */
+          <Button label={t('onboarding.modelLater')} variant="ghost" onPress={props.onDone} />
         ) : null}
       </View>
       {step === 'welcome' ? (
@@ -334,6 +349,60 @@ function Lede(props: { readonly children: React.ReactNode }): React.JSX.Element 
  * rather than a bar: nothing is moving yet, and a bar at nought would say
  * something had started.
  */
+/**
+ * The drawing's download state on the last screen: the line with its
+ * percentage and a hairline the ink fills, in the same card the size sat in
+ * before the tap. A failure is said in the same place; home offers the retry.
+ */
+function ProgressCard(props: { readonly model: SpeechModelState; readonly t: Translate }): React.JSX.Element {
+  const theme = useTheme();
+  const percent =
+    props.model.kind === 'fetching' && props.model.totalBytes !== null && props.model.totalBytes > 0
+      ? Math.min(99, Math.floor((props.model.writtenBytes / props.model.totalBytes) * 100))
+      : null;
+  const line =
+    props.model.kind === 'failed'
+      ? props.t('home.voiceFailed')
+      : percent === null
+        ? props.t('home.voiceFetching')
+        : `${props.t('home.voiceFetching')} · ${String(percent)}%`;
+
+  return (
+    <View
+      style={{
+        gap: 9,
+        paddingVertical: 16,
+        paddingHorizontal: 18,
+        borderRadius: 20,
+        backgroundColor: theme.palette.limeSoft,
+      }}
+    >
+      <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13.5, lineHeight: 19 }}>
+        {line}
+      </AppText>
+      {props.model.kind === 'failed' ? null : (
+        <View
+          style={{
+            height: 3,
+            borderRadius: 999,
+            backgroundColor: 'rgba(0,0,0,0.10)',
+            overflow: 'hidden',
+          }}
+        >
+          <View
+            style={{
+              height: 3,
+              width: `${percent ?? 0}%`,
+              borderRadius: 999,
+              backgroundColor: theme.palette.ink,
+            }}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
+
 function SizeCard(props: { readonly t: Translate }): React.JSX.Element {
   const theme = useTheme();
 

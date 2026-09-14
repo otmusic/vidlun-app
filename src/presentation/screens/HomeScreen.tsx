@@ -5,6 +5,7 @@ import type { DailyMood } from '@/application/use-cases/GetWeekSummary';
 import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
+import type { SpeechEngine } from '@/domain/speech/SpeechEngine';
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import type { Milestone } from '@/domain/entities/Milestone';
 import type { ParkedTake } from '@/domain/ports/IParkedTake';
@@ -43,6 +44,8 @@ export interface HomeScreenProps {
   readonly onWrite: () => void;
   /** Whether the phone can hear yet: the speech model's state. */
   readonly voice: SpeechModelState;
+  /** What reads a take here; the phone itself needs no model on disk. */
+  readonly engine: SpeechEngine;
   /** Starts the model download, or tries it again after a failure. */
   readonly onFetchVoice: () => void;
   /** A take recorded before the phone could hear, waiting to be read. */
@@ -60,7 +63,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
-  const canHear = props.voice.kind === 'ready';
+  const canHear = props.engine === 'apple' || props.voice.kind === 'ready';
   /*
    * A refused microphone is the one state the app cannot change from inside:
    * the tap is left to the flow, which asks when it may, and the line below
@@ -211,7 +214,13 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             />
           </View>
         ) : (
-          <VoiceLine voice={props.voice} nudged={nudged} t={props.t} onFetch={props.onFetchVoice} />
+          <VoiceLine
+            voice={props.voice}
+            engine={props.engine}
+            nudged={nudged}
+            t={props.t}
+            onFetch={props.onFetchVoice}
+          />
         )}
         {/*
           * hitSlop rather than a 44pt box: a padded target here would push the
@@ -557,6 +566,7 @@ function yesterdayEmpty(week: readonly DailyMood[]): boolean {
  */
 function VoiceLine(props: {
   readonly voice: SpeechModelState;
+  readonly engine: SpeechEngine;
   readonly nudged: boolean;
   readonly t: Translate;
   readonly onFetch: () => void;
@@ -564,7 +574,8 @@ function VoiceLine(props: {
   const theme = useTheme();
   const colour = props.nudged ? 'ink' : 'inkSoft';
 
-  if (props.voice.kind === 'ready') {
+  // The phone reads by itself: whatever the model is up to is not this line's business.
+  if (props.engine === 'apple' || props.voice.kind === 'ready') {
     return (
       <AppText variant="body" color="inkSoft">
         {props.t('home.recordHint')}

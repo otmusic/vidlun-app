@@ -1284,6 +1284,107 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3p. The model only for those who need it — decided 2026-09-14
+
+The 668 MB download on the second onboarding screen is the price of
+Ukrainian: Apple's on-device recogniser (SpeechTranscriber, iOS 26, about
+forty locales, every English variant and ru_RU among them) does not know
+Ukrainian and cannot follow a sentence that mixes it with Russian, so
+Parakeet stays. But someone who speaks English does not need it, and asking
+them for 668 MB before the first entry is where the app ends for them. The
+owner's decisions, 2026-09-14:
+
+- The engine follows the language spoken, and the default is the interface
+  language: `en` → Apple's recogniser on the device, `uk` → the model. No
+  onboarding question; a "language you speak" row in a new Profile section
+  overrides the default. No separate Russian option — "Ukrainian" means the
+  model and covers the mix.
+- For English speakers the onboarding drops the model screen (three
+  screens: what this is, privacy, microphone), home loses the model line and
+  the parked states never arise. For Ukrainian the four screens stay, with
+  one line saying why the model is there.
+- Profile gains "Speech": the language spoken, what recognises it (a fact,
+  not a control), and the model as a thing with a state — download,
+  progress, delete.
+- The asset pack's policy goes from prefetch to on demand, so nobody gets
+  668 MB unasked; Ukrainian speakers start it from the model screen as the
+  in-app fallback does today. The policy is a new pack version and rides
+  with 1.1, not with the pack-only submission after 1.0 — until the English
+  path exists, prefetch is what makes the download seamless for everyone.
+- English speakers on iOS before 26 stay on the model; the older
+  SFSpeechRecognizer is not worth a separate path for a shrinking group.
+
+The privacy promise holds for both engines: SpeechTranscriber has no server
+path. The policy gets one sentence about Apple's on-device recognition for
+English; the description and the review notes say "the model for
+Ukrainian" instead of "the model".
+
+Order of work, all of it 1.1, after the 1.0 decision: (1) a spike — a
+native module `vidlun-speech` on SpeechAnalyzer that transcribes a file,
+measured on English takes against Parakeet for accuracy and stop-to-card
+time, plus two checks: whether a speech-recognition authorisation is
+needed at all (on the device it should not be; if it is, it is asked at the
+first recording, never in onboarding) and whether Apple's language asset
+can be installed during onboarding so the first card is not late; (2)
+`AppleTranscriptionService` behind `ITranscriptionService`, a router in the
+container on `settings.speechLanguage` (new field, default from `locale`);
+(3) the third onboarding step list; (4) the Profile section, once drawn;
+(5) the pack policy; (6) metadata, notes, policy. The brief for the
+drawing is artifact ca3c817c-7841-4374-b863-444e2fdc89ab.
+
+Built on 2026-09-14, on the branch `speech-by-language` (main stays what
+build 33 is, for a fix build if the review asks for one):
+
+- `engineFor(language, appleAvailable)` in `src/domain/speech`; settings
+  carry `speechLanguage`, read as the interface language for records that
+  predate the field.
+- `modules/vidlun-speech`: SpeechAnalyzer + SpeechTranscriber behind three
+  async functions — `isAvailable(locale)`, `prepare(locale)` (the system's
+  language assets, installed once and shared), `transcribe(file, locale)`,
+  final results joined. Reading a file needs no speech-recognition
+  authorisation, only the microphone the take already had, so no new
+  purpose string. Compiles against the iOS 26 SDK.
+- `AppleTranscriptionService` behind `ITranscriptionService`; the container
+  gets it when the engine is `apple`, the model otherwise, typed input when
+  neither is there. `canHear` is true for the phone's own engine whatever
+  the model is doing, so nothing is parked. The confidence rule moved to
+  `speechConfidence.ts` and serves both readers.
+- Onboarding: the model screen is last and only shown when the model will
+  be the reader (`WITH_DOWNLOAD`); the phone's engine and a delivered pack
+  both give the three-screen list. The screen carries the drawing's
+  why-line, the on-demand consent button and Later, and after the tap the
+  drawing's progress card with the download running under it.
+- Profile "Speech": language you speak (a sheet with two options, each
+  naming its reader), recognised by (a fact), the model row with
+  Download / progress hairline / Delete, the note under it; deletion asks
+  first only where the model is the reader. `SpeechModelStore.remove`
+  clears the file, the pause note and the delivered pack
+  (`AssetPackManager.remove`).
+- Home: the phone's engine hides every model line. The absent line now
+  reads "The model for Ukrainian is not downloaded — voice will not work
+  yet." The pack manifest is on demand. The policy's short version names
+  both readers.
+
+Checked on the simulator: the English flow (three screens, home without
+the model line, the Speech section, the language sheet switching the
+reader both ways) and the Ukrainian flow (four screens, the model last).
+The simulator has no speech assets ("No GeneralASR asset"), so the one
+read attempted there failed with "Audio format is not supported"; the
+reader itself is verified on a phone, which is the next step, with the
+English takes the measurement still needs.
+
+The drawing and the code disagree in three places, and the code is right
+by App Review: the drawing's microphone screen still says "Allow" with
+"Later, I'll write", its privacy screen has two paragraphs and no line
+about the text going to Anthropic, and its model screen assumes the
+download starts by itself ("It happens now, right after install") with
+"Understood" as the only button — which is prefetch, not the on-demand
+policy decided the day before. The code keeps Continue, the three-line
+privacy screen with "I agree", and Download / Later, then Understood once
+the transfer runs.
+
+---
+
 ## 3o. The third rejection — 2026-09-11
 
 App Review turned 1.0 (build 28) down again, on an iPad Air, for two things
