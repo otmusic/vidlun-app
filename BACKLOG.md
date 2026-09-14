@@ -1369,9 +1369,10 @@ Checked on the simulator: the English flow (three screens, home without
 the model line, the Speech section, the language sheet switching the
 reader both ways) and the Ukrainian flow (four screens, the model last).
 The simulator has no speech assets ("No GeneralASR asset"), so the one
-read attempted there failed with "Audio format is not supported"; the
-reader itself is verified on a phone, which is the next step, with the
-English takes the measurement still needs.
+read attempted there failed with "Audio format is not supported". On the
+owner's iPhone (build 34, TestFlight, 2026-09-14) an English take was read by
+the phone's own recogniser. The measurement against Parakeet on English
+takes is still open.
 
 The drawing and the code disagree in three places, and the code is right
 by App Review: the drawing's microphone screen still says "Allow" with
