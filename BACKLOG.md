@@ -1449,6 +1449,9 @@ manifest had caught up, or the reinstall took the direct road; the logs
 were never read. Pack version 2 is live, so the 1.1 submission carries
 the version alone.
 
+1.1 with build 36 passed App Review the same evening and is Ready for
+Distribution; 1.0 goes down as the version that lived one afternoon.
+
 The drawing and the code disagree in three places, and the code is right
 by App Review: the drawing's microphone screen still says "Allow" with
 "Later, I'll write", its privacy screen has two paragraphs and no line
