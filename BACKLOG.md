@@ -1374,6 +1374,16 @@ owner's iPhone (build 34, TestFlight, 2026-09-14) an English take was read by
 the phone's own recogniser. The measurement against Parakeet on English
 takes is still open.
 
+1.0 (build 33) passed App Review on 2026-09-15 and waits for the owner's
+release. The branch was merged into main the same morning, the version
+bumped to 1.1, build 35 archived and uploaded (11:57 EEST), and asset pack
+version 2 uploaded with the on-demand policy (`"downloadPolicy":
+{"onDemand": {}}` is the form ba-package accepts; leaving the key out is
+rejected). Pack version 1 (prefetch) is never submitted: 1.0 users take the
+in-app download, 1.1 rides with version 2. Drafts for the 1.1 listing —
+What's New in both languages, the description with the recognition line
+changed, the review notes for build 35 — sit in the scratchpad.
+
 The drawing and the code disagree in three places, and the code is right
 by App Review: the drawing's microphone screen still says "Allow" with
 "Later, I'll write", its privacy screen has two paragraphs and no line
