@@ -1442,6 +1442,13 @@ nothing about settings. The drawing shows no audio block at all on a typed
 entry (`cardAudioGone: !cur.typed && !s.keepAudio`); the owner asked for a
 line instead, so the line is a divergence to carry back into the design.
 
+Build 36 (1.1) archived and uploaded at 14:54 EEST with both guards and
+the card line; 35 is superseded and 1.1 goes to review with 36. By then
+the owner's phone had started downloading the model on its own — the
+manifest had caught up, or the reinstall took the direct road; the logs
+were never read. Pack version 2 is live, so the 1.1 submission carries
+the version alone.
+
 The drawing and the code disagree in three places, and the code is right
 by App Review: the drawing's microphone screen still says "Allow" with
 "Later, I'll write", its privacy screen has two paragraphs and no line
