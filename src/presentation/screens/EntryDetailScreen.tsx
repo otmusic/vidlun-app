@@ -16,6 +16,7 @@ import { colorForEmotion } from '../theme/emotionColor';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
+import { audioNoteKey } from './audioNote';
 
 const MOOD_LABELS: readonly TranslationKey[] = ['mood.1', 'mood.2', 'mood.3', 'mood.4', 'mood.5'];
 const RING_RADIUS = 30;
@@ -31,6 +32,8 @@ const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 export function EntryDetailScreen(props: {
   readonly entry: MoodEntry;
   readonly recordingUri: string | null;
+  /** The Profile switch as it stands now; it decides what a missing recording is blamed on. */
+  readonly keepRecordings: boolean;
   readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
   readonly t: Translate;
@@ -94,7 +97,11 @@ export function EntryDetailScreen(props: {
         </AppText>
       </FixWording>
 
-      {props.recordingUri === null ? <AudioGone t={t} /> : <Playback uri={props.recordingUri} t={t} />}
+      {props.recordingUri === null ? (
+        <AudioNote text={t(audioNoteKey(entry.source, props.keepRecordings))} />
+      ) : (
+        <Playback uri={props.recordingUri} t={t} />
+      )}
 
       {entry.mood === null ? null : (
       <View
@@ -201,10 +208,12 @@ export function EntryDetailScreen(props: {
 }
 
 /**
- * A year on, the voice goes and the entry stays. Saying so where the player
- * would have been is the only place a person will ever ask the question.
+ * Where the player would have been, one quiet line on why there is none:
+ * the entry was typed, recordings are off, or the voice is simply gone — a
+ * year on, the voice goes and the entry stays. This is the only place a
+ * person will ever ask the question, so it is answered here and nowhere else.
  */
-function AudioGone(props: { readonly t: Translate }): React.JSX.Element {
+function AudioNote(props: { readonly text: string }): React.JSX.Element {
   const theme = useTheme();
 
   return (
@@ -222,7 +231,7 @@ function AudioGone(props: { readonly t: Translate }): React.JSX.Element {
       }}
     >
       <AppText variant="secondary" color="inkFaint" style={{ flex: 1, fontSize: 13 }}>
-        {props.t('detail.audioGone')}
+        {props.text}
       </AppText>
     </View>
   );

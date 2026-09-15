@@ -362,6 +362,8 @@
   "mood.5": "High",
   "detail.disclaimer": "Vidlun describes what was said. It gives no advice, verdicts or medical conclusions.",
   "detail.audioGone": "No audio kept — recordings are switched off in settings.",
+  "detail.audioTyped": "A typed entry — no audio.",
+  "detail.audioMissing": "No audio kept for this entry.",
   "detail.ofFive": "of 5",
   "stats.proseWriting": "Being written…",
   "record.limitFree": "A free recording runs up to a minute",

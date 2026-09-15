@@ -1384,6 +1384,64 @@ in-app download, 1.1 rides with version 2. Drafts for the 1.1 listing —
 What's New in both languages, the description with the recognition line
 changed, the review notes for build 35 — sit in the scratchpad.
 
+**The first afternoon on sale — 2026-09-15.** The owner released 1.0,
+installed it from the App Store, and the model screen said "could not
+download". The cause is in App Store Connect, verified through the API and
+its Help: an asset pack reaches App Store customers only after App Review,
+and neither pack version had ever been submitted (both `appStoreRelease`
+= Prepare for Submission). TestFlight never showed this because internal
+testing takes the latest processed pack version without review. The in-app
+download did not step in either, and that is the code's own gap: the
+store fell back to Hugging Face only where the system had never heard of
+the pack, and treated "the system knows the pack and cannot deliver it" as
+a dead end — exactly the state of a pack that exists but is unreleased.
+Fixed in main: `SpeechModelStore` downloads by itself whenever the system
+does not hand the file over, whatever the reason (test: "downloads by
+itself when the system knew the pack and could not deliver it"). For the
+people already on 1.0 the remedy is pack version 2 submitted on its own
+(`scripts/asc-submit.py submit-pack`, dry run `plan-pack`): once approved
+it reaches every App Store install at once, 1.0 included, since the app
+asks for the pack explicitly and the policy only governs what the system
+does unasked. Submitted alone rather than with 1.1 on purpose — items of
+one submission publish only when all are accepted, so a pack riding with
+1.1 would wait out any rejection of 1.1. Lesson: a pack-only submission
+belongs in the release checklist the moment the first version is approved,
+before the release button.
+
+Pack version 2 passed review within the hour (`appStoreRelease` = Ready for
+Distribution, version 1 Superseded), and the phone still said "could not
+download". The simulator explained the first half: `checkForUpdates()` makes
+the Managed Background Assets helper fetch the app's download manifest from
+the App Store, and what the App Store served at 14:00 and again at 14:03 was
+`{"assetPacks":[],"isFromAppReview":false}` — no pack, whatever App Store
+Connect says; the second fetch answered in 5 ms, so the client caches the
+manifest as well. Ready for Distribution is not yet "on the devices", and
+nothing in the app can hurry it. The same run proved the in-app road:
+"No asset pack with the ID … was found" → the Hugging Face download over
+the background URL session, 668,757,119 bytes in about two minutes,
+onboarding moved on by itself. Two more guards went into main for build 36:
+`AssetPackModule.ensure` calls `checkForUpdates()` before looking the pack
+up, so a pack published after the device's cache was written is found
+without a reinstall; and the store downloads by itself whenever the system
+does not hand the file over. What the owner's phone did remains unread —
+device logs need root (`sudo log collect --device-udid …`), and the owner's
+phone had TestFlight builds whose manifest listed the pack, so a stale
+TestFlight manifest failing `ensureLocalAvailability` against the App Store
+channel is the leading suspicion; a fresh App Store install would meet the
+empty manifest and take the Hugging Face road instead.
+
+Found the same afternoon on the owner's phone: a typed entry's card said
+"No audio kept — recordings are switched off in settings" while the switch
+was on. The line was the only one the screen had for a missing recording,
+and `FindRecording` deliberately folds three cases into one null. The
+screen now tells them apart (`audioNoteKey`): a typed entry gets "A typed
+entry — no audio", a spoken one blames the switch only while the switch is
+off, and a spoken one whose audio is gone while the switch is on — recorded
+before it was turned on, or thirteen months old — gets a line that claims
+nothing about settings. The drawing shows no audio block at all on a typed
+entry (`cardAudioGone: !cur.typed && !s.keepAudio`); the owner asked for a
+line instead, so the line is a divergence to carry back into the design.
+
 The drawing and the code disagree in three places, and the code is right
 by App Review: the drawing's microphone screen still says "Allow" with
 "Later, I'll write", its privacy screen has two paragraphs and no line
