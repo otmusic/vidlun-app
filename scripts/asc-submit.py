@@ -21,6 +21,13 @@ platform, so this runs only once the version in review has been decided.
         COMPLETE asset pack version, and submits it. Asks once before the
         submit call.
 
+    scripts/asc-submit.py plan-pack / submit-pack
+        The newest COMPLETE asset pack version on its own, for an app that
+        is already live: a review submission with a single
+        backgroundAssetVersion item. Once approved it reaches every App
+        Store install of every version at once — App Store Connect allows a
+        pack-only submission only after the app's first approval.
+
 The key is read from ~/Downloads/AuthKey_5BG7U522M9.p8 (ASC_KEY_PATH to
 override). The key id and issuer id are not secrets; the key file is.
 """
@@ -217,23 +224,51 @@ def ensure_version(version_string: str, build: dict, dry: bool) -> str | None:
     return existing["id"]
 
 
-def submit(version_string: str, build_number: str, with_asset_pack: bool, dry: bool) -> None:
+def refuse_if_in_flight() -> None:
     in_flight = submissions_in_flight()
     if in_flight:
         raise SystemExit(
             f"a review submission is already in flight ({in_flight[0]['attributes']['state']}); "
             "App Store Connect takes one per platform at a time — wait for it to be decided."
         )
-    build = find_build(build_number)
-    pack_version = newest_complete_pack_version(asset_packs()) if with_asset_pack else None
-    if with_asset_pack and pack_version is None:
+
+
+def pack_to_submit() -> dict:
+    pack_version = newest_complete_pack_version(asset_packs())
+    if pack_version is None:
         raise SystemExit("no COMPLETE asset pack version to submit")
+    return pack_version
+
+
+def submit(version_string: str, build_number: str, with_asset_pack: bool, dry: bool) -> None:
+    refuse_if_in_flight()
+    build = find_build(build_number)
+    pack_version = pack_to_submit() if with_asset_pack else None
 
     version_id = ensure_version(version_string, build, dry)
-    print("open a review submission (IOS)")
-    print(f"  add item: appStoreVersion {version_string}")
+    items = [("appStoreVersion", "appStoreVersions", version_id, version_string)]
     if pack_version is not None:
-        print(f"  add item: backgroundAssetVersion {pack_version['assetPackIdentifier']} v{pack_version['attributes']['version']} ({pack_version['id']})")
+        items.append(pack_item(pack_version))
+    open_submission(items, version_string, dry)
+
+
+def submit_pack(dry: bool) -> None:
+    """The pack alone; what the live app's users download tomorrow."""
+    refuse_if_in_flight()
+    pack_version = pack_to_submit()
+    label = f"asset pack v{pack_version['attributes']['version']}"
+    open_submission([pack_item(pack_version)], label, dry)
+
+
+def pack_item(pack_version: dict) -> tuple[str, str, str, str]:
+    label = f"{pack_version['assetPackIdentifier']} v{pack_version['attributes']['version']} ({pack_version['id']})"
+    return ("backgroundAssetVersion", "backgroundAssetVersions", pack_version["id"], label)
+
+
+def open_submission(items: list[tuple[str, str, str | None, str]], label: str, dry: bool) -> None:
+    print("open a review submission (IOS)")
+    for relationship, _kind, _identifier, name in items:
+        print(f"  add item: {relationship} {name}")
     print("  submit")
     if dry:
         print("dry run: nothing was sent")
@@ -244,10 +279,7 @@ def submit(version_string: str, build_number: str, with_asset_pack: bool, dry: b
         "/v1/reviewSubmissions",
         {"data": {"type": "reviewSubmissions", "attributes": {"platform": "IOS"}, "relationships": {"app": {"data": {"type": "apps", "id": APP_ID}}}}},
     )["data"]["id"]
-    items = [("appStoreVersion", "appStoreVersions", version_id)]
-    if pack_version is not None:
-        items.append(("backgroundAssetVersion", "backgroundAssetVersions", pack_version["id"]))
-    for relationship, kind, identifier in items:
+    for relationship, kind, identifier, _name in items:
         call(
             "POST",
             "/v1/reviewSubmissionItems",
@@ -261,7 +293,7 @@ def submit(version_string: str, build_number: str, with_asset_pack: bool, dry: b
                 }
             },
         )
-    answer = input(f"Submit review submission {submission} for {version_string} now? [y/N] ").strip().lower()
+    answer = input(f"Submit review submission {submission} for {label} now? [y/N] ").strip().lower()
     if answer != "y":
         print("left unsubmitted; it can be finished or deleted in App Store Connect")
         return
@@ -278,9 +310,13 @@ def main() -> None:
         p.add_argument("--version", required=True, help="marketing version, e.g. 1.0.1")
         p.add_argument("--build", required=True, help="build number already uploaded and VALID")
         p.add_argument("--no-asset-pack", action="store_true", help="submit the version without the asset pack")
+    sub.add_parser("plan-pack", help="say what a pack-only submission would send")
+    sub.add_parser("submit-pack", help="submit the newest COMPLETE asset pack version on its own")
     args = parser.parse_args()
     if args.command == "status":
         status()
+    elif args.command in ("plan-pack", "submit-pack"):
+        submit_pack(dry=args.command == "plan-pack")
     else:
         submit(args.version, args.build, not args.no_asset_pack, dry=args.command == "plan")
 

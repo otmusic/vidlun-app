@@ -50,6 +50,18 @@ public class AssetPackModule: Module {
       #if canImport(BackgroundAssets)
       if #available(iOS 26, *) {
         let manager = AssetPackManager.shared
+
+        /*
+         * The system answers from what it cached about the app's packs and
+         * asks the server only when it has nothing cached. A pack published
+         * after that cache was written — the day 1.0 went on sale, the pack
+         * cleared review hours after the first installs — stays "not there"
+         * for that device until something asks the server again. This is
+         * that ask; the person tapped Download, so a round trip is owed.
+         * Offline it throws, and the answer below is then the cached one.
+         */
+        _ = try? await manager.checkForUpdates()
+
         let pack: AssetPack
 
         do {

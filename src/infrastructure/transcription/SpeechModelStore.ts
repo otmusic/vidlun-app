@@ -39,8 +39,9 @@ export interface PreinstalledModel {
    * Asks the system to bring the pack now — the install may not have, or
    * may not have finished. Resolves with the file's location once it is
    * there, or null when the system cannot bring it at all (an older iOS, no
-   * such pack published), so the caller downloads by itself. Rejects when
-   * the system knew the pack and could not deliver it.
+   * such pack published). Rejects when the system knew the pack and could
+   * not deliver it. Either way the caller downloads by itself: the pack is
+   * the faster road, not the only one.
    */
   bring(model: SpeechModelDescriptor, onProgress: Progress): Promise<string | null>;
   /** Takes a delivered pack off the device; nothing delivered is nothing to do. */
@@ -253,16 +254,17 @@ export class SpeechModelStore {
       /*
        * Nothing of our own to continue: the system is asked first. On iOS 26
        * the pack rides the App Store's own bandwidth, resumes by itself, and
-       * needs no file of ours to be renamed into place. Only where the system
-       * cannot bring it does the download below begin.
+       * needs no file of ours to be renamed into place. Where the system
+       * cannot bring it — a pack it has never heard of, or one it knows and
+       * cannot deliver — the download below begins.
+       *
+       * The second case is what 1.0 met the day it went on sale: the pack
+       * existed in App Store Connect, no version of it had passed review,
+       * so the system knew the name and had nothing to send. An app that
+       * stopped there told people with a working connection that the
+       * download had failed, while the file sat one request away.
        */
-      let brought: string | null;
-
-      try {
-        brought = await this.preinstalled.bring(this.model, report);
-      } catch {
-        return { kind: 'failed', reason: 'unreachable' };
-      }
+      const brought = await this.preinstalled.bring(this.model, report).catch(() => null);
 
       if (brought !== null) {
         return { kind: 'ready', uri: brought };

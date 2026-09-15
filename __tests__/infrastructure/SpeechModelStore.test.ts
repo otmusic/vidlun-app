@@ -536,12 +536,14 @@ describe('a model the system can be asked to bring', () => {
     expect(storage.started).toEqual([PARTIAL_NAME]);
   });
 
-  it('reports a system transfer that failed rather than starting its own', async () => {
+  it('downloads by itself when the system knew the pack and could not deliver it', async () => {
     const storage = new FakeStorage();
-    const subject = new SpeechModelStore(storage, system('fails'));
+    const asked = system('fails');
+    const subject = new SpeechModelStore(storage, asked);
 
-    expect(await subject.fetch()).toEqual({ kind: 'failed', reason: 'unreachable' });
-    expect(storage.started).toEqual([]);
+    expect((await subject.fetch()).kind).toBe('ready');
+    expect(asked.asked).toEqual([SPEECH_MODEL.assetPackID]);
+    expect(storage.started).toEqual([PARTIAL_NAME]);
   });
 
   it('continues its own paused download instead of asking the system again', async () => {
