@@ -2,7 +2,7 @@
   "expo": {
     "name": "Vidlun",
     "slug": "vidlun",
-    "version": "1.0",
+    "version": "1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -22,7 +22,7 @@
         "BAUsesAppleHosting": true,
         "BAAppGroupID": "group.com.vidlun.journal"
       },
-      "buildNumber": "34",
+      "buildNumber": "35",
       "appleTeamId": "M3K99W5FFQ"
     },
     "android": {
