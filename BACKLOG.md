@@ -1415,6 +1415,8 @@ bundles q4_k (416 MB, the better Ukrainian mean in the §1c table) in place
 of q4_0. `SPEECH_MODEL`, `scripts/fetch-model.sh` and the plugin's file in
 app.json move together; the Xcode project reference was renamed in place
 rather than regenerated.
+Uploaded at 16:00 EEST: app and widget 1.2 (38), the q4_k file in the
+archive, 440 MB on disk. Build 37 is superseded.
 
 **Left for the release:** version 1.2, build 37; the store description and
 What's New; the legal site redeploy; App Store Connect's asset pack can be
