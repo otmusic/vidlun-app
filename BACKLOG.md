@@ -1425,6 +1425,9 @@ also fixes the Face ID switch: declining the Face ID ask left the native
 switch sitting on, because a setting that stayed false was no change for
 React to push back — the screen now holds the switch on only while the
 ask is open (`armingLock`) and lets it snap back.
+Uploaded in the evening: app and widget 1.2 (39), q8_0 in the archive, 681
+MB on disk; the switch fix seen on the simulator (tap, ask fails, switch
+back off). Builds 37 and 38 are superseded.
 
 **Left for the release:** version 1.2, build 37; the store description and
 What's New; the legal site redeploy; App Store Connect's asset pack can be
