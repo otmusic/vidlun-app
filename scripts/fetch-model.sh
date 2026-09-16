@@ -6,11 +6,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-FILE=ggml-parakeet-tdt-0.6b-v3-q4_k.bin
+FILE=ggml-parakeet-tdt-0.6b-v3-q8_0.bin
 URL="https://huggingface.co/ggml-org/parakeet-GGUF/resolve/main/$FILE"
 DEST="assets/model/$FILE"
-SIZE=415611879
-SHA256=8b205b8b39c6535e153de6fb11c51db46125d45c4f16ba496fe41a0fe71b885e
+SIZE=668757119
+SHA256=4d64e9e96c2792186d072fde0034df0ad670cf680a2f53069052ead827fd600e
 
 check() {
   [ -f "$DEST" ] || return 1
@@ -24,7 +24,7 @@ if check; then
 fi
 
 mkdir -p assets/model
-echo "fetching $FILE (416 MB)…"
+echo "fetching $FILE (669 MB)…"
 curl -L --fail --progress-bar -o "$DEST.part" "$URL"
 mv "$DEST.part" "$DEST"
 

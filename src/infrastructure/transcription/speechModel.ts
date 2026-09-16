@@ -36,9 +36,16 @@ export const PARAKEET_TDT_Q4_K: SpeechModelDescriptor = {
   engine: 'parakeet',
 };
 
+/** The 8-bit file, 669 MB: what 1.0 and 1.1 downloaded and ran. */
+export const PARAKEET_TDT_Q8_0: SpeechModelDescriptor = {
+  fileName: 'ggml-parakeet-tdt-0.6b-v3-q8_0.bin',
+  engine: 'parakeet',
+};
+
 /**
- * The one the app reads with — the owner's choice after a day with q4_0 on
- * the phone. Swapping is this line, the file `scripts/fetch-model.sh`
- * brings, and the file app.json hands the build plugin.
+ * The one the app reads with — the owner's choice after hearing the 4-bit
+ * files on the phone. Swapping is this line, the file
+ * `scripts/fetch-model.sh` brings, and the file app.json hands the build
+ * plugin.
  */
-export const SPEECH_MODEL: SpeechModelDescriptor = PARAKEET_TDT_Q4_K;
+export const SPEECH_MODEL: SpeechModelDescriptor = PARAKEET_TDT_Q8_0;

@@ -1418,6 +1418,14 @@ rather than regenerated.
 Uploaded at 16:00 EEST: app and widget 1.2 (38), the q4_k file in the
 archive, 440 MB on disk. Build 37 is superseded.
 
+And one more level the same evening: build 39 bundles q8_0 (669 MB), the
+file 1.0 and 1.1 downloaded and ran, so the phone reads with exactly what
+it read with before. The app now installs at roughly 700 MB. The build
+also fixes the Face ID switch: declining the Face ID ask left the native
+switch sitting on, because a setting that stayed false was no change for
+React to push back — the screen now holds the switch on only while the
+ask is open (`armingLock`) and lets it snap back.
+
 **Left for the release:** version 1.2, build 37; the store description and
 What's New; the legal site redeploy; App Store Connect's asset pack can be
 archived, and `scripts/asc-submit.py` submits versions alone from now on.

@@ -62,5 +62,5 @@ asset-packs/dev-server/
 # The widget colour catalog is generated from expo-target.config.js on every prebuild
 /targets/widget/Assets.xcassets
 
-# The speech model the build bundles (416 MB); scripts/fetch-model.sh brings it
+# The speech model the build bundles (669 MB); scripts/fetch-model.sh brings it
 assets/model/
