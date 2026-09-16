@@ -63,6 +63,15 @@ export function ProfileScreen(props: {
   const sides = useDrawnSides();
   const { settings, t } = props;
   const [pickingTime, setPickingTime] = useState(false);
+  /*
+   * The lock switch while Face ID is being asked. The native switch flips
+   * itself on at the tap; if the ask is declined the setting stays false,
+   * and a prop that stays false is no change for React to push back to the
+   * native side — the switch would sit on, lying. Holding "true" here for
+   * the duration and dropping it after gives the native switch a real
+   * true→false to follow.
+   */
+  const [armingLock, setArmingLock] = useState(false);
 
   return (
     <ScrollView
@@ -178,7 +187,7 @@ export function ProfileScreen(props: {
           hint={t(settings.appLock ? 'profile.appLockOn' : 'profile.appLockOff')}
         >
           <Switch
-            value={settings.appLock}
+            value={settings.appLock || armingLock}
             onValueChange={(appLock) => {
               if (!appLock) {
                 props.onChange({ ...settings, appLock: false });
@@ -191,11 +200,19 @@ export function ProfileScreen(props: {
                * successful unlock, so nobody locks themselves out behind a
                * Face ID that was never set up.
                */
-              void props.onEnableLock().then((unlocked) => {
-                if (unlocked) {
-                  props.onChange({ ...settings, appLock: true });
-                }
-              });
+              setArmingLock(true);
+              void props.onEnableLock().then(
+                (unlocked) => {
+                  setArmingLock(false);
+
+                  if (unlocked) {
+                    props.onChange({ ...settings, appLock: true });
+                  }
+                },
+                () => {
+                  setArmingLock(false);
+                },
+              );
             }}
             trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
             accessibilityLabel={t('profile.appLock')}
