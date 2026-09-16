@@ -457,6 +457,47 @@ near the cloud, the question closes for good and in our favour.
 
 ---
 
+## 1d′. Is anything better than Parakeet yet? — surveyed again 2026-09-16
+
+Asked by the owner the evening 1.2 went to TestFlight with q8_0 in the
+bundle. Nothing that fits the app's three constraints — on the phone, one
+model for Ukrainian, Russian and English in one sentence, runnable by
+whisper.rn — has appeared since §1d. What has:
+
+- **Apple.** macOS 26.6.2's `SpeechTranscriber.supportedLocales` lists 30
+  locales: German, English, Spanish, French, Italian, Japanese, Korean,
+  Portuguese, Cantonese, Chinese. No Ukrainian, no Russian. The owner's
+  phone is on iOS 27.0; nothing announced for 27 adds either.
+- **NVIDIA Nemotron 3.5 ASR streaming 0.6B** (June 2026, OpenMDW-1.1):
+  40 locales including Ukrainian and Russian, cache-aware FastConformer-RNNT,
+  true streaming with 80 ms–1.12 s chunks, punctuation. FLEURS WER 13.07
+  on Ukrainian against Parakeet v3's 6.79 — the price of streaming. Runs
+  through NeMo, a CrispASR GGUF (458 MB q4_k), or CoreML via FluidAudio
+  (iOS 17+); not through whisper.rn. Worth a look when streaming (the M4
+  ambition) is on the table, not for accuracy.
+- **NVIDIA Canary 1B v2** (with Parakeet v3, Aug 2025): better than
+  Parakeet on average (FLEURS 8.40 vs 11.52 across 24 languages), 1 B
+  parameters, encoder–decoder; no ggml/whisper.rn runtime, so not on the
+  phone.
+- **Moonshine tiny uk** (Sept 2025): 27 M parameters, Ukrainian-only, WER
+  24.54 on Common Voice per egorsmkv/speech-recognition-uk. Too weak.
+- **Ukrainian-only NVIDIA FastConformer hybrid** (`stt_ua_fastconformer_
+  hybrid_large_pc`, 4.52 % on Common Voice) and `Yehor/w2v-bert-uk`
+  (6.6 %): better on pure Ukrainian, useless for the mixed speech §1 is
+  about, and whisper.rn's Parakeet path reads TDT only (`n_tdt_durations`),
+  not hybrid RNNT/CTC.
+- **Whisper fine-tunes** for Ukrainian (large-v2, 13.72 % on Common Voice):
+  1.5 B parameters for a worse number than Parakeet's 6.79 / 5.10 on
+  FLEURS / CoVoST.
+- **whisper.rn 0.7.4** (Aug 2026): Whisper and Parakeet, nothing else.
+
+**So Parakeet TDT 0.6B v3 stays**, and q8_0 in the bundle is the best of
+it. The one thing to revisit is FluidAudio's CoreML Parakeet: the same
+model on the Neural Engine, if transcription time on the phone ever needs
+to drop below what whisper.rn gives.
+
+---
+
 ## 1e. Gemini in front of Parakeet — built 2026-08-28
 
 The owner decided what §1d left open, and decided it both ways: **Gemini 3.5
