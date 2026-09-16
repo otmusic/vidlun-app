@@ -16,7 +16,7 @@
         "NSFaceIDUsageDescription": "Face ID opens Vidlun when the journal lock is on, so nobody else holding your device can read your entries.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "37",
+      "buildNumber": "38",
       "appleTeamId": "M3K99W5FFQ"
     },
     "android": {
@@ -58,7 +58,7 @@
       [
         "./plugins/withBundledModel",
         {
-          "file": "assets/model/ggml-parakeet-tdt-0.6b-v3-q4_0.bin"
+          "file": "assets/model/ggml-parakeet-tdt-0.6b-v3-q4_k.bin"
         }
       ]
     ],

@@ -1,6 +1,6 @@
 // Puts the speech model into the app bundle as a plain resource.
 //
-// The file is 356 MB, which rules out the two ways assets usually travel:
+// The file is 416 MB, which rules out the two ways assets usually travel:
 // Metro would try to hash and bundle it, and expo-asset would copy it at
 // runtime. A resource in the Xcode project is copied by the build and read
 // in place by whisper.rn, the way the fonts go in — the same call expo-font

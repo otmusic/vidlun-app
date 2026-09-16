@@ -1410,6 +1410,12 @@ Build 37 (1.2) archived and uploaded at 14:38 EEST on 2026-09-16: app and
 widget 1.2 (37), the model in the archive, 383 MB on disk. The owner tests
 it from TestFlight over the store install before submitting.
 
+The same afternoon the owner asked for the file one level up: build 38
+bundles q4_k (416 MB, the better Ukrainian mean in the §1c table) in place
+of q4_0. `SPEECH_MODEL`, `scripts/fetch-model.sh` and the plugin's file in
+app.json move together; the Xcode project reference was renamed in place
+rather than regenerated.
+
 **Left for the release:** version 1.2, build 37; the store description and
 What's New; the legal site redeploy; App Store Connect's asset pack can be
 archived, and `scripts/asc-submit.py` submits versions alone from now on.
