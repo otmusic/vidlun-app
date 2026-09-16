@@ -1406,6 +1406,10 @@ review with, now lives only in the privacy policy linked from the first
 screen. The "I agree" button stays. If App Review asks, the line comes
 back as `onboarding.privacyAi` (git history, commit before this one).
 
+Build 37 (1.2) archived and uploaded at 14:38 EEST on 2026-09-16: app and
+widget 1.2 (37), the model in the archive, 383 MB on disk. The owner tests
+it from TestFlight over the store install before submitting.
+
 **Left for the release:** version 1.2, build 37; the store description and
 What's New; the legal site redeploy; App Store Connect's asset pack can be
 archived, and `scripts/asc-submit.py` submits versions alone from now on.
