@@ -1,42 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
-import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
-import type { SpeechEngine } from '@/domain/speech/SpeechEngine';
 import type { Locale, Translate, TranslationKey } from '@/i18n';
 import { legalDocument, type LegalDocumentKind } from '@/i18n/legal';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
-import { Blob, WaveMark } from '../components/WaveMark';
+import { WaveMark } from '../components/WaveMark';
 import { useTheme } from '../theme/ThemeProvider';
 import { LegalScreen } from './LegalScreen';
 import { Screen } from './Screen';
 
-type Step = 'welcome' | 'model' | 'privacy' | 'microphone';
+type Step = 'welcome' | 'privacy' | 'microphone';
 
 /*
- * The download comes last, as the drawing has it, and only for people whose
- * language needs the model: the phone reads English by itself, and asking
- * someone for 668 MB they will never use is where the app ends for them.
- * The tap on that screen is the consent to the transfer over whatever
- * connection the phone is on — nothing downloads before it. Where the system
- * delivered the model with the install there is nothing to ask either.
+ * Three screens and no download: the model rides inside the app since 1.2,
+ * so the first entry can be spoken the moment the microphone is granted.
  */
-const WITH_DOWNLOAD: readonly Step[] = ['welcome', 'privacy', 'microphone', 'model'];
-const WITHOUT_MODEL: readonly Step[] = ['welcome', 'privacy', 'microphone'];
+const STEPS: readonly Step[] = ['welcome', 'privacy', 'microphone'];
 
 const KICKER: Record<Step, TranslationKey> = {
   welcome: 'onboarding.step1Kicker',
-  model: 'onboarding.step4Kicker',
   privacy: 'onboarding.step2Kicker',
   microphone: 'onboarding.step3Kicker',
 };
 
 const HEADLINE: Record<Step, TranslationKey> = {
   welcome: 'onboarding.welcomeTitle',
-  model: 'onboarding.modelTitle',
   privacy: 'onboarding.privacyTitle',
   microphone: 'onboarding.micTitle',
 };
@@ -46,47 +37,33 @@ const SIDE_INSET = 28;
 
 const ACTION: Record<Step, TranslationKey> = {
   welcome: 'onboarding.welcomeAction',
-  model: 'onboarding.modelAction',
   privacy: 'onboarding.privacyAction',
   microphone: 'onboarding.micContinue',
 };
 
 /**
  * The screens before the first entry, in the order §8 asks for: what this is,
- * the one download and the tap that starts it, what happens to your voice,
- * and only then the microphone. Being asked for a microphone by something
- * that has not said where the recording goes is the moment people decide an
- * app is not trustworthy.
+ * what happens to your voice, and only then the microphone. Being asked for
+ * a microphone by something that has not said where the recording goes is
+ * the moment people decide an app is not trustworthy.
  *
  * The frame never moves: rail, kicker, then the button in the same place.
  * Only the middle changes, so the screens read as one thing with an end
- * rather than separate demands. Only the model screen has a second button:
- * the privacy screen is where the person agrees to the text of an entry
- * going to the analysis (App Review 5.1.2(i) wants that said and agreed to
- * before anything is sent), so nothing may skip past it, and the last screen
- * leads only into the system's microphone question (5.1.1(iv)).
+ * rather than separate demands. Each screen has one button: the privacy
+ * screen is where the person agrees to the text of an entry going to the
+ * analysis (App Review 5.1.2(i) wants that said and agreed to before
+ * anything is sent), so nothing may skip past it, and the last screen leads
+ * only into the system's microphone question (5.1.1(iv)).
  */
 export function OnboardingScreen(props: {
   readonly t: Translate;
   readonly locale: Locale;
-  readonly model: SpeechModelState;
-  /** What will read this person's takes; `apple` needs no download at all. */
-  readonly engine: SpeechEngine;
-  /** Starts the one-time download. Called from the tap that means it, never on its own. */
-  readonly onFetchModel: () => void;
   readonly onAskMicrophone: () => Promise<PermissionStatus>;
   readonly onDone: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const [step, setStep] = useState<Step>('welcome');
-  /*
-   * Read as it stands rather than remembered from the first render: the
-   * system may deliver the model while the welcome screen is up — a pack
-   * that came with the install is found a moment after launch — and the
-   * download step must then not be asked of anyone.
-   */
-  const steps = props.engine === 'apple' || props.model.kind === 'ready' ? WITHOUT_MODEL : WITH_DOWNLOAD;
-  const index = Math.max(0, steps.indexOf(step));
+  const index = Math.max(0, STEPS.indexOf(step));
   /*
    * The terms or the privacy policy, opened from the first screen's footer.
    * Held here rather than in the flow: onboarding runs before the capture
@@ -94,18 +71,9 @@ export function OnboardingScreen(props: {
    */
   const [reading, setReading] = useState<LegalDocumentKind | null>(null);
   const { t } = props;
-  const isLast = index === steps.length - 1;
-  const modelReady = props.model.kind === 'ready';
+  const isLast = index === STEPS.length - 1;
 
-  /* Landed while the download screen was up: there is nothing left to ask. */
-  useEffect(() => {
-    // The download finished under the last screen: there is nothing left to say.
-    if (step === 'model' && modelReady) {
-      props.onDone();
-    }
-  }, [modelReady, props, step]);
-
-  const next = (): Step => steps[index + 1] ?? 'microphone';
+  const next = (): Step => STEPS[index + 1] ?? 'microphone';
 
   if (reading !== null) {
     return (
@@ -119,24 +87,7 @@ export function OnboardingScreen(props: {
     );
   }
 
-  /* Whether the tap that starts the download has been made. */
-  const fetching = props.model.kind === 'fetching' || props.model.kind === 'failed';
-
   const advance = (): void => {
-    if (step === 'model') {
-      if (fetching) {
-        // The transfer runs on under home, which carries its progress from here.
-        props.onDone();
-
-        return;
-      }
-
-      // The tap is the consent; the screen stays to show the transfer start.
-      props.onFetchModel();
-
-      return;
-    }
-
     if (step === 'microphone') {
       // The answer does not gate anything: someone who says no still has a
       // working journal, and asking twice would be worse than either outcome.
@@ -162,15 +113,15 @@ export function OnboardingScreen(props: {
 
   return (
     <Screen inset={{ top: 74, sides: SIDE_INSET, bottom: 40 }} style={{ gap: 0 }}>
-      <ProgressRail reached={index} of={steps.length} />
+      <ProgressRail reached={index} of={STEPS.length} />
 
       <AppText variant="kicker" style={{ marginTop: 24 }}>
         {t(KICKER[step])}
       </AppText>
 
-      {/* Centred where there is room, scrolling where there is not: an SE holds
-          neither the model screen nor the privacy screen in one view, and a
-          headline hidden under the button was how the third review saw them. */}
+      {/* Centred where there is room, scrolling where there is not: an SE does
+          not hold the privacy screen in one view, and a headline hidden under
+          the button was how the third review saw it. */}
       <ScrollView
         /* The scroller reaches into the side margins so the headline's blob,
            drawn past the text's left edge, is not clipped at the margin. */
@@ -190,51 +141,12 @@ export function OnboardingScreen(props: {
         ) : null}
         <Headline>{t(HEADLINE[step])}</Headline>
         {step === 'welcome' ? <Lede>{t('onboarding.welcomeBody')}</Lede> : null}
-        {step === 'model' ? (
-          <>
-            <View style={{ gap: 16, maxWidth: 320 }}>
-              <AppText variant="body" color="ink" style={{ fontSize: 16, lineHeight: 25 }}>
-                {t('onboarding.modelWhy')}
-              </AppText>
-              <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
-                {t('onboarding.modelBody1')}
-              </AppText>
-              <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
-                {t('onboarding.modelBody2')}
-              </AppText>
-              <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
-                {t('onboarding.modelBody3')}
-              </AppText>
-            </View>
-            {fetching ? <ProgressCard model={props.model} t={t} /> : <SizeCard t={t} />}
-          </>
-        ) : null}
-        {step === 'privacy' ? (
-          <View style={{ gap: 18, maxWidth: 320 }}>
-            <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
-              {t('onboarding.privacyOnDevice')}
-            </AppText>
-            <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
-              {t('onboarding.privacyAi')}
-            </AppText>
-            <AppText variant="body" color="inkSoft" style={{ fontSize: 16, lineHeight: 25 }}>
-              {t('onboarding.privacyKeep')}
-            </AppText>
-          </View>
-        ) : null}
+        {step === 'privacy' ? <Lede>{t('onboarding.privacyOnDevice')}</Lede> : null}
         {step === 'microphone' ? <Lede>{t('onboarding.micBody')}</Lede> : null}
       </ScrollView>
 
       <View style={{ gap: 4 }}>
-        <Button
-          label={t(step === 'model' && fetching ? 'onboarding.modelDone' : ACTION[step])}
-          onPress={advance}
-        />
-        {step === 'model' && !fetching ? (
-          /* Consent has to be refusable. Later is home, which offers the
-             download again in its own line. */
-          <Button label={t('onboarding.modelLater')} variant="ghost" onPress={props.onDone} />
-        ) : null}
+        <Button label={t(ACTION[step])} onPress={advance} />
       </View>
       {step === 'welcome' ? (
         /* The drawing puts the agreement under the first screen only: the tap
@@ -319,18 +231,10 @@ function ProgressRail(props: { readonly reached: number; readonly of: number }):
  * highlighter runs past the edge of what it marks. It is decoration and is
  * hidden from screen readers; the headline itself carries the meaning.
  */
+/** The headline alone: the lime blob the drawing put behind it went at the owner's request. */
 function Headline(props: { readonly children: React.ReactNode }): React.JSX.Element {
-  const theme = useTheme();
-
   return (
     <View style={{ alignSelf: 'flex-start' }}>
-      <View
-        pointerEvents="none"
-        importantForAccessibility="no"
-        style={{ position: 'absolute', left: -12, top: -19 }}
-      >
-        <Blob width={88} fill={theme.palette.lime} line={theme.palette.ink} />
-      </View>
       <AppText variant="hero">{props.children}</AppText>
     </View>
   );
@@ -341,87 +245,5 @@ function Lede(props: { readonly children: React.ReactNode }): React.JSX.Element 
     <AppText variant="lede" color="inkSoft" style={{ maxWidth: 310 }}>
       {props.children}
     </AppText>
-  );
-}
-
-/**
- * The drawing's tinted card on the download screen, carrying the number
- * rather than a bar: nothing is moving yet, and a bar at nought would say
- * something had started.
- */
-/**
- * The drawing's download state on the last screen: the line with its
- * percentage and a hairline the ink fills, in the same card the size sat in
- * before the tap. A failure is said in the same place; home offers the retry.
- */
-function ProgressCard(props: { readonly model: SpeechModelState; readonly t: Translate }): React.JSX.Element {
-  const theme = useTheme();
-  const percent =
-    props.model.kind === 'fetching' && props.model.totalBytes !== null && props.model.totalBytes > 0
-      ? Math.min(99, Math.floor((props.model.writtenBytes / props.model.totalBytes) * 100))
-      : null;
-  const line =
-    props.model.kind === 'failed'
-      ? props.t('home.voiceFailed')
-      : percent === null
-        ? props.t('home.voiceFetching')
-        : `${props.t('home.voiceFetching')} · ${String(percent)}%`;
-
-  return (
-    <View
-      style={{
-        gap: 9,
-        paddingVertical: 16,
-        paddingHorizontal: 18,
-        borderRadius: 20,
-        backgroundColor: theme.palette.limeSoft,
-      }}
-    >
-      <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13.5, lineHeight: 19 }}>
-        {line}
-      </AppText>
-      {props.model.kind === 'failed' ? null : (
-        <View
-          style={{
-            height: 3,
-            borderRadius: 999,
-            backgroundColor: 'rgba(0,0,0,0.10)',
-            overflow: 'hidden',
-          }}
-        >
-          <View
-            style={{
-              height: 3,
-              width: `${percent ?? 0}%`,
-              borderRadius: 999,
-              backgroundColor: theme.palette.ink,
-            }}
-          />
-        </View>
-      )}
-    </View>
-  );
-}
-
-function SizeCard(props: { readonly t: Translate }): React.JSX.Element {
-  const theme = useTheme();
-
-  return (
-    <View
-      style={{
-        gap: 6,
-        paddingVertical: 16,
-        paddingHorizontal: 18,
-        borderRadius: 20,
-        backgroundColor: theme.palette.limeSoft,
-      }}
-    >
-      <AppText variant="caption" color="ink" style={{ textTransform: 'none', letterSpacing: 0 }}>
-        {props.t('onboarding.modelSize')}
-      </AppText>
-      <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13.5, lineHeight: 19 }}>
-        {props.t('onboarding.modelWifi')}
-      </AppText>
-    </View>
   );
 }

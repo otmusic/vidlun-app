@@ -4,8 +4,6 @@ import { Linking, Pressable, ScrollView, View } from 'react-native';
 import type { DailyMood } from '@/application/use-cases/GetWeekSummary';
 import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
-import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
-import type { SpeechEngine } from '@/domain/speech/SpeechEngine';
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import type { Milestone } from '@/domain/entities/Milestone';
 import type { ParkedTake } from '@/domain/ports/IParkedTake';
@@ -16,7 +14,6 @@ import { AppText } from '../components/AppText';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { RecordButton } from '../components/RecordButton';
-import { CheckShape } from '../components/Shapes';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 
 import { WeekStrip } from '../components/WeekStrip';
@@ -35,24 +32,15 @@ export interface HomeScreenProps {
   readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
   readonly today: Date;
-  readonly onDelete: (id: string) => void;
-  readonly onOpenHistory: () => void;
   readonly onOpenStats: () => void;
   readonly onOpen: (entry: MoodEntry) => void;
+  readonly onDelete: (id: string) => void;
   readonly t: Translate;
   readonly onRecord: () => void;
   readonly onWrite: () => void;
-  /** Whether the phone can hear yet: the speech model's state. */
-  readonly voice: SpeechModelState;
-  /** What reads a take here; the phone itself needs no model on disk. */
-  readonly engine: SpeechEngine;
-  /** Starts the model download, or tries it again after a failure. */
-  readonly onFetchVoice: () => void;
   /** A take recorded before the phone could hear, waiting to be read. */
   readonly parked: ParkedTake | null;
   readonly onContinueParked: () => void;
-  /** Opens the waiting screen: where the download stands, or the offer to start it. */
-  readonly onShowParked: () => void;
   /** Where the microphone stands with the system; `denied` is named, not retried. */
   readonly mic: PermissionStatus;
   /** Every milestone; the strip marks the days in its week. */
@@ -63,7 +51,6 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
-  const canHear = props.engine === 'apple' || props.voice.kind === 'ready';
   /*
    * A refused microphone is the one state the app cannot change from inside:
    * the tap is left to the flow, which asks when it may, and the line below
@@ -73,15 +60,15 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   /** True after a tap on the microphone that could not record yet. */
   const [nudged, setNudged] = useState(false);
   const streak = props.home?.streakDays ?? 0;
-  const recent = props.home?.recentEntries ?? [];
   const week = props.home?.week ?? [];
+  const recent = props.home?.recentEntries ?? [];
 
   /*
    * Home scrolls. It used to be a fixed column with the record button in a
-   * flex:1 middle, which held only while the recent list was short — the
-   * moment it filled, the middle was squeezed and the button climbed over the
-   * question. Nothing here competes for height any more: every block is its
-   * own size and the page moves under them.
+   * flex:1 middle, which held only while the blocks under it were short —
+   * the moment they filled, the middle was squeezed and the button climbed
+   * over the question. Nothing here competes for height any more: every
+   * block is its own size and the page moves under them.
    */
   return (
     <ScrollView
@@ -214,13 +201,9 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             />
           </View>
         ) : (
-          <VoiceLine
-            voice={props.voice}
-            engine={props.engine}
-            nudged={nudged}
-            t={props.t}
-            onFetch={props.onFetchVoice}
-          />
+          <AppText variant="body" color="inkSoft">
+            {props.t('home.recordHint')}
+          </AppText>
         )}
         {/*
           * hitSlop rather than a 44pt box: a padded target here would push the
@@ -239,11 +222,11 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           </AppText>
         </Pressable>
         {/*
-          * Offered, not sprung: the take said before the phone could hear is
-          * read when the person asks, not the moment the model lands under
-          * whatever they were doing.
+          * A take parked by an earlier version, before the model came with
+          * the app: offered, not sprung — read when the person asks, not the
+          * moment they open the app over whatever they were doing.
           */}
-        {props.parked !== null && canHear ? (
+        {props.parked !== null ? (
           <Pressable
             accessibilityRole="button"
             onPress={props.onContinueParked}
@@ -254,22 +237,6 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
               {`${props.t('home.parkedReady')} ›`}
             </AppText>
           </Pressable>
-        ) : null}
-        {/*
-          * Until the model lands the take has to be seen to be waiting: a
-          * recording that vanished into a download is one the person will
-          * assume is lost. The card leads to the waiting screen, which says
-          * where the download stands or offers to start it.
-          */}
-        {props.parked !== null && !canHear ? (
-          <ParkedWaitingCard
-            take={props.parked}
-            voice={props.voice}
-            locale={props.locale}
-            today={props.today}
-            t={props.t}
-            onPress={props.onShowParked}
-          />
         ) : null}
       </View>
 
@@ -297,49 +264,30 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         />
       )}
 
-      <View style={{ gap: 12 }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-            marginTop: 6,
-          }}
-        >
-          <AppText variant="caption" color="inkFaint">
-            {props.t('home.recentTitle')}
-          </AppText>
-          {recent.length > 0 ? (
-            <Pressable accessibilityRole="button" onPress={props.onOpenHistory} hitSlop={16}>
-              <AppText variant="secondary" color="accent">
-                {props.t('home.openHistory')}
-              </AppText>
-            </Pressable>
-          ) : null}
-        </View>
-        {recent.length === 0 ? (
-          <AppText variant="body" color="inkFaint">
-            {props.t('home.emptyState')}
-          </AppText>
-        ) : (
-          <SwipeGroup>
-            <View style={{ gap: 12 }}>
-              {recent.map((entry) => (
-                <EntryRow
-                  key={entry.id}
-                  entry={entry}
-                  vocabulary={props.vocabulary}
-                  locale={props.locale}
-                  today={props.today}
-                  t={props.t}
-                  onOpen={props.onOpen}
-                  onDelete={props.onDelete}
-                />
-              ))}
-            </View>
-          </SwipeGroup>
-        )}
-      </View>
+
+      {/*
+        * The last three entries, as a list and nothing more: no heading, no
+        * "all" link — the journal tab is where entries live — and nothing at
+        * all while there are none. Owner's call on the first day on sale.
+        */}
+      {recent.length === 0 ? null : (
+        <SwipeGroup>
+          <View style={{ gap: 12, marginTop: 6 }}>
+            {recent.map((entry) => (
+              <EntryRow
+                key={entry.id}
+                entry={entry}
+                vocabulary={props.vocabulary}
+                locale={props.locale}
+                today={props.today}
+                t={props.t}
+                onOpen={props.onOpen}
+                onDelete={props.onDelete}
+              />
+            ))}
+          </View>
+        </SwipeGroup>
+      )}
     </ScrollView>
   );
 }
@@ -486,156 +434,13 @@ function MonthReadyCard(props: {
   );
 }
 
-/**
- * The take said before the phone could hear, shown waiting under the
- * microphone: when it was said, and what it is waiting for.
- */
-function ParkedWaitingCard(props: {
-  readonly take: ParkedTake;
-  readonly voice: SpeechModelState;
-  readonly locale: Locale;
-  readonly today: Date;
-  readonly t: Translate;
-  readonly onPress: () => void;
-}): React.JSX.Element {
-  const theme = useTheme();
-  const at = props.take.recordedAt;
-  const time = at.toLocaleTimeString(props.locale, { hour: '2-digit', minute: '2-digit' });
-  const sameDay = at.toDateString() === props.today.toDateString();
-  const when = sameDay
-    ? time
-    : `${at.toLocaleDateString(props.locale, { day: 'numeric', month: 'short' })}, ${time}`;
-  const moving = props.voice.kind === 'fetching';
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={props.onPress}
-      style={{
-        alignSelf: 'stretch',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 14,
-        marginTop: 4,
-        borderRadius: 22,
-        borderWidth: 1,
-        borderColor: theme.palette.line,
-        backgroundColor: theme.palette.paper,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-      }}
-    >
-      <View
-        style={{
-          width: 34,
-          height: 34,
-          borderRadius: 17,
-          borderWidth: 1.5,
-          borderColor: theme.palette.line,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <CheckShape color={theme.palette.accentInk} size={14} />
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="body">{props.t('home.parkedWaitingAt', { time: when })}</AppText>
-        <AppText variant="secondary" color="inkSoft" style={{ lineHeight: 19 }}>
-          {props.t(moving ? 'home.parkedWaitingFetching' : 'home.parkedWaitingAbsent')}
-        </AppText>
-      </View>
-      <AppText variant="body" color="inkFaint">
-        ›
-      </AppText>
-    </Pressable>
-  );
-}
-
 /** True when yesterday sits in the strip with nothing in it. */
 function yesterdayEmpty(week: readonly DailyMood[]): boolean {
   return week.length >= 2 && week[week.length - 2]?.entryCount === 0;
 }
 
 
-/**
- * The line under the microphone. The hint while the phone can hear; while it
- * cannot, the download in the drawing's own words — with the percentage when
- * the server said how much there is — a retry once it has failed, and the
- * offer to start it where nothing has: the app never starts 668 MB by
- * itself, so someone who said "later" at onboarding finds the way here.
- */
-function VoiceLine(props: {
-  readonly voice: SpeechModelState;
-  readonly engine: SpeechEngine;
-  readonly nudged: boolean;
-  readonly t: Translate;
-  readonly onFetch: () => void;
-}): React.JSX.Element {
-  const theme = useTheme();
-  const colour = props.nudged ? 'ink' : 'inkSoft';
-
-  // The phone reads by itself: whatever the model is up to is not this line's business.
-  if (props.engine === 'apple' || props.voice.kind === 'ready') {
-    return (
-      <AppText variant="body" color="inkSoft">
-        {props.t('home.recordHint')}
-      </AppText>
-    );
-  }
-
-  if (props.voice.kind === 'absent' || props.voice.kind === 'failed') {
-    const failed = props.voice.kind === 'failed';
-
-    return (
-      <View style={{ alignItems: 'center', gap: 8, width: 250 }}>
-        <AppText variant="secondary" color={colour} align="center" style={{ lineHeight: 20 }}>
-          {props.t(failed ? 'home.voiceFailed' : 'home.voiceAbsent')}
-        </AppText>
-        <QuietLink label={props.t(failed ? 'failure.retry' : 'home.voiceDownload')} onPress={props.onFetch} />
-      </View>
-    );
-  }
-
-  const percent =
-    props.voice.kind === 'fetching' && props.voice.totalBytes !== null && props.voice.totalBytes > 0
-      ? Math.min(99, Math.floor((props.voice.writtenBytes / props.voice.totalBytes) * 100))
-      : null;
-
-  /*
-   * The drawing's download state: the line with its percentage, and under it
-   * a hairline bar the accent fills. Two pixels tall on purpose — progress,
-   * not a control.
-   */
-  return (
-    <View style={{ alignItems: 'center', gap: 9, width: 232 }}>
-      <AppText variant="secondary" color={colour} align="center" style={{ lineHeight: 20 }}>
-        {percent === null
-          ? props.t('home.voiceFetching')
-          : `${props.t('home.voiceFetching')} · ${String(percent)}%`}
-      </AppText>
-      <View
-        style={{
-          width: 132,
-          height: 2,
-          borderRadius: 999,
-          backgroundColor: theme.palette.line,
-          overflow: 'hidden',
-        }}
-      >
-        <View
-          style={{
-            height: 2,
-            width: `${percent ?? 0}%`,
-            borderRadius: 999,
-            backgroundColor: theme.palette.accent,
-          }}
-        />
-      </View>
-    </View>
-  );
-}
-
-/** The drawing's underlined accent link, as the voice states set it. */
+/** The drawing's underlined accent link. */
 function QuietLink(props: { readonly label: string; readonly onPress: () => void }): React.JSX.Element {
   const theme = useTheme();
 

@@ -24,7 +24,7 @@ export class SettingsStore implements ISettingsStore {
     if (raw === null) {
       const locale = this.detect();
 
-      return { ...DEFAULT_SETTINGS, locale, speechLanguage: locale };
+      return { ...DEFAULT_SETTINGS, locale };
     }
 
     try {
@@ -51,7 +51,6 @@ function merge(parsed: unknown): Settings {
 
   const record = parsed as Record<string, unknown>;
   const locale = record['locale'];
-  const speechLanguage = record['speechLanguage'];
   const theme = record['theme'];
 
   return {
@@ -60,15 +59,6 @@ function merge(parsed: unknown): Settings {
         ? record['keepRecordings']
         : DEFAULT_SETTINGS.keepRecordings,
     locale: locale === 'en' || locale === 'uk' ? locale : DEFAULT_SETTINGS.locale,
-    // Absent in every record written before the field existed. Those people
-    // get what a first run would have given them — their interface language —
-    // rather than a default that ignores the phone they set up on.
-    speechLanguage:
-      speechLanguage === 'en' || speechLanguage === 'uk'
-        ? speechLanguage
-        : locale === 'en' || locale === 'uk'
-          ? locale
-          : DEFAULT_SETTINGS.speechLanguage,
     theme:
       theme === 'light' || theme === 'dark' || theme === 'system'
         ? theme

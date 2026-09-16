@@ -4,14 +4,10 @@ import Svg, { Path } from 'react-native-svg';
 
 import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings, ThemeChoice } from '@/domain/ports/ISettings';
-import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
-import type { SpeechEngine, SpeechLanguage } from '@/domain/speech/SpeechEngine';
 import type { Translate, TranslationKey } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
-import { Button } from '../components/Button';
-import { ModalSheet } from '../components/ModalSheet';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
@@ -61,20 +57,12 @@ export function ProfileScreen(props: {
   /** Mails a note to support; rejects when it could not be delivered. */
   /** Opens the note-to-support sheet, which lives above the tabs rather than in here. */
   readonly onWriteFeedback: () => void;
-  /** What reads this person's takes, and whether the phone could read English by itself. */
-  readonly engine: SpeechEngine;
-  readonly appleAvailable: boolean;
-  readonly model: SpeechModelState;
-  readonly onFetchModel: () => void;
-  readonly onRemoveModel: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
   const { settings, t } = props;
   const [pickingTime, setPickingTime] = useState(false);
-  const [pickingSpeech, setPickingSpeech] = useState(false);
-  const [confirmingRemoval, setConfirmingRemoval] = useState(false);
 
   return (
     <ScrollView
@@ -146,68 +134,6 @@ export function ProfileScreen(props: {
 
       <Theme settings={settings} t={t} onChange={props.onChange} />
 
-      {/*
-        * The drawing's speech section: what you speak, what reads it, and
-        * the model as a thing with a state rather than a step nobody asked
-        * for. The engine is a fact here, not a control — it follows the
-        * language, and the language is the only thing to choose.
-        */}
-      <Section label={t('profile.speechSection')}>
-        <Row
-          title={t('profile.speechLang')}
-          hint={t('profile.speechLangHint')}
-          onPress={() => {
-            setPickingSpeech(true);
-          }}
-        >
-          <AppText variant="body" color="inkSoft" style={{ fontSize: 15 }}>
-            {t(speechLabel(settings.speechLanguage))}
-          </AppText>
-          <AppText variant="body" color="inkFaint">
-            ›
-          </AppText>
-        </Row>
-        <Hairline />
-        <Row
-          title={t('profile.recBy')}
-          hint={t(props.engine === 'apple' ? 'profile.recHintApple' : 'profile.recHintVidlun')}
-        >
-          <AppText variant="body" color="inkSoft" style={{ fontSize: 15 }}>
-            {t(props.engine === 'apple' ? 'profile.recApple' : 'profile.recVidlun')}
-          </AppText>
-        </Row>
-        <Hairline />
-        <Row
-          title={t('profile.modelRow')}
-          hint={modelHint(props.model, t)}
-          under={props.model.kind === 'fetching' ? <ProgressHairline model={props.model} /> : null}
-        >
-          {props.model.kind === 'ready' ? (
-            <OutlinePill
-              label={t('profile.modelDel')}
-              muted
-              onPress={() => {
-                /*
-                 * Someone the phone reads for loses nothing by deleting, so
-                 * nothing is asked; someone who speaks Ukrainian loses their
-                 * voice until it is back, and is told before it goes.
-                 */
-                if (props.engine === 'apple') {
-                  props.onRemoveModel();
-                } else {
-                  setConfirmingRemoval(true);
-                }
-              }}
-            />
-          ) : props.model.kind === 'fetching' ? null : (
-            <OutlinePill label={t('profile.modelGet')} onPress={props.onFetchModel} />
-          )}
-        </Row>
-      </Section>
-      <AppText variant="secondary" color="inkFaint" style={{ marginTop: -16, marginBottom: 26 }}>
-        {t('profile.modelNote')}
-      </AppText>
-
       <Section label={t('profile.audio')}>
         <Row
           title={t('profile.keepAudio')}
@@ -244,9 +170,6 @@ export function ProfileScreen(props: {
           />
         </Row>
       </Section>
-      <AppText variant="secondary" color="inkFaint" style={{ marginTop: 10, marginBottom: 26 }}>
-        {t('profile.audioNote')}
-      </AppText>
 
       {/* No drawing for this section either; it wears Row like the rest. */}
       <Section label={t('profile.security')}>
@@ -379,30 +302,6 @@ export function ProfileScreen(props: {
         })}
       </View>
 
-      <SpeechSheet
-        open={pickingSpeech}
-        chosen={settings.speechLanguage}
-        appleAvailable={props.appleAvailable}
-        t={t}
-        onPick={(speechLanguage) => {
-          setPickingSpeech(false);
-          props.onChange({ ...settings, speechLanguage });
-        }}
-        onClose={() => {
-          setPickingSpeech(false);
-        }}
-      />
-      <RemoveModelSheet
-        open={confirmingRemoval}
-        t={t}
-        onRemove={() => {
-          setConfirmingRemoval(false);
-          props.onRemoveModel();
-        }}
-        onClose={() => {
-          setConfirmingRemoval(false);
-        }}
-      />
       <TimeSheet
         open={pickingTime}
         settings={settings}
@@ -630,8 +529,6 @@ function Row(props: {
   readonly hint: string;
   readonly children: React.ReactNode;
   readonly onPress?: () => void;
-  /** Drawn under the hint, in the row's own column: a progress hairline, say. */
-  readonly under?: React.ReactNode;
 }): React.JSX.Element {
   const body = (
     <View
@@ -655,7 +552,6 @@ function Row(props: {
         >
           {props.hint}
         </AppText>
-        {props.under}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{props.children}</View>
     </View>
@@ -893,196 +789,3 @@ function clockOf(settings: Settings): string {
   return `${String(settings.reminderHour).padStart(2, '0')}:${String(settings.reminderMinute).padStart(2, '0')}`;
 }
 
-function speechLabel(language: SpeechLanguage): TranslationKey {
-  return language === 'en' ? 'profile.speechEn' : 'profile.speechUk';
-}
-
-function modelHint(model: SpeechModelState, t: Translate): string {
-  if (model.kind === 'ready') {
-    return t('profile.modelReady');
-  }
-
-  if (model.kind !== 'fetching') {
-    return t('profile.modelNone');
-  }
-
-  const percent = percentOf(model);
-
-  return percent === null ? t('profile.modelDl') : `${t('profile.modelDl')} · ${String(percent)}%`;
-}
-
-function percentOf(model: SpeechModelState): number | null {
-  return model.kind === 'fetching' && model.totalBytes !== null && model.totalBytes > 0
-    ? Math.min(99, Math.floor((model.writtenBytes / model.totalBytes) * 100))
-    : null;
-}
-
-/** The drawing's hairline between rows of one card. */
-function Hairline(): React.JSX.Element {
-  const theme = useTheme();
-
-  return <View style={{ height: 1, backgroundColor: theme.palette.line }} />;
-}
-
-/** Two pixels of progress under the model's row, the accent filling them. */
-function ProgressHairline(props: { readonly model: SpeechModelState }): React.JSX.Element {
-  const theme = useTheme();
-
-  return (
-    <View
-      style={{
-        height: 2,
-        borderRadius: 999,
-        backgroundColor: theme.palette.line,
-        overflow: 'hidden',
-        marginTop: 6,
-      }}
-    >
-      <View
-        style={{
-          height: 2,
-          width: `${percentOf(props.model) ?? 0}%`,
-          borderRadius: 999,
-          backgroundColor: theme.palette.accent,
-        }}
-      />
-    </View>
-  );
-}
-
-/**
- * The drawing's small outlined button at the end of a row. Muted for the
- * one action that takes something away, so it reads as available rather
- * than as the row's suggestion.
- */
-function OutlinePill(props: {
-  readonly label: string;
-  readonly onPress: () => void;
-  readonly muted?: boolean;
-}): React.JSX.Element {
-  const theme = useTheme();
-  const colour = props.muted === true ? theme.palette.inkSoft : theme.palette.ink;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={props.onPress}
-      hitSlop={8}
-      style={{
-        borderWidth: 1.5,
-        borderColor: props.muted === true ? theme.palette.lineStrong : theme.palette.ink,
-        borderRadius: 999,
-        paddingVertical: 10,
-        paddingHorizontal: 18,
-      }}
-    >
-      <AppText variant="secondary" style={{ color: colour }}>
-        {props.label}
-      </AppText>
-    </Pressable>
-  );
-}
-
-/**
- * Which language is spoken into the journal. Each option says what will
- * read it, because that is the consequence being chosen: the model for
- * Ukrainian and the mix, the phone itself for English where it can.
- */
-function SpeechSheet(props: {
-  readonly open: boolean;
-  readonly chosen: SpeechLanguage;
-  readonly appleAvailable: boolean;
-  readonly t: Translate;
-  readonly onPick: (language: SpeechLanguage) => void;
-  readonly onClose: () => void;
-}): React.JSX.Element {
-  const theme = useTheme();
-  const { t } = props;
-  const options: readonly { readonly language: SpeechLanguage; readonly engine: TranslationKey }[] = [
-    { language: 'uk', engine: 'profile.recVidlun' },
-    { language: 'en', engine: props.appleAvailable ? 'profile.recApple' : 'profile.recVidlun' },
-  ];
-
-  return (
-    <ModalSheet open={props.open} closeLabel={t('common.cancel')} onClose={props.onClose}>
-      <AppText variant="caption" color="inkFaint" style={{ marginBottom: 14 }}>
-        {t('profile.speechLang')}
-      </AppText>
-      <View style={{ gap: 2 }}>
-        {options.map((option) => {
-          const on = option.language === props.chosen;
-
-          return (
-            <Pressable
-              key={option.language}
-              accessibilityRole="button"
-              accessibilityState={{ selected: on }}
-              onPress={() => {
-                props.onPick(option.language);
-              }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 14,
-                minHeight: 44,
-                paddingVertical: 12,
-                paddingHorizontal: 4,
-              }}
-            >
-              <View style={{ flex: 1, gap: 3 }}>
-                <AppText variant="body" style={{ fontSize: 16 }}>
-                  {t(speechLabel(option.language))}
-                </AppText>
-                <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13, letterSpacing: 0 }}>
-                  {t(option.engine)}
-                </AppText>
-              </View>
-              {on ? (
-                <Svg width={17} height={17} viewBox="0 0 20 20">
-                  <Path
-                    d="M3.5 10.5l4 4 9-9"
-                    fill="none"
-                    stroke={theme.palette.accent}
-                    strokeWidth={2.2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              ) : null}
-            </Pressable>
-          );
-        })}
-      </View>
-      <AppText variant="secondary" color="inkFaint" style={{ marginTop: 16, fontSize: 12.5, letterSpacing: 0 }}>
-        {t('profile.speechPickNote')}
-      </AppText>
-    </ModalSheet>
-  );
-}
-
-/** Said before the voice goes: without the model, Ukrainian cannot be spoken until it is back. */
-function RemoveModelSheet(props: {
-  readonly open: boolean;
-  readonly t: Translate;
-  readonly onRemove: () => void;
-  readonly onClose: () => void;
-}): React.JSX.Element {
-  const { t } = props;
-
-  return (
-    <ModalSheet open={props.open} closeLabel={t('profile.modelKeep')} onClose={props.onClose}>
-      <View style={{ gap: 14 }}>
-        <AppText variant="kicker" style={{ fontSize: 22 }}>
-          {t('profile.modelDelTitle')}
-        </AppText>
-        <AppText variant="body" color="inkSoft">
-          {t('profile.modelDelBody')}
-        </AppText>
-        <View style={{ marginTop: 6, gap: 4 }}>
-          <Button label={t('profile.modelDelCta')} onPress={props.onRemove} />
-          <Button label={t('profile.modelKeep')} variant="ghost" onPress={props.onClose} />
-        </View>
-      </View>
-    </ModalSheet>
-  );
-}

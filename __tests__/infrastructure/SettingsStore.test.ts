@@ -22,26 +22,6 @@ describe('SettingsStore', () => {
     expect((await subject.read()).locale).toBe('en');
   });
 
-  it('speaks the language of the phone on a first run', async () => {
-    const { subject } = setup('en');
-
-    expect((await subject.read()).speechLanguage).toBe('en');
-  });
-
-  it('reads the interface language as the spoken one for settings written before the field existed', async () => {
-    const { store, subject } = setup('uk');
-    await store.setItem('vidlun.settings', JSON.stringify({ locale: 'en' }));
-
-    expect((await subject.read()).speechLanguage).toBe('en');
-  });
-
-  it('keeps a spoken language that differs from the interface language', async () => {
-    const { store, subject } = setup('uk');
-    await store.setItem('vidlun.settings', JSON.stringify({ locale: 'en', speechLanguage: 'uk' }));
-
-    expect((await subject.read()).speechLanguage).toBe('uk');
-  });
-
   it('leaves a chosen language alone when the phone disagrees', async () => {
     const { store, subject } = setup('en');
     await store.setItem('vidlun.settings', JSON.stringify({ locale: 'uk' }));
@@ -57,7 +37,6 @@ describe('SettingsStore', () => {
     await subject.write({
       keepRecordings: false,
       locale: 'en',
-      speechLanguage: 'uk',
       theme: 'dark',
       hasOnboarded: true,
       asksFirst: false,
@@ -70,7 +49,6 @@ describe('SettingsStore', () => {
     expect(await subject.read()).toEqual({
       keepRecordings: false,
       locale: 'en',
-      speechLanguage: 'uk',
       theme: 'dark',
       hasOnboarded: true,
       asksFirst: false,
@@ -107,8 +85,6 @@ describe('SettingsStore', () => {
     expect(await subject.read()).toEqual({
       keepRecordings: true,
       locale: 'en',
-      // Read as the interface language, which is what a first run would have chosen.
-      speechLanguage: 'en',
       theme: 'system',
       asksFirst: true,
       appLock: false,

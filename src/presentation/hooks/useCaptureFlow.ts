@@ -160,8 +160,6 @@ export interface CaptureDependencies {
   readonly findRecording: FindRecording;
   /** False stops a confirmed take from being kept at all. */
   readonly keepRecordings: boolean;
-  /** Whether the speech model is on disk. Recording works either way; hearing does not. */
-  readonly canHear: boolean;
   readonly parkedTake: IParkedTake;
   /** The draft for words Vidlun could not listen to; the person's answer still goes in. */
   readonly createUnheardEntry: CreateUnheardEntry;
@@ -213,8 +211,6 @@ export interface CaptureFlow {
   readonly micStatus: PermissionStatus;
   /** Reads the waiting take now that the phone can hear. */
   readonly continueParked: () => void;
-  /** Opens the waiting screen for a parked take: where the download stands, or the offer to start it. */
-  readonly showParked: () => void;
   /** Every milestone, oldest first; the strip, the chart and the journal mark from it. */
   readonly milestones: readonly Milestone[];
   readonly milestoneSheet: MilestoneSheetState | null;
@@ -725,19 +721,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         // Fires for a tap and for the ceiling alike: the person may not be looking.
         dependencies.haptics.settle();
 
-        /*
-         * Said before the phone could hear. The moment is not lost for it:
-         * the take is kept and read when the model lands — this launch or
-         * the next — and the entry keeps the time it was spoken.
-         */
-        if (!dependencies.canHear) {
-          await dependencies.parkedTake.park(take, dependencies.clock.now());
-          reloadParked();
-          setStage({ kind: 'parked' });
-
-          return;
-        }
-
         takeUri.current = take.uri;
         setStage({ kind: 'processing' });
 
@@ -787,10 +770,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   }, [dependencies, fail, record]);
 
   const continueParked = useCallback(() => {
-    if (!dependencies.canHear) {
-      return;
-    }
-
     setStage({ kind: 'processing' });
 
     void dependencies.parkedTake
@@ -832,15 +811,16 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   }, [ask, dependencies, fail, reloadParked]);
 
   /*
-   * The person is still on the parked screen when the model lands: go on
-   * without a tap. Anywhere else, home offers the take instead — a card
-   * appearing over whatever they were doing is not the product's manners.
+   * A take parked by an earlier version — recorded before the model came
+   * with the app — is read as soon as its screen opens, without a tap.
+   * Until then home offers it: a card appearing over whatever the person
+   * was doing is not the product's manners.
    */
   useEffect(() => {
-    if (dependencies.canHear && stage.kind === 'parked') {
+    if (stage.kind === 'parked') {
       continueParked();
     }
-  }, [continueParked, dependencies.canHear, stage.kind]);
+  }, [continueParked, stage.kind]);
 
   /**
    * The week and its themes. The vocabulary is a separate screen and a
@@ -1036,9 +1016,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     parked,
     micStatus,
     continueParked,
-    showParked: useCallback(() => {
-      setStage({ kind: 'parked' });
-    }, []),
     milestones,
     milestoneSheet,
     openMilestone: useCallback((milestone?: Milestone) => {

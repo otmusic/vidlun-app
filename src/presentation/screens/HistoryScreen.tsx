@@ -107,15 +107,15 @@ export function HistoryScreen(props: {
           <AppText variant="display" style={{ marginBottom: 6 }}>
             {t('feed.title')}
           </AppText>
-          <AppText variant="secondary" color="inkSoft" style={{ marginBottom: 26 }}>
-            {entries.length === 0
-              ? t('feed.noneYet')
-              : t('feed.summary', {
-                  n: entries.length,
-                  unit: t(countedKey('feed.echo', entries.length, props.locale)),
-                  period: periodOf(entries, props.locale),
-                })}
-          </AppText>
+          {entries.length === 0 ? null : (
+            <AppText variant="secondary" color="inkSoft" style={{ marginBottom: 26 }}>
+              {t('feed.summary', {
+                n: entries.length,
+                unit: t(countedKey('feed.echo', entries.length, props.locale)),
+                period: periodOf(entries, props.locale),
+              })}
+            </AppText>
+          )}
         </View>
       }
       ListEmptyComponent={

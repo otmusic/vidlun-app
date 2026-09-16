@@ -59,10 +59,6 @@ export function TurnScreen(props: {
         gap: theme.spacing.md,
       }}
     >
-      <AppText variant="caption" color="inkFaint">
-        {props.t('turn.eyebrow')}
-      </AppText>
-
       <Card tone="quiet">
         {/*
           * The one repair only the speaker can make. It lives on the card

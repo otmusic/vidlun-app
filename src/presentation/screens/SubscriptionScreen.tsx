@@ -87,11 +87,6 @@ export function SubscriptionScreen(props: {
           {t('subs.body')}
         </AppText>
 
-        <View style={{ gap: 12, marginBottom: 28 }}>
-          <Item label={t('subs.item1')} />
-          <Item label={t('subs.item2')} />
-        </View>
-
         {owns ? (
           <>
             <View
@@ -330,27 +325,6 @@ function buyLabel(plan: Plan | undefined, t: Translate, locale: Locale): string 
   }
 
   return `${t(plan.kind === 'lifetime' ? 'subs.buyOnce' : 'subs.buyFor')} ${plan.price}`;
-}
-
-function Item(props: { readonly label: string }): React.JSX.Element {
-  const theme = useTheme();
-
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-      <View
-        style={{
-          width: 7,
-          height: 7,
-          borderRadius: 7,
-          marginTop: 9,
-          backgroundColor: theme.palette.accent,
-        }}
-      />
-      <AppText variant="body" style={{ flex: 1 }}>
-        {props.label}
-      </AppText>
-    </View>
-  );
 }
 
 /**

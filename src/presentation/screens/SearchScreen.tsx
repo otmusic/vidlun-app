@@ -36,6 +36,8 @@ export function SearchScreen(props: {
   readonly onFilter: (emotionId: string | null) => void;
   readonly onReset: () => void;
   readonly onOpen: (entry: MoodEntry) => void;
+  /** True while the journal has nothing in it: there is nothing to search, and the screen says only that. */
+  readonly journalEmpty: boolean;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
@@ -78,106 +80,114 @@ export function SearchScreen(props: {
         {t('search.title')}
       </AppText>
 
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-          borderWidth: 1,
-          borderColor: theme.palette.line,
-          borderRadius: 999,
-          backgroundColor: theme.palette.paper,
-          paddingVertical: 13,
-          paddingHorizontal: 18,
-          marginBottom: 14,
-        }}
-      >
-        <TextInput
-          value={props.query}
-          onChangeText={props.onQuery}
-          placeholder={t('search.placeholder')}
-          placeholderTextColor={theme.palette.inkFaint}
-          accessibilityLabel={t('search.title')}
-          returnKeyType="search"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            fontSize: 16,
-            color: theme.palette.ink,
-            fontFamily: theme.type.body.fontFamily,
-            padding: 0,
-          }}
-        />
-      </View>
-
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
-        <Filter
-          label={t('search.filterAll')}
-          colour={theme.palette.ink}
-          selected={props.emotionId === null}
-          onPress={() => {
-            props.onFilter(null);
-          }}
-        />
-        {(result?.filterIds ?? []).map((id) => (
-          <Filter
-            key={id}
-            label={t(emotionKey(id))}
-            colour={colourOf(id)}
-            selected={props.emotionId === id}
-            onPress={() => {
-              props.onFilter(id);
+      {props.journalEmpty ? (
+        <AppText variant="body" color="inkSoft">
+          {t('search.emptyJournal')}
+        </AppText>
+      ) : (
+        <>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              borderWidth: 1,
+              borderColor: theme.palette.line,
+              borderRadius: 999,
+              backgroundColor: theme.palette.paper,
+              paddingVertical: 13,
+              paddingHorizontal: 18,
+              marginBottom: 14,
             }}
-          />
-        ))}
-      </View>
+          >
+            <TextInput
+              value={props.query}
+              onChangeText={props.onQuery}
+              placeholder={t('search.placeholder')}
+              placeholderTextColor={theme.palette.inkFaint}
+              accessibilityLabel={t('search.title')}
+              returnKeyType="search"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                fontSize: 16,
+                color: theme.palette.ink,
+                fontFamily: theme.type.body.fontFamily,
+                padding: 0,
+              }}
+            />
+          </View>
 
-      <FlatList
-        data={result?.entries ?? []}
-        keyExtractor={keyOf}
-        renderItem={renderEntry}
-        ItemSeparatorComponent={Gap}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: BOTTOM_ROOM }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        initialNumToRender={8}
-        maxToRenderPerBatch={8}
-        windowSize={7}
-        ListHeaderComponent={
-          result === null ? null : (
-            <AppText variant="caption" color="inkFaint" style={{ marginBottom: 12 }}>
-              {result.entries.length === 0
-                ? t('search.nothing')
-                : t('search.found', { n: result.entries.length })}
-            </AppText>
-          )
-        }
-        ListEmptyComponent={
-          result === null ? null : (
-            <View style={{ alignItems: 'center', gap: 12, paddingVertical: 52, paddingHorizontal: 12 }}>
-              <AppText variant="kicker">{t('search.nothingTitle')}</AppText>
-              <AppText variant="body" color="inkSoft" align="center" style={{ maxWidth: 240 }}>
-                {t('search.nothingBody')}
-              </AppText>
-              <Pressable
-                accessibilityRole="button"
-                onPress={props.onReset}
-                style={{
-                  borderWidth: 1,
-                  borderColor: theme.palette.line,
-                  backgroundColor: theme.palette.paper,
-                  borderRadius: 999,
-                  paddingVertical: 13,
-                  paddingHorizontal: 22,
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
+            <Filter
+              label={t('search.filterAll')}
+              colour={theme.palette.ink}
+              selected={props.emotionId === null}
+              onPress={() => {
+                props.onFilter(null);
+              }}
+            />
+            {(result?.filterIds ?? []).map((id) => (
+              <Filter
+                key={id}
+                label={t(emotionKey(id))}
+                colour={colourOf(id)}
+                selected={props.emotionId === id}
+                onPress={() => {
+                  props.onFilter(id);
                 }}
-              >
-                <AppText variant="body">{t('search.reset')}</AppText>
-              </Pressable>
-            </View>
-          )
-        }
-      />
+              />
+            ))}
+          </View>
+
+          <FlatList
+            data={result?.entries ?? []}
+            keyExtractor={keyOf}
+            renderItem={renderEntry}
+            ItemSeparatorComponent={Gap}
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: BOTTOM_ROOM }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={7}
+            ListHeaderComponent={
+              result === null ? null : (
+                <AppText variant="caption" color="inkFaint" style={{ marginBottom: 12 }}>
+                  {result.entries.length === 0
+                    ? t('search.nothing')
+                    : t('search.found', { n: result.entries.length })}
+                </AppText>
+              )
+            }
+            ListEmptyComponent={
+              result === null ? null : (
+                <View style={{ alignItems: 'center', gap: 12, paddingVertical: 52, paddingHorizontal: 12 }}>
+                  <AppText variant="kicker">{t('search.nothingTitle')}</AppText>
+                  <AppText variant="body" color="inkSoft" align="center" style={{ maxWidth: 240 }}>
+                    {t('search.nothingBody')}
+                  </AppText>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={props.onReset}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.palette.line,
+                      backgroundColor: theme.palette.paper,
+                      borderRadius: 999,
+                      paddingVertical: 13,
+                      paddingHorizontal: 22,
+                    }}
+                  >
+                    <AppText variant="body">{t('search.reset')}</AppText>
+                  </Pressable>
+                </View>
+              )
+            }
+          />
+        </>
+      )}
     </View>
   );
 }

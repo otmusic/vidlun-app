@@ -9,8 +9,7 @@
 ## The short version
 
 - **Audio never leaves your phone.** Speech recognition runs entirely on the
-  device, offline: Ukrainian by the Vidlun model, English by Apple's built-in
-  on-device recognition.
+  device, with a model built into the app.
 - Only the **text** of a transcript leaves — so a language model can name the
   feelings and write the weekly piece. And what you write to us yourself in
   the feedback form — but only when you tap "Send".
@@ -65,20 +64,13 @@ and the device type. **No entry content reaches them.**
 
 Lawful basis: performance of contract. See <https://www.revenuecat.com/privacy>.
 
-### 2.3 Downloading the speech model
-
-Once, after you tap "Download" in the app, it downloads a speech model (about
-670 MB) from huggingface.co. The app never starts that download on its own.
-That host sees your network address and the fact of the download. Nothing of
-yours is sent to it.
-
-### 2.4 Network data
+### 2.3 Network data
 
 Cloudflare, as the network intermediary, sees the address a request came from.
 It is used only to rate-limit requests and is not stored alongside anything of
 yours.
 
-### 2.5 Feedback
+### 2.4 Feedback
 
 **What exactly.** Only what you type yourself into the "Write to us" form in
 your profile, plus the app version and the iOS version — the first thing

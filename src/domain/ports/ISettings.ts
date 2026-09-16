@@ -1,5 +1,3 @@
-import type { SpeechLanguage } from '../speech/SpeechEngine';
-
 /**
  * `system` follows the phone and keeps following it, so a journal opened at
  * night is dark without anyone having chosen anything. The other two are a
@@ -12,12 +10,6 @@ export interface Settings {
   /** Whether a confirmed entry keeps the take it came from. */
   readonly keepRecordings: boolean;
   readonly locale: 'uk' | 'en';
-  /**
-   * The language spoken into the journal, which decides what reads it (see
-   * `engineFor`). Defaults to the interface language and is changed in the
-   * profile: someone with an English phone who speaks Ukrainian is common.
-   */
-  readonly speechLanguage: SpeechLanguage;
   readonly theme: ThemeChoice;
   /** False until someone has been told what the app does with their voice. */
   readonly hasOnboarded: boolean;
@@ -52,7 +44,6 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   keepRecordings: true,
   locale: 'uk',
-  speechLanguage: 'uk',
   theme: 'system',
   hasOnboarded: false,
   /*

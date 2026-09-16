@@ -10,17 +10,11 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.vidlun.journal",
       "entitlements": {
-        "com.apple.developer.devicecheck.appattest-environment": "production",
-        "com.apple.security.application-groups": [
-          "group.com.vidlun.journal"
-        ]
+        "com.apple.developer.devicecheck.appattest-environment": "production"
       },
       "infoPlist": {
         "NSFaceIDUsageDescription": "Face ID opens Vidlun when the journal lock is on, so nobody else holding your device can read your entries.",
-        "ITSAppUsesNonExemptEncryption": false,
-        "BAHasManagedAssetPacks": true,
-        "BAUsesAppleHosting": true,
-        "BAAppGroupID": "group.com.vidlun.journal"
+        "ITSAppUsesNonExemptEncryption": false
       },
       "buildNumber": "36",
       "appleTeamId": "M3K99W5FFQ"
@@ -60,7 +54,13 @@
       ],
       "expo-localization",
       "expo-notifications",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      [
+        "./plugins/withBundledModel",
+        {
+          "file": "assets/model/ggml-parakeet-tdt-0.6b-v3-q4_0.bin"
+        }
+      ]
     ],
     "scheme": "vidlun",
     "locales": {

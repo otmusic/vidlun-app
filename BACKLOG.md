@@ -350,6 +350,32 @@ turned out to be good enough that the price never had to be paid.
 **Still untried:** q4_0 at 356 MB, which would nearly halve what onboarding has
 to download.
 
+### The 4-bit files, measured — 2026-09-16
+
+Asked because the owner wants the Ukrainian model inside the app binary
+rather than downloaded, and 669 MB is too much to ship to everyone. Same
+16 labelled takes, same `parakeet-cli`, `scripts/transcription-benchmark.mjs`
+now takes `--parakeet-models q4_0,q4_k,q8_0`.
+
+| | q4_0 (356 MB) | q4_k (416 MB) | q8_0 (669 MB) |
+|---|---|---|---|
+| mean WER | 0.155 | 0.154 | 0.212 |
+| median WER | 0.091 | 0.125 | 0.125 |
+| Ukrainian mean (9) | 0.150 | 0.118 | 0.260 |
+| mixed mean (4) | 0.138 | 0.180 | 0.119 |
+
+**No cliff at four bits.** The three disagree on seven takes and no file is
+consistently better; the differences read like decoding noise. q8_0's mean
+is the worst only because it turned "Приготував вечерю" into "Правут о
+вечерню" (WER 1.5 on two words) where q4_k had it exactly and q4_0 lost one
+letter ("вечер"). Read by the product's own rule — a real word in the wrong
+form costs nothing, an invented one costs the entry — q4_0 comes out at
+least level with q8_0: its misses are dropped letters and one mangled
+opening ("На чеквис повсякзав" for "Ой наче як виспався", a take all three
+mangle), while q4_k substituted a real word once ("не стих" for "не встиг").
+So q4_0 is the file to ship if the model ships inside the app: 356 MB,
+quality indistinguishable from what 1.0 and 1.1 run.
+
 ---
 
 ## 1d. Is anything better than Parakeet? — surveyed 2026-08-28
@@ -1281,6 +1307,108 @@ the ability to say whether the wait is still what the brief asks for.
 
 One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 `__DEV__` wiring in the composition root.
+
+---
+
+## 3q. The model inside the app — decided and built 2026-09-16
+
+The day after 1.1 the owner drew the line under downloads: the Ukrainian
+model ships inside the app, the smaller file, and the onboarding screen
+that asked for it goes. Two things decided with it, both the owner's
+words: the pack machinery goes entirely rather than staying as a fallback,
+and the profile's "Speech" section goes with it — and once there is no
+language to choose and no engine to show, there is one reader for every
+language. Parakeet reads English; Apple's SpeechAnalyzer path (§3p) existed
+only so that English speakers would not download 668 MB, and that reason
+is gone with the download.
+
+**The measurement first** (§1c, the 4-bit files): q4_0 at 356 MB is level
+with q8_0 on the labelled takes, so it is the file that ships. The app
+grows from 43 MB to roughly 400 for every install, English speakers'
+included, and that was said before it was chosen: installs over cellular
+get iOS's 200 MB question, updates stay small because the store sends only
+what changed, and in exchange the first entry can be spoken the moment the
+microphone is granted, on any connection or none.
+
+**What went.** `SpeechModelStore`, `ExpoModelStorage`, `AssetPackModel`,
+`AppleTranscriptionService`, `SpeechEngine`/`engineFor`, `ISpeechModel`,
+`settings.speechLanguage`, the `vidlun-asset-pack` and `vidlun-speech`
+modules, the `downloader` target and its build fixes, `asset-packs/`, the
+pack scripts, the `BA*` Info.plist keys and the app group they needed, 41
+copy keys, onboarding's model step, Home's download line and waiting card,
+Profile's Speech section, and `canHear` — the flow never parks a take now.
+A take parked by 1.0 or 1.1 is still on disk and is read the moment its
+screen opens; `ParkedScreen` shrank to that beat.
+
+**What came.** `speechModel.ts` (the descriptor: file name and engine),
+`bundledModel.ts` (`Paths.bundle` + `File.exists`; null means a build
+made without the file, which types instead of listening),
+`plugins/withBundledModel.js` (the resource goes into the Xcode project
+the way expo-font adds fonts; a missing file fails prebuild rather than
+shipping a deaf build), `scripts/fetch-model.sh` (Hugging Face, size and
+SHA-256 checked; `assets/model/` is ignored by git). The privacy policy
+lost §2.3 "Downloading the speech model" and says the model is built in.
+
+**The drawing.** `Vidlun.dc.html` still has the model screen at the end of
+onboarding and the Speech section in the profile (both from §3p). Both are
+now to be removed from the design rather than the code; nothing new needs
+drawing.
+
+**Seen on the simulator the same day** (iPhone 17, Release build of the
+regenerated project, 441 MB with the model in the bundle): onboarding is
+three screens and lands on home with the plain "tap to speak" line; the
+profile runs Plans, Conversation, Rhythm, Theme, Audio with no Speech
+section; a take recorded on the first launch was read by the bundled
+model and the card opened with its transcript — no download, no waiting
+screen, no line about a model anywhere.
+
+**Nine corrections from the owner's first day with the store build, made
+the same afternoon** (all in copy and screens, both locales): home asks
+"How are you today?" instead of "What happened today?"; home's "Recent
+echoes" list is gone altogether (the journal tab is where entries live),
+and with it the "No echoes yet" caption on the journal; search on an empty
+journal shows one line, "Nothing to search yet", instead of the "all" chip,
+the "Nothing" caption and the "Nothing found / try another word / Reset"
+block; streaks read "days", not "days in a row", on the profile card, the
+home pill and the saved screen; the ask-first switch explains itself
+("Vidlun asks you to pick an emotion, then shows what it heard"); the
+"Rhythm" section is "Notifications" and the "Evening reminder" row is
+"Reminder"; the thirteen-months note moved into the audio row's own hint;
+"Lock on entry" is "Face ID"; the feedback row asks only what broke or is
+missing; the backup rows say "All your entries in one file" and "Brings
+your entries back from a backup", naming no file and no merge. Each is a
+divergence from `Vidlun.dc.html`
+in the owner's own words, so the drawing follows the code here. The
+"Conversation" section label was left as drawn.
+
+A second round the same afternoon: the card that asks for the person's
+word lost its "Your turn" eyebrow, asks "Pick an emotion" and says only
+"There is no right answer"; the saved screen shows nothing under "Saved"
+but the unheard line when it applies (the streak chip is gone); the
+no-pattern text no longer says Vidlun "did not see" anything; the
+subscription screen lost its two feature bullets; and home's list of
+entries is back as a bare list of the last three — no heading, no "all"
+link, nothing while there are none.
+
+Then the saved screen itself: one centred "Saved", no check ring, no
+buttons, no unheard line, and it leaves for home by itself after a second
+(`SavedScreen`, `SHOWN_FOR_MS`). The grounding offer after an overwhelmed
+entry is the one case the screen still waits: an offer that vanishes in a
+second is not one, so it keeps its card with "Try" and "Not now".
+
+Onboarding, the same day: the lime blob behind the headlines is gone from
+all three screens; the microphone screen says only "So you can just say it
+instead of typing it"; and the privacy screen carries one line — "The
+audio and text of your entries are stored on your phone" — by the owner's
+decision, repeated after the 5.1.2(i) concern was raised: the line naming
+Anthropic (Claude) as the reader of an entry's text, which 1.0 passed
+review with, now lives only in the privacy policy linked from the first
+screen. The "I agree" button stays. If App Review asks, the line comes
+back as `onboarding.privacyAi` (git history, commit before this one).
+
+**Left for the release:** version 1.2, build 37; the store description and
+What's New; the legal site redeploy; App Store Connect's asset pack can be
+archived, and `scripts/asc-submit.py` submits versions alone from now on.
 
 ---
 

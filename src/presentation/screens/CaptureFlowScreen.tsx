@@ -1,8 +1,6 @@
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings } from '@/domain/ports/ISettings';
-import type { SpeechModelState } from '@/domain/ports/ISpeechModel';
-import type { SpeechEngine } from '@/domain/speech/SpeechEngine';
 import type { Locale, Translate } from '@/i18n';
 import { legalDocument } from '@/i18n/legal';
 
@@ -50,15 +48,6 @@ export interface CaptureFlowScreenProps {
   readonly onEnableLock: () => Promise<boolean>;
   /** Mails a note to support; rejects when it could not be delivered. */
   readonly onFeedback: (text: string) => Promise<void>;
-  /** The speech model's state, so home can say whether the phone can hear yet. */
-  readonly voice: SpeechModelState;
-  /** What reads a take for this person, and whether the phone could read English by itself. */
-  readonly engine: SpeechEngine;
-  readonly appleAvailable: boolean;
-  /** Starts the model download, or tries it again after a failure. */
-  readonly onFetchVoice: () => void;
-  /** Takes the model off the device. */
-  readonly onRemoveVoice: () => void;
 }
 
 /**
@@ -162,12 +151,7 @@ function Stage(
 
     case 'parked':
       return (
-        <ParkedScreen
-          t={t}
-          voice={props.voice}
-          onFetchVoice={props.onFetchVoice}
-          onHome={flow.backHome}
-        />
+        <ParkedScreen t={t} onHome={flow.backHome} />
       );
 
     case 'turn':
@@ -228,9 +212,7 @@ function Stage(
       return (
         <SavedScreen
           t={t}
-          streakDays={flow.stage.streakDays}
           offersGrounding={flow.stage.offersGrounding}
-          unheard={flow.stage.unheard}
           onGround={flow.startGrounding}
           onHome={flow.backHome}
         />
@@ -270,11 +252,6 @@ function Stage(
           onChange={props.onSettingsChange}
           entitlement={props.entitlement}
           onOpenSubscription={flow.openSubscription}
-          engine={props.engine}
-          appleAvailable={props.appleAvailable}
-          model={props.voice}
-          onFetchModel={props.onFetchVoice}
-          onRemoveModel={props.onRemoveVoice}
         />
       );
 
@@ -345,6 +322,7 @@ function Stage(
       return (
         <SearchScreen
           result={flow.stage.result}
+          journalEmpty={flow.home !== null && flow.home.recentEntries.length === 0}
           query={flow.stage.query}
           emotionId={flow.stage.emotionId}
           vocabulary={props.vocabulary}
@@ -406,18 +384,13 @@ function Stage(
           t={t}
           onRecord={flow.startRecording}
           onWrite={flow.startWriting}
-          voice={props.voice}
-          engine={props.engine}
-          onFetchVoice={props.onFetchVoice}
           parked={flow.parked}
           onContinueParked={flow.continueParked}
-          onShowParked={flow.showParked}
           mic={flow.micStatus}
           milestones={flow.milestones}
-          onDelete={flow.deleteEntry}
-          onOpenHistory={flow.openHistory}
           onOpenStats={flow.openStats}
           onOpen={flow.openEntry}
+          onDelete={flow.deleteEntry}
         />
       );
   }

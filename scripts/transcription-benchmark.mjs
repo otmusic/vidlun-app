@@ -25,7 +25,8 @@ const run = promisify(execFile);
 const AUDIO_EXTENSIONS = new Set(['.m4a', '.mp3', '.wav', '.aac', '.caf', '.ogg']);
 
 const WHISPER_MODEL = 'ggml-large-v3-turbo-q5_0.bin';
-const PARAKEET_MODEL = 'ggml-parakeet-tdt-0.6b-v3-q8_0.bin';
+/** One file per quantisation; `--parakeet-models q8_0,q4_0` picks which run. */
+const parakeetModel = (quant) => `ggml-parakeet-tdt-0.6b-v3-${quant}.bin`;
 
 async function main() {
   const options = readOptions(process.argv.slice(2));
@@ -164,18 +165,20 @@ async function buildEngines(options) {
   }
 
   if (options.engines.has('parakeet')) {
-    const model = await requireModel(options.models, PARAKEET_MODEL);
+    for (const quant of options.parakeetModels) {
+      const model = await requireModel(options.models, parakeetModel(quant));
 
-    engines.push({
-      id: 'parakeet-q8_0',
-      // It takes no language hint: the model is multilingual without one.
-      transcribe: (wav) =>
-        timed(async () => {
-          const { stdout } = await run('parakeet-cli', ['-m', model, '-f', wav]);
+      engines.push({
+        id: `parakeet-${quant}`,
+        // It takes no language hint: the model is multilingual without one.
+        transcribe: (wav) =>
+          timed(async () => {
+            const { stdout } = await run('parakeet-cli', ['-m', model, '-f', wav]);
 
-          return stdout.trim();
-        }),
-    });
+            return stdout.trim();
+          }),
+      });
+    }
   }
 
   if (engines.length === 0) {
@@ -354,6 +357,7 @@ function readOptions(argv) {
     recordings: null,
     models: null,
     engines: new Set(['whisper', 'parakeet']),
+    parakeetModels: ['q8_0'],
     out: null,
     merge: null,
   };
@@ -373,6 +377,12 @@ function readOptions(argv) {
       options.engines = new Set(value.split(',').map((name) => name.trim()));
     }
 
+    // Which Parakeet quantisations to run, smallest file to largest is a
+    // sensible order: q4_0 (356 MB), q4_k (416 MB), q8_0 (669 MB).
+    if (argv[index] === '--parakeet-models') {
+      options.parakeetModels = value.split(',').map((name) => name.trim());
+    }
+
     if (argv[index] === '--out') {
       options.out = resolve(expandHome(value));
     }
@@ -388,7 +398,7 @@ function readOptions(argv) {
   if (options.recordings === null || options.models === null) {
     fail(
       'Usage: node scripts/transcription-benchmark.mjs --recordings <dir> --models <dir> ' +
-        '[--engines whisper,parakeet] [--out rows.json]',
+        '[--engines whisper,parakeet] [--parakeet-models q8_0,q4_0,q4_k] [--out rows.json]',
     );
   }
 
