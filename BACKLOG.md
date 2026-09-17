@@ -1371,6 +1371,11 @@ readable-export row entirely, "for now" — `ExportJournal` keeps writing
 the markdown half, nothing on the profile asks for it. Eleven keys removed
 from both locales, two rewritten.
 
+**Build 40 uploaded 2026-09-17 15:52 EEST** — version 1.2, the same q8_0
+model, archive 763 MB; commits 1c73ec1 (§3r), 091def7 (§3s), 632cf84
+(bump). Builds 37–39 superseded; submit with `--build 40`
+(review-notes-40.txt in the scratchpad).
+
 ---
 
 ## 3r. A failure is a line over the screen, not a screen — built 2026-09-17
