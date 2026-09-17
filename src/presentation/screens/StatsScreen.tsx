@@ -658,13 +658,6 @@ function Narrative(props: {
               {props.t('stats.narrLockedAction')}
             </AppText>
           </Pressable>
-          {/*
-            No price here. The store's numbers live one tap away, where they
-            are the store's own and in the buyer's own currency.
-          */}
-          <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.45, textTransform: 'none' }}>
-            {props.t('stats.trialLine')}
-          </AppText>
         </View>
       )}
     </View>

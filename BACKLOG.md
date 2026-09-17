@@ -1365,8 +1365,9 @@ Now the card says what it will do — "Vidlun напише про цей тиж�
 повторювалось, що змінилось і як звучали дні." — the pattern count is gone
 from it (the pattern card keeps saying whether there is one, paid or not),
 and the button is "Відкрити в підписці", which is where it goes. The line
-that the narrative is the only paid thing stays. Five keys removed, one
-added, one rewritten, both locales. The month card followed the same
+under the button — that the narrative is the only paid thing — went too, at
+the owner's word before build 41. Six keys removed, one added, one
+rewritten, both locales. The month card followed the same
 afternoon at the owner's word: "Vidlun напише про цей місяць: що
 повторювалось, що змінилось і як звучали тижні.", the two ghost lines that
 stood for a hidden text gone with the claim, and the same "Відкрити в
