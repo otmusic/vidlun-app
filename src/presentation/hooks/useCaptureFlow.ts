@@ -142,8 +142,22 @@ export type CaptureStage =
       readonly entry: MoodEntry;
       /** Null while it is being looked up, and if there is none. */
       readonly recordingUri: string | null;
-    }
-  | { readonly kind: 'failed'; readonly message: string };
+    };
+
+/**
+ * A line laid over whatever is on screen, and gone on its own. A failure used
+ * to be a screen of its own whose only way out went home, and the entry went
+ * with it; now the screen that was there stays, with its work, and the line
+ * says what did not go through. `id` tells two identical notices apart, so
+ * the same failure twice still shows twice.
+ */
+export type Notice = NoticeBody & { readonly id: number };
+
+type NoticeBody =
+  /** Something did not go through; `message` is the layer below's own words. */
+  | { readonly kind: 'failed'; readonly message: string }
+  /** Vidlun could not listen: the entry stays the person's, the answer comes later. */
+  | { readonly kind: 'unheard' };
 
 export interface CaptureDependencies {
   readonly recorder: IAudioRecorder;
@@ -193,6 +207,9 @@ export interface CaptureDependencies {
 
 export interface CaptureFlow {
   readonly stage: CaptureStage;
+  /** The line over the screen, if one is showing. */
+  readonly notice: Notice | null;
+  readonly dismissNotice: () => void;
   readonly home: HomeView | null;
   /** Re-reads the home view; the splash's retry when opening the journal hangs. */
   readonly reloadHome: () => void;
@@ -437,6 +454,24 @@ export function whenAnalysisLands(
   return current.holding ? comparisonOf(draft, current.chosen) : { ...current, draft };
 }
 
+/**
+ * Where the failure goes when the analysis does not arrive: onto the card it
+ * was started for, as the words alone, for the person's answer to be the
+ * whole entry. Any other card, or none, is left as it is — the failure
+ * belongs to a question nobody is looking at any more.
+ *
+ * Exported for the test, like `whenAnalysisLands`.
+ */
+export function whenAnalysisFails(
+  current: CaptureStage,
+  draft: MoodEntry,
+  spoken: Spoken,
+): CaptureStage {
+  return current.kind === 'turn' && current.spoken === spoken
+    ? { ...current, draft, unheard: true }
+    : current;
+}
+
 export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [stage, setStage] = useState<CaptureStage>({ kind: 'idle' });
   const [home, setHome] = useState<HomeView | null>(null);
@@ -544,15 +579,35 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
   useEffect(hearUnheard, [hearUnheard]);
 
-  const fail = useCallback((error: unknown) => {
-    if (error instanceof RecordingCancelledError) {
-      setStage({ kind: 'idle' });
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const noticesShown = useRef(0);
 
-      return;
-    }
-
-    setStage({ kind: 'failed', message: describe(error) });
+  const notify = useCallback((body: NoticeBody) => {
+    noticesShown.current += 1;
+    setNotice({ ...body, id: noticesShown.current });
   }, []);
+
+  /**
+   * Says what went wrong without taking the screen. `backTo` is where the
+   * stage goes when it was somewhere transient — the wait, the take — and
+   * absent when the screen that started the work should simply keep it.
+   */
+  const fail = useCallback(
+    (error: unknown, backTo?: CaptureStage) => {
+      if (error instanceof RecordingCancelledError) {
+        setStage({ kind: 'idle' });
+
+        return;
+      }
+
+      if (backTo !== undefined) {
+        setStage(backTo);
+      }
+
+      notify({ kind: 'failed', message: describe(error) });
+    },
+    [notify],
+  );
 
   /*
    * The card is already on screen. Vidlun's sentence comes from a slower model
@@ -596,7 +651,10 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * be re-read the same way the original was — voice stays voice and typed
    * stays typed without the stage having to know which it is holding.
    */
-  const rebuild = useRef<((words: Spoken) => Promise<MoodEntry>) | null>(null);
+  const rebuild = useRef<{
+    readonly heard: (words: Spoken) => Promise<MoodEntry>;
+    readonly unheard: (words: Spoken) => MoodEntry;
+  } | null>(null);
 
   /*
    * Saves what the person said and named while Vidlun could not listen. The
@@ -605,7 +663,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * which fills it in the next time the network is there.
    */
   const saveUnheard = useCallback(
-    (draft: MoodEntry, chosen: readonly string[]) => {
+    (draft: MoodEntry, chosen: readonly string[], spoken: Spoken) => {
       const confirmed = MoodEntry.create({
         ...draft.toProps(),
         selfEmotionIds: chosen,
@@ -636,7 +694,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             unheard: true,
           });
         })
-        .catch(fail);
+        .catch((error: unknown) => {
+          // The words and the answer are still in hand: the card comes back
+          // as it stood, for one more tap on "next".
+          fail(error, { kind: 'turn', spoken, chosen, draft, holding: false, unheard: true });
+        });
     },
     [dependencies, fail],
   );
@@ -650,7 +712,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       // Per card, not per session. Left standing it would put the last entry's
       // refusal on this one's label, and now that it is logged, in its record.
       setKeptMine(false);
-      rebuild.current = build;
+      rebuild.current = { heard: build, unheard };
 
       const asking = dependencies.asksFirst;
 
@@ -676,20 +738,18 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
            */
           const draft = unheard(spoken);
 
+          notify({ kind: 'unheard' });
+
           if (!asking) {
-            saveUnheard(draft, []);
+            saveUnheard(draft, [], spoken);
 
             return;
           }
 
-          setStage((current) =>
-            current.kind === 'turn' && current.spoken === spoken
-              ? { ...current, draft, unheard: true }
-              : current,
-          );
+          setStage((current) => whenAnalysisFails(current, draft, spoken));
         });
     },
-    [dependencies.asksFirst, saveUnheard, withObservation],
+    [dependencies.asksFirst, notify, saveUnheard, withObservation],
   );
 
   /*
@@ -699,7 +759,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    */
   useEffect(() => {
     if (stage.kind === 'turn' && stage.unheard && stage.holding && stage.draft !== null) {
-      saveUnheard(stage.draft, stage.chosen);
+      saveUnheard(stage.draft, stage.chosen, stage.spoken);
     }
   }, [saveUnheard, stage]);
 
@@ -733,8 +793,10 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             dependencies.createUnheardEntry.execute(words, 'voice', backfillAt.current ?? undefined),
         );
       })
-      .catch(fail);
-  }, [ask, dependencies, fail, reloadParked]);
+      .catch((error: unknown) => {
+        fail(error, { kind: 'idle' });
+      });
+  }, [ask, dependencies, fail]);
 
   const startRecording = useCallback(() => {
     backfillAt.current = null;
@@ -766,7 +828,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         setStage({ kind: 'recording' });
         record();
       })
-      .catch(fail);
+      .catch((error: unknown) => {
+        fail(error, { kind: 'idle' });
+      });
   }, [dependencies, fail, record]);
 
   const continueParked = useCallback(() => {
@@ -806,7 +870,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       })
       .catch((error: unknown) => {
         reloadParked();
-        fail(error);
+        fail(error, { kind: 'idle' });
       });
   }, [ask, dependencies, fail, reloadParked]);
 
@@ -996,11 +1060,18 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           unheard: false,
         });
       })
-      .catch(fail);
+      .catch((error: unknown) => {
+        // Nothing was written; the card comes back with the draft as it stood.
+        fail(error, stage);
+      });
   }, [dependencies, fail, keptMine, stage]);
 
   return {
     stage,
+    notice,
+    dismissNotice: useCallback(() => {
+      setNotice(null);
+    }, []),
     monthCard,
     home,
     reloadHome,
@@ -1171,7 +1242,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       // Vidlun could not listen: nothing to compare against, and nothing
       // coming. The answer given is the whole entry.
       if (stage.kind === 'turn' && stage.unheard && stage.draft !== null) {
-        saveUnheard(stage.draft, stage.chosen);
+        saveUnheard(stage.draft, stage.chosen, stage.spoken);
 
         return;
       }
@@ -1190,7 +1261,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, [saveUnheard, stage]),
     skipAnswer: useCallback(() => {
       if (stage.kind === 'turn' && stage.unheard && stage.draft !== null) {
-        saveUnheard(stage.draft, []);
+        saveUnheard(stage.draft, [], stage.spoken);
 
         return;
       }
@@ -1214,6 +1285,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         if (corrected.length === 0 || corrected === entry.cleanTranscript) {
           return;
         }
+
+        const before = stage;
 
         takeUri.current = null;
         setKeptMine(false);
@@ -1239,17 +1312,22 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             setStage({ kind: 'reflecting', proposed: draft, draft });
             void withObservation(draft);
           })
-          .catch(fail);
+          .catch((error: unknown) => {
+            // The entry is kept as it was; the correction did not go through.
+            fail(error, before);
+          });
       },
-      [dependencies.createVoiceEntry, fail, withObservation],
+      [dependencies.createVoiceEntry, fail, stage, withObservation],
     ),
     correctWording: useCallback(
       (text: string) => {
         const corrected = text.trim();
 
+        const builders = rebuild.current;
+
         if (
           stage.kind !== 'turn' ||
-          rebuild.current === null ||
+          builders === null ||
           corrected.length === 0 ||
           corrected === stage.spoken.text
         ) {
@@ -1263,20 +1341,31 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
          */
         const spoken: Spoken = { text: corrected, confidence: Confidence.of(1) };
 
-        // The draft in hand was read off the mishearing; none of it survives.
-        // Their own named words do — the feeling never depended on the typo.
-        setStage({ ...stage, spoken, draft: null });
+        // The draft in hand was read off the mishearing; none of it survives,
+        // nor does a failure to read it. Their own named words do — the
+        // feeling never depended on the typo.
+        setStage({ ...stage, spoken, draft: null, unheard: false });
 
-        rebuild
-          .current(spoken)
+        builders
+          .heard(spoken)
           .then((draft) => {
             setStage((current) => whenAnalysisLands(current, draft, true, corrected));
 
             void withObservation(draft);
           })
-          .catch(fail);
+          .catch(() => {
+            /*
+             * The corrected words could not be read either. They are kept
+             * the way the first reading's failure kept the misheard ones:
+             * as the person's, with Vidlun's answer listened for later.
+             */
+            const draft = builders.unheard(spoken);
+
+            notify({ kind: 'unheard' });
+            setStage((current) => whenAnalysisFails(current, draft, spoken));
+          });
       },
-      [fail, stage, withObservation],
+      [notify, stage, withObservation],
     ),
     unkeep: useCallback((id: string) => {
       setStage((current) => {

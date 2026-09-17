@@ -1351,6 +1351,65 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3r. A failure is a line over the screen, not a screen — built 2026-09-17
+
+The owner, testing 39 indoors on a weak connection: the card asked its
+question, a timeout came up in place of it with a "Try again", and "Try
+again" went home and took the recording with it. The owner asked for a
+toast instead of the screen, and for the entry to be kept — the emotion
+can be named later, when there is a connection.
+
+**The one road a timeout on the card still had to that screen.** §3k made
+the analysis's failure land on the card as the words alone, so a plain
+timeout could not reach the failure screen — but the card's own repair
+could. `correctWording` re-read the corrected transcript with `.catch(fail)`,
+and a timeout on that re-read was the failure screen; nothing had been
+written yet, so "Try again" left the take unreferenced in the recorder's
+scratch space. `fixEntryWording` on a kept card, `confirm`, the recorder and
+the permission check all went the same way.
+
+**The stage is gone; a notice takes its place.** `CaptureStage` no longer
+has `failed`. The hook holds `notice: Notice | null` — `{kind: 'failed',
+message}` with the layer below's own words under the app's title, or
+`{kind: 'unheard'}` — and `fail(error, backTo?)` sets it, moving the stage
+only when it was somewhere transient. The take and the permission check go
+home; `confirm` goes back to the card with the draft as it stood;
+`saveUnheard` goes back to the asking card with the words and the answer,
+for one more tap; `fixEntryWording` goes back to the kept card, its
+correction not taken; the loaders — history, search, stats, vocabulary, the
+paywall, milestones, delete — stay where they are. `Toast` draws it: the
+panel surface at the top under the status bar, a 240 ms rise (none under
+Reduce Motion), five seconds, a tap to leave sooner. The drawing has no
+failure state at all, so the toast's look is the code's own on the owner's
+instruction, to be carried into the drawing with the rest of §3q's list.
+
+**The corrected transcript fails the way the first one did.** `ask` now
+remembers both builders; `correctWording` uses them, and its failure is
+`whenAnalysisFails` — the card goes on with the corrected words alone,
+`unheard`, and the person's answer saves the entry through `saveUnheard`,
+which `HearUnheardEntries` listens to later. Starting a re-read also clears
+`unheard`, which a successful re-read after a failed first reading used to
+leave set: the entry would have been saved as unheard with a good analysis
+in hand. And the network's failure is now said — the "No connection" line
+where the card used to go on in silence, which reads as a hang.
+
+Copy: `notice.offlineTitle` "Немає зв’язку", `notice.offlineBody` "Запис
+нікуди не дінеться, а відповідь Vidlun прийде, коли з’явиться інтернет.",
+`notice.dismiss`; `failure.retry` is gone. Test: `whenAnalysisFails.test.ts`.
+Checked on the simulator, where App Attest fails and so every analysis
+does: typed entry → card with the line over it → "Fix the text" → the
+corrected words back on the card with the line again → an emotion → next →
+saved with the corrected words and the chosen emotion, on home a second
+later. The line's clock was measured with a throwaway build that wrote the
+dismissal into the line: 5006 ms, the timer — the earlier impression of a
+two-second toast was the screenshot loop starting late.
+
+Not covered: a correction on a kept card that fails is dropped rather than
+kept for later; the recorder's own failure — no words, a broken file — still
+goes home, and the take with it.
+
+---
+
 ## 3q. The model inside the app — decided and built 2026-09-16
 
 The day after 1.1 the owner drew the line under downloads: the Ukrainian

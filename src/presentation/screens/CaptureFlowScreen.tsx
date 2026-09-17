@@ -7,12 +7,11 @@ import { legalDocument } from '@/i18n/legal';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppText } from '../components/AppText';
-import { Button } from '../components/Button';
 import { FeedbackSheet } from '../components/FeedbackSheet';
 import { MilestoneSheet } from '../components/MilestoneSheet';
 import { TabBar, type Tab } from '../components/TabBar';
-import type { CaptureFlow } from '../hooks/useCaptureFlow';
+import { Toast, type ToastLine } from '../components/Toast';
+import type { CaptureFlow, Notice } from '../hooks/useCaptureFlow';
 import { EditScreen } from './EditScreen';
 import { EntryDetailScreen } from './EntryDetailScreen';
 import { HistoryScreen } from './HistoryScreen';
@@ -31,7 +30,6 @@ import { LegalScreen } from './LegalScreen';
 import { SubscriptionScreen } from './SubscriptionScreen';
 import { StatsScreen } from './StatsScreen';
 import { VocabularyScreen } from './VocabularyScreen';
-import { Screen } from './Screen';
 import { TextEntryScreen } from './TextEntryScreen';
 
 export interface CaptureFlowScreenProps {
@@ -118,8 +116,29 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
           setWritingFeedback(false);
         }}
       />
+      <Toast
+        line={lineFor(props.flow.notice, props.t)}
+        dismissHint={props.t('notice.dismiss')}
+        onDismiss={props.flow.dismissNotice}
+      />
     </View>
   );
+}
+
+/**
+ * The notice in the app's words. A failure keeps the layer below's own
+ * message under the title — it is the one line the owner gets to read when
+ * someone writes in — and the network's failure gets the two lines that say
+ * where the entry is going instead.
+ */
+function lineFor(notice: Notice | null, t: Translate): ToastLine | null {
+  if (notice === null) {
+    return null;
+  }
+
+  return notice.kind === 'unheard'
+    ? { id: notice.id, title: t('notice.offlineTitle'), detail: t('notice.offlineBody') }
+    : { id: notice.id, title: t('failure.title'), detail: notice.message };
 }
 
 function Stage(
@@ -220,19 +239,6 @@ function Stage(
 
     case 'grounding':
       return <GroundingScreen t={t} onLeave={flow.backHome} />;
-
-    case 'failed':
-      return (
-        <Screen centered>
-          <AppText variant="display" align="center">
-            {t('failure.title')}
-          </AppText>
-          <AppText variant="secondary" color="inkSoft" align="center">
-            {flow.stage.message}
-          </AppText>
-          <Button label={t('failure.retry')} onPress={flow.backHome} />
-        </Screen>
-      );
 
     case 'settings':
       return (
