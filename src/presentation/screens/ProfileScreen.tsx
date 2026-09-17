@@ -96,7 +96,7 @@ export function ProfileScreen(props: {
         />
       </View>
 
-      <Section label={t('subs.section')}>
+      <Section>
         <Row
           title={t('subs.name')}
           hint={t(subscriptionHint(props.entitlement))}
@@ -108,7 +108,7 @@ export function ProfileScreen(props: {
 
       {/* The card's question is §M6's whole point, so whether it is asked
           belongs where someone would look for it. Drawn in the third round. */}
-      <Section label={t('profile.conversation')}>
+      <Section>
         <Row
           title={t('settings.asksFirst')}
           hint={t(settings.asksFirst ? 'settings.asksFirstOn' : 'settings.asksFirstOff')}
@@ -124,7 +124,7 @@ export function ProfileScreen(props: {
         </Row>
       </Section>
 
-      <Section label={t('profile.rhythm')}>
+      <Section>
         <Row
           title={t('profile.reminder')}
           hint={t(settings.reminderOn ? 'profile.everyDay' : 'profile.reminderOff')}
@@ -143,7 +143,7 @@ export function ProfileScreen(props: {
 
       <Theme settings={settings} t={t} onChange={props.onChange} />
 
-      <Section label={t('profile.audio')}>
+      <Section>
         <Row
           title={t('profile.keepAudio')}
           hint={t(settings.keepRecordings ? 'profile.audioOn' : 'profile.audioOff')}
@@ -181,7 +181,7 @@ export function ProfileScreen(props: {
       </Section>
 
       {/* No drawing for this section either; it wears Row like the rest. */}
-      <Section label={t('profile.security')}>
+      <Section>
         <Row
           title={t('profile.appLock')}
           hint={t(settings.appLock ? 'profile.appLockOn' : 'profile.appLockOff')}
@@ -233,7 +233,7 @@ export function ProfileScreen(props: {
         the settings screen must not tell. The card wears the drawing's
         shape — rows with pill actions — around what actually exists.
       */}
-      <Section label={t('profile.backupSection')}>
+      <Section>
         <Row
           title={t('profile.backup')}
           hint={t('profile.backupHint')}
@@ -243,22 +243,13 @@ export function ProfileScreen(props: {
         >
           <Pill label={t('profile.backupAction')} />
         </Row>
-        <Row
-          title={t('profile.exportMd')}
-          hint={t('profile.exportMdHint')}
-          onPress={() => {
-            props.onExport('markdown');
-          }}
-        >
-          <Pill label={t('profile.exportAction')} />
-        </Row>
         <Row title={t('profile.restore')} hint={t('profile.restoreHint')} onPress={props.onRestore}>
           <Pill label={t('profile.restoreAction')} />
         </Row>
       </Section>
 
 
-      <Section label={t('profile.feedbackSection')}>
+      <Section>
         <Row
           title={t('profile.feedbackTitle')}
           hint={t('profile.feedbackHint')}
@@ -270,12 +261,9 @@ export function ProfileScreen(props: {
 
       {/*
         No card around this one, unlike every other section: the drawing has the
-        label sitting straight above the pill, and wrapping it produced a border
-        inside a border with the section's padding between them.
+        pills standing on their own, and wrapping them produced a border inside
+        a border with the section's padding between them.
       */}
-      <AppText variant="caption" color="inkFaint" style={{ marginBottom: 10 }}>
-        {t('profile.language')}
-      </AppText>
       <View
         style={{
           flexDirection: 'row',
@@ -514,17 +502,16 @@ function Tile(props: {
   );
 }
 
-function Section(props: {
-  readonly label: string;
-  readonly children: React.ReactNode;
-}): React.JSX.Element {
+/*
+ * A card of rows and nothing over it. The drawing captions each group —
+ * "Plans", "Conversation" — and the owner took every caption off on
+ * 2026-09-17: the rows name themselves.
+ */
+function Section(props: { readonly children: React.ReactNode }): React.JSX.Element {
   const theme = useTheme();
 
   return (
     <View style={{ marginBottom: 26 }}>
-      <AppText variant="caption" color="inkFaint" style={{ marginBottom: 10 }}>
-        {props.label}
-      </AppText>
       <View
         style={{
           borderWidth: 1,

@@ -1351,6 +1351,28 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3s. The profile without captions, and the backup rows explained — 2026-09-17
+
+The owner's afternoon corrections, both to the profile. Every caption over
+a group of rows — "Plans", "Conversation", "Notifications", "Audio",
+"Protection", "Backup", "Talk to us", and the "Language" caption over the
+pills — is gone: the rows name themselves. `Section` lost its `label`;
+the theme card keeps "Theme", which is the row's own title, not a caption.
+
+The backup card's three hints now say what each row is for rather than
+what it produces. Backup, in the owner's words: "Збережи свої записи для
+переносу на інший пристрій. Аудіо не переноситься." (true: `ExportJournal`
+leaves the recordings out by design). The readable export names what the
+file holds — the days, the times, the words, the emotions, Vidlun's line —
+and what it is for: rereading outside the app, printing, showing someone.
+Restore names the occasion — a new phone, a reinstall — and nothing more:
+the owner took the sentence about the merge back off, and then the
+readable-export row entirely, "for now" — `ExportJournal` keeps writing
+the markdown half, nothing on the profile asks for it. Eleven keys removed
+from both locales, two rewritten.
+
+---
+
 ## 3r. A failure is a line over the screen, not a screen — built 2026-09-17
 
 The owner, testing 39 indoors on a weak connection: the card asked its
