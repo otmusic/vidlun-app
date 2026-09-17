@@ -1374,6 +1374,11 @@ stood for a hidden text gone with the claim, and the same "Відкрити в
 підписці" link. Not seen on the simulator — its previous month is empty, so
 the card does not render there; the change is copy and two removed views.
 
+**Build 41 uploaded 2026-09-17 17:58 EEST** — version 1.2, same model,
+archive 763 MB; commits 2658e7e (the cards), 3a753a0 (bump), 591c969 (the
+line under the button). Build 40 superseded; submit with `--build 41`
+(review-notes-41.txt in the scratchpad).
+
 ---
 
 ## 3s. The profile without captions, and the backup rows explained — 2026-09-17
