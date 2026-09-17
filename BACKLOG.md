@@ -1351,6 +1351,30 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3t. The locked week card says what it will do — 2026-09-17
+
+The owner, reading the statistics screen on the phone without a
+subscription: the paid card said "Vidlun has written about this week", then
+"No patterns visible this week", then "Read in full" — and asked what any of
+it meant. Nothing is written until someone pays; the pattern line repeated
+the free pattern card right under it, and called a month's count "this
+week"; "Read in full" dated from the first paragraph being free, which the
+pricing decision of 2026-08-30 ended, so there was nothing to complete.
+
+Now the card says what it will do — "Vidlun напише про цей тиждень: що
+повторювалось, що змінилось і як звучали дні." — the pattern count is gone
+from it (the pattern card keeps saying whether there is one, paid or not),
+and the button is "Відкрити в підписці", which is where it goes. The line
+that the narrative is the only paid thing stays. Five keys removed, one
+added, one rewritten, both locales. The month card followed the same
+afternoon at the owner's word: "Vidlun напише про цей місяць: що
+повторювалось, що змінилось і як звучали тижні.", the two ghost lines that
+stood for a hidden text gone with the claim, and the same "Відкрити в
+підписці" link. Not seen on the simulator — its previous month is empty, so
+the card does not render there; the change is copy and two removed views.
+
+---
+
 ## 3s. The profile without captions, and the backup rows explained — 2026-09-17
 
 The owner's afternoon corrections, both to the profile. Every caption over

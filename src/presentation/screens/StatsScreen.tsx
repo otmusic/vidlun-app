@@ -168,8 +168,8 @@ export function StatsScreen(props: {
 
 /**
  * The previous month written back — the weekly panel's longer breath, in the
- * same dark clothes so it reads as the same voice. Three states from the
- * drawing: the text, the writing ghosts, and the locked lead for the unpaid.
+ * same dark clothes so it reads as the same voice. Three states: the text,
+ * the writing ghosts, and the locked lead for the unpaid.
  */
 function MonthPanel(props: {
   readonly month: MonthSummary;
@@ -226,21 +226,16 @@ function MonthPanel(props: {
           ))
         )
       ) : (
+        /*
+         * Reworded with the week's card on 2026-09-17: the lead says what
+         * will be written rather than claiming it was, the ghost lines that
+         * stood for a hidden text are gone with the claim, and the link says
+         * where it goes.
+         */
         <View style={{ gap: 9 }}>
           <AppText variant="quote" style={{ color: theme.palette.onPanel }}>
             {props.t('stats.monthLockedLead')}
           </AppText>
-          {(['100%', '78%'] as const).map((width) => (
-            <View
-              key={width}
-              style={{
-                height: 15,
-                width,
-                borderRadius: 7,
-                backgroundColor: 'rgba(255,255,255,0.10)',
-              }}
-            />
-          ))}
           <Pressable
             accessibilityRole="button"
             onPress={props.onOpenSubscription}
@@ -248,7 +243,7 @@ function MonthPanel(props: {
             style={{ paddingTop: 6 }}
           >
             <AppText variant="body" style={{ color: theme.palette.lime }}>
-              {`${props.t('stats.readAll')} ›`}
+              {`${props.t('stats.narrLockedAction')} ›`}
             </AppText>
           </Pressable>
         </View>
@@ -639,24 +634,15 @@ function Narrative(props: {
           }}
         >
           {/*
-            Counted, never quoted. Naming the pattern here would be giving away
-            the thing and then asking to be paid for it, and hiding the fact
-            that there is one would be worse. When there is none, that is said
-            too — silence would read as something being kept back.
+            The drawing counted the month's patterns here, never quoting one.
+            Taken off on 2026-09-17: the pattern card right under this one
+            already says whether there is a pattern, so the count said it
+            twice, and said "this week" of a count made over the month.
           */}
-          <AppText variant="secondary" style={{ color: theme.palette.onPanel, opacity: 0.7 }}>
-            {props.view.patterns.length === 0
-              ? props.t('stats.morePatternsNone')
-              : props.t('stats.morePatterns', {
-                  n: props.view.patterns.length,
-                  w: props.t(
-                    countedKey('stats.pattern', props.view.patterns.length, props.locale),
-                  ),
-                })}
-          </AppText>
           {/*
-            One button either way; the subscription screen is where the offer
-            differs, because that is where the price is said out loud.
+            The button says where it goes. "Read in full" dated from the days
+            the first paragraph was given away; since 2026-08-30 nothing of
+            the text shows unpaid, so there was nothing left to complete.
           */}
           <Pressable
             accessibilityRole="button"
@@ -669,7 +655,7 @@ function Narrative(props: {
             }}
           >
             <AppText variant="body" style={{ color: '#16181D' }}>
-              {props.t('stats.readAll')}
+              {props.t('stats.narrLockedAction')}
             </AppText>
           </Pressable>
           {/*
