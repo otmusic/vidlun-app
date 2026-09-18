@@ -66,6 +66,7 @@ import { ProxyFeedbackSender } from '../infrastructure/feedback/ProxyFeedbackSen
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { ExpoReminders } from '../infrastructure/system/ExpoReminders';
+import { expoNotificationCenter } from '../infrastructure/system/expoNotificationCenter';
 import { SystemClock } from '../infrastructure/system/SystemClock';
 import { FakePurchases } from '../infrastructure/purchases/FakePurchases';
 import { RevenueCatPurchases } from '../infrastructure/purchases/RevenueCatPurchases';
@@ -289,7 +290,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     getWeekThemes: new GetWeekThemes(repository),
     findMoodPatterns: new FindMoodPatterns(repository, clock),
     searchEntries: new SearchEntries(repository),
-    reminders: new ExpoReminders(),
+    reminders: new ExpoReminders(expoNotificationCenter()),
     purchases: purchasesFor(readRevenueCatKey()),
     getVocabularyGrowth: new GetVocabularyGrowth(repository, vocabulary, clock),
     exportJournal: new ExportJournal(repository, new JournalCodec(), clock),

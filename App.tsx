@@ -227,9 +227,15 @@ function Vidlun(props: {
   settingsRef.current = props.settings;
 
   const { reminderOn, reminderHour, reminderMinute } = props.settings;
+  /*
+   * The last day of the rolling week is today. Held as the yes-or-no it is
+   * rather than as the journal it is read from: the journal reloads on every
+   * save and every return to the front, and each reload used to reschedule
+   * the whole week for an answer that had not changed.
+   */
+  const wroteToday = (flow.home?.week.at(-1)?.entryCount ?? 0) > 0;
 
   useEffect(() => {
-
     if (!reminderOn) {
       void container.reminders.cancel();
 
@@ -241,10 +247,9 @@ function Vidlun(props: {
         at: { hour: reminderHour, minute: reminderMinute },
         text: { title: t('reminder.title'), body: t('reminder.body') },
         now: container.clock.now(),
-        // The last day of the rolling week is today, and the queue is refilled
-        // on every save, so an entry made this evening takes tonight's nudge
-        // away rather than racing it.
-        skipToday: (flow.home?.week.at(-1)?.entryCount ?? 0) > 0,
+        // An entry made this evening takes tonight's nudge away rather than
+        // racing it.
+        skipToday: wroteToday,
       })
       .then((scheduled) => {
         /*
@@ -259,12 +264,12 @@ function Vidlun(props: {
   }, [
     container.clock,
     container.reminders,
-    flow.home,
     onSettingsChange,
     reminderOn,
     reminderHour,
     reminderMinute,
     t,
+    wroteToday,
   ]);
 
   /*

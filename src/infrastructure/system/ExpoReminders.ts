@@ -1,6 +1,16 @@
-import * as Notifications from 'expo-notifications';
-
 import type { IReminders, ReminderPlan } from '../../domain/ports/IReminders';
+
+/**
+ * The slice of the phone's notifications the reminders use. Injected, like
+ * the recorder's native half, so the queue below can be tested in plain Node;
+ * `expoNotificationCenter` is the real one.
+ */
+export interface NotificationCenter {
+  /** Asks only when it may still ask; false when the person has said no. */
+  granted(): Promise<boolean>;
+  cancelAll(): Promise<void>;
+  scheduleAt(date: Date, text: { readonly title: string; readonly body: string }): Promise<void>;
+}
 
 /**
  * A week of one-off notifications, replaced rather than added to.
@@ -14,43 +24,62 @@ import type { IReminders, ReminderPlan } from '../../domain/ports/IReminders';
 const DAYS_AHEAD = 7;
 
 export class ExpoReminders implements IReminders {
-  constructor() {
-    /*
-     * Without a handler iOS shows nothing while the app is on screen, and the
-     * person who just set a reminder two minutes ahead to see it work is
-     * exactly the person looking at the app when it fires. Banner only, no
-     * sound: they are already in the journal.
-     */
-    Notifications.setNotificationHandler({
-      handleNotification: () =>
-        Promise.resolve({
-          shouldShowBanner: true,
-          shouldShowList: true,
-          shouldPlaySound: false,
-          shouldSetBadge: false,
-        }),
+  /*
+   * One request at a time, and only the newest counts. Opening the app asks
+   * twice within a moment — the settings, then the journal once it has
+   * loaded — and each ask is a cancel followed by eight separate schedules.
+   * Run side by side, the second's cancel landed in the middle of the first's
+   * schedules, and the evenings the first had not reached yet were scheduled
+   * by both: two notifications at nine (owner's phone, 2026-09-17).
+   */
+  private turn: Promise<unknown> = Promise.resolve();
+  private newest = 0;
+
+  constructor(private readonly center: NotificationCenter) {}
+
+  schedule(plan: ReminderPlan): Promise<boolean> {
+    const mine = this.ask();
+
+    return this.inTurn(async () => {
+      // Overtaken while waiting: the newer request will say what stands.
+      // True, because nothing was refused — only the last answer is one.
+      if (mine !== this.newest) {
+        return true;
+      }
+
+      await this.center.cancelAll();
+
+      if (!(await this.center.granted())) {
+        return false;
+      }
+
+      for (const date of occurrences(plan)) {
+        await this.center.scheduleAt(date, plan.text);
+      }
+
+      return true;
     });
   }
 
-  async schedule(plan: ReminderPlan): Promise<boolean> {
-    await this.cancel();
+  cancel(): Promise<void> {
+    this.ask();
 
-    if (!(await granted())) {
-      return false;
-    }
-
-    for (const date of occurrences(plan)) {
-      await Notifications.scheduleNotificationAsync({
-        content: { title: plan.text.title, body: plan.text.body },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
-      });
-    }
-
-    return true;
+    return this.inTurn(() => this.center.cancelAll());
   }
 
-  async cancel(): Promise<void> {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+  private ask(): number {
+    this.newest += 1;
+
+    return this.newest;
+  }
+
+  /** Runs after whatever is already running, whether that ended well or not. */
+  private inTurn<T>(work: () => Promise<T>): Promise<T> {
+    const mine = this.turn.then(work, work);
+
+    this.turn = mine.catch(() => undefined);
+
+    return mine;
   }
 }
 
@@ -75,23 +104,4 @@ function occurrences(plan: ReminderPlan): readonly Date[] {
   }
 
   return dates;
-}
-
-/**
- * Asked for only when there is something to deliver. Requesting permission at
- * launch, before the person has asked to be reminded of anything, is how an
- * app teaches someone to say no to it.
- */
-async function granted(): Promise<boolean> {
-  const existing = await Notifications.getPermissionsAsync();
-
-  if (existing.granted) {
-    return true;
-  }
-
-  if (!existing.canAskAgain) {
-    return false;
-  }
-
-  return (await Notifications.requestPermissionsAsync()).granted;
 }

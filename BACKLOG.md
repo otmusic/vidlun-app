@@ -1351,6 +1351,35 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3u. Two reminders at nine — found 2026-09-17, fixed 2026-09-18
+
+The owner's lock screen at 21:00: the evening reminder, twice, both "now".
+
+**A race the adapter's own comment had predicted.** A plan is a cancel
+followed by eight separate schedules, each an await on the bridge. App.tsx
+asks for one whenever the preference moves, once when the app opens, and —
+through `flow.home` in the effect's dependencies — again every time the
+journal reloads, which at launch is a moment after the first ask. The two
+ran side by side: the second's cancel landed among the first's schedules,
+and every evening the first had not reached yet was scheduled by both. The
+doubles then lived until the next launch reshuffled them.
+
+**Fixed in the adapter, where it cannot recur.** `ExpoReminders` takes its
+notifications through an injected `NotificationCenter`
+(`expoNotificationCenter()` is the real one, the recorder's pattern), runs
+requests one at a time, and lets only the newest count: a plan overtaken
+while it waited does nothing, and a cancel behind a plan leaves nothing
+pending. The effect now depends on `wroteToday`, the yes-or-no it actually
+reads, rather than on the journal object, so a reload that changes nothing
+reschedules nothing. `ExpoReminders.test.ts`: five cases; the first three
+failed against the old logic with sixteen notifications for eight evenings.
+A phone already carrying doubles is cleaned by the first plan the fixed
+build makes — every plan begins with a cancel of everything.
+
+Not in build 41, which is waiting for review.
+
+---
+
 ## 3t. The locked week card says what it will do — 2026-09-17
 
 The owner, reading the statistics screen on the phone without a
