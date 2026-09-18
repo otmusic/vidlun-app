@@ -1351,6 +1351,18 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3v. "Віха" became "подія" — 2026-09-18
+
+The owner, reading the statistics screen: nobody says "віха" about their
+own move or new job; it is a word from history textbooks. The Ukrainian
+copy now says "подія" everywhere the milestone is named — the button
+"Позначити подію", the sheet "Подія", "Видалити подію", the list heading
+"Події", and the hint "Подія допомагає побачити, що було до і після." English
+keeps "milestone", where the word is alive. The drawing says "віха" and
+needs the same change. Code and keys keep `milestone`.
+
+---
+
 ## 3u. Two reminders at nine — found 2026-09-17, fixed 2026-09-18
 
 The owner's lock screen at 21:00: the evening reminder, twice, both "now".
