@@ -1388,7 +1388,15 @@ failed against the old logic with sixteen notifications for eight evenings.
 A phone already carrying doubles is cleaned by the first plan the fixed
 build makes — every plan begins with a cancel of everything.
 
-Not in build 41, which is waiting for review.
+Not in build 41, which was waiting for review — so 41 came out of the
+queue the same day. **Build 42 uploaded 2026-09-18 17:13 EEST** (commits
+e8704c0 the reminders, b60faf2 the word of §3v, 256060b the bump), VALID at
+17:20; the submission carrying 41 (66578034-…) cancelled only then, so 1.2
+was never out of review without a replacement in hand; the version went to
+DEVELOPER_REJECTED, took build 42, the What's New with one more line ("The
+evening reminder no longer arrives twice." — the race is in 1.0 and 1.1
+too) and the review notes for 42, and **went back in at 17:21 EEST**:
+review submission 4b0dc2ab-ee02-4418-84f2-7843d68ace00, WAITING_FOR_REVIEW.
 
 ---
 
