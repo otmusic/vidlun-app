@@ -1379,6 +1379,19 @@ archive 763 MB; commits 2658e7e (the cards), 3a753a0 (bump), 591c969 (the
 line under the button). Build 40 superseded; submit with `--build 41`
 (review-notes-41.txt in the scratchpad).
 
+**1.2 submitted for review 2026-09-18 11:07 EEST with build 41** — review
+submission 66578034-cec4-452a-878a-365c5cef2d7c, version state
+WAITING_FOR_REVIEW. The script attaches the build and opens the
+submission and nothing more, so the listing went in through the API by
+hand first: en-US What's New from the draft plus one line about the entry
+surviving a dropped connection (575 chars), the description with the
+built-in-model line (1771 chars), the review notes for 41 (3707 chars) on
+the version's review detail, which App Store Connect had copied from 1.1
+with the contact. Worth folding into `asc-submit.py` as `--whats-new`,
+`--description`, `--review-notes` before the next release. After approval:
+release, redeploy the legal site (privacy §2.3), archive the asset pack in
+App Store Connect, carry the divergences into the drawing.
+
 ---
 
 ## 3s. The profile without captions, and the backup rows explained — 2026-09-17
