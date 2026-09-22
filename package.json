@@ -55,6 +55,7 @@
     "legal": "node scripts/build-legal.mjs",
     "lint": "eslint . && node scripts/check-english-only.mjs && node scripts/build-legal.mjs --check",
     "lint:fix": "eslint . --fix",
-    "verify": "npm run typecheck && npm test && npm run lint"
+    "verify": "npm run typecheck && npm test && npm run lint",
+    "site": "node site/build.mjs"
   }
 }

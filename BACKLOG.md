@@ -1351,6 +1351,85 @@ One `console.log` remains in `src`, in `diagnostics/timed.ts`, behind the
 
 ---
 
+## 3x. The landing page — built 2026-09-22
+
+The owner asked for a one-page site: how the app works step by step, real
+screenshots, the best landing patterns for speed and phones, Ukrainian and
+English, light and dark, plain words. It lives with the legal pages, since
+that is what vidlun.app already serves: `legal/site/index.html` (uk) and
+`legal/site/en.html` (/en), built by `npm run site` from `site/src/copy.json`
+and `site/build.mjs`; `site/shots.sh` turns simulator screenshots into
+`site/shots/*.avif` (about 9 KB each, ffmpeg's SVT-AV1) with JPEG
+fallbacks, and the build copies them and `site/_headers` into `legal/site`,
+which is git-ignored and rebuilt before every deploy (`npm run legal` for
+the legal pages, `npm run site` for the landing, then the wrangler
+command). Not deployed and not committed: the owner's word.
+
+**The page.** Header with the language link and a three-way theme switch
+(system, light, dark, remembered in localStorage); hero with the home
+screen in a CSS phone frame; four numbered steps — recording, the asking
+card with the vocabulary open, the kept entry card, the week — each with
+its screenshot; six feature cards; the privacy panel; free against
+subscription; four questions; the App Store button again; footer to the
+legal pages. Static HTML, inline CSS, one small script, no framework; the
+fonts from Google (Unbounded, IBM Plex Sans), the app's own tokens for both
+themes; `<picture>` picks the light or dark screenshot by the system
+theme, the switch rewrites the sources' `media`; every image lazy but the
+hero's, all with width and height; canonical, hreflang, Open Graph,
+JSON-LD. 22 KB of HTML per language, ~55 KB of images on first view.
+
+**The screenshots.** Seven screens, two languages, two themes, from the
+simulator's Release build of this tree, with a journal seeded straight
+into AsyncStorage (`manifest.json` under the app's container): sixteen
+entries over three weeks with moods, both emotion sets and echoes, an
+event, and a recording file per entry so the card shows the player. The
+card that asks for an emotion was reached through the text path with the
+sentence pasted from the Mac's pasteboard (`simctl pbsync host`); the
+compare card cannot be shown because the analysis never succeeds on the
+simulator (App Attest), so step three shows the kept entry instead. The
+pass found §3w and the title overlap on the week screen.
+
+Where the drawing is silent: the drawing has no website at all; the
+page's look is the app's own language carried over.
+
+**Second pass, the owner's word the same afternoon:** the line about
+"under a minute" went (nobody measured it), "one button" went, the asking
+step says "pick emotions from the vocabulary or tap I don't know", three
+of the six feature cards went (languages, journal and search, reminder /
+backup / Face ID), "Privacy by design" became "Privacy", the eyebrow and
+"Free. iOS 17 and later" went, "Questions" became "FAQ". And "grey and
+dull" became: the lime marker under the headline's key words (the
+identity's highlight behind a headline, drawn in on load), a slow marquee
+of real vocabulary words in their tones between the hero and the steps
+(pauses on hover, wraps still under Reduce Motion), phones tilted a couple
+of degrees that straighten on hover, step numerals at display size in the
+accent's soft tone, scroll-driven reveals through `animation-timeline:
+view()` where the browser has it (plain visible elsewhere), and a drawing
+in each feature card — a voice wave that pulses on hover, six chips, a
+week of bars — all CSS, no images added.
+
+Third pass, the owner's phone at night: the marker crossed the words and
+cream on lime did not read, and the step numerals in the accent's soft
+tone vanished on the dark ground. The mark is now a stroke under the words
+(top .84em, .24em tall) in both themes, and the numerals have a tone of
+their own (`--numeral`: #C9C2F5 on paper, #5A4FA0 in the dark).
+
+---
+
+## 3w. The arrow into last week did nothing — found 2026-09-22
+
+Found while taking screenshots for the landing page: on the statistics
+screen the "earlier week" step is drawn live and does nothing when tapped.
+`showEarlierWeek` and `showLaterWeek` called `loadStats` from inside a
+`setStage` updater that returned the state unchanged; React bails out of
+such an update without committing it, and the load called from within was
+lost with it. Both now read the stage in hand and call `loadStats`
+directly. Not in build 42, which is waiting for review; goes with the next.
+Seen once the arrow worked: "Минулий тиждень" ran under the arrows — the
+display title now takes the row's slack and wraps, the arrows never shrink.
+
+---
+
 ## 3v. "Віха" became "подія" — 2026-09-18
 
 The owner, reading the statistics screen: nobody says "віха" about their

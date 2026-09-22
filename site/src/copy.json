@@ -1,0 +1,458 @@
+{
+  "uk": {
+    "lang": "uk",
+    "dir": "",
+    "otherLang": "en",
+    "otherHref": "/en",
+    "otherLabel": "English",
+    "title": "Vidlun — голосовий щоденник емоцій для iPhone",
+    "description": "Скажи одне речення про свій день. Vidlun запише його, розпізнає мову на телефоні й назве, що ти відчуваєш. Без акаунта, українська та англійська.",
+    "nav": {
+      "how": "Як це працює",
+      "features": "Що вміє",
+      "privacy": "Приватність",
+      "price": "Ціна",
+      "faq": "FAQ"
+    },
+    "theme": {
+      "label": "Тема",
+      "system": "Як у системі",
+      "light": "Світла",
+      "dark": "Темна"
+    },
+    "hero": {
+      "title": "Скажи, як минув день. Vidlun назве, що ти відчуваєш.",
+      "lead": "Одна кнопка, одне речення. Мова розпізнається на телефоні: українська, англійська або суміш. Без акаунта й реєстрації.",
+      "cta": "Завантажити в App Store",
+      "secondary": "Як це працює",
+      "mark": "як минув день"
+    },
+    "how": {
+      "title": "Як це працює",
+      "lead": "Чотири кроки, і запис у щоденнику.",
+      "steps": [
+        {
+          "n": "1",
+          "title": "Натисни і говори",
+          "body": "Говори як зручно, з паузами. Текст з’являється одразу, а аудіо лишається на телефоні.",
+          "shot": "recording",
+          "alt": "Екран запису: таймер і хвиля голосу"
+        },
+        {
+          "n": "2",
+          "title": "Назви, що відчуваєш",
+          "body": "Спершу Vidlun питає тебе. Вибери емоції зі словника емоцій або натисни «не знаю».",
+          "shot": "turn-picker",
+          "alt": "Картка вибору емоції зі словником"
+        },
+        {
+          "n": "3",
+          "title": "Побач, що почув Vidlun",
+          "body": "Потім Vidlun показує свою версію: емоції, настрій від 1 до 5 і одне коротке речення. Він описує сказане і не дає порад чи оцінок.",
+          "shot": "detail",
+          "alt": "Картка запису: аудіо, настрій, емоції та відлуння"
+        },
+        {
+          "n": "4",
+          "title": "Записи складаються в картину",
+          "body": "Щоденник із пошуком, настрій по днях, позначені події. За тиждень видно, що повторювалось і що змінилось.",
+          "shot": "week",
+          "alt": "Тиждень: настрій по днях і події"
+        }
+      ]
+    },
+    "features": {
+      "title": "Що вміє Vidlun",
+      "items": [
+        {
+          "title": "Аудіо не покидає телефон",
+          "body": "Запис зберігається на пристрої тринадцять місяців, потім видаляється. Текст лишається назавжди.",
+          "art": "wave"
+        },
+        {
+          "title": "Словник зі 125 емоцій",
+          "body": "Від «радість» до «приємна втома». Слова, а не смайлики, щоб точніше називати свої стани.",
+          "art": "chips"
+        },
+        {
+          "title": "Тиждень і події",
+          "body": "Настрій по днях і події, які позначають, що було до і після: переїзд, нова робота.",
+          "art": "bars"
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Приватність",
+      "body": "Без акаунта, без реєстрації, без аналітики. Аудіо лишається на телефоні. На сервер іде лише текст запису, щоб назвати емоцію, і ніколи твоє ім’я.",
+      "link": "Політика приватності"
+    },
+    "price": {
+      "title": "Що безкоштовно, а що ні",
+      "free": {
+        "title": "Безкоштовно назавжди",
+        "items": [
+          "Запис і розпізнавання мови",
+          "Назви емоцій і настрій",
+          "Щоденник, пошук, події",
+          "Настрій по днях",
+          "Резервна копія"
+        ]
+      },
+      "paid": {
+        "title": "Підписка",
+        "items": [
+          "Тижневий наратив: раз на тиждень Vidlun пише, що помітив",
+          "Відлуння до кожного запису",
+          "Теми тижня",
+          "Записи до п’яти хвилин"
+        ],
+        "note": "Місяць, рік або одна покупка назавжди. Ціни в App Store."
+      }
+    },
+    "faq": {
+      "title": "FAQ",
+      "items": [
+        {
+          "q": "Потрібен інтернет?",
+          "a": "Для запису і розпізнавання ні. Щоб Vidlun назвав емоцію, потрібен зв’язок. Без нього запис збережеться з твоїм словом, а відповідь прийде пізніше."
+        },
+        {
+          "q": "Це терапія?",
+          "a": "Ні. Vidlun — щоденник. Він описує сказане й не дає порад, оцінок чи медичних висновків."
+        },
+        {
+          "q": "Де мої записи?",
+          "a": "На твоєму телефоні. Резервна копія — це файл, який ти зберігаєш сам. Аудіо в копію не входить."
+        },
+        {
+          "q": "Є версія для Android?",
+          "a": "Поки що лише iPhone."
+        }
+      ]
+    },
+    "footer": {
+      "terms": "Умови",
+      "privacy": "Приватність",
+      "support": "Підтримка",
+      "made": "Vidlun, 2026"
+    },
+    "words": [
+      [
+        "Спокій",
+        "calm"
+      ],
+      [
+        "Приємна втома",
+        "calm"
+      ],
+      [
+        "Гордість",
+        "warm"
+      ],
+      [
+        "Тривога",
+        "cool"
+      ],
+      [
+        "Радість",
+        "warm"
+      ],
+      [
+        "Полегшення після зусиль",
+        "calm"
+      ],
+      [
+        "Стрес",
+        "cool"
+      ],
+      [
+        "Задоволення",
+        "calm"
+      ],
+      [
+        "Самотність",
+        "cool"
+      ],
+      [
+        "Грайливість",
+        "warm"
+      ],
+      [
+        "Фрустрація",
+        "low"
+      ],
+      [
+        "Оптимізм",
+        "warm"
+      ],
+      [
+        "Нудьга",
+        "cool"
+      ],
+      [
+        "Захоплення",
+        "calm"
+      ],
+      [
+        "Вигорання",
+        "low"
+      ],
+      [
+        "Прийняття",
+        "violet"
+      ],
+      [
+        "Очікування новин",
+        "cool"
+      ],
+      [
+        "Втома",
+        "cool"
+      ],
+      [
+        "Здивування",
+        "calm"
+      ],
+      [
+        "Туга за домом",
+        "cool"
+      ],
+      [
+        "Піднесення",
+        "warm"
+      ],
+      [
+        "Розчарування",
+        "low"
+      ]
+    ]
+  },
+  "en": {
+    "lang": "en",
+    "dir": "en",
+    "otherLang": "uk",
+    "otherHref": "/",
+    "otherLabel": "Українська",
+    "title": "Vidlun — a voice emotion journal for iPhone",
+    "description": "Say one sentence about your day. Vidlun records it, recognises speech on your phone and names what you feel. No account, Ukrainian and English.",
+    "nav": {
+      "how": "How it works",
+      "features": "Features",
+      "privacy": "Privacy",
+      "price": "Price",
+      "faq": "FAQ"
+    },
+    "theme": {
+      "label": "Theme",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "hero": {
+      "title": "Say how the day went. Vidlun names what you feel.",
+      "lead": "One button, one sentence. Speech is recognised on your phone: Ukrainian, English or a mix. No account, no sign-up.",
+      "cta": "Download on the App Store",
+      "secondary": "How it works",
+      "mark": "how the day went"
+    },
+    "how": {
+      "title": "How it works",
+      "lead": "Four steps and the entry is in your journal.",
+      "steps": [
+        {
+          "n": "1",
+          "title": "Tap and talk",
+          "body": "Talk the way you like, pauses included. The text appears right away and the audio stays on your phone.",
+          "shot": "recording",
+          "alt": "Recording screen with the timer and the voice wave"
+        },
+        {
+          "n": "2",
+          "title": "Name what you feel",
+          "body": "Vidlun asks you first. Pick emotions from the emotion vocabulary, or tap “I don’t know”.",
+          "shot": "turn-picker",
+          "alt": "The card asking for an emotion, with the vocabulary open"
+        },
+        {
+          "n": "3",
+          "title": "See what Vidlun heard",
+          "body": "Then Vidlun shows its version: emotions, a mood from 1 to 5 and one short sentence. It describes what was said and gives no advice or grades.",
+          "shot": "detail",
+          "alt": "An entry card: audio, mood, emotions and the echo"
+        },
+        {
+          "n": "4",
+          "title": "Entries add up to a picture",
+          "body": "A journal with search, mood by day, marked events. Over a week you see what kept coming back and what changed.",
+          "shot": "week",
+          "alt": "The week: mood by day and events"
+        }
+      ]
+    },
+    "features": {
+      "title": "What Vidlun does",
+      "items": [
+        {
+          "title": "Audio never leaves your phone",
+          "body": "A recording is kept on the device for thirteen months, then deleted. The text stays for good.",
+          "art": "wave"
+        },
+        {
+          "title": "A vocabulary of 125 emotions",
+          "body": "From “joy” to “the good kind of tired”. Words, not emoji, so you can name your states more precisely.",
+          "art": "chips"
+        },
+        {
+          "title": "Week and events",
+          "body": "Mood by day, and events that mark what came before and after: a move, a new job.",
+          "art": "bars"
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Privacy",
+      "body": "No account, no sign-up, no analytics. Audio stays on your phone. Only the text of an entry goes to the server, to name the emotion, and never your name.",
+      "link": "Privacy policy"
+    },
+    "price": {
+      "title": "What is free and what is not",
+      "free": {
+        "title": "Free forever",
+        "items": [
+          "Recording and speech recognition",
+          "Emotion names and mood",
+          "Journal, search, events",
+          "Mood by day",
+          "Backup"
+        ]
+      },
+      "paid": {
+        "title": "Subscription",
+        "items": [
+          "The weekly narrative: once a week Vidlun writes what it noticed",
+          "An echo on every entry",
+          "Themes of the week",
+          "Recordings up to five minutes"
+        ],
+        "note": "Monthly, yearly or one purchase for good. Prices are in the App Store."
+      }
+    },
+    "faq": {
+      "title": "FAQ",
+      "items": [
+        {
+          "q": "Do I need internet?",
+          "a": "Not for recording and recognition. To have Vidlun name the emotion, yes. Without it the entry is saved with your word and the answer comes later."
+        },
+        {
+          "q": "Is this therapy?",
+          "a": "No. Vidlun is a journal. It describes what was said and gives no advice, grades or medical conclusions."
+        },
+        {
+          "q": "Where are my entries?",
+          "a": "On your phone. A backup is a file you keep yourself. Audio is not part of it."
+        },
+        {
+          "q": "Is there an Android version?",
+          "a": "iPhone only for now."
+        }
+      ]
+    },
+    "footer": {
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "support": "Support",
+      "made": "Vidlun, 2026"
+    },
+    "words": [
+      [
+        "Peaceful",
+        "calm"
+      ],
+      [
+        "The good kind of tired",
+        "calm"
+      ],
+      [
+        "Proud",
+        "warm"
+      ],
+      [
+        "Anxious",
+        "cool"
+      ],
+      [
+        "Happy",
+        "warm"
+      ],
+      [
+        "Relief after effort",
+        "calm"
+      ],
+      [
+        "Stressed",
+        "cool"
+      ],
+      [
+        "Content",
+        "calm"
+      ],
+      [
+        "Lonely",
+        "cool"
+      ],
+      [
+        "Playful",
+        "warm"
+      ],
+      [
+        "Frustrated",
+        "low"
+      ],
+      [
+        "Optimistic",
+        "warm"
+      ],
+      [
+        "Bored",
+        "cool"
+      ],
+      [
+        "Amazed",
+        "calm"
+      ],
+      [
+        "Burnout",
+        "low"
+      ],
+      [
+        "Accepted",
+        "violet"
+      ],
+      [
+        "Waiting for news",
+        "cool"
+      ],
+      [
+        "Tired",
+        "cool"
+      ],
+      [
+        "Surprised",
+        "calm"
+      ],
+      [
+        "Homesick",
+        "cool"
+      ],
+      [
+        "Excited",
+        "warm"
+      ],
+      [
+        "Disappointed",
+        "low"
+      ]
+    ]
+  }
+}

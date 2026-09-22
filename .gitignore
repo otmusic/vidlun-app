@@ -64,3 +64,6 @@ asset-packs/dev-server/
 
 # The speech model the build bundles (669 MB); scripts/fetch-model.sh brings it
 assets/model/
+
+# The landing page's Artifact previews, written by `node site/build.mjs --preview`.
+site/preview-*.html
