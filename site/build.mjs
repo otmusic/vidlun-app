@@ -365,6 +365,10 @@ for (const file of readdirSync(join(ROOT, 'site', 'shots'))) {
   copyFileSync(join(ROOT, 'site', 'shots', file), join(OUT, 'shots', file));
 }
 copyFileSync(join(ROOT, 'site', '_headers'), join(OUT, '_headers'));
+// Files that must sit at the root as they are: search-engine verification and the like.
+for (const file of readdirSync(join(ROOT, 'site', 'static'))) {
+  copyFileSync(join(ROOT, 'site', 'static', file), join(OUT, file));
+}
 for (const file of readdirSync(join(ROOT, 'site', 'icons'))) {
   copyFileSync(join(ROOT, 'site', 'icons', file), join(OUT, file));
 }
