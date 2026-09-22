@@ -1413,6 +1413,24 @@ cream on lime did not read, and the step numerals in the accent's soft
 tone vanished on the dark ground. The mark is now a stroke under the words
 (top .84em, .24em tall) in both themes, and the numerals have a tone of
 their own (`--numeral`: #C9C2F5 on paper, #5A4FA0 in the dark).
+Then from the phone again: the glow sat on the hero alone and left the
+header a flat band above it, so it moved to the body's top; and the App
+Store button broke its label across two lines at a large text size, so
+it never wraps and takes the row on narrow screens. Redeployed (a5bf004).
+
+**Favicon and the search pass, 2026-09-22.** The favicon is the app icon
+with iOS's corners (`site/icons`: SVG, 32 and 192 PNG, ICO, the 180
+apple-touch-icon). A share image per language (`site/og`, 1200 x 630):
+composed as SVG with the app's fonts and the home screenshot by
+`site/tools/og.py`, rendered through WebKit by `site/tools/render.swift`
+(Quick Look's `qlmanage` scaled the SVG unpredictably). The head now
+carries `og:image` with size and alt, the Twitter card tags, `keywords`
+per language, `author`, `robots` with `max-image-preview:large`, the App
+Store Smart App Banner (`apple-itunes-app`), and the icons; the JSON-LD
+names the image, the five screenshots and the author. `robots.txt` and a
+`sitemap.xml` with hreflang pairs for the eight pages are written by the
+build. Left to the owner: verify vidlun.app in Google Search Console and
+Bing Webmaster Tools and submit the sitemap — that needs the account.
 
 ---
 
@@ -1427,6 +1445,9 @@ lost with it. Both now read the stage in hand and call `loadStats`
 directly. Not in build 42, which is waiting for review; goes with the next.
 Seen once the arrow worked: "Минулий тиждень" ran under the arrows — the
 display title now takes the row's slack and wraps, the arrows never shrink.
+Then the owner asked for the dates instead: any week but this one is
+titled by its range ("14 вер. – 20 вер.") with nothing under it, and
+`stats.last` is gone from both locales.
 
 ---
 

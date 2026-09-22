@@ -301,6 +301,9 @@ function page(lang) {
     installUrl: APP_STORE,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     inLanguage: [lang === 'en' ? 'en' : 'uk'],
+    image: `${SITE}/og/og-${lang}.jpg`,
+    screenshot: ['home', 'recording', 'turn-picker', 'detail', 'week'].map((name) => `${SITE}/shots/${lang}-${name}-light.jpg`),
+    author: { '@type': 'Organization', name: 'Vidlun', url: SITE },
   });
   const fonts = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@500&family=IBM+Plex+Sans:wght@400;500&display=swap';
   const full = `<!doctype html>
@@ -321,9 +324,24 @@ function page(lang) {
 <meta property="og:title" content="${escape(c.title)}">
 <meta property="og:description" content="${escape(c.description)}">
 <meta property="og:url" content="${canonical}">
-<meta property="og:image" content="${SITE}/shots/${lang}-home-light.jpg">
+<meta property="og:image" content="${SITE}/og/og-${lang}.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${escape(c.ogAlt)}">
 <meta property="og:locale" content="${lang === 'en' ? 'en_US' : 'uk_UA'}">
+<meta property="og:locale:alternate" content="${lang === 'en' ? 'uk_UA' : 'en_US'}">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escape(c.title)}">
+<meta name="twitter:description" content="${escape(c.description)}">
+<meta name="twitter:image" content="${SITE}/og/og-${lang}.jpg">
+<meta name="keywords" content="${escape(c.keywords)}">
+<meta name="author" content="Vidlun">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="apple-itunes-app" content="app-id=6806530807">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${fonts}">
@@ -347,6 +365,38 @@ for (const file of readdirSync(join(ROOT, 'site', 'shots'))) {
   copyFileSync(join(ROOT, 'site', 'shots', file), join(OUT, 'shots', file));
 }
 copyFileSync(join(ROOT, 'site', '_headers'), join(OUT, '_headers'));
+for (const file of readdirSync(join(ROOT, 'site', 'icons'))) {
+  copyFileSync(join(ROOT, 'site', 'icons', file), join(OUT, file));
+}
+mkdirSync(join(OUT, 'og'), { recursive: true });
+for (const file of readdirSync(join(ROOT, 'site', 'og'))) {
+  copyFileSync(join(ROOT, 'site', 'og', file), join(OUT, 'og', file));
+}
+writeFileSync(join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
+const pages = [
+  ['/', '/en', 'weekly', '1.0'],
+  ['/privacy', '/privacy-en', 'monthly', '0.4'],
+  ['/terms', '/terms-en', 'monthly', '0.4'],
+  ['/support', '/support-en', 'monthly', '0.4'],
+];
+const today = new Date().toISOString().slice(0, 10);
+const urls = pages.flatMap(([uk, en, freq, priority]) =>
+  [uk, en].map(
+    (path) => `  <url>
+    <loc>${SITE}${path}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${freq}</changefreq>
+    <priority>${priority}</priority>
+    <xhtml:link rel="alternate" hreflang="uk" href="${SITE}${uk}"/>
+    <xhtml:link rel="alternate" hreflang="en" href="${SITE}${en}"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE}${uk}"/>
+  </url>`,
+  ),
+);
+writeFileSync(
+  join(OUT, 'sitemap.xml'),
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`,
+);
 for (const lang of ['uk', 'en']) {
   const { full, previewFile } = page(lang);
   const target = lang === 'en' ? 'en.html' : 'index.html';

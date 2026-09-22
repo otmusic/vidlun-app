@@ -225,7 +225,9 @@
         "Розчарування",
         "low"
       ]
-    ]
+    ],
+    "keywords": "голосовий щоденник, щоденник емоцій, щоденник настрою, трекер настрою, аудіощоденник, застосунок для iPhone, розпізнавання української мови, емоції, самопізнання, ментальне здоров’я, Vidlun",
+    "ogAlt": "Vidlun: скажи, як минув день, і Vidlun назве, що ти відчуваєш"
   },
   "en": {
     "lang": "en",
@@ -453,6 +455,8 @@
         "Disappointed",
         "low"
       ]
-    ]
+    ],
+    "keywords": "voice journal, emotion journal, mood journal, mood tracker, audio diary, iPhone app, on-device speech recognition, Ukrainian, feelings, mental wellbeing, Vidlun",
+    "ogAlt": "Vidlun: say how the day went and Vidlun names what you feel"
   }
 }
