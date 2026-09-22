@@ -1363,7 +1363,7 @@ and `site/build.mjs`; `site/shots.sh` turns simulator screenshots into
 fallbacks, and the build copies them and `site/_headers` into `legal/site`,
 which is git-ignored and rebuilt before every deploy (`npm run legal` for
 the legal pages, `npm run site` for the landing, then the wrangler
-command). Not deployed and not committed: the owner's word.
+command). **Deployed 2026-09-22** at the owner's word — vidlun.app/ and /en answer 200, the AVIF shots with a week's cache — and committed as 7f2a5c1 (the app fixes of §3w stay uncommitted for the next build).
 
 **The page.** Header with the language link and a three-way theme switch
 (system, light, dark, remembered in localStorage); hero with the home
