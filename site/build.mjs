@@ -93,8 +93,9 @@ p{margin:0;max-width:62ch}
 .theme button{font:inherit;font-size:13px;color:var(--ink-soft);background:none;border:0;border-radius:999px;padding:5px 11px;cursor:pointer}
 .theme button[aria-pressed="true"]{background:var(--ink);color:var(--canvas)}
 @media (max-width:720px){.nav{display:none}.tools{margin-left:auto}}
-.hero{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:32px 48px;align-items:center;padding-block:clamp(36px,7vw,84px) clamp(28px,5vw,64px)}
-.hero::before{content:"";position:absolute;inset:-40px -10vw 0;z-index:-1;pointer-events:none;background:radial-gradient(38% 60% at 12% 30%,var(--glow1),transparent 70%),radial-gradient(34% 55% at 82% 60%,var(--glow2),transparent 70%)}
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:32px 48px;align-items:center;padding-block:clamp(36px,7vw,84px) clamp(28px,5vw,64px)}
+body{position:relative;isolation:isolate}
+body::before{content:"";position:absolute;left:0;right:0;top:0;height:min(120vh,1080px);z-index:-1;pointer-events:none;background:radial-gradient(40% 55% at 10% 22%,var(--glow1),transparent 70%),radial-gradient(36% 50% at 86% 52%,var(--glow2),transparent 70%)}
 .hl{background:none;color:inherit;position:relative;white-space:nowrap}
 .hl::before{content:"";position:absolute;left:-.08em;right:-.08em;top:.84em;height:.24em;background:var(--lime);border-radius:.12em;transform:rotate(-1deg);z-index:-1;transform-origin:left;animation:mark .7s .5s cubic-bezier(.2,.9,.3,1) both}
 @keyframes mark{from{transform:scaleX(0) rotate(-1deg)}to{transform:scaleX(1) rotate(-1deg)}}
@@ -106,7 +107,8 @@ p{margin:0;max-width:62ch}
 .eyebrow{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:18px}
 .lead{font-size:clamp(17px,1.6vw,20px);line-height:1.55;color:var(--ink-soft);margin-top:20px}
 .cta{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-top:30px}
-.btn{display:inline-flex;align-items:center;gap:10px;font-weight:500;text-decoration:none;border-radius:999px;padding:16px 24px;background:var(--ink);color:var(--canvas);font-size:17px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-weight:500;text-decoration:none;border-radius:999px;padding:16px 24px;background:var(--ink);color:var(--canvas);font-size:17px;white-space:nowrap}
+@media (max-width:520px){.btn{width:100%;font-size:16px;padding:15px 18px}.cta{gap:14px}}
 .btn svg{width:18px;height:18px;fill:currentColor}
 .btn:hover{opacity:.92}
 .quiet{color:var(--ink-soft);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:1px}
