@@ -336,7 +336,7 @@ function page(lang) {
 <meta name="twitter:image" content="${SITE}/og/og-${lang}.jpg">
 <meta name="keywords" content="${escape(c.keywords)}">
 <meta name="author" content="Vidlun">
-<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="robots" content="index, follow">
 <meta name="apple-itunes-app" content="app-id=6806530807">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
