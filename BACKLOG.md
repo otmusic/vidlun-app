@@ -1450,6 +1450,24 @@ follow the subscription list. The free list has calm-green bullets, the
 subscription list accent bullets; the plans sit on the canvas tone inside
 the paper card, the year keeps its ink border and lime badge.
 
+**Sharper screenshots, a sticky header, a louder privacy panel,
+2026-09-23.** The owner's word, four asks at once. (1) The screenshots
+were blurry because `sips -Z 640` had fitted the *height* to 640, so every
+phone on the page was a 294-px image stretched to 320 css px; shots.sh now
+resamples by width to 640 and 960 px (AVIF, crf 16) plus a 640-px JPEG
+fallback, and `shot()` serves them as a 1x/1.5x srcset. (2) The header is
+sticky: full-bleed, translucent canvas with a backdrop blur, a hairline
+that fades in over the first 120 px of scroll (scroll-driven animation,
+plain translucent bar where unsupported); sections carry a scroll margin
+so the anchors land under it. On phones the theme switch shows icons
+(system, sun, moon) instead of words so the bar stays one row; the section
+links hide below 900 px. (3) The privacy panel: the title at hero size
+with the lime underline, the body split into its three sentences as three
+statements in Unbounded under lime line icons, a lime glow in the corner;
+the policy link left the panel (the footer keeps it). (4) The note under
+the plans is 13 px and free of the 62ch paragraph cap, so one line on
+desktop.
+
 ---
 
 ## 3y. The journal counts entries, not echoes — 2026-09-22

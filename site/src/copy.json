@@ -83,8 +83,11 @@
     },
     "privacy": {
       "title": "Приватність",
-      "body": "Без акаунта, без реєстрації, без аналітики. Аудіо лишається на телефоні. На сервер іде лише текст запису, щоб назвати емоцію, і ніколи твоє ім’я.",
-      "link": "Політика приватності"
+      "points": [
+        "Без акаунта, без реєстрації, без аналітики.",
+        "Аудіо лишається на телефоні.",
+        "На сервер іде лише текст запису, щоб назвати емоцію, і ніколи твоє ім’я."
+      ]
     },
     "price": {
       "title": "Що безкоштовно, а що ні",
@@ -332,8 +335,11 @@
     },
     "privacy": {
       "title": "Privacy",
-      "body": "No account, no sign-up, no analytics. Audio stays on your phone. Only the text of an entry goes to the server, to name the emotion, and never your name.",
-      "link": "Privacy policy"
+      "points": [
+        "No account, no sign-up, no analytics.",
+        "Audio stays on your phone.",
+        "Only the text of an entry goes to the server, to name the emotion, and never your name."
+      ]
     },
     "price": {
       "title": "What is free and what is not",

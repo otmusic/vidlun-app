@@ -10,7 +10,7 @@
  * site/preview-<lang>.html, the same page without the document skeleton,
  * for the Artifact viewer.
  */
-import { copyFileSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -24,15 +24,19 @@ const preview = process.argv.includes('--preview');
 const escape = (text) =>
   String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** A screenshot in both themes: the system theme picks, the switch overrides. */
+/**
+ * A screenshot in both themes (the system theme picks, the switch overrides)
+ * and two densities: 640 px for 1x screens, 960 px for anything denser.
+ */
 function shot(lang, name, alt, { eager = false } = {}) {
   const base = (theme) => `shots/${lang}-${name}-${theme}`;
+  const avif = (theme) => `${base(theme)}-640.avif 1x, ${base(theme)}-960.avif 1.5x`;
   const loading = eager ? 'fetchpriority="high"' : 'loading="lazy" decoding="async"';
   return `<picture class="shot">
-  <source data-dark srcset="${base('dark')}.avif" type="image/avif" media="(prefers-color-scheme: dark)">
-  <source data-dark srcset="${base('dark')}.jpg" media="(prefers-color-scheme: dark)">
-  <source srcset="${base('light')}.avif" type="image/avif">
-  <img src="${base('light')}.jpg" width="640" height="1391" alt="${escape(alt)}" ${loading}>
+  <source data-dark srcset="${avif('dark')}" type="image/avif" media="(prefers-color-scheme: dark)">
+  <source data-dark srcset="${base('dark')}-640.jpg" media="(prefers-color-scheme: dark)">
+  <source srcset="${avif('light')}" type="image/avif">
+  <img src="${base('light')}-640.jpg" width="640" height="1391" alt="${escape(alt)}" ${loading}>
 </picture>`;
 }
 
@@ -64,9 +68,9 @@ function art(kind, list) {
 }
 
 const CSS = `
-:root{--canvas:#FBF7F0;--paper:#FFFCF6;--ink:#16181D;--ink-soft:#6C6F78;--ink-faint:#8A8D95;--line:#E2DACB;--line-soft:#F7F1E6;--accent:#4433E0;--accent-ink:#3226BF;--accent-soft:#E8E5FD;--lime:#D7F26B;--lime-soft:#EEF6D2;--panel:#16181D;--on-panel:#FBF7F0;--on-panel-soft:rgba(251,247,240,.7);--bezel:#16181D;--shadow:0 34px 70px -34px rgba(22,24,29,.45);--calm:#2E8B6A;--warm:#B8860B;--cool:#3A7CA5;--low:#B5602F;--violet:#8A4FD1;--glow1:rgba(215,242,107,.55);--glow2:rgba(232,229,253,.9);--numeral:#C9C2F5;color-scheme:light}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--canvas:#14161B;--paper:#1B1E25;--ink:#F2EEE6;--ink-soft:#A9AEB8;--ink-faint:#8B9099;--line:#2C313B;--line-soft:#232833;--accent:#8B7BFF;--accent-ink:#A79BFF;--accent-soft:#232149;--lime:#AFD64A;--lime-soft:#27311C;--panel:#22262F;--on-panel:#F2EEE6;--on-panel-soft:rgba(242,238,230,.7);--bezel:#2A2F38;--shadow:0 34px 70px -34px rgba(0,0,0,.7);--calm:#6FCBA6;--warm:#E2B23B;--cool:#7FB6DE;--low:#E0875C;--violet:#B79BFF;--glow1:rgba(175,214,74,.16);--glow2:rgba(139,123,255,.16);--numeral:#5A4FA0;color-scheme:dark}}
-:root[data-theme="dark"]{--canvas:#14161B;--paper:#1B1E25;--ink:#F2EEE6;--ink-soft:#A9AEB8;--ink-faint:#8B9099;--line:#2C313B;--line-soft:#232833;--accent:#8B7BFF;--accent-ink:#A79BFF;--accent-soft:#232149;--lime:#AFD64A;--lime-soft:#27311C;--panel:#22262F;--on-panel:#F2EEE6;--on-panel-soft:rgba(242,238,230,.7);--bezel:#2A2F38;--shadow:0 34px 70px -34px rgba(0,0,0,.7);--calm:#6FCBA6;--warm:#E2B23B;--cool:#7FB6DE;--low:#E0875C;--violet:#B79BFF;--glow1:rgba(175,214,74,.16);--glow2:rgba(139,123,255,.16);--numeral:#5A4FA0;color-scheme:dark}
+:root{--canvas:#FBF7F0;--paper:#FFFCF6;--ink:#16181D;--ink-soft:#6C6F78;--ink-faint:#8A8D95;--line:#E2DACB;--line-soft:#F7F1E6;--accent:#4433E0;--accent-ink:#3226BF;--accent-soft:#E8E5FD;--lime:#D7F26B;--lime-soft:#EEF6D2;--panel:#16181D;--on-panel:#FBF7F0;--on-panel-soft:rgba(251,247,240,.7);--on-panel-line:rgba(251,247,240,.16);--panel-glow:rgba(215,242,107,.3);--bezel:#16181D;--shadow:0 34px 70px -34px rgba(22,24,29,.45);--calm:#2E8B6A;--warm:#B8860B;--cool:#3A7CA5;--low:#B5602F;--violet:#8A4FD1;--glow1:rgba(215,242,107,.55);--glow2:rgba(232,229,253,.9);--numeral:#C9C2F5;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--canvas:#14161B;--paper:#1B1E25;--ink:#F2EEE6;--ink-soft:#A9AEB8;--ink-faint:#8B9099;--line:#2C313B;--line-soft:#232833;--accent:#8B7BFF;--accent-ink:#A79BFF;--accent-soft:#232149;--lime:#AFD64A;--lime-soft:#27311C;--panel:#22262F;--on-panel:#F2EEE6;--on-panel-soft:rgba(242,238,230,.7);--on-panel-line:rgba(242,238,230,.14);--panel-glow:rgba(175,214,74,.2);--bezel:#2A2F38;--shadow:0 34px 70px -34px rgba(0,0,0,.7);--calm:#6FCBA6;--warm:#E2B23B;--cool:#7FB6DE;--low:#E0875C;--violet:#B79BFF;--glow1:rgba(175,214,74,.16);--glow2:rgba(139,123,255,.16);--numeral:#5A4FA0;color-scheme:dark}}
+:root[data-theme="dark"]{--canvas:#14161B;--paper:#1B1E25;--ink:#F2EEE6;--ink-soft:#A9AEB8;--ink-faint:#8B9099;--line:#2C313B;--line-soft:#232833;--accent:#8B7BFF;--accent-ink:#A79BFF;--accent-soft:#232149;--lime:#AFD64A;--lime-soft:#27311C;--panel:#22262F;--on-panel:#F2EEE6;--on-panel-soft:rgba(242,238,230,.7);--on-panel-line:rgba(242,238,230,.14);--panel-glow:rgba(175,214,74,.2);--bezel:#2A2F38;--shadow:0 34px 70px -34px rgba(0,0,0,.7);--calm:#6FCBA6;--warm:#E2B23B;--cool:#7FB6DE;--low:#E0875C;--violet:#B79BFF;--glow1:rgba(175,214,74,.16);--glow2:rgba(139,123,255,.16);--numeral:#5A4FA0;color-scheme:dark}
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
@@ -80,7 +84,10 @@ h2{font-size:clamp(24px,3.2vw,36px)}
 h3{font-size:19px;letter-spacing:-.01em;line-height:1.3}
 p{margin:0;max-width:62ch}
 .wrap{max-width:1120px;margin-inline:auto}
-.top{display:flex;align-items:center;gap:14px 22px;flex-wrap:wrap;padding-block:18px 6px}
+.top{position:sticky;top:0;z-index:20;margin-inline:calc(-1 * clamp(16px,4vw,32px));padding-inline:clamp(16px,4vw,32px);border-bottom:1px solid var(--line);background:var(--canvas);background:color-mix(in srgb,var(--canvas) 82%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.top-in{display:flex;align-items:center;gap:14px 22px;flex-wrap:wrap;padding-block:12px}
+@supports (animation-timeline: scroll()){.top{animation:stick both;animation-timeline:scroll(root);animation-range:0px 120px}@keyframes stick{from{background:transparent;border-color:transparent}to{background:color-mix(in srgb,var(--canvas) 82%,transparent);border-color:var(--line)}}}
+section{scroll-margin-top:72px}
 .brand{font-family:Unbounded,sans-serif;font-weight:500;font-size:22px;letter-spacing:-.03em;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;gap:9px}
 .brand svg{width:26px;height:16px}
 .nav{display:flex;gap:4px 18px;flex-wrap:wrap;margin-inline:auto;font-size:15px}
@@ -90,9 +97,11 @@ p{margin:0;max-width:62ch}
 .lang{font-size:15px;color:var(--ink-soft);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:7px 13px;background:var(--paper)}
 .lang:hover{color:var(--ink)}
 .theme{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--paper);padding:3px}
-.theme button{font:inherit;font-size:13px;color:var(--ink-soft);background:none;border:0;border-radius:999px;padding:5px 11px;cursor:pointer}
+.theme button{font:inherit;font-size:13px;color:var(--ink-soft);background:none;border:0;border-radius:999px;padding:5px 11px;cursor:pointer;display:inline-flex;align-items:center}
+.theme svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;display:none}
+@media (max-width:520px){.top-in{gap:10px}.brand{font-size:20px}.lang{font-size:14px;padding:6px 10px}.theme button{padding:6px 9px}.theme svg{display:block}.theme button span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
 .theme button[aria-pressed="true"]{background:var(--ink);color:var(--canvas)}
-@media (max-width:720px){.nav{display:none}.tools{margin-left:auto}}
+@media (max-width:900px){.nav{display:none}.tools{margin-left:auto}}
 .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:32px 48px;align-items:center;padding-block:clamp(36px,7vw,84px) clamp(28px,5vw,64px)}
 body{position:relative;isolation:isolate}
 body::before{content:"";position:absolute;left:0;right:0;top:0;height:min(120vh,1080px);z-index:-1;pointer-events:none;background:radial-gradient(40% 55% at 10% 22%,var(--glow1),transparent 70%),radial-gradient(36% 50% at 86% 52%,var(--glow2),transparent 70%)}
@@ -150,10 +159,15 @@ section{padding-block:clamp(40px,7vw,88px)}
 .features p{margin-top:8px;color:var(--ink-soft);font-size:16px}
 @media (max-width:900px){.features{grid-template-columns:1fr 1fr}}
 @media (max-width:560px){.features{grid-template-columns:1fr}}
-.panel{background:var(--panel);color:var(--on-panel);border-radius:26px;padding:clamp(28px,5vw,56px);margin-block:8px}
-.panel h2{color:var(--on-panel)}
-.panel p{color:var(--on-panel-soft);margin-top:14px;font-size:18px}
-.panel a{color:var(--lime);text-decoration:none;border-bottom:1px solid currentColor;display:inline-block;margin-top:18px}
+.panel{position:relative;isolation:isolate;overflow:hidden;background:var(--panel);color:var(--on-panel);border-radius:26px;padding:clamp(28px,5vw,56px);margin-block:8px}
+.panel::before{content:"";position:absolute;right:-12%;bottom:-45%;width:min(62%,560px);aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,var(--panel-glow),transparent);pointer-events:none;z-index:-1}
+.panel h2{color:var(--on-panel);font-size:clamp(30px,4.6vw,52px)}
+.panel .hl::before{top:auto;bottom:-.1em;height:.16em}
+.facts{list-style:none;margin:clamp(28px,4vw,44px) 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:28px clamp(20px,3vw,40px)}
+.facts li{border-top:1px solid var(--on-panel-line);padding-top:22px;min-width:0}
+.facts svg{width:30px;height:30px;fill:none;stroke:var(--lime);stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;margin-bottom:18px}
+.facts p{font-family:Unbounded,"IBM Plex Sans",sans-serif;font-weight:500;font-size:clamp(17px,1.5vw,20px);line-height:1.4;letter-spacing:-.01em;color:var(--on-panel);max-width:none}
+@media (max-width:720px){.facts{grid-template-columns:1fr;gap:20px}.facts svg{margin-bottom:12px}}
 .plan{background:var(--paper);border:1px solid var(--line);border-radius:26px;padding:clamp(22px,3.6vw,36px);margin-top:32px}
 .plan-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px clamp(24px,4vw,48px)}
 .plan-cols>div+div{border-left:1px solid var(--line);padding-left:clamp(24px,4vw,48px)}
@@ -161,7 +175,7 @@ section{padding-block:clamp(40px,7vw,88px)}
 .plan li{margin-top:6px}
 .plan .free li::marker{color:var(--calm)}
 .plan .paid li::marker{color:var(--accent-ink)}
-.plan .note{margin-top:16px}
+.plan .note{margin-top:16px;max-width:none;font-size:13px}
 .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px;padding-top:28px;border-top:1px solid var(--line)}
 .tier{position:relative;background:var(--canvas);border:1px solid var(--line);border-radius:18px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .tier.pick{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
@@ -201,6 +215,20 @@ apply(stored());
 document.addEventListener('DOMContentLoaded',function(){apply(stored())});
 })();`;
 
+/** The three privacy facts' icons: no account, audio on the phone, text with a lock. */
+const FACTS = [
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7M3 3l18 18"/></svg>',
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.6"/><path d="M9 11.5v1M11 9v6M13 10.5v3M15 8v8"/></svg>',
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 11h9M4 16h6"/><rect x="14" y="14" width="7" height="6" rx="1.4"/><path d="M15.8 14v-1.6a1.7 1.7 0 0 1 3.4 0V14"/></svg>',
+];
+
+/** The theme switch's icons: a half-filled circle for the system, a sun, a moon. */
+const THEME_ICONS = {
+  system: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/></svg>',
+  light: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>',
+  dark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg>',
+};
+
 const MARK = `<svg viewBox="0 0 52 32" aria-hidden="true" fill="none" stroke="var(--lime)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c4-12 7-12 10-1s6 10 9-2 6-10 9 1"/><circle cx="41" cy="20" r="2.4" fill="var(--lime)" stroke="none"/><circle cx="48" cy="20" r="1.6" fill="var(--lime)" stroke="none"/></svg>`;
 const APPLE = `<svg viewBox="0 0 17 20" aria-hidden="true"><path d="M14.2 10.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.5-1-2.5-3.8zM11.8 3.4c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4z"/></svg>`;
 
@@ -208,15 +236,14 @@ function page(lang) {
   const c = COPY[lang];
   const legal = (name) => (lang === 'en' ? `/${name}-en` : `/${name}`);
   const themeControl = `<div class="theme" role="group" aria-label="${escape(c.theme.label)}">
-      <button type="button" data-set="system" aria-pressed="true" onclick="vidlunTheme('system')">${escape(c.theme.system)}</button>
-      <button type="button" data-set="light" aria-pressed="false" onclick="vidlunTheme('light')">${escape(c.theme.light)}</button>
-      <button type="button" data-set="dark" aria-pressed="false" onclick="vidlunTheme('dark')">${escape(c.theme.dark)}</button>
+      <button type="button" data-set="system" aria-pressed="true" onclick="vidlunTheme('system')">${THEME_ICONS.system}<span>${escape(c.theme.system)}</span></button>
+      <button type="button" data-set="light" aria-pressed="false" onclick="vidlunTheme('light')">${THEME_ICONS.light}<span>${escape(c.theme.light)}</span></button>
+      <button type="button" data-set="dark" aria-pressed="false" onclick="vidlunTheme('dark')">${THEME_ICONS.dark}<span>${escape(c.theme.dark)}</span></button>
     </div>`;
   const cta = `<a class="btn" href="${APP_STORE}">${APPLE}${escape(c.hero.cta)}</a>`;
 
   const body = `<a class="skip" href="#main">${lang === 'en' ? 'Skip to content' : 'До змісту'}</a>
-<div class="wrap">
-<header class="top">
+<header class="top"><div class="wrap top-in">
   <a class="brand" href="${lang === 'en' ? '/en' : '/'}">${MARK}Vidlun</a>
   <nav class="nav" aria-label="${lang === 'en' ? 'Sections' : 'Розділи'}">
     <a href="#how">${escape(c.nav.how)}</a><a href="#features">${escape(c.nav.features)}</a><a href="#privacy">${escape(c.nav.privacy)}</a><a href="#price">${escape(c.nav.price)}</a><a href="#faq">${escape(c.nav.faq)}</a>
@@ -225,7 +252,8 @@ function page(lang) {
     <a class="lang" href="${c.otherHref}" hreflang="${c.otherLang}" lang="${c.otherLang}">${escape(c.otherLabel)}</a>
     ${themeControl}
   </div>
-</header>
+</div></header>
+<div class="wrap">
 <main id="main">
   <section class="hero">
     <div>
@@ -265,9 +293,10 @@ function page(lang) {
   </section>
 
   <section id="privacy" class="panel">
-    <h2>${escape(c.privacy.title)}</h2>
-    <p>${escape(c.privacy.body)}</p>
-    <a href="${legal('privacy')}">${escape(c.privacy.link)} →</a>
+    <h2>${headline(c.privacy.title, c.privacy.title)}</h2>
+    <ul class="facts">
+      ${c.privacy.points.map((text, i) => `<li>${FACTS[i]}<p>${escape(text)}</p></li>`).join('\n      ')}
+    </ul>
   </section>
 
   <section id="price">
@@ -329,7 +358,7 @@ function page(lang) {
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     inLanguage: [lang === 'en' ? 'en' : 'uk'],
     image: `${SITE}/og/og-${lang}.jpg`,
-    screenshot: ['home', 'recording', 'turn-picker', 'detail', 'week'].map((name) => `${SITE}/shots/${lang}-${name}-light.jpg`),
+    screenshot: ['home', 'recording', 'turn-picker', 'detail', 'week'].map((name) => `${SITE}/shots/${lang}-${name}-light-640.jpg`),
     author: { '@type': 'Organization', name: 'Vidlun', url: SITE },
   });
   const fonts = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@500&family=IBM+Plex+Sans:wght@400;500&display=swap';
@@ -387,6 +416,7 @@ ${body.replace(/href="\/(en|privacy|terms|support)(-en)?"/g, (m) => m.replace('h
   return { full, previewFile };
 }
 
+rmSync(join(OUT, 'shots'), { recursive: true, force: true });
 mkdirSync(join(OUT, 'shots'), { recursive: true });
 for (const file of readdirSync(join(ROOT, 'site', 'shots'))) {
   copyFileSync(join(ROOT, 'site', 'shots', file), join(OUT, 'shots', file));
