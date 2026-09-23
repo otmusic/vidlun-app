@@ -160,6 +160,15 @@ section{padding-block:clamp(40px,7vw,88px)}
 .plan ul{margin:14px 0 0;padding-left:18px;color:var(--ink-soft)}
 .plan li{margin-top:6px}
 .plan .note{margin-top:16px}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px}
+.tier{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px 14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tier.pick{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.tier-name{font-size:14px;color:var(--ink-soft)}
+.tier-price{font-family:Unbounded,sans-serif;font-size:clamp(20px,2.2vw,26px);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.tier-period{font-size:13px;color:var(--ink-faint);line-height:1.35}
+.tier-saving{font-size:13px;color:var(--accent-ink);margin-top:4px}
+.badge{position:absolute;top:-11px;left:12px;background:var(--lime);color:#16181D;font-size:12px;font-weight:500;border-radius:999px;padding:4px 10px;white-space:nowrap}
+@media (max-width:560px){.tiers{grid-template-columns:1fr}.tier{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:16px 14px}.tier-name{flex:1 0 100%}.tier-period{flex:1 0 100%}.badge{top:-10px}}
 @media (max-width:720px){.plans{grid-template-columns:1fr}}
 .faq{margin-top:24px;border-top:1px solid var(--line)}
 .faq details{border-bottom:1px solid var(--line)}
@@ -263,7 +272,24 @@ function page(lang) {
     <h2>${escape(c.price.title)}</h2>
     <div class="plans">
       <div class="plan"><h3>${escape(c.price.free.title)}</h3><ul>${c.price.free.items.map((i) => `<li>${escape(i)}</li>`).join('')}</ul></div>
-      <div class="plan paid"><h3>${escape(c.price.paid.title)}</h3><ul>${c.price.paid.items.map((i) => `<li>${escape(i)}</li>`).join('')}</ul><p class="note">${escape(c.price.paid.note)}</p></div>
+      <div class="plan paid">
+        <h3>${escape(c.price.paid.title)}</h3>
+        <ul>${c.price.paid.items.map((i) => `<li>${escape(i)}</li>`).join('')}</ul>
+        <div class="tiers">
+          ${c.price.paid.plans
+            .map(
+              (plan) => `<div class="tier${plan.badge ? ' pick' : ''}">
+            ${plan.badge ? `<span class="badge">${escape(plan.badge)}</span>` : ''}
+            <span class="tier-name">${escape(plan.name)}</span>
+            <span class="tier-price">${escape(plan.price)}</span>
+            <span class="tier-period">${escape(plan.period)}</span>
+            ${plan.saving ? `<span class="tier-saving">${escape(plan.saving)}</span>` : ''}
+          </div>`,
+            )
+            .join('\n          ')}
+        </div>
+        <p class="note">${escape(c.price.paid.note)}</p>
+      </div>
     </div>
   </section>
 

@@ -106,7 +106,26 @@
           "Теми тижня",
           "Записи до п’яти хвилин"
         ],
-        "note": "Місяць, рік або одна покупка назавжди. Ціни в App Store."
+        "plans": [
+          {
+            "name": "Місяць",
+            "price": "$4.99",
+            "period": "на місяць"
+          },
+          {
+            "name": "Рік",
+            "price": "$29.99",
+            "period": "на рік",
+            "badge": "7 днів безкоштовно",
+            "saving": "удвічі дешевше за місячну"
+          },
+          {
+            "name": "Назавжди",
+            "price": "$99.99",
+            "period": "один платіж, без поновлення"
+          }
+        ],
+        "note": "Ціни для App Store в Україні. Оформлення, керування і скасування в App Store; підписка поновлюється сама, поки її не скасувати."
       }
     },
     "faq": {
@@ -336,7 +355,26 @@
           "Themes of the week",
           "Recordings up to five minutes"
         ],
-        "note": "Monthly, yearly or one purchase for good. Prices are in the App Store."
+        "plans": [
+          {
+            "name": "Month",
+            "price": "$3.99",
+            "period": "per month"
+          },
+          {
+            "name": "Year",
+            "price": "$24.99",
+            "period": "per year",
+            "badge": "7 days free",
+            "saving": "about half the monthly price"
+          },
+          {
+            "name": "Forever",
+            "price": "$79.99",
+            "period": "one payment, no renewal"
+          }
+        ],
+        "note": "US App Store prices; the App Store shows the price for your country. Buy, manage and cancel in the App Store; a subscription renews until cancelled."
       }
     },
     "faq": {

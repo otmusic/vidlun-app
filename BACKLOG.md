@@ -1432,6 +1432,26 @@ names the image, the five screenshots and the author. `robots.txt` and a
 build. Left to the owner: verify vidlun.app in Google Search Console and
 Bing Webmaster Tools and submit the sitemap — that needs the account.
 
+**The plans on the page, 2026-09-23.** The owner's word: the subscription
+card in "what is free and what is not" now carries the three plans with
+their prices, read from App Store Connect through the API (subscription
+prices and the lifetime price schedule): the Ukrainian page shows the
+Ukrainian storefront in dollars (VAT in — $4.99 a month, $29.99 a year,
+$99.99 once), the English page the US storefront ($3.99 / $24.99 /
+$79.99); the year carries the one-week free trial as a lime badge and is
+drawn as the pick. The note under them says where the price is final and
+that a subscription renews until cancelled.
+
+---
+
+## 3y. The journal counts entries, not echoes — 2026-09-22
+
+The owner's word: the line under the journal's title says "16 записів",
+not "16 відлунь". The three plural forms (`feed.entryOne/Few/Many`:
+запис, записи, записів; entry, entries, entries) go through the existing
+Ukrainian rule — 1 запис, 2 записи, 5 записів, 11 записів, 21 запис — so
+the ending is right for any count. Not in build 42; goes with the next.
+
 ---
 
 ## 3w. The arrow into last week did nothing — found 2026-09-22
