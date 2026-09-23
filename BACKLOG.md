@@ -1468,6 +1468,15 @@ the policy link left the panel (the footer keeps it). (4) The note under
 the plans is 13 px and free of the 62ch paragraph cap, so one line on
 desktop.
 
+**The hero and the steps, 2026-09-23.** The owner's word: the hero's lead
+paragraph is gone (key `hero.lead` removed), the two actions stack, and
+"how it works" is an outlined pill with a bobbing arrow instead of an
+underlined link. The steps come in part by part as they scroll into view:
+the numeral pops up from small, the title and text rise, the phone rises
+from lower and slightly smaller — scroll-driven `view()` timelines with
+`cover` ranges for the text so the reveal lasts a real distance; the step
+as a whole no longer fades. Reduced motion turns all of it off.
+
 ---
 
 ## 3y. The journal counts entries, not echoes — 2026-09-22

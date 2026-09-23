@@ -22,7 +22,6 @@
     },
     "hero": {
       "title": "Скажи, як минув день. Vidlun назве, що ти відчуваєш.",
-      "lead": "Одна кнопка, одне речення. Мова розпізнається на телефоні: українська, англійська або суміш. Без акаунта й реєстрації.",
       "cta": "Завантажити в App Store",
       "secondary": "Як це працює",
       "mark": "як минув день"
@@ -274,7 +273,6 @@
     },
     "hero": {
       "title": "Say how the day went. Vidlun names what you feel.",
-      "lead": "One button, one sentence. Speech is recognised on your phone: Ukrainian, English or a mix. No account, no sign-up.",
       "cta": "Download on the App Store",
       "secondary": "How it works",
       "mark": "how the day went"

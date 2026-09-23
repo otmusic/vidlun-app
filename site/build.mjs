@@ -114,14 +114,16 @@ body::before{content:"";position:absolute;left:0;right:0;top:0;height:min(120vh,
 .hero .phone{animation:rise .8s .15s cubic-bezier(.2,.9,.3,1) both}
 @media (prefers-reduced-motion: reduce){.hero>div>*,.hero .phone,.hl::before{animation:none}}
 .eyebrow{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:18px}
-.lead{font-size:clamp(17px,1.6vw,20px);line-height:1.55;color:var(--ink-soft);margin-top:20px}
-.cta{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-top:30px}
+.cta{display:flex;flex-direction:column;align-items:flex-start;gap:14px;margin-top:34px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-weight:500;text-decoration:none;border-radius:999px;padding:16px 24px;background:var(--ink);color:var(--canvas);font-size:17px;white-space:nowrap}
-@media (max-width:520px){.btn{width:100%;font-size:16px;padding:15px 18px}.cta{gap:14px}}
+@media (max-width:520px){.btn,.how{width:100%;font-size:16px;padding:15px 18px}.cta{gap:12px}}
 .btn svg{width:18px;height:18px;fill:currentColor}
 .btn:hover{opacity:.92}
-.quiet{color:var(--ink-soft);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:1px}
-.quiet:hover{color:var(--ink);border-color:var(--ink-soft)}
+.how{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-weight:500;font-size:17px;color:var(--ink);text-decoration:none;border:1.5px solid var(--ink);border-radius:999px;padding:14px 22px;transition:background .2s,color .2s}
+.how:hover{background:var(--ink);color:var(--canvas)}
+.how svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;animation:bob 1.8s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(3px)}}
+@media (prefers-reduced-motion: reduce){.how svg{animation:none}}
 .note{font-size:14px;color:var(--ink-faint);margin-top:14px}
 .phone{width:min(300px,78vw);margin-inline:auto;aspect-ratio:1206/2622;border-radius:13.5%/6.2%;padding:3.2%;background:var(--bezel);box-shadow:var(--shadow);transition:rotate .5s cubic-bezier(.2,.9,.3,1)}
 .phone:hover{rotate:0deg}
@@ -141,7 +143,16 @@ section{padding-block:clamp(40px,7vw,88px)}
 .step:nth-child(even) .phone{order:-1}
 .step .n{font-family:Unbounded,sans-serif;font-size:clamp(44px,6vw,72px);line-height:1;color:var(--numeral);margin-bottom:8px;letter-spacing:-.04em}
 .step:nth-child(odd) .phone{rotate:2deg}.step:nth-child(even) .phone{rotate:-2deg}
-@supports (animation-timeline: view()){.step,.features li,.plan,.panel{animation:reveal both;animation-timeline:view();animation-range:entry 0% entry 40%}@keyframes reveal{from{opacity:.001;transform:translateY(28px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion: reduce){.step,.features li,.plan,.panel{animation:none}}}
+@supports (animation-timeline: view()){
+.features li,.plan,.panel,#how>h2,#how>.sub{animation:reveal both;animation-timeline:view();animation-range:entry 0% entry 40%}
+.step .n{animation:pop both;animation-timeline:view();animation-range:cover 0% cover 22%}
+.step h3,.step p{animation:reveal both;animation-timeline:view();animation-range:cover 0% cover 24%}
+.step .phone{animation:phone-in both;animation-timeline:view();animation-range:entry 0% entry 50%}
+@keyframes reveal{from{opacity:.001;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:.001;transform:translateY(18px) scale(.72)}to{opacity:1;transform:none}}
+@keyframes phone-in{from{opacity:.001;transform:translateY(64px) scale(.9)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.features li,.plan,.panel,#how>h2,#how>.sub,.step .n,.step h3,.step p,.step .phone{animation:none}}
+}
 .step h3{font-size:clamp(22px,2.4vw,28px)}
 .step p{margin-top:12px;color:var(--ink-soft);font-size:18px}
 @media (max-width:860px){.step{grid-template-columns:1fr;gap:20px}.step:nth-child(even) .phone{order:0}.step .phone{width:min(260px,72vw);margin-inline:0}}
@@ -194,7 +205,7 @@ section{padding-block:clamp(40px,7vw,88px)}
 .faq details[open] summary::after{content:"–"}
 .faq p{padding-bottom:18px;color:var(--ink-soft)}
 .end{text-align:center;padding-block:clamp(24px,5vw,56px) clamp(48px,8vw,96px)}
-.end .cta{justify-content:center}
+.end .cta{align-items:center}
 footer{border-top:1px solid var(--line);padding-block:26px 34px;display:flex;flex-wrap:wrap;gap:10px 22px;font-size:14px;color:var(--ink-faint)}
 footer a{color:var(--ink-soft);text-decoration:none}
 footer a:hover{color:var(--ink)}
@@ -229,6 +240,9 @@ const THEME_ICONS = {
   dark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg>',
 };
 
+/** The down arrow on the hero's second button. */
+const ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
+
 const MARK = `<svg viewBox="0 0 52 32" aria-hidden="true" fill="none" stroke="var(--lime)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c4-12 7-12 10-1s6 10 9-2 6-10 9 1"/><circle cx="41" cy="20" r="2.4" fill="var(--lime)" stroke="none"/><circle cx="48" cy="20" r="1.6" fill="var(--lime)" stroke="none"/></svg>`;
 const APPLE = `<svg viewBox="0 0 17 20" aria-hidden="true"><path d="M14.2 10.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.5-1-2.5-3.8zM11.8 3.4c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4z"/></svg>`;
 
@@ -258,8 +272,7 @@ function page(lang) {
   <section class="hero">
     <div>
       <h1>${headline(c.hero.title, c.hero.mark)}</h1>
-      <p class="lead">${escape(c.hero.lead)}</p>
-      <div class="cta">${cta}<a class="quiet" href="#how">${escape(c.hero.secondary)} ↓</a></div>
+      <div class="cta">${cta}<a class="how" href="#how">${escape(c.hero.secondary)}${ARROW}</a></div>
     </div>
     <div class="phone">${shot(lang, 'home', c.how.steps[0].alt.split(':')[0], { eager: true })}</div>
   </section>
