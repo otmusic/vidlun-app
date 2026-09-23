@@ -67,3 +67,4 @@ assets/model/
 
 # The landing page's Artifact previews, written by `node site/build.mjs --preview`.
 site/preview-*.html
+site/shots-src/
