@@ -1442,6 +1442,14 @@ $79.99); the year carries the one-week free trial as a lime badge and is
 drawn as the pick. The note under them says where the price is final and
 that a subscription renews until cancelled.
 
+**One block, 2026-09-23.** The owner's word: the two pricing cards
+("free forever" and "subscription") are one card now — the two lists
+side by side, split by a hairline, the three plans across the full width
+under them, the note last. On phones the columns stack and the plans
+follow the subscription list. The free list has calm-green bullets, the
+subscription list accent bullets; the plans sit on the canvas tone inside
+the paper card, the year keeps its ink border and lime badge.
+
 ---
 
 ## 3y. The journal counts entries, not echoes — 2026-09-22
