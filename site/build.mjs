@@ -97,9 +97,11 @@ section{scroll-margin-top:72px}
 .lang{font-size:15px;color:var(--ink-soft);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:7px 13px;background:var(--paper)}
 .lang:hover{color:var(--ink)}
 .theme{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--paper);padding:3px}
-.theme button{font:inherit;font-size:13px;color:var(--ink-soft);background:none;border:0;border-radius:999px;padding:5px 11px;cursor:pointer;display:inline-flex;align-items:center}
-.theme svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;display:none}
-@media (max-width:520px){.top-in{gap:10px}.brand{font-size:20px}.lang{font-size:14px;padding:6px 10px}.theme button{padding:6px 9px}.theme svg{display:block}.theme button span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
+.theme button{font:inherit;color:var(--ink-soft);background:none;border:0;border-radius:999px;padding:6px 10px;cursor:pointer;display:inline-flex;align-items:center}
+.theme button:hover{color:var(--ink)}
+.theme svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.theme button span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:520px){.top-in{gap:10px}.brand{font-size:20px}.lang{font-size:14px;padding:6px 10px}.theme button{padding:6px 9px}}
 .theme button[aria-pressed="true"]{background:var(--ink);color:var(--canvas)}
 @media (max-width:900px){.nav{display:none}.tools{margin-left:auto}}
 .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:32px 48px;align-items:center;padding-block:clamp(36px,7vw,84px) clamp(28px,5vw,64px)}
@@ -250,9 +252,9 @@ function page(lang) {
   const c = COPY[lang];
   const legal = (name) => (lang === 'en' ? `/${name}-en` : `/${name}`);
   const themeControl = `<div class="theme" role="group" aria-label="${escape(c.theme.label)}">
-      <button type="button" data-set="system" aria-pressed="true" onclick="vidlunTheme('system')">${THEME_ICONS.system}<span>${escape(c.theme.system)}</span></button>
-      <button type="button" data-set="light" aria-pressed="false" onclick="vidlunTheme('light')">${THEME_ICONS.light}<span>${escape(c.theme.light)}</span></button>
-      <button type="button" data-set="dark" aria-pressed="false" onclick="vidlunTheme('dark')">${THEME_ICONS.dark}<span>${escape(c.theme.dark)}</span></button>
+      <button type="button" data-set="system" aria-pressed="true" onclick="vidlunTheme('system')" title="${escape(c.theme.system)}">${THEME_ICONS.system}<span>${escape(c.theme.system)}</span></button>
+      <button type="button" data-set="light" aria-pressed="false" onclick="vidlunTheme('light')" title="${escape(c.theme.light)}">${THEME_ICONS.light}<span>${escape(c.theme.light)}</span></button>
+      <button type="button" data-set="dark" aria-pressed="false" onclick="vidlunTheme('dark')" title="${escape(c.theme.dark)}">${THEME_ICONS.dark}<span>${escape(c.theme.dark)}</span></button>
     </div>`;
   const cta = `<a class="btn" href="${APP_STORE}">${APPLE}${escape(c.hero.cta)}</a>`;
 
