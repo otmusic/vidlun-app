@@ -72,6 +72,12 @@ export interface TurnStage {
    * the scale is touched, and Vidlun's reading stands until then.
    */
   readonly mood: number | null;
+  /**
+   * Topics the person took off the card (owner's word, 2026-10-01). The
+   * reading keeps all of them, as what Vidlun heard; the entry is saved
+   * without these. A correction keeps them off, like the named words.
+   */
+  readonly droppedTopics: readonly string[];
 }
 
 export type CaptureStage =
@@ -276,6 +282,8 @@ export interface CaptureFlow {
   readonly refineOwnWord: (parentId: string, childId: string) => void;
   /** Sets the mood on the card's scale, in place of Vidlun's reading. */
   readonly setMood: (value: number) => void;
+  /** Takes one of Vidlun's topics off the card, or puts it back. */
+  readonly toggleTopic: (tag: string) => void;
   /** Done answering: saves what was named, or waits for the reading to land. */
   readonly answer: () => void;
   /** "Choose together": Vidlun's words, already chosen, beside whatever was named. */
@@ -431,6 +439,7 @@ export function declinedVidlunsWords(proposed: MoodEntry, draft: MoodEntry): boo
 function cardAfterAnswer(card: TurnStage, proposed: MoodEntry, together: boolean): CaptureStage {
   const { chosen } = card;
   const mood = card.mood === null ? proposed.mood : MoodScore.of(card.mood);
+  const contextTags = proposed.contextTags.filter((tag) => !card.droppedTopics.includes(tag));
 
   if (chosen.length > 0 && !together) {
     return {
@@ -441,6 +450,7 @@ function cardAfterAnswer(card: TurnStage, proposed: MoodEntry, together: boolean
         selfEmotionIds: chosen,
         emotionIds: chosen,
         mood,
+        contextTags,
       }),
     };
   }
@@ -453,6 +463,7 @@ function cardAfterAnswer(card: TurnStage, proposed: MoodEntry, together: boolean
       selfEmotionIds: chosen,
       emotionIds: wordsChosenTogether(chosen, proposed.emotionIds),
       mood,
+      contextTags,
     }),
     card: { ...card, draft: proposed, holding: false, together: false },
   };
@@ -496,10 +507,11 @@ export function whenAnalysisLands(
   }
 
   /*
-   * Held, not shown. The draft is carried on the stage because the comparison
-   * needs it the instant the person answers, and `TurnScreen` is given the
-   * transcript and their own words and nothing else — so what the card can
-   * display and what the stage knows are two different sets on purpose.
+   * Held, not shown whole. The draft is carried on the stage because the
+   * comparison needs it the instant the person answers. `TurnScreen` is given
+   * only what the owner put on the card — the words near the reading, its
+   * mood and its topics (2026-09-30, 2026-10-01) — and never the observation,
+   * so what the card can display and what the stage knows stay two sets.
    */
   return current.holding ? cardAfterAnswer(current, draft, current.together) : { ...current, draft };
 }
@@ -792,6 +804,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             unheard: true,
             together: false,
             mood,
+            droppedTopics: [],
           });
         });
     },
@@ -820,6 +833,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         unheard: false,
         together: false,
         mood: null,
+        droppedTopics: [],
       });
 
       build(spoken)
@@ -1365,6 +1379,22 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, []),
     setMood: useCallback((value: number) => {
       setStage((current) => (current.kind === 'turn' ? { ...current, mood: value } : current));
+    }, []),
+    toggleTopic: useCallback((tag: string) => {
+      setStage((current) => {
+        if (current.kind !== 'turn') {
+          return current;
+        }
+
+        const dropped = current.droppedTopics;
+
+        return {
+          ...current,
+          droppedTopics: dropped.includes(tag)
+            ? dropped.filter((each) => each !== tag)
+            : [...dropped, tag],
+        };
+      });
     }, []),
     answer: useCallback(() => {
       // Vidlun could not listen: nothing to compare against, and nothing

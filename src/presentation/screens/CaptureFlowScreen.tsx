@@ -224,6 +224,9 @@ function Stage(
           onTogether={flow.chooseTogether}
           mood={flow.stage.mood ?? flow.stage.draft?.mood?.value ?? null}
           onMood={flow.setMood}
+          topics={flow.stage.draft?.contextTags ?? []}
+          droppedTopics={flow.stage.droppedTopics}
+          onToggleTopic={flow.toggleTopic}
         />
       );
     }

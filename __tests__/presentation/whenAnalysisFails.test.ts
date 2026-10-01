@@ -30,6 +30,7 @@ const asking: CaptureStage = {
   unheard: false,
   together: false,
   mood: null,
+  droppedTopics: [],
 };
 
 describe('what happens when the analysis fails', () => {

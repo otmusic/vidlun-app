@@ -31,7 +31,8 @@ type Onward = 'next' | 'together';
  * 2026-09-30), picked from Vidlun's reading, and the card goes up whole once
  * they are there (owner's word, 2026-10-01) — the processing screen covers
  * the second or two the reading takes. The person's own word is always one
- * tap away. The mood, the tags and the observation stay off the card.
+ * tap away. The mood sits on the scale and the topics under the words
+ * (owner's word, 2026-10-01); the observation stays off the card.
  */
 export function TurnScreen(props: {
   readonly transcript: string;
@@ -52,6 +53,11 @@ export function TurnScreen(props: {
   /** The mood on the scale: the person's if they set one, Vidlun's reading if not. */
   readonly mood: number | null;
   readonly onMood: (value: number) => void;
+  /** What the entry was about, as Vidlun read it. */
+  readonly topics: readonly string[];
+  /** The topics taken off the card, still shown so the same tap puts one back. */
+  readonly droppedTopics: readonly string[];
+  readonly onToggleTopic: (tag: string) => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
@@ -143,6 +149,44 @@ export function TurnScreen(props: {
       >
         <Card tone="quiet">
           <AppText variant="quote">{`«${props.transcript}»`}</AppText>
+          {/*
+            * What the entry was about, under the words it was read from
+            * (owner's word, 2026-10-01), and the one place a wrong topic can
+            * be taken off. One taken off stays, faded, so a slip is undone
+            * with the same tap.
+            */}
+          {props.topics.length === 0 ? null : (
+            <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
+              <AppText variant="caption" color="inkFaint">
+                {props.t('entry.topics')}
+              </AppText>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+                {props.topics.map((tag) =>
+                  props.droppedTopics.includes(tag) ? (
+                    <View key={tag} style={{ opacity: 0.5 }}>
+                      <Chip
+                        label={`+ ${tag}`}
+                        tone="neutral"
+                        onPress={() => {
+                          props.onToggleTopic(tag);
+                        }}
+                      />
+                    </View>
+                  ) : (
+                    <Chip
+                      key={tag}
+                      label={tag}
+                      tone="neutral"
+                      action="remove"
+                      onPress={() => {
+                        props.onToggleTopic(tag);
+                      }}
+                    />
+                  ),
+                )}
+              </View>
+            </View>
+          )}
         </Card>
       </FixWording>
 

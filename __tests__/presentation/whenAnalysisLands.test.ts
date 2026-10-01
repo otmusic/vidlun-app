@@ -34,6 +34,7 @@ const asking: CaptureStage = {
   unheard: false,
   together: false,
   mood: null,
+  droppedTopics: [],
 };
 
 describe('what happens when the analysis lands', () => {
@@ -101,6 +102,28 @@ describe('what happens when the analysis lands', () => {
 
     expect(after.kind === 'comparing' ? after.draft.mood?.value : null).toBe(5);
     expect(after.kind === 'comparing' ? after.card.mood : null).toBe(5);
+  });
+
+  it('saves the entry without the topics taken off the card', () => {
+    const after = whenAnalysisLands(
+      { ...asking, holding: true, droppedTopics: ['work'] },
+      analysis({ contextTags: ['work', 'sleep'] }),
+    );
+
+    // Owner's word, 2026-10-01: the topics are on the card, and one taken off
+    // there stays off the entry. What Vidlun heard still has it.
+    expect(after.kind === 'saving' ? after.draft.contextTags : null).toEqual(['sleep']);
+    expect(after.kind === 'saving' ? after.proposed.contextTags : null).toEqual(['work', 'sleep']);
+  });
+
+  it('carries the topics taken off into choosing together, and back', () => {
+    const after = whenAnalysisLands(
+      { ...asking, holding: true, together: true, droppedTopics: ['work'] },
+      analysis({ contextTags: ['work', 'sleep'] }),
+    );
+
+    expect(after.kind === 'comparing' ? after.draft.contextTags : null).toEqual(['sleep']);
+    expect(after.kind === 'comparing' ? after.card.droppedTopics : null).toEqual(['work']);
   });
 
   it("shows Vidlun's answer to someone who went on without naming anything", () => {

@@ -697,9 +697,11 @@ end-to-end with speech recognition disabled.
 - Do not "improve" the capture flow by adding steps, confirmations, or optional
   fields. The question the card opens with is not a precedent for granting
   others: it adds no wait, and it is the one thing the product exists to teach.
-- Do not show any part of Vidlun's answer before the person has given theirs —
-  that includes the observation, the mood, the context tags, and the number of
-  chips it found.
+- Do not show Vidlun's observation before the person has given their answer.
+  The rest of the reading is on the question card now, by the owner's word
+  (2026-09-30, 2026-10-01): the words offered are the ones nearest to it, the
+  mood scale starts at its mood, and its topics sit under the transcript,
+  where one can be taken off.
 - Do not put an icon inside a paragraph of text, or use a single font for both
   the interface and Vidlun's voice.
 - Do not write iOS-only code without an interface behind it — Android is next,
