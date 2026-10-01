@@ -1479,6 +1479,76 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3σ. The mood in one line, the feedback sheet's X, the subscription last — 2026-10-01
+
+The owner's word, item by item.
+
+- **The entry page's mood** is one line, "НАСТРІЙ ● Високий", with no card
+  around it: the card gave one word the room of a paragraph. `MoodLine`
+  puts its caption beside the word instead of over it; the entry page is
+  its only user.
+- **"Написати нам"** closes with the X top right (`SheetClose`, as on the
+  reminder and period sheets) and lost "Не зараз" under its button
+  (`feedback.cancel` removed); the backdrop still closes it.
+- **The subscription card is the last thing on "Я"**, under the language
+  switch, named "Підписка" / "Subscription" (`subs.name`, was "Підписка або
+  разова покупка"). The way in is a whole-width button under the name and
+  the status, not a pill beside them: "Оформити" / "Subscribe" while there
+  is no plan (`profile.subscribe`), "Керувати" / "Manage" once there is
+  (`profile.manage`); `profile.open` is gone. The owner weighed
+  "Активувати" against "Купити" and left it open: "Оформити" is the
+  paywall's own verb for a plan ("Оформити за …"), where "Купити" promises
+  a charge from a tap that only opens the plans, and "Активувати" promises
+  something already there to switch on. Under the new name the paid status
+  reads "Активна" / "Active" (`subs.statusPaid`, was "Підписка активна").
+- App Review once could not find the purchases (1.0, 2.1(b)), so the 1.3
+  review notes must point at the new place: "Я", the last card,
+  "Оформити".
+- **The plans screen** lost its closing sentence, "Це єдине платне тут." /
+  "It is the only paid thing here." (`subs.body`); what stays says what the
+  month's piece is. Nothing else became paid: the rule that only the
+  narrative is (CLAUDE.md §9) stands, it is just no longer said there.
+
+---
+
+## 3ρ. The topics on the question card, and a stub that names some — 2026-10-01
+
+The owner asked where the topics had gone ("якщо про роботу, то тег має бути
+робота"). They never left the entry: Haiku still names up to three, they
+are saved with it and shown on the entry page, on "choose together" and in
+the week's themes. But since "next" saves at once (§3ε), someone who names
+a feeling never saw them while recording, and in the simulator there were
+none at all — the pretend analysis returned an empty list on purpose.
+
+The owner's word, the same day:
+
+- **The topics sit on the question card, under the transcript** inside the
+  quote card, captioned "Про що говорили" (`entry.topics`), as grey chips
+  with the remove mark. A tap takes one off; it stays, faded, as "+ topic",
+  and the same tap puts it back. The card is now the one place a wrong
+  topic can be taken off: the edit screen that could went with "Не зовсім".
+  `TurnStage.droppedTopics` holds what was taken off; `cardAfterAnswer`
+  saves the entry without those, and Vidlun's proposal keeps all of them.
+  A correction keeps them off, like the named words. Unheard entries have
+  no topics, so no row.
+- **The stub names topics from a short dictionary, in their dictionary
+  form.** Its first version took the last long words as written, and the
+  owner saw "спортзалі" on the card where "спортзал" belonged (same day):
+  the real reading is told to write the nominative, and the stub could not
+  decline a word. `fakeTopics.json` lists some fifty topics, Ukrainian and
+  English, each with whole words (for short ones, where a beginning would
+  catch others: "сон" must not find "сонце") and beginnings of words
+  ("робот" for every case of "робота"). The longest sign wins ("workout"
+  is the gym, not work), a word it does not know names nothing, and three
+  at most come back, in the order said. The Ukrainian lives in that data
+  file rather than in code, so the English-only rule for code holds; it is
+  the one file in `src/` outside `src/i18n/` with Ukrainian in it, and only
+  the simulator reads it.
+- CLAUDE.md §9 no longer forbids the reading on the card; what is left of
+  the rule is the observation.
+
+---
+
 ## 3π. The period sheet closes with an X, and build 43 — 2026-10-01
 
 The owner's word: the period sheet gets the reminder sheet's X top right
