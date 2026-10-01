@@ -1486,8 +1486,12 @@ The owner's word: the period sheet gets the reminder sheet's X top right
 under its buttons; the backdrop still closes it. Seen on the simulator: the
 X beside "Показати за період", and it closes the sheet.
 
-Build 43 (1.2) carries everything since build 42: §3β through §3π, the
-text-slack fix of §3δ included.
+Build 43 carries everything since build 42: §3β through §3π, the
+text-slack fix of §3δ included. It went up as **1.3 (43)**, uploaded
+2026-10-01 16:35 EEST: the first try under 1.2 was turned away (ITMS-90186,
+ITMS-90062) because 1.2 is released and its train is closed to new builds,
+and 1.3 was already waiting in App Store Connect (PREPARE_FOR_SUBMISSION).
+The number 43 was never accepted, so it stayed.
 
 ---
 
