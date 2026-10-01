@@ -1509,6 +1509,9 @@ The owner's word, item by item.
   month's piece is. Nothing else became paid: the rule that only the
   narrative is (CLAUDE.md §9) stands, it is just no longer said there.
 
+**1.3 (44)** carries §3ρ and §3σ on top of 43, uploaded 2026-10-01 17:58
+EEST.
+
 ---
 
 ## 3ρ. The topics on the question card, and a stub that names some — 2026-10-01
