@@ -7,6 +7,7 @@ import type { Settings, ThemeChoice } from '@/domain/ports/ISettings';
 import type { Translate, TranslationKey } from '@/i18n';
 
 import { AppText } from '../components/AppText';
+import { Button } from '../components/Button';
 import { ModalSheet, SheetClose } from '../components/ModalSheet';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
@@ -76,16 +77,6 @@ export function ProfileScreen(props: {
       <AppText variant="display" style={{ marginBottom: 22 }}>
         {t('profile.title')}
       </AppText>
-
-      <Section>
-        <Row
-          title={t('subs.name')}
-          hint={t(subscriptionHint(props.entitlement))}
-          onPress={props.onOpenSubscription}
-        >
-          <Pill label={t('profile.open')} />
-        </Row>
-      </Section>
 
       <Section>
         <Row
@@ -269,6 +260,24 @@ export function ProfileScreen(props: {
           );
         })}
       </View>
+
+      {/*
+        * Last, under everything the person sets (owner's word, 2026-10-01),
+        * with its name alone and the way in as a button of its own. The verb
+        * is the paywall's own for taking a plan: not buy, since the tap only
+        * opens the plans, and not activate, which promises something already
+        * there to switch on. Once there is a plan, the same button manages it.
+        */}
+      <Section>
+        <View style={{ paddingVertical: 17, gap: 14 }}>
+          <Heading title={t('subs.name')} hint={t(subscriptionHint(props.entitlement))} />
+          <Button
+            label={t(props.entitlement === 'none' ? 'profile.subscribe' : 'profile.manage')}
+            variant="secondary"
+            onPress={props.onOpenSubscription}
+          />
+        </View>
+      </Section>
 
       <TimeSheet
         open={pickingTime}
@@ -488,17 +497,8 @@ function Row(props: {
         paddingVertical: 17,
       }}
     >
-      <View style={{ flex: 1, gap: 3 }}>
-        <AppText variant="body" style={{ fontSize: 16 }}>
-          {props.title}
-        </AppText>
-        <AppText
-          variant="secondary"
-          color="inkFaint"
-          style={{ fontSize: 13, letterSpacing: 0 }}
-        >
-          {props.hint}
-        </AppText>
+      <View style={{ flex: 1 }}>
+        <Heading title={props.title} hint={props.hint} />
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{props.children}</View>
     </View>
@@ -510,6 +510,20 @@ function Row(props: {
     <Pressable accessibilityRole="button" accessibilityLabel={props.title} onPress={props.onPress}>
       {body}
     </Pressable>
+  );
+}
+
+/** A row's name and the line under it that says how it stands. */
+function Heading(props: { readonly title: string; readonly hint: string }): React.JSX.Element {
+  return (
+    <View style={{ gap: 3 }}>
+      <AppText variant="body" style={{ fontSize: 16 }}>
+        {props.title}
+      </AppText>
+      <AppText variant="secondary" color="inkFaint" style={{ fontSize: 13, letterSpacing: 0 }}>
+        {props.hint}
+      </AppText>
+    </View>
   );
 }
 

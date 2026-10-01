@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Keyboard, Pressable, TextInput, useWindowDimensions } from 'react-native';
+import { Keyboard, Pressable, TextInput, useWindowDimensions, View } from 'react-native';
 
 import type { Translate } from '@/i18n';
 
 import { useTheme } from '../theme/ThemeProvider';
 import { AppText } from './AppText';
+import { SheetClose } from './ModalSheet';
 import { Sheet } from './Sheet';
 
 /**
@@ -42,10 +43,14 @@ export function FeedbackSheet(props: {
   };
 
   return (
-    <Sheet open={props.open} closeLabel={t('feedback.cancel')} onClose={close}>
-      <AppText variant="display" style={{ fontSize: 22, lineHeight: 28 }}>
-        {t('feedback.title')}
-      </AppText>
+    <Sheet open={props.open} closeLabel={t('common.close')} onClose={close}>
+      {/* The X top right, as on the other sheets, in place of "not now" under the button (owner's word, 2026-10-01). */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <AppText variant="display" style={{ fontSize: 22, lineHeight: 28, flexShrink: 1 }}>
+          {t('feedback.title')}
+        </AppText>
+        <SheetClose label={t('common.close')} onPress={close} />
+      </View>
       <AppText variant="secondary" color="inkSoft" style={{ fontSize: 14.5, lineHeight: 22 }}>
         {t('feedback.body')}
       </AppText>
@@ -94,11 +99,6 @@ export function FeedbackSheet(props: {
       >
         <AppText variant="body" style={{ color: ready ? theme.palette.onSolid : theme.palette.inkFaint }}>
           {t('feedback.send')}
-        </AppText>
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={close} style={{ paddingVertical: 10, alignItems: 'center' }}>
-        <AppText variant="secondary" color="inkFaint">
-          {t('feedback.cancel')}
         </AppText>
       </Pressable>
     </Sheet>

@@ -88,23 +88,7 @@ export function EntryDetailScreen(props: {
         <Playback uri={props.recordingUri} t={t} />
       )}
 
-      {entry.mood === null ? null : (
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 20,
-          borderWidth: 1,
-          borderColor: theme.palette.line,
-          borderRadius: 26,
-          backgroundColor: theme.palette.paper,
-          paddingVertical: 20,
-          paddingHorizontal: 22,
-        }}
-      >
-        <MoodLine value={entry.mood.value} t={t} />
-      </View>
-      )}
+      {entry.mood === null ? null : <MoodLine value={entry.mood.value} t={t} />}
 
       {entry.emotionIds.length > 0 ? null : (
         /*
