@@ -1,5 +1,6 @@
-import { Text, type StyleProp, type TextStyle } from 'react-native';
+import { Platform, StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
 
+import { textSlack } from './textSlack';
 import { useTheme } from '../theme/ThemeProvider';
 import { typeScaleCap, type Palette, type Typography } from '../theme/tokens';
 
@@ -26,6 +27,13 @@ export function AppText(props: AppTextProps): React.JSX.Element {
         theme.type[variant],
         { color: theme.palette[props.color ?? 'ink'], textAlign: props.align ?? 'left' },
         props.style,
+        /*
+         * iOS drops the last line of a paragraph whose frame Yoga rounds a
+         * hair short; see textSlack. The type styles never pad or space a
+         * text, so the caller's style is all the slack has to add to, and
+         * flatten gives undefined for an absent one whatever its type says.
+         */
+        Platform.select({ ios: textSlack(StyleSheet.flatten(props.style) ?? {}), default: null }),
       ]}
     >
       {props.children}
