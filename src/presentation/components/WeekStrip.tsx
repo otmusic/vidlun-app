@@ -1,39 +1,34 @@
 import { View } from 'react-native';
 
 import type { DailyMood } from '@/application/use-cases/GetWeekSummary';
-import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { Milestone } from '@/domain/entities/Milestone';
 import type { Locale } from '@/i18n';
 
 import { AppText } from './AppText';
-import { colorForEmotion } from '../theme/emotionColor';
+import { toneFor } from './emotionTone';
 import { useTheme } from '../theme/ThemeProvider';
 
 /**
- * Seven days ending today, each painted in the colour of the emotion named
- * most that day — the drawing colours days by what they held, not by how the
- * number scored. A day with nothing in it is ink: an outline, a neutral dot,
- * and no colour to mistake for a feeling.
+ * Seven days ending today, each painted in its mood's colour — the band the
+ * day's average falls in on the mood scale (owner's word, 2026-10-01: entries
+ * are marked by mood, feelings are all one blue). A day with nothing in it is
+ * ink: an outline, a neutral dot, and no colour to mistake for a mood.
  */
 export function WeekStrip(props: {
   readonly week: readonly DailyMood[];
-  readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
   readonly noEntryLabel: string;
   /** Days with a milestone carry the drawing's small ink tick under the box. */
   readonly milestones?: readonly Milestone[];
 }): React.JSX.Element {
   const theme = useTheme();
-  const scheme = theme.isDark ? 'dark' : 'light';
   const milestones = props.milestones ?? [];
 
   return (
     <View style={{ flexDirection: 'row', gap: 6 }}>
       {props.week.map((day) => {
-        const emotion =
-          day.topEmotionId === null ? undefined : props.vocabulary.find(day.topEmotionId);
         const colour =
-          emotion === undefined ? null : colorForEmotion(props.vocabulary, emotion, scheme);
+          day.averageMood === null ? null : theme.palette[toneFor(day.averageMood)];
 
         return (
           <View

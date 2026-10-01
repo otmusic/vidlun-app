@@ -3,16 +3,16 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import type { VocabularyGrowth } from '@/application/use-cases/GetVocabularyGrowth';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
-import { emotionKey, type Locale, type Translate } from '@/i18n';
+import { type Locale, type Translate } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
 import { PeriodSheet, type Period } from '../components/PeriodSheet';
 import { RoundBack } from '../components/RoundBack';
-import { colorForEmotion } from '../theme/emotionColor';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
+import { emotionLabel, emotionTint } from '../components/emotionDisplay';
 
 /** Four fit a row on the narrowest phone before the list starts wrapping oddly. */
 const SHOWN_WORDS = 4;
@@ -38,19 +38,14 @@ export function VocabularyScreen(props: {
   const theme = useTheme();
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
-  const scheme = theme.isDark ? 'dark' : 'light';
   const [pickingPeriod, setPickingPeriod] = useState(false);
   /** The list is trimmed to what fits; the rest are one tap away, not gone. */
   const [showingAll, setShowingAll] = useState(false);
   const { growth, t } = props;
 
-  const label = (id: string): string => t(emotionKey(id));
+  const label = (id: string): string => emotionLabel(id, t);
   const colourOf = (id: string): string => {
-    const emotion = props.vocabulary.find(id);
-
-    return emotion === undefined
-      ? theme.palette.inkSoft
-      : colorForEmotion(props.vocabulary, emotion, scheme);
+    return emotionTint(id, props.vocabulary, theme) ?? theme.palette.inkSoft;
   };
 
   const shown = showingAll ? growth.firstTimeIds : growth.firstTimeIds.slice(0, SHOWN_WORDS);
@@ -95,11 +90,7 @@ export function VocabularyScreen(props: {
           <AppText variant="secondary">{periodLabel(growth, props.locale)}</AppText>
         </Pressable>
       </View>
-      <AppText variant="body" color="inkSoft" style={{ marginBottom: 30 }}>
-        {t('dict.purpose')}
-      </AppText>
-
-      <AppText variant="kicker" style={{ marginBottom: 16 }}>
+      <AppText variant="kicker" style={{ marginTop: 24, marginBottom: 16 }}>
         {t(growth.wide ? 'dict.newWordsTitlePeriod' : 'stats.newWordsTitle')}
       </AppText>
 
@@ -135,19 +126,6 @@ export function VocabularyScreen(props: {
           ) : null}
         </View>
       )}
-
-      <View
-        style={{
-          borderTopWidth: 1,
-          borderTopColor: theme.palette.line,
-          paddingTop: 18,
-          marginBottom: 26,
-        }}
-      >
-        <AppText variant="body" color="inkSoft">
-          {t('dict.perMonth', { m: monthsLine(growth, props.locale) })}
-        </AppText>
-      </View>
 
       {growth.refinements.length === 0 ? null : (
         <>
@@ -190,21 +168,6 @@ export function VocabularyScreen(props: {
         locale={props.locale}
         t={t}
       />
-
-      <Pressable
-        accessibilityRole="button"
-        onPress={props.onSeeWeek}
-        style={{
-          borderWidth: 1,
-          borderColor: theme.palette.line,
-          backgroundColor: theme.palette.paper,
-          borderRadius: 999,
-          paddingVertical: 15,
-          alignItems: 'center',
-        }}
-      >
-        <AppText variant="body">{t('dict.seeWeek')}</AppText>
-      </Pressable>
 
       <PeriodSheet
         open={pickingPeriod}
@@ -305,20 +268,6 @@ function listOf(words: readonly string[], t: Translate): string {
   }
 
   return `${words.slice(0, -1).join(', ')} ${t('common.and')} ${words[words.length - 1] ?? ''}`;
-}
-
-/**
- * One month per segment, so the line reads as a shape over time rather than a
- * single number: four words in April, six in May, nine in June is a sentence
- * about someone; "nineteen" is not.
- */
-function monthsLine(growth: VocabularyGrowth, locale: Locale): string {
-  return growth.months
-    .map(
-      (month) =>
-        `${month.monthStart.toLocaleDateString(locale, { month: 'short' })} ${String(month.distinctCount)}`,
-    )
-    .join(' · ');
 }
 
 function periodLabel(growth: VocabularyGrowth, locale: Locale): string {

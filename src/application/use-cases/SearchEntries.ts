@@ -1,4 +1,5 @@
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
+import { isOwnWord, ownWordText } from '../../domain/entities/OwnWord';
 import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryRepository';
 
 export interface SearchEntriesInput {
@@ -54,7 +55,11 @@ export class SearchEntries {
 function matches(entry: MoodEntry, query: string): boolean {
   return (
     entry.cleanTranscript.toLocaleLowerCase().includes(query) ||
-    entry.contextTags.some((tag) => tag.toLocaleLowerCase().includes(query))
+    entry.contextTags.some((tag) => tag.toLocaleLowerCase().includes(query)) ||
+    // A feeling typed in the person's own word is text they remember writing.
+    entry.emotionIds.some(
+      (id) => isOwnWord(id) && ownWordText(id).toLocaleLowerCase().includes(query),
+    )
   );
 }
 

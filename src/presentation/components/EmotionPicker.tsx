@@ -3,32 +3,24 @@ import { View } from 'react-native';
 
 import type { Emotion } from '@/domain/entities/Emotion';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
-import { emotionKey, type Translate, type TranslationKey } from '@/i18n';
+import { emotionKey, type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
 import { Chip } from './Chip';
-import { EMOTION_GROUPS, groupOf, type EmotionGroup } from './emotionTone';
-import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
 
-const GROUP_LABELS: Record<EmotionGroup, TranslationKey> = {
-  pleasantCalm: 'edit.groupPleasantCalm',
-  pleasantEnergetic: 'edit.groupPleasantEnergetic',
-  tense: 'edit.groupTense',
-  heavy: 'edit.groupHeavy',
-};
-
 /**
- * The four shelves people actually reach for, read off valence and energy
- * rather than off the Feeling Wheel's branches.
+ * A handful of emotion words as chips, in the order they are given — no
+ * shelves and no shelf names (owner's word, 2026-09-30): the question card
+ * offers the words nearest to what was said, and the person types their own
+ * when none fits.
  *
- * Two levels are on the shelves; the third arrives one word at a time. Listing
- * all 125 would make this a form, which is the one thing this product is not,
- * but leaving the deepest words unreachable would make the granularity metric
- * measure our ceiling instead of the person's vocabulary — so a chosen word
- * offers its own children and nothing else.
+ * The third level arrives one word at a time: a chosen word offers its own
+ * children and nothing else, so the deepest words stay reachable and the
+ * granularity metric measures the person's vocabulary rather than our list.
  */
-export function EmotionPicker(props: {
+export function EmotionShelf(props: {
+  readonly emotions: readonly Emotion[];
   readonly vocabulary: EmotionVocabulary;
   readonly selected: readonly string[];
   readonly t: Translate;
@@ -41,39 +33,13 @@ export function EmotionPicker(props: {
   readonly onRefine: (parentId: string, childId: string) => void;
 }): React.JSX.Element {
   const theme = useTheme();
-
-  return (
-    <View style={{ gap: theme.spacing.md }}>
-      {EMOTION_GROUPS.map((group) => (
-        <Group key={group} group={group} {...props} />
-      ))}
-    </View>
-  );
-}
-
-function Group(props: {
-  readonly group: EmotionGroup;
-  readonly vocabulary: EmotionVocabulary;
-  readonly selected: readonly string[];
-  readonly t: Translate;
-  readonly onToggle: (id: string) => void;
-  readonly onRefine: (parentId: string, childId: string) => void;
-}): React.JSX.Element {
-  const theme = useTheme();
-  const scheme = theme.isDark ? 'dark' : 'light';
   /** Which chosen word is showing its children. One at a time, or it is a form. */
   const [opened, setOpened] = useState<string | null>(null);
-  const offered = props.vocabulary
-    .all()
-    .filter((emotion: Emotion) => emotion.depth <= 2 && groupOf(emotion) === props.group);
 
   return (
     <View style={{ gap: theme.spacing.sm }}>
-      <AppText variant="caption" color="inkFaint">
-        {props.t(GROUP_LABELS[props.group])}
-      </AppText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-        {offered.map((emotion) => {
+        {props.emotions.map((emotion) => {
           const chosen = props.selected.includes(emotion.id);
           const children = props.vocabulary.childrenOf(emotion.id);
 
@@ -81,7 +47,7 @@ function Group(props: {
             <Chip
               key={emotion.id}
               label={props.t(emotionKey(emotion.id))}
-              color={colorForEmotion(props.vocabulary, emotion, scheme)}
+              color={theme.palette.tag}
               selected={chosen}
               action="add"
               onPress={() => {
@@ -92,14 +58,7 @@ function Group(props: {
                  * them, and the second lets the word go, so nothing that was
                  * possible before this became unreachable.
                  */
-                if (!chosen || children.length === 0) {
-                  setOpened(null);
-                  props.onToggle(emotion.id);
-
-                  return;
-                }
-
-                if (opened === emotion.id) {
+                if (!chosen || children.length === 0 || opened === emotion.id) {
                   setOpened(null);
                   props.onToggle(emotion.id);
 
@@ -139,7 +98,6 @@ function Refinement(props: {
   readonly onPick: (childId: string) => void;
 }): React.JSX.Element | null {
   const theme = useTheme();
-  const scheme = theme.isDark ? 'dark' : 'light';
   const children = props.vocabulary.childrenOf(props.parentId);
 
   if (children.length === 0) {
@@ -156,7 +114,7 @@ function Refinement(props: {
           <Chip
             key={child.id}
             label={props.t(emotionKey(child.id))}
-            color={colorForEmotion(props.vocabulary, child, scheme)}
+            color={theme.palette.tag}
             action="add"
             onPress={() => {
               props.onPick(child.id);

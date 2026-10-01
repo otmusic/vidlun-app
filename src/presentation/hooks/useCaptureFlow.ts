@@ -17,14 +17,15 @@ import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
 import type { FindRecording } from '@/application/use-cases/FindRecording';
 import type { ForgetOldRecordings } from '@/application/use-cases/ForgetOldRecordings';
 import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory';
-import type { ReviseEntry } from '@/application/use-cases/ReviseEntry';
 import type { WriteObservation } from '@/application/use-cases/WriteObservation';
-import { MoodEntry, type EntryEdits } from '@/domain/entities/MoodEntry';
+import type { AttachObservation } from '@/application/use-cases/AttachObservation';
+import { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { LegalDocumentKind } from '@/i18n/legal';
-import type { GetMonthSummary } from '@/application/use-cases/GetMonthSummary';
+import type { GetMonthSummary, MonthSummary } from '@/application/use-cases/GetMonthSummary';
 import type { StatsView } from '@/presentation/screens/StatsScreen';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import { Confidence } from '@/domain/value-objects/Confidence';
+import { MoodScore } from '@/domain/value-objects/MoodScore';
 import type { IAudioRecorder } from '@/domain/ports/IAudioRecorder';
 import type { IClock } from '@/domain/ports/IClock';
 import type { IPurchases, Plan, PurchaseOutcome } from '@/domain/ports/IPurchases';
@@ -40,6 +41,39 @@ import type { MarkMilestone } from '@/application/use-cases/MarkMilestone';
 import type { MilestoneSheetState } from '../components/MilestoneSheet';
 import type { IMicrophonePermission, PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 
+/**
+ * The card, asking before it answers. One stage rather than two screens: the
+ * question and the hold are the same card in two states. The card itself goes
+ * up once Vidlun's reading is in (owner's word, 2026-10-01); until then the
+ * stage is drawn as the processing screen.
+ */
+export interface TurnStage {
+  readonly kind: 'turn';
+  readonly spoken: Spoken;
+  /** What the person has named so far. Empty is an answer, not a blank. */
+  readonly chosen: readonly string[];
+  /** Null until the analysis lands behind the question. */
+  readonly draft: MoodEntry | null;
+  /** True once they have answered and are waiting on the analysis. */
+  readonly holding: boolean;
+  /**
+   * True when Vidlun could not listen — no network, or none fast enough.
+   * The draft is then the words alone, and the person's answer is the
+   * whole entry; Vidlun's comes later, through HearUnheardEntries.
+   */
+  readonly unheard: boolean;
+  /**
+   * True once the person asked to choose together with Vidlun: the card goes
+   * on to Vidlun's words rather than saving their own.
+   */
+  readonly together: boolean;
+  /**
+   * The mood set on the card's scale (owner's word, 2026-10-01). Null until
+   * the scale is touched, and Vidlun's reading stands until then.
+   */
+  readonly mood: number | null;
+}
+
 export type CaptureStage =
   | { readonly kind: 'idle' }
   | { readonly kind: 'recording' }
@@ -51,34 +85,25 @@ export type CaptureStage =
    * them on home either way.
    */
   | { readonly kind: 'parked' }
+  | TurnStage
   /**
-   * The card, asking before it answers. One stage rather than two screens: the
-   * question and the hold are the same card in two states, and a person who
-   * answers slower than the model never sees the second one.
+   * Choosing together: Vidlun's words, already chosen, beside whatever the
+   * person named on the card (owner's word, 2026-10-01).
    */
-  | {
-      readonly kind: 'turn';
-      readonly spoken: Spoken;
-      /** What the person has named so far. Empty is an answer, not a blank. */
-      readonly chosen: readonly string[];
-      /** Null until the analysis lands behind the question. */
-      readonly draft: MoodEntry | null;
-      /** True once they have answered and are waiting on the analysis. */
-      readonly holding: boolean;
-      /**
-       * True when Vidlun could not listen — no network, or none fast enough.
-       * The draft is then the words alone, and the person's answer is the
-       * whole entry; Vidlun's comes later, through HearUnheardEntries.
-       */
-      readonly unheard: boolean;
-    }
   | {
       readonly kind: 'comparing';
       readonly proposed: MoodEntry;
       readonly draft: MoodEntry;
+      /** The question card as it was, for the way back to it. */
+      readonly card: TurnStage;
     }
   | { readonly kind: 'reflecting'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
-  | { readonly kind: 'editing'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
+  /**
+   * The answer is in and the entry is being written — no card in between
+   * (owner's word, 2026-09-30). A stage rather than a call so the analysis
+   * landing on a card someone already answered can end in a save too.
+   */
+  | { readonly kind: 'saving'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
   | {
       readonly kind: 'saved';
       readonly streakDays: number;
@@ -124,6 +149,12 @@ export type CaptureStage =
    * remembers you were reading June is a screen you have to navigate out of.
    */
   | { readonly kind: 'stats'; readonly weeksBack: number; readonly view: StatsView | null }
+  /**
+   * The previous month written back, behind home's month card — its only way
+   * in since the statistics screen let it go (owner's word, 2026-10-01). Null
+   * while its shape is read; the prose is written in after.
+   */
+  | { readonly kind: 'month'; readonly month: MonthSummary | null }
   /** The other half of the insights screen, and its own screen in the drawing. */
   | {
       readonly kind: 'vocabulary';
@@ -166,8 +197,9 @@ export interface CaptureDependencies {
   readonly createVoiceEntry: CreateVoiceEntry;
   readonly createTextEntry: CreateTextEntry;
   readonly confirmEntry: ConfirmEntry;
-  readonly reviseEntry: ReviseEntry;
   readonly writeObservation: WriteObservation;
+  /** Writes an echo into an entry saved before the echo arrived. */
+  readonly attachObservation: AttachObservation;
   readonly deleteEntry: DeleteEntry;
   readonly getHistory: GetHistory;
   readonly forgetOldRecordings: ForgetOldRecordings;
@@ -181,11 +213,6 @@ export interface CaptureDependencies {
   readonly unheardEntries: IUnheardEntries;
   readonly hearUnheardEntries: HearUnheardEntries;
   readonly microphonePermission: IMicrophonePermission;
-  /**
-   * False takes the question out of the capture path entirely: the card is
-   * what it was before §3b, and it costs what it cost then.
-   */
-  readonly asksFirst: boolean;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
   readonly getMonthSummary: GetMonthSummary;
@@ -241,39 +268,29 @@ export interface CaptureFlow {
   /** Opens the text screen aimed at yesterday evening — the missed day's door. */
   readonly startYesterday: () => void;
   readonly submitText: (text: string) => void;
-  readonly beginEditing: () => void;
   /** Adds or removes one of the person's own words while the card is asking. */
   readonly toggleOwnWord: (id: string) => void;
+  /** Adds a word typed on the card; never takes one away, so a repeat is harmless. */
+  readonly addOwnWord: (id: string) => void;
   /** Trades one of their words for a more exact child of it. */
   readonly refineOwnWord: (parentId: string, childId: string) => void;
-  /** Done answering. Goes on to the comparison, or waits for it. */
+  /** Sets the mood on the card's scale, in place of Vidlun's reading. */
+  readonly setMood: (value: number) => void;
+  /** Done answering: saves what was named, or waits for the reading to land. */
   readonly answer: () => void;
-  /** "I don't know, show me" — no answer given, and none invented. */
-  readonly skipAnswer: () => void;
+  /** "Choose together": Vidlun's words, already chosen, beside whatever was named. */
+  readonly chooseTogether: () => void;
   /**
    * The transcript, fixed by the one person who knows what was said. Throws
    * the mishearing's analysis away and reads the corrected words instead.
    */
   readonly correctWording: (text: string) => void;
-  /**
-   * The same repair on an entry already saved: the corrected words are read
-   * afresh and the card comes back for one more look before the entry is
-   * written over — same id, same moment, same audio.
-   */
-  readonly fixEntryWording: (entry: MoodEntry, text: string) => void;
-  /** Takes one of Vidlun's words into the entry. */
-  readonly adopt: (id: string) => void;
-  /**
-   * Takes an adopted word back out. Only Vidlun's words come off here — the
-   * person's own answer stays, editable through the editor instead — and
-   * letting one go is what frees a slot when the four-word ceiling stops
-   * another adoption.
-   */
-  readonly unkeep: (id: string) => void;
-  /** Declines the rest of them, and says so out loud rather than by silence. */
-  readonly keepMine: () => void;
-  readonly keptMine: boolean;
-  readonly applyEdits: (edits: EntryEdits) => void;
+  /** Takes a word off the entry or puts it back, while choosing together. */
+  readonly toggleKept: (id: string) => void;
+  /** Adds a word typed while choosing together; never takes one away. */
+  readonly addKept: (id: string) => void;
+  /** From choosing together back to the question card, as it was. */
+  readonly backToCard: () => void;
   readonly confirm: () => void;
   readonly backHome: () => void;
   readonly deleteEntry: (id: string) => void;
@@ -292,6 +309,8 @@ export interface CaptureFlow {
   readonly restorePurchase: () => void;
   readonly dismissPurchaseOutcome: () => void;
   readonly openStats: () => void;
+  /** Home's month card: the month written back, or the plans without access to it. */
+  readonly openMonth: () => void;
   readonly openVocabulary: () => void;
   /** Re-counts the vocabulary over a period the person picked. */
   readonly showPeriod: (period: { readonly from: Date; readonly to: Date }) => void;
@@ -359,43 +378,84 @@ function addObservation(current: CaptureStage, spoken: MoodEntry): CaptureStage 
    * adopted a word, and overwriting the draft would take it back.
    */
   return {
-    kind: current.kind,
+    ...current,
     proposed: spoken,
     draft: current.draft.withObservation(spoken.observation),
   };
 }
 
 /**
+ * The words choosing together starts with: the person's own first, then
+ * Vidlun's, all of them already chosen (owner's word, 2026-10-01) — four at
+ * most, the entry's ceiling.
+ */
+function wordsChosenTogether(
+  chosen: readonly string[],
+  heard: readonly string[],
+): readonly string[] {
+  return [...chosen, ...heard.filter((id) => !chosen.includes(id))].slice(
+    0,
+    MoodEntry.MAX_EMOTIONS,
+  );
+}
+
+/**
+ * Whether the person took off any of Vidlun's words that choosing together
+ * started them with. Those come already chosen, so taking one off is an act
+ * rather than an untouched screen — the refusal the disagreement log is for.
+ *
+ * Exported for the test, like `whenAnalysisLands`.
+ */
+export function declinedVidlunsWords(proposed: MoodEntry, draft: MoodEntry): boolean {
+  const startedWith = wordsChosenTogether(draft.selfEmotionIds, proposed.emotionIds);
+
+  return proposed.emotionIds.some(
+    (id) => startedWith.includes(id) && !draft.emotionIds.includes(id),
+  );
+}
+
+/**
  * What the card holds once the answering is over.
  *
- * The kept set starts as the person's own words. When they named nothing, it
- * starts as Vidlun's instead — an unanswered question is the card as it was
- * before any of this, and throwing a good analysis away because someone had no
- * word to hand would be the opposite of helping.
+ * Someone who named the feeling and went on has given the entry: it is saved
+ * as it stands, with no card in between (owner's word, 2026-09-30) — a hard
+ * entry too, whose flag still brings the grounding offer on the saved screen.
+ * What Vidlun heard is not thrown away; it stays on the draft as the
+ * proposal, for the revision log and the granularity metric.
+ *
+ * Everyone else — someone who asked to choose together, or went on without a
+ * word — gets Vidlun's words, already chosen beside their own. A hard entry
+ * comes here too: with the person's answer no longer set beside Vidlun's,
+ * there is no comparison left to spare it (owner's word, 2026-10-01).
  */
-function comparisonOf(proposed: MoodEntry, chosen: readonly string[]): CaptureStage {
-  const draft = MoodEntry.create({
-    ...proposed.toProps(),
-    selfEmotionIds: chosen,
-    emotionIds: chosen.length > 0 ? chosen : proposed.emotionIds,
-  });
+function cardAfterAnswer(card: TurnStage, proposed: MoodEntry, together: boolean): CaptureStage {
+  const { chosen } = card;
+  const mood = card.mood === null ? proposed.mood : MoodScore.of(card.mood);
 
-  /*
-   * A hard entry gets the plain card, never the comparison. Setting somebody's
-   * answer beside Vidlun's and naming the difference is a thing to do with an
-   * ordinary day; on a difficult one it is the app making a lesson out of what
-   * someone just said.
-   *
-   * The question itself has already been asked by this point — the flag is not
-   * known until the analysis returns, and by then the card is on screen. That
-   * is the part of §M8's rule this flow cannot honour, and one quiet question
-   * with a way out of it is the mildest version of asking.
-   */
-  if (proposed.safetyFlag !== 'none') {
-    return { kind: 'reflecting', proposed, draft };
+  if (chosen.length > 0 && !together) {
+    return {
+      kind: 'saving',
+      proposed,
+      draft: MoodEntry.create({
+        ...proposed.toProps(),
+        selfEmotionIds: chosen,
+        emotionIds: chosen,
+        mood,
+      }),
+    };
   }
 
-  return { kind: 'comparing', proposed, draft };
+  return {
+    kind: 'comparing',
+    proposed,
+    draft: MoodEntry.create({
+      ...proposed.toProps(),
+      selfEmotionIds: chosen,
+      emotionIds: wordsChosenTogether(chosen, proposed.emotionIds),
+      mood,
+    }),
+    card: { ...card, draft: proposed, holding: false, together: false },
+  };
 }
 
 /** Any day inside the week `weeksBack` weeks before the one holding `from`. */
@@ -418,19 +478,9 @@ function weeksAgo(from: Date, weeksBack: number): Date {
 export function whenAnalysisLands(
   current: CaptureStage,
   draft: MoodEntry,
-  asking: boolean,
   /** The transcript this analysis was started for; absent means any. */
   forText?: string,
 ): CaptureStage {
-  /*
-   * With the question switched off there is nothing to hold the card back for,
-   * so the analysis lands on the card directly — the flow as it was before
-   * §3b, at the speed it was.
-   */
-  if (!asking) {
-    return current.kind === 'processing' ? { kind: 'reflecting', proposed: draft, draft } : current;
-  }
-
   if (current.kind !== 'turn') {
     return current;
   }
@@ -451,7 +501,7 @@ export function whenAnalysisLands(
    * transcript and their own words and nothing else — so what the card can
    * display and what the stage knows are two different sets on purpose.
    */
-  return current.holding ? comparisonOf(draft, current.chosen) : { ...current, draft };
+  return current.holding ? cardAfterAnswer(current, draft, current.together) : { ...current, draft };
 }
 
 /**
@@ -477,14 +527,20 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [home, setHome] = useState<HomeView | null>(null);
   const [monthCard, setMonthCard] = useState<Date | null>(null);
   const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
-  /** Whether the person has declined Vidlun's remaining words on this card. */
-  const [keptMine, setKeptMine] = useState(false);
   /*
    * The take behind the draft on screen, held only until it is confirmed or
    * abandoned. Not on the entry: MoodEntry is about what someone felt, and a
    * path on disk is not that.
    */
   const takeUri = useRef<string | null>(null);
+  /*
+   * Echoes by entry id, and the entries saved while theirs was still being
+   * written. A named answer is saved at once and the echo comes from a slower
+   * model seconds later: it goes into the save when it is already here, and
+   * into the stored entry when it lands after.
+   */
+  const echoes = useRef(new Map<string, string>());
+  const awaitingEcho = useRef(new Set<string>());
   const [parked, setParked] = useState<ParkedTake | null>(null);
   const [micStatus, setMicStatus] = useState<PermissionStatus>('undetermined');
   const [milestones, setMilestones] = useState<readonly Milestone[]>([]);
@@ -624,16 +680,45 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         return;
       }
 
+      // A re-read keeps the entry's id; an echo about the old words is not it.
+      echoes.current.delete(draft.id);
+
       try {
         const spoken = await dependencies.writeObservation.execute(draft);
 
         setStage((current) => addObservation(current, spoken));
+
+        if (spoken.observation !== null) {
+          echoes.current.set(spoken.id, spoken.observation);
+
+          if (awaitingEcho.current.delete(spoken.id)) {
+            const echoed = await dependencies.attachObservation.execute(
+              spoken.id,
+              spoken.observation,
+            );
+
+            // Home and an open page still hold the entry as it was saved.
+            if (echoed !== null) {
+              setStage((current) =>
+                current.kind === 'detail' && current.entry.id === echoed.id
+                  ? { ...current, entry: echoed }
+                  : current,
+              );
+              reloadHome();
+            }
+          }
+        }
       } catch {
         // The entry is complete without it. Failing here must not take down a
         // card the user is already reading.
       }
     },
-    [dependencies.hasNarrativeAccess, dependencies.writeObservation],
+    [
+      dependencies.attachObservation,
+      dependencies.hasNarrativeAccess,
+      dependencies.writeObservation,
+      reloadHome,
+    ],
   );
 
   /**
@@ -663,12 +748,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * which fills it in the next time the network is there.
    */
   const saveUnheard = useCallback(
-    (draft: MoodEntry, chosen: readonly string[], spoken: Spoken) => {
+    (draft: MoodEntry, chosen: readonly string[], spoken: Spoken, mood: number | null) => {
       const confirmed = MoodEntry.create({
         ...draft.toProps(),
         selfEmotionIds: chosen,
         emotionIds: chosen,
         proposedEmotionIds: [],
+        mood: mood === null ? draft.mood : MoodScore.of(mood),
       });
 
       setStage({ kind: 'processing' });
@@ -697,7 +783,16 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         .catch((error: unknown) => {
           // The words and the answer are still in hand: the card comes back
           // as it stood, for one more tap on "next".
-          fail(error, { kind: 'turn', spoken, chosen, draft, holding: false, unheard: true });
+          fail(error, {
+            kind: 'turn',
+            spoken,
+            chosen,
+            draft,
+            holding: false,
+            unheard: true,
+            together: false,
+            mood,
+          });
         });
     },
     [dependencies, fail],
@@ -709,22 +804,27 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       build: (words: Spoken) => Promise<MoodEntry>,
       unheard: (words: Spoken) => MoodEntry,
     ) => {
-      // Per card, not per session. Left standing it would put the last entry's
-      // refusal on this one's label, and now that it is logged, in its record.
-      setKeptMine(false);
       rebuild.current = { heard: build, unheard };
 
-      const asking = dependencies.asksFirst;
-
-      setStage(
-        asking
-          ? { kind: 'turn', spoken, chosen: [], draft: null, holding: false, unheard: false }
-          : { kind: 'processing' },
-      );
+      /*
+       * Always asked: the question is no longer a setting (owner's word,
+       * 2026-10-01). Every entry opens on the words nearest to what was
+       * said, to choose from or to answer with one's own.
+       */
+      setStage({
+        kind: 'turn',
+        spoken,
+        chosen: [],
+        draft: null,
+        holding: false,
+        unheard: false,
+        together: false,
+        mood: null,
+      });
 
       build(spoken)
         .then((draft) => {
-          setStage((current) => whenAnalysisLands(current, draft, asking, spoken.text));
+          setStage((current) => whenAnalysisLands(current, draft, spoken.text));
 
           void withObservation(draft);
         })
@@ -733,23 +833,15 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
            * Vidlun could not listen — no network, or none fast enough. The
            * words are not lost for it: the card goes on with the person's
            * answer alone, the entry is saved as theirs, and Vidlun's answer
-           * is listened for later. Without the question there is nobody to
-           * wait for, so it is saved at once.
+           * is listened for later.
            */
           const draft = unheard(spoken);
 
           notify({ kind: 'unheard' });
-
-          if (!asking) {
-            saveUnheard(draft, [], spoken);
-
-            return;
-          }
-
           setStage((current) => whenAnalysisFails(current, draft, spoken));
         });
     },
-    [dependencies.asksFirst, notify, saveUnheard, withObservation],
+    [notify, saveUnheard, withObservation],
   );
 
   /*
@@ -759,7 +851,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    */
   useEffect(() => {
     if (stage.kind === 'turn' && stage.unheard && stage.holding && stage.draft !== null) {
-      saveUnheard(stage.draft, stage.chosen, stage.spoken);
+      saveUnheard(stage.draft, stage.chosen, stage.spoken, stage.mood);
     }
   }, [saveUnheard, stage]);
 
@@ -897,19 +989,10 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
       const containing = weeksAgo(dependencies.clock.now(), weeksBack);
 
-      const monthIsFresh = weeksBack === 0 && dependencies.getMonthSummary.isFresh();
-
       void dependencies.getWeekSummary
-        /*
-         * Without the narrative first: everything else on the screen is read
-         * off the phone in milliseconds, and the narrative is a model call
-         * that was making the whole screen blank for seconds. It is written
-         * in below once it exists — and only for someone who can read it,
-         * since the AI-written week is the paid half of the product.
-         */
-        .execute({ withNarrative: false, containing })
+        .execute({ containing })
         .then(async (week) => {
-          const [themes, patterns, earlier, month] = await Promise.all([
+          const [themes, patterns, earlier] = await Promise.all([
             dependencies.getWeekThemes.execute({
               weekStart: week.weekStart,
               weekEnd: week.weekEnd,
@@ -923,12 +1006,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
              * week the person failed to fill.
              */
             dependencies.getWeekSummary.execute({
-              withNarrative: false,
               containing: weeksAgo(dependencies.clock.now(), weeksBack + 1),
             }),
-            monthIsFresh
-              ? dependencies.getMonthSummary.execute({ withNarrative: false })
-              : Promise.resolve(null),
           ]);
 
           setStage((current) =>
@@ -942,40 +1021,58 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
                     themes,
                     patterns,
                     weeksBack,
-                    month: month !== null && month.hasEnough ? month : null,
                     hasEarlierWeek: earlier.entryCount > 0,
                     hasNarrativeAccess: dependencies.hasNarrativeAccess,
                   },
                 }
               : current,
           );
-
-          if (dependencies.hasNarrativeAccess) {
-            const [withProse, monthProse] = await Promise.all([
-              dependencies.getWeekSummary.execute({ withNarrative: true, containing }),
-              monthIsFresh && month !== null && month.hasEnough
-                ? dependencies.getMonthSummary.execute({ withNarrative: true })
-                : Promise.resolve(null),
-            ]);
-
-            setStage((current) =>
-              current.kind === 'stats' && current.weeksBack === weeksBack && current.view !== null
-                ? {
-                    ...current,
-                    view: {
-                      ...current.view,
-                      week: withProse,
-                      month: monthProse ?? current.view.month,
-                    },
-                  }
-                : current,
-            );
-          }
         })
         .catch(fail);
     },
     [dependencies, fail],
   );
+
+  const openSubscription = useCallback(() => {
+    setStage({ kind: 'subscription', plans: [], outcome: null });
+
+    // Asked for every time the screen opens: prices move, and a price
+    // remembered from last week is a price we would be quoting wrongly.
+    void dependencies.purchases
+      .plans()
+      .then((plans) => {
+        setStage((current) => (current.kind === 'subscription' ? { ...current, plans } : current));
+      })
+      .catch(fail);
+  }, [dependencies.purchases, fail]);
+
+  /*
+   * The month's page: its shape first, read off the phone at once, then the
+   * prose, a model call that takes seconds and is cached after. The prose is
+   * the paid half, so without it the card leads to what it costs instead.
+   */
+  const openMonth = useCallback(() => {
+    if (!dependencies.hasNarrativeAccess) {
+      openSubscription();
+
+      return;
+    }
+
+    setStage({ kind: 'month', month: null });
+
+    void dependencies.getMonthSummary
+      .execute({ withNarrative: false })
+      .then(async (shape) => {
+        setStage((current) => (current.kind === 'month' ? { ...current, month: shape } : current));
+
+        const written = await dependencies.getMonthSummary.execute({ withNarrative: true });
+
+        setStage((current) => (current.kind === 'month' ? { ...current, month: written } : current));
+      })
+      .catch((error: unknown) => {
+        fail(error, { kind: 'idle' });
+      });
+  }, [dependencies.getMonthSummary, dependencies.hasNarrativeAccess, fail, openSubscription]);
 
   const runSearch = useCallback(
     (query: string, emotionId: string | null) => {
@@ -1029,42 +1126,84 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     [dependencies.getHistory, dependencies.getVocabularyGrowth, fail],
   );
 
+  const save = useCallback(
+    (proposed: MoodEntry, draft: MoodEntry, backTo: CaptureStage, declined = false) => {
+      setStage({ kind: 'processing' });
+
+      // An echo that came in while the card was up goes in with the entry.
+      const echo = echoes.current.get(draft.id);
+      const confirmed =
+        draft.observation === null && echo !== undefined && !draft.wasRevisedByUser
+          ? draft.withObservation(echo)
+          : draft;
+
+      dependencies.confirmEntry
+        .execute({
+          proposed,
+          confirmed,
+          recordingUri: dependencies.keepRecordings ? (takeUri.current ?? undefined) : undefined,
+          keptOwnWords: declined,
+        })
+        .then(async () => {
+          dependencies.haptics.success();
+
+          takeUri.current = null;
+
+          // Still on its way: written into the stored entry when it lands.
+          if (confirmed.observation === null && dependencies.hasNarrativeAccess) {
+            const landed = echoes.current.get(confirmed.id);
+
+            if (landed === undefined) {
+              awaitingEcho.current.add(confirmed.id);
+            } else {
+              await dependencies.attachObservation.execute(confirmed.id, landed).catch(() => undefined);
+            }
+          }
+
+          const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
+
+          setHome(refreshed);
+          setStage({
+            kind: 'saved',
+            streakDays: refreshed.streakDays,
+            offersGrounding: confirmed.safetyFlag === 'distress',
+            unheard: false,
+          });
+        })
+        .catch((error: unknown) => {
+          // Nothing was written; the card comes back with the draft as it stood.
+          fail(error, backTo);
+        });
+    },
+    [dependencies, fail],
+  );
+
   const confirm = useCallback(() => {
-    if (stage.kind !== 'reflecting' && stage.kind !== 'editing' && stage.kind !== 'comparing') {
+    if (stage.kind !== 'reflecting' && stage.kind !== 'comparing') {
       return;
     }
 
-    const { proposed, draft } = stage;
+    save(
+      stage.proposed,
+      stage.draft,
+      stage,
+      stage.kind === 'comparing' && declinedVidlunsWords(stage.proposed, stage.draft),
+    );
+  }, [save, stage]);
 
-    setStage({ kind: 'processing' });
-
-    dependencies.confirmEntry
-      .execute({
-        proposed,
-        confirmed: draft,
-        recordingUri: dependencies.keepRecordings ? (takeUri.current ?? undefined) : undefined,
-        keptOwnWords: keptMine,
-      })
-      .then(async () => {
-        dependencies.haptics.success();
-
-        takeUri.current = null;
-
-        const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
-
-        setHome(refreshed);
-        setStage({
-          kind: 'saved',
-          streakDays: refreshed.streakDays,
-          offersGrounding: draft.safetyFlag === 'distress',
-          unheard: false,
-        });
-      })
-      .catch((error: unknown) => {
-        // Nothing was written; the card comes back with the draft as it stood.
-        fail(error, stage);
+  /*
+   * The answer that needs no card. If the save fails, the plain card comes
+   * up with the draft, so saving is one tap away from trying again.
+   */
+  useEffect(() => {
+    if (stage.kind === 'saving') {
+      save(stage.proposed, stage.draft, {
+        kind: 'reflecting',
+        proposed: stage.proposed,
+        draft: stage.draft,
       });
-  }, [dependencies, fail, keptMine, stage]);
+    }
+  }, [save, stage]);
 
   return {
     stage,
@@ -1148,29 +1287,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       },
       [ask, dependencies.createTextEntry],
     ),
-    beginEditing: useCallback(() => {
-      setStage((current) =>
-        current.kind === 'reflecting' || current.kind === 'comparing'
-          ? { kind: 'editing', proposed: current.proposed, draft: current.draft }
-          : current,
-      );
-    }, []),
-    applyEdits: useCallback(
-      (edits: EntryEdits) => {
-        setStage((current) => {
-          if (current.kind !== 'editing') {
-            return current;
-          }
-
-          return {
-            kind: 'reflecting',
-            proposed: current.proposed,
-            draft: dependencies.reviseEntry.execute(current.draft, edits),
-          };
-        });
-      },
-      [dependencies.reviseEntry],
-    ),
     confirm,
     backHome: useCallback(() => {
       setStage({ kind: 'idle' });
@@ -1220,6 +1336,15 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         return { ...current, chosen };
       });
     }, []),
+    addOwnWord: useCallback((id: string) => {
+      setStage((current) =>
+        current.kind !== 'turn' ||
+        current.chosen.includes(id) ||
+        current.chosen.length >= MoodEntry.MAX_EMOTIONS
+          ? current
+          : { ...current, chosen: [...current.chosen, id] },
+      );
+    }, []),
     refineOwnWord: useCallback((parentId: string, childId: string) => {
       setStage((current) => {
         if (current.kind !== 'turn' || !current.chosen.includes(parentId)) {
@@ -1238,11 +1363,14 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         return { ...current, chosen };
       });
     }, []),
+    setMood: useCallback((value: number) => {
+      setStage((current) => (current.kind === 'turn' ? { ...current, mood: value } : current));
+    }, []),
     answer: useCallback(() => {
       // Vidlun could not listen: nothing to compare against, and nothing
       // coming. The answer given is the whole entry.
       if (stage.kind === 'turn' && stage.unheard && stage.draft !== null) {
-        saveUnheard(stage.draft, stage.chosen, stage.spoken);
+        saveUnheard(stage.draft, stage.chosen, stage.spoken, stage.mood);
 
         return;
       }
@@ -1256,12 +1384,14 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         // the card forward the moment it lands.
         return current.draft === null
           ? { ...current, holding: true }
-          : comparisonOf(current.draft, current.chosen);
+          : cardAfterAnswer(current, current.draft, false);
       });
     }, [saveUnheard, stage]),
-    skipAnswer: useCallback(() => {
+    chooseTogether: useCallback(() => {
+      // Vidlun could not listen: there is nothing to choose together with,
+      // and what was named so far is the whole entry.
       if (stage.kind === 'turn' && stage.unheard && stage.draft !== null) {
-        saveUnheard(stage.draft, [], stage.spoken);
+        saveUnheard(stage.draft, stage.chosen, stage.spoken, stage.mood);
 
         return;
       }
@@ -1271,54 +1401,14 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           return current;
         }
 
-        // "Show me" is not an answer, so none is recorded — the empty set here
-        // means they chose not to, and the card holds Vidlun's words instead.
+        // Their words so far are kept: choosing together is not the same as
+        // having no answer, and what they named before seeing Vidlun's is
+        // still the unaided measurement.
         return current.draft === null
-          ? { ...current, chosen: [], holding: true }
-          : comparisonOf(current.draft, []);
+          ? { ...current, holding: true, together: true }
+          : cardAfterAnswer(current, current.draft, true);
       });
     }, [saveUnheard, stage]),
-    fixEntryWording: useCallback(
-      (entry: MoodEntry, text: string) => {
-        const corrected = text.trim();
-
-        if (corrected.length === 0 || corrected === entry.cleanTranscript) {
-          return;
-        }
-
-        const before = stage;
-
-        takeUri.current = null;
-        setKeptMine(false);
-        setStage({ kind: 'processing' });
-
-        dependencies.createVoiceEntry
-          .execute({ text: corrected, confidence: Confidence.of(1) }, entry.createdAt)
-          .then((reread) => {
-            /*
-             * A fresh reading of the corrected words, wearing the old entry's
-             * identity: the id keeps the audio and the place in history, the
-             * source keeps a typed entry typed. What the person named before
-             * seeing any answer was named for the misheard sentence, so the
-             * new reading stands on its own and the card asks nothing.
-             */
-            const draft = MoodEntry.create({
-              ...reread.toProps(),
-              id: entry.id,
-              source: entry.source,
-              createdAt: entry.createdAt,
-            });
-
-            setStage({ kind: 'reflecting', proposed: draft, draft });
-            void withObservation(draft);
-          })
-          .catch((error: unknown) => {
-            // The entry is kept as it was; the correction did not go through.
-            fail(error, before);
-          });
-      },
-      [dependencies.createVoiceEntry, fail, stage, withObservation],
-    ),
     correctWording: useCallback(
       (text: string) => {
         const corrected = text.trim();
@@ -1349,7 +1439,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         builders
           .heard(spoken)
           .then((draft) => {
-            setStage((current) => whenAnalysisLands(current, draft, true, corrected));
+            setStage((current) => whenAnalysisLands(current, draft, corrected));
 
             void withObservation(draft);
           })
@@ -1367,76 +1457,48 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       },
       [notify, stage, withObservation],
     ),
-    unkeep: useCallback((id: string) => {
+    toggleKept: useCallback((id: string) => {
       setStage((current) => {
-        if (
-          current.kind !== 'comparing' ||
-          !current.draft.emotionIds.includes(id) ||
-          // Their own answer is not the card's to take back — adopted words
-          // come off here, named ones through the editor.
-          current.draft.selfEmotionIds.includes(id)
-        ) {
+        if (current.kind !== 'comparing') {
           return current;
         }
 
-        return {
-          ...current,
-          draft: current.draft.withEmotionIds(
-            current.draft.emotionIds.filter((each) => each !== id),
-          ),
-        };
-      });
-    }, []),
-    adopt: useCallback((id: string) => {
-      setStage((current) => {
-        if (current.kind !== 'comparing' || current.draft.emotionIds.includes(id)) {
-          return current;
+        const kept = current.draft.emotionIds;
+
+        if (kept.includes(id)) {
+          return { ...current, draft: current.draft.withEmotionIds(kept.filter((each) => each !== id)) };
         }
 
-        const emotionIds = [...current.draft.emotionIds, id].slice(0, MoodEntry.MAX_EMOTIONS);
-
-        return { ...current, draft: current.draft.withEmotionIds(emotionIds) };
+        // Taking a word off is what frees a slot under the four-word ceiling.
+        return kept.length >= MoodEntry.MAX_EMOTIONS
+          ? current
+          : { ...current, draft: current.draft.withEmotionIds([...kept, id]) };
       });
-      setKeptMine(false);
     }, []),
-    keepMine: useCallback(() => {
-      /*
-       * Recorded rather than inferred from doing nothing. A person who keeps
-       * their own word is telling us something — either the model was wrong or
-       * they know themselves better than it does — and both are worth more than
-       * an absence of taps.
-       */
-      setKeptMine(true);
+    addKept: useCallback((id: string) => {
+      setStage((current) =>
+        current.kind !== 'comparing' ||
+        current.draft.emotionIds.includes(id) ||
+        current.draft.emotionIds.length >= MoodEntry.MAX_EMOTIONS
+          ? current
+          : { ...current, draft: current.draft.withEmotionIds([...current.draft.emotionIds, id]) },
+      );
     }, []),
-    keptMine,
+    backToCard: useCallback(() => {
+      // The card as it was, with the reading — and any echo since — in hand.
+      setStage((current) =>
+        current.kind === 'comparing' ? { ...current.card, draft: current.proposed } : current,
+      );
+    }, []),
     openSettings: useCallback(() => {
       setStage({ kind: 'settings' });
-      // The profile counts entries, and the count comes from the journal it
-      // shares with the feed rather than from a second reading of the same
-      // rows.
-      void dependencies.getHistory
-        .execute()
-        .then(setHistory)
-        .catch(fail);
-    }, [dependencies.getHistory, fail]),
+    }, []),
     openSearch: useCallback(() => {
       runSearch('', null);
     }, [runSearch]),
     search: runSearch,
-    openSubscription: useCallback(() => {
-      setStage({ kind: 'subscription', plans: [], outcome: null });
-
-      // Asked for every time the screen opens: prices move, and a price
-      // remembered from last week is a price we would be quoting wrongly.
-      void dependencies.purchases
-        .plans()
-        .then((plans) => {
-          setStage((current) =>
-            current.kind === 'subscription' ? { ...current, plans } : current,
-          );
-        })
-        .catch(fail);
-    }, [dependencies.purchases, fail]),
+    openSubscription,
+    openMonth,
     openLegal: useCallback((doc: LegalDocumentKind) => {
       setStage({ kind: 'legal', doc });
     }, []),
@@ -1486,26 +1548,24 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       },
       [loadVocabulary],
     ),
+    /*
+     * Read off the stage in hand, not inside a state updater: the updater
+     * that returned its state unchanged was bailed out of by React, and the
+     * load it called from within never happened — the arrow into last week
+     * did nothing on the phone (found 2026-09-22).
+     */
     showEarlierWeek: useCallback(() => {
-      setStage((current) => {
-        if (current.kind === 'stats') {
-          loadStats(current.weeksBack + 1);
-        }
-
-        return current;
-      });
-    }, [loadStats]),
+      if (stage.kind === 'stats') {
+        loadStats(stage.weeksBack + 1);
+      }
+    }, [loadStats, stage]),
     showLaterWeek: useCallback(() => {
-      setStage((current) => {
-        // Never forward past this week: there is nothing there yet, and an
-        // empty week you navigated into reads as one you failed to fill.
-        if (current.kind === 'stats' && current.weeksBack > 0) {
-          loadStats(current.weeksBack - 1);
-        }
-
-        return current;
-      });
-    }, [loadStats]),
+      // Never forward past this week: there is nothing there yet, and an
+      // empty week you navigated into reads as one you failed to fill.
+      if (stage.kind === 'stats' && stage.weeksBack > 0) {
+        loadStats(stage.weeksBack - 1);
+      }
+    }, [loadStats, stage]),
     openHistory: useCallback(() => {
       setStage({ kind: 'history' });
       void dependencies.getHistory.execute().then(setHistory).catch(fail);

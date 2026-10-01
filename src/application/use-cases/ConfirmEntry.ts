@@ -13,8 +13,9 @@ export interface ConfirmEntryInput {
   /** The take this came from, absent for a typed entry. */
   readonly recordingUri?: string;
   /**
-   * True when the person read Vidlun's words and declined them out loud. Not
-   * inferred from an absence of taps: ignoring the screen and rejecting it say
+   * True when the person read Vidlun's words and declined them out loud —
+   * since 2026-10-01 by taking off one that came already chosen. Not inferred
+   * from an absence of taps: ignoring the screen and rejecting it say
    * different things, and only one of them is evidence.
    */
   readonly keptOwnWords?: boolean;
@@ -64,9 +65,17 @@ export class ConfirmEntry {
       });
     }
 
+    /*
+     * A mood moved on the card's scale is a correction too (2026-10-01): the
+     * scale starts at Vidlun's reading, so another point is the person
+     * revising it, though nothing marks the entry revised. Not where Vidlun
+     * read no mood — a point picked then is an answer, not a correction.
+     */
+    const moodCorrected = proposed.mood !== null && confirmed.mood?.value !== proposed.mood.value;
+
     // Saving is the user's intent; logging is ours. Never let the second
     // failing take the first with it.
-    if (confirmed.wasRevisedByUser) {
+    if (confirmed.wasRevisedByUser || moodCorrected) {
       await this.revisionLog.record({
         entryId: confirmed.id,
         revisedAt: this.clock.now(),

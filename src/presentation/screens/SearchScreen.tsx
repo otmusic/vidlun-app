@@ -4,14 +4,14 @@ import { FlatList, Pressable, TextInput, View, type ListRenderItem } from 'react
 import type { SearchResult } from '@/application/use-cases/SearchEntries';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
-import { emotionKey, type Locale, type Translate } from '@/i18n';
+import { type Locale, type Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { EntryCard } from '../components/EntryCard';
-import { colorForEmotion } from '../theme/emotionColor';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
+import { emotionLabel, emotionTint } from '../components/emotionDisplay';
 
 /** The bar floats over this screen, so the last card needs room under it. */
 const BOTTOM_ROOM = 118;
@@ -42,15 +42,10 @@ export function SearchScreen(props: {
   const theme = useTheme();
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
-  const scheme = theme.isDark ? 'dark' : 'light';
   const { result, t, onOpen } = props;
 
   const colourOf = (id: string): string => {
-    const emotion = props.vocabulary.find(id);
-
-    return emotion === undefined
-      ? theme.palette.ink
-      : colorForEmotion(props.vocabulary, emotion, scheme);
+    return emotionTint(id, props.vocabulary, theme) ?? theme.palette.ink;
   };
 
   const renderEntry = useCallback<ListRenderItem<MoodEntry>>(
@@ -130,7 +125,7 @@ export function SearchScreen(props: {
             {(result?.filterIds ?? []).map((id) => (
               <Filter
                 key={id}
-                label={t(emotionKey(id))}
+                label={emotionLabel(id, t)}
                 colour={colourOf(id)}
                 selected={props.emotionId === id}
                 onPress={() => {

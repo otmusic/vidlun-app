@@ -43,7 +43,7 @@ export const REFLECTION_MODEL = 'claude-haiku-4-5';
  */
 export const OBSERVATION_MODEL = 'claude-sonnet-5';
 
-/** The weekly narrative. Runs once a week, so it can afford the better model. */
+/** The monthly narrative. Runs once a month, so it can afford the better model. */
 export const NARRATIVE_MODEL = 'claude-sonnet-5';
 
 export function readText(message: Anthropic.Message): string {

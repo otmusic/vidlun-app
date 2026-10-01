@@ -2,7 +2,7 @@
   "title": "Vidlun Terms of Use",
   "blocks": [
     {
-      "text": "*Effective:* 29 August 2026"
+      "text": "*Effective:* 1 October 2026"
     },
     {
       "text": "*Provider:* the Vidlun developer, support@vidlun.app"
@@ -14,7 +14,7 @@
       "heading": "1. What Vidlun is"
     },
     {
-      "text": "A voice journal for feelings. You speak, the app transcribes on the phone itself, and a language model proposes names for what was said and once a week writes a piece about your week."
+      "text": "A voice journal for feelings. You speak, the app transcribes on the phone itself, and a language model proposes names for what was said and once a month writes a piece about your month."
     },
     {
       "heading": "2. This is not a medical service"
@@ -52,7 +52,7 @@
       "text": "*Free forever:* recording up to one minute, transcription, the emotion names the app heard in a recording, the journal, search, the mood chart and the emotion vocabulary."
     },
     {
-      "text": "*Paid:* everything the language model writes about your entries — the weekly piece that reads your whole week, the observations on individual entries and the week's themes — and recording up to five minutes."
+      "text": "*Paid:* everything the language model writes about your entries — the monthly piece that reads your whole month, the observations on individual entries and the week's themes — and recording up to five minutes."
     },
     {
       "text": "*Plans.* Monthly, with no trial. Annual, with seven free days at the start. Lifetime, a single payment that does not renew. The App Store shows the current price in your currency before you buy; we do not repeat it here, so that it cannot disagree with what you actually see."

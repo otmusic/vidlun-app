@@ -28,6 +28,8 @@ const asking: CaptureStage = {
   draft: null,
   holding: false,
   unheard: false,
+  together: false,
+  mood: null,
 };
 
 describe('what happens when the analysis fails', () => {

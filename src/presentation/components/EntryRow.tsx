@@ -4,12 +4,12 @@ import Swipeable from 'react-native-gesture-handler/Swipeable';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
-import { emotionKey, type Locale, type Translate } from '@/i18n';
+import { type Locale, type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
 import { Icon, ICON_SIZE } from './Icon';
-import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
+import { emotionLabel, moodTint } from './emotionDisplay';
 
 /** §7.3: a list row is never shorter than this, whatever it holds. */
 const ROW_HEIGHT = 52;
@@ -48,11 +48,7 @@ export function EntryRow(props: {
   const swipeable = useRef<{ close: () => void } | null>(null);
   const { entry, t, onOpen, onDelete } = props;
   const first = entry.emotionIds[0];
-  const emotion = first === undefined ? undefined : props.vocabulary.find(first);
-  const colour =
-    emotion === undefined
-      ? theme.palette.line
-      : colorForEmotion(props.vocabulary, emotion, theme.isDark ? 'dark' : 'light');
+  const marker = moodTint(entry.mood?.value ?? null, theme);
 
   const confirm = (): void => {
     Alert.alert(t('delete.title'), t('delete.body'), [
@@ -88,7 +84,7 @@ export function EntryRow(props: {
             width: 76,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: theme.palette.low,
+            backgroundColor: theme.palette.danger,
             borderRadius: theme.radii.card,
             marginLeft: theme.spacing.sm,
           }}
@@ -112,8 +108,8 @@ export function EntryRow(props: {
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
-          {/* The entry's own emotion colour — the line where it has none. */}
-          <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: colour }} />
+          {/* The entry's mood colour (owner's word, 2026-10-01) — the line where it has none. */}
+          <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: marker }} />
           <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13 }}>
             {`${dayWordOf(entry.createdAt, props.today, props.locale, t)} · ${timeOf(entry.createdAt, props.locale)}`}
           </AppText>
@@ -121,9 +117,9 @@ export function EntryRow(props: {
             <AppText
               variant="secondary"
               numberOfLines={1}
-              style={{ fontSize: 13, color: colour, marginLeft: 'auto', flexShrink: 1 }}
+              style={{ fontSize: 13, color: theme.palette.tag, marginLeft: 'auto', flexShrink: 1 }}
             >
-              {t(emotionKey(first))}
+              {emotionLabel(first, t)}
             </AppText>
           )}
         </View>

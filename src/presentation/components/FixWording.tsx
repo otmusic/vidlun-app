@@ -5,14 +5,16 @@ import type { Translate } from '@/i18n';
 
 import { useTheme } from '../theme/ThemeProvider';
 import { AppText } from './AppText';
-import { Icon } from './Icon';
+import { Button } from './Button';
 
 /**
- * The drawing's repair control, the same on the card being made and on the
- * card already kept: the quote with a pencil pill under it, and — once
- * tapped — the text in a ring of ink with a solid "done" and the reason the
- * control exists. Recognition is the one thing on either card the person
- * can check and the model cannot.
+ * The repair control, the same on the card being made and on the card already
+ * kept: the quote with a button under it — a whole-width one with a pencil,
+ * since the drawing's small pencil pill read as one more tag beside the
+ * emotion chips (owner's word, 2026-10-01) — and, once tapped, the text in a
+ * ring of ink with a solid "done" and the reason the control exists.
+ * Recognition is the one thing on either card the person can check and the
+ * model cannot.
  */
 export function FixWording(props: {
   /** The sentence as it stands; what the editor opens with. */
@@ -32,30 +34,14 @@ export function FixWording(props: {
     return (
       <View style={props.style}>
         {props.children}
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          label={t('detail.fix')}
+          variant="secondary"
+          icon="edit-3"
           onPress={() => {
             setFixing(props.text);
           }}
-          hitSlop={8}
-          style={{
-            alignSelf: 'flex-start',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 7,
-            borderWidth: 1,
-            borderColor: theme.palette.line,
-            backgroundColor: theme.palette.paper,
-            borderRadius: 999,
-            paddingVertical: 9,
-            paddingHorizontal: 15,
-          }}
-        >
-          <Icon name="edit-3" size={14} color="inkSoft" />
-          <AppText variant="secondary" color="inkSoft">
-            {t('detail.fix')}
-          </AppText>
-        </Pressable>
+        />
       </View>
     );
   }

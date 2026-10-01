@@ -4,6 +4,7 @@ import { Keyboard, KeyboardAvoidingView, Platform, Pressable, TextInput } from '
 import type { Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
+import { BackButton } from '../components/BackButton';
 import { Button } from '../components/Button';
 import { useTheme } from '../theme/ThemeProvider';
 import { Screen } from './Screen';
@@ -12,7 +13,7 @@ import { Screen } from './Screen';
 export function TextEntryScreen(props: {
   readonly t: Translate;
   readonly onSubmit: (text: string) => void;
-  readonly onCancel: () => void;
+  readonly onBack: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const [text, setText] = useState('');
@@ -28,6 +29,8 @@ export function TextEntryScreen(props: {
         style={{ flex: 1, gap: theme.spacing.sm }}
         behavior={Platform.select({ ios: 'padding', default: undefined })}
       >
+        {/* The way out is the arrow, top left, not a "cancel" under the button (owner's word, 2026-10-01). */}
+        <BackButton t={props.t} onPress={props.onBack} />
         <AppText variant="display">{props.t('text.title')}</AppText>
         <TextInput
           value={text}
@@ -66,7 +69,6 @@ export function TextEntryScreen(props: {
           }}
           disabled={text.trim().length === 0}
         />
-        <Button label={props.t('common.cancel')} variant="ghost" onPress={props.onCancel} />
       </KeyboardAvoidingView>
     </Screen>
   );

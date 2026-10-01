@@ -75,11 +75,24 @@ export function Sheet(props: {
 
   return (
     <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}>
+      {/* The dark comes in with the card, so a darker scrim does not land as a flash. */}
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          backgroundColor: theme.palette.scrim,
+          opacity: rise,
+        }}
+      />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={props.closeLabel}
         onPress={props.onClose}
-        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(10,12,16,0.42)' }}
+        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

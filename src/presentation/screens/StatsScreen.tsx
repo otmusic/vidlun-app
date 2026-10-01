@@ -2,7 +2,6 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { WeekSummary } from '@/application/use-cases/GetWeekSummary';
-import type { MonthSummary } from '@/application/use-cases/GetMonthSummary';
 import type { MoodPattern } from '@/application/use-cases/FindMoodPatterns';
 import type { Theme } from '@/application/use-cases/GetWeekThemes';
 import { countedKey } from '@/i18n/plural';
@@ -10,8 +9,7 @@ import type { Milestone } from '@/domain/entities/Milestone';
 import type { Locale, Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
-import { Icon } from '../components/Icon';
-import { toneFor } from '../components/MoodScale';
+import { toneFor } from '../components/emotionTone';
 import { Button } from '../components/Button';
 import { RoundBack } from '../components/RoundBack';
 
@@ -31,9 +29,6 @@ const DOT = 5;
 /** The steps, which stay in place greyed rather than disappearing. */
 const STEP = 34;
 
-/** Below this a week has too little in it for prose worth reading. */
-const NARRATIVE_FROM_ENTRIES = 3;
-
 const RING = { size: 124, radius: 42, width: 13 } as const;
 
 export interface StatsView {
@@ -41,11 +36,6 @@ export interface StatsView {
   readonly themes: readonly Theme[];
   /** Widest gap first. The card shows one; the rest are only counted. */
   readonly patterns: readonly MoodPattern[];
-  /**
-   * The previous month's piece, present only in a new month's first days on
-   * this week's view — an event, not furniture beside the fresher week.
-   */
-  readonly month: MonthSummary | null;
   /** How many weeks back this is. Zero is the current one. */
   readonly weeksBack: number;
   /** False when nothing was ever written before this week. */
@@ -72,10 +62,12 @@ export function StatsScreen(props: {
   readonly onOpenVocabulary: () => void;
   readonly onOpenDay: () => void;
   readonly onOpenSubscription: () => void;
-  /** Every milestone; the chart marks the week's, the list shows them all. */
+  /**
+   * Every milestone; the chart marks the week's. The list and "mark an event"
+   * left this screen on 2026-09-30 (owner's word): events wait for a better
+   * home, and until then they are made nowhere and only shown.
+   */
   readonly milestones: readonly Milestone[];
-  readonly onMarkMilestone: () => void;
-  readonly onEditMilestone: (milestone: Milestone) => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
@@ -88,9 +80,12 @@ export function StatsScreen(props: {
       contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: 40 }}
     >
       <RoundBack t={t} onPress={props.onBack} />
+      {/* Every week is its dates, this one included, and nothing under them:
+          "last week" told the person less than the dates do (owner's word,
+          2026-09-22), and "this week" did too (2026-10-01). */}
       <PeriodHeader
-        title={t(view === null || view.weeksBack === 0 ? 'stats.title' : 'stats.last')}
-        range={view === null ? '' : rangeOf(view.week, props.locale)}
+        title={view === null ? '' : rangeOf(view.week, props.locale)}
+        range=""
         canGoBack={view?.hasEarlierWeek ?? false}
         canGoForward={(view?.weeksBack ?? 0) > 0}
         backLabel={t('stats.previousWeek')}
@@ -99,17 +94,6 @@ export function StatsScreen(props: {
         onForward={props.onLaterWeek}
       />
 
-      {view === null || view.month === null ? null : (
-        <View style={{ marginTop: 26 }}>
-          <MonthPanel
-            month={view.month}
-            locale={props.locale}
-            t={t}
-            hasNarrativeAccess={view.hasNarrativeAccess}
-            onOpenSubscription={props.onOpenSubscription}
-          />
-        </View>
-      )}
       {view === null ? null : view.week.entryCount === 0 ? (
         /* A quiet week is its own screen in the drawing, not an empty card. */
         <View style={{ marginTop: 44, gap: 26, alignItems: 'flex-start' }}>
@@ -130,20 +114,10 @@ export function StatsScreen(props: {
             locale={props.locale}
             onOpenDay={props.onOpenDay}
           />
-          <Count count={view.week.entryCount} locale={props.locale} t={t} />
-          <Milestones
-            milestones={props.milestones}
-            locale={props.locale}
-            t={t}
-            onMark={props.onMarkMilestone}
-            onEdit={props.onEditMilestone}
-          />
-          <Narrative
-            view={view}
-            locale={props.locale}
-            t={t}
-            onOpenSubscription={props.onOpenSubscription}
-          />
+          {/* The week's own prose went on 2026-10-01 (owner's word): the month
+              says it, on home and the page behind its card. The entry count
+              under the chart went the same day. */}
+          <View style={{ height: 26 }} />
           <Pattern
             view={view}
             locale={props.locale}
@@ -155,100 +129,10 @@ export function StatsScreen(props: {
           ) : (
             <TopicsLocked t={t} onOpenSubscription={props.onOpenSubscription} />
           )}
-          <Pressable accessibilityRole="button" onPress={props.onOpenVocabulary} hitSlop={12}>
-            <AppText variant="body" color="inkSoft">
-              {t('stats.dictLink')}
-            </AppText>
-          </Pressable>
+          <Button label={t('stats.dictLink')} variant="secondary" onPress={props.onOpenVocabulary} />
         </>
       )}
     </ScrollView>
-  );
-}
-
-/**
- * The previous month written back — the weekly panel's longer breath, in the
- * same dark clothes so it reads as the same voice. Three states: the text,
- * the writing ghosts, and the locked lead for the unpaid.
- */
-function MonthPanel(props: {
-  readonly month: MonthSummary;
-  readonly locale: Locale;
-  readonly t: Translate;
-  readonly hasNarrativeAccess: boolean;
-  readonly onOpenSubscription: () => void;
-}): React.JSX.Element {
-  const theme = useTheme();
-  const monthName = props.month.monthStart.toLocaleDateString(props.locale, { month: 'long' });
-  const paragraphs = (props.month.narrative ?? '')
-    .split('\n')
-    .filter((line) => line.trim().length > 0);
-
-  return (
-    <View
-      style={{
-        borderRadius: 22,
-        backgroundColor: theme.palette.panel,
-        padding: 24,
-        marginBottom: 14,
-        gap: 10,
-      }}
-    >
-      <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.6 }}>
-        {props.t('stats.monthLabel')}
-      </AppText>
-      <AppText variant="kicker" style={{ color: theme.palette.onPanel, fontSize: 23 }}>
-        {props.t('stats.monthTitle', { month: monthName })}
-      </AppText>
-      {props.hasNarrativeAccess ? (
-        props.month.narrative === null ? (
-          <View style={{ gap: 9 }}>
-            <AppText variant="body" style={{ color: theme.palette.onPanel, opacity: 0.65 }}>
-              {props.t('stats.proseWriting')}
-            </AppText>
-            {(['100%', '86%', '62%'] as const).map((width) => (
-              <View
-                key={width}
-                style={{
-                  height: 15,
-                  width,
-                  borderRadius: 7,
-                  backgroundColor: 'rgba(255,255,255,0.10)',
-                }}
-              />
-            ))}
-          </View>
-        ) : (
-          paragraphs.map((paragraph) => (
-            <AppText key={paragraph} variant="quote" style={{ color: theme.palette.onPanel }}>
-              {paragraph}
-            </AppText>
-          ))
-        )
-      ) : (
-        /*
-         * Reworded with the week's card on 2026-09-17: the lead says what
-         * will be written rather than claiming it was, the ghost lines that
-         * stood for a hidden text are gone with the claim, and the link says
-         * where it goes.
-         */
-        <View style={{ gap: 9 }}>
-          <AppText variant="quote" style={{ color: theme.palette.onPanel }}>
-            {props.t('stats.monthLockedLead')}
-          </AppText>
-          <Pressable
-            accessibilityRole="button"
-            onPress={props.onOpenSubscription}
-            hitSlop={8}
-            style={{ paddingTop: 6 }}
-          >
-            <AppText variant="body" style={{ color: theme.palette.lime }}>
-              {`${props.t('stats.narrLockedAction')} ›`}
-            </AppText>
-          </Pressable>
-        </View>
-      )}
-    </View>
   );
 }
 
@@ -279,8 +163,12 @@ export function PeriodHeader(props: {
           marginBottom: 4,
         }}
       >
-        <AppText variant="display">{props.title}</AppText>
-        <View style={{ flexDirection: 'row', gap: 6 }}>
+        {/* Wraps before it runs under the arrows: the Ukrainian "last week"
+            is a display line and a half at the phone's width. */}
+        <AppText variant="display" style={{ flex: 1, marginRight: 12 }}>
+          {props.title}
+        </AppText>
+        <View style={{ flexDirection: 'row', gap: 6, flexShrink: 0 }}>
           <Step
             glyph="‹"
             enabled={props.canGoBack}
@@ -429,238 +317,6 @@ function Chart(props: {
       ))}
     </View>
     </>
-  );
-}
-
-/**
- * The line itself, newest first, and the way to add to it. The hint under
- * the dashed button is how anyone learns milestones exist, so it goes once
- * the first is marked.
- */
-function Milestones(props: {
-  readonly milestones: readonly Milestone[];
-  readonly locale: Locale;
-  readonly t: Translate;
-  readonly onMark: () => void;
-  readonly onEdit: (milestone: Milestone) => void;
-}): React.JSX.Element {
-  const theme = useTheme();
-  const newestFirst = [...props.milestones].reverse();
-
-  return (
-    <View>
-      {newestFirst.length === 0 ? null : (
-        <>
-          <AppText variant="caption" color="inkFaint" style={{ fontSize: 11.5, marginBottom: 8 }}>
-            {props.t('stats.milestones')}
-          </AppText>
-          <View style={{ marginBottom: 8 }}>
-            {newestFirst.map((milestone) => (
-              <Pressable
-                key={milestone.id}
-                accessibilityRole="button"
-                onPress={() => {
-                  props.onEdit(milestone);
-                }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  borderTopWidth: 1,
-                  borderTopColor: theme.palette.line,
-                  paddingVertical: 13,
-                  paddingHorizontal: 2,
-                  minHeight: 44,
-                }}
-              >
-                <View style={{ width: 1.5, height: 16, borderRadius: 1, backgroundColor: theme.palette.ink }} />
-                <AppText variant="body" style={{ flex: 1 }} numberOfLines={1}>
-                  {milestone.label}
-                </AppText>
-                <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13 }}>
-                  {milestone.day.toLocaleDateString(props.locale, { day: 'numeric', month: 'long' })}
-                </AppText>
-              </Pressable>
-            ))}
-          </View>
-        </>
-      )}
-      <Pressable
-        accessibilityRole="button"
-        onPress={props.onMark}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-          borderWidth: 1,
-          borderStyle: 'dashed',
-          borderColor: theme.palette.line,
-          borderRadius: 18,
-          paddingVertical: 14,
-          paddingHorizontal: 16,
-          marginBottom: 26,
-        }}
-      >
-        <Icon name="plus" size={16} color="ink" />
-        <View style={{ flex: 1, gap: 3 }}>
-          <AppText variant="body" style={{ fontSize: 14.5 }}>
-            {props.t('milestone.mark')}
-          </AppText>
-          {newestFirst.length === 0 ? (
-            <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13, lineHeight: 19 }}>
-              {props.t('milestone.hint')}
-            </AppText>
-          ) : null}
-        </View>
-      </Pressable>
-    </View>
-  );
-}
-
-function Count(props: {
-  readonly count: number;
-  readonly locale: Locale;
-  readonly t: Translate;
-}): React.JSX.Element {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingVertical: 18 }}>
-      <AppText variant="display">{String(props.count)}</AppText>
-      <AppText variant="body" color="inkSoft">
-        {props.t(countedKey('stats.weekCount', props.count, props.locale))}
-      </AppText>
-    </View>
-  );
-}
-
-/**
- * A dark panel, and the first paragraph is free. Someone who has not paid still
- * reads something true about their own week; the lock takes the rest of it.
- * A paywall over the whole of a person's own week is the app holding their
- * words hostage, which §M5 does not allow.
- */
-function Narrative(props: {
-  readonly view: StatsView;
-  readonly locale: Locale;
-  readonly t: Translate;
-  readonly onOpenSubscription: () => void;
-}): React.JSX.Element {
-  const theme = useTheme();
-  const { week, hasNarrativeAccess } = props.view;
-
-  /*
-   * Two different silences, and lumping them together was a bug: a week with
-   * six entries and no subscription was being told it had too little to read.
-   * Too few entries is the only thing this line is about.
-   */
-  if (week.entryCount < NARRATIVE_FROM_ENTRIES) {
-    return (
-      <View
-        style={{
-          borderTopWidth: 1,
-          borderTopColor: theme.palette.line,
-          paddingTop: 20,
-          marginBottom: 26,
-        }}
-      >
-        <AppText variant="body" color="inkSoft">
-          {props.t('stats.proseLater')}
-        </AppText>
-      </View>
-    );
-  }
-
-  const paragraphs = (week.narrative ?? '').split('\n').filter((line) => line.trim().length > 0);
-  /*
-   * Nothing of the text leaks out unpaid. The drawing once gave the first
-   * paragraph away; the pricing decision of 2026-08-30 closed that — the
-   * model's writing is the paid half, whole.
-   */
-  const shown = hasNarrativeAccess ? paragraphs : [];
-
-  return (
-    <View
-      style={{
-        borderRadius: 22,
-        backgroundColor: theme.palette.panel,
-        padding: 22,
-        marginBottom: 26,
-        gap: 10,
-      }}
-    >
-      <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.6 }}>
-        {props.t('stats.yourWeek')}
-      </AppText>
-      {hasNarrativeAccess && week.narrative === null ? (
-        <View style={{ gap: 12 }}>
-          <AppText variant="body" style={{ color: theme.palette.onPanel, opacity: 0.65 }}>
-            {props.t('stats.proseWriting')}
-          </AppText>
-          {/* Three ghost lines where the paragraphs will land, so the panel
-              does not jump when they do. */}
-          <View style={{ gap: 9 }}>
-            {(['100%', '86%', '62%'] as const).map((width) => (
-              <View
-                key={width}
-                style={{
-                  height: 15,
-                  width,
-                  borderRadius: 7,
-                  backgroundColor: 'rgba(255,255,255,0.10)',
-                }}
-              />
-            ))}
-          </View>
-        </View>
-      ) : null}
-      {shown.map((paragraph) => (
-        <AppText key={paragraph} variant="quote" style={{ color: theme.palette.onPanel }}>
-          {paragraph}
-        </AppText>
-      ))}
-      {hasNarrativeAccess ? null : (
-        <AppText variant="quote" style={{ color: theme.palette.onPanel }}>
-          {props.t('stats.narrLockedLead')}
-        </AppText>
-      )}
-      {hasNarrativeAccess ? null : (
-        <View
-          style={{
-            borderTopWidth: 1,
-            borderTopColor: 'rgba(255,255,255,0.12)',
-            marginTop: 8,
-            paddingTop: 16,
-            gap: 14,
-            alignItems: 'flex-start',
-          }}
-        >
-          {/*
-            The drawing counted the month's patterns here, never quoting one.
-            Taken off on 2026-09-17: the pattern card right under this one
-            already says whether there is a pattern, so the count said it
-            twice, and said "this week" of a count made over the month.
-          */}
-          {/*
-            The button says where it goes. "Read in full" dated from the days
-            the first paragraph was given away; since 2026-08-30 nothing of
-            the text shows unpaid, so there was nothing left to complete.
-          */}
-          <Pressable
-            accessibilityRole="button"
-            onPress={props.onOpenSubscription}
-            style={{
-              borderRadius: 999,
-              backgroundColor: theme.palette.lime,
-              paddingVertical: 13,
-              paddingHorizontal: 22,
-            }}
-          >
-            <AppText variant="body" style={{ color: '#16181D' }}>
-              {props.t('stats.narrLockedAction')}
-            </AppText>
-          </Pressable>
-        </View>
-      )}
-    </View>
   );
 }
 

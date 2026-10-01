@@ -19,7 +19,7 @@ export function entitlementOf(status: SubscriptionStatus): Entitlement {
   return status.inTrial ? 'trial' : 'subscribed';
 }
 
-/** Whether the whole weekly narrative and the patterns are open. */
+/** Whether the monthly narrative and the patterns are open. */
 export function readsInFull(entitlement: Entitlement): boolean {
   return entitlement !== 'none';
 }

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import type { Locale, Translate, TranslationKey } from '@/i18n';
 
 import { AppText } from './AppText';
-import { useDrawnSides } from '../hooks/useDrawnSides';
+import { ModalSheet, SheetClose } from './ModalSheet';
 import { useTheme } from '../theme/ThemeProvider';
 
 /** A period, `from` inclusive and `to` exclusive, matching the use case. */
@@ -69,7 +69,6 @@ export function PeriodSheet(props: {
   readonly onClose: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
-  const sides = useDrawnSides(20);
   const { t } = props;
   const [month, setMonth] = useState(() => startOfMonth(props.period.from));
   const [from, setFrom] = useState<Date | null>(props.period.from);
@@ -92,140 +91,123 @@ export function PeriodSheet(props: {
   };
 
   return (
-    <Modal visible={props.open} transparent animationType="slide" onRequestClose={props.onClose}>
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.cancel')}
-          onPress={props.onClose}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
-        <View
-          style={{
-            backgroundColor: theme.palette.paper,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            paddingTop: 24,
-            ...sides,
-            paddingBottom: 26,
+    <ModalSheet open={props.open} closeLabel={t('common.close')} onClose={props.onClose}>
+      {/* An X top right in place of the "cancel" under the buttons (owner's word, 2026-10-01). */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          marginBottom: 14,
+        }}
+      >
+        <AppText variant="caption" color="inkFaint" style={{ flexShrink: 1 }}>
+          {t('dict.rangeTitle')}
+        </AppText>
+        <SheetClose label={t('common.close')} onPress={props.onClose} />
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 20 }}>
+        {PRESETS.map((preset) => {
+          /*
+           * A period that ends before the first entry was written holds
+           * nothing, and a live button into it reads as months the person
+           * failed to fill. Faint and inert instead, like the calendar's
+           * own arrows.
+           */
+          const period = preset.period(props.today);
+          const reachable = period.to > startOfDay(props.earliest);
+
+          return (
+            <Pressable
+              key={preset.key}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !reachable }}
+              disabled={!reachable}
+              onPress={() => {
+                props.onApply(period);
+              }}
+              style={{
+                borderWidth: 1.5,
+                borderColor: theme.palette.line,
+                borderRadius: 999,
+                paddingVertical: 8,
+                paddingHorizontal: 14,
+                opacity: reachable ? 1 : 0.55,
+              }}
+            >
+              <AppText variant="secondary" color={reachable ? 'ink' : 'inkFaint'}>
+                {t(preset.key)}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 14,
+        }}
+      >
+        <CalendarStep
+          glyph="‹"
+          enabled={startOfMonth(props.earliest) < month}
+          onPress={() => {
+            setMonth(addMonths(month, -1));
           }}
-        >
-          <AppText variant="caption" color="inkFaint" style={{ marginBottom: 14 }}>
-            {t('dict.rangeTitle')}
-          </AppText>
+        />
+        <AppText variant="body">
+          {month.toLocaleDateString(props.locale, { month: 'long', year: 'numeric' })}
+        </AppText>
+        <CalendarStep
+          glyph="›"
+          enabled={month < startOfMonth(props.today)}
+          onPress={() => {
+            setMonth(addMonths(month, 1));
+          }}
+        />
+      </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 20 }}>
-            {PRESETS.map((preset) => {
-              /*
-               * A period that ends before the first entry was written holds
-               * nothing, and a live button into it reads as months the person
-               * failed to fill. Faint and inert instead, like the calendar's
-               * own arrows.
-               */
-              const period = preset.period(props.today);
-              const reachable = period.to > startOfDay(props.earliest);
+      <Calendar
+        month={month}
+        from={from}
+        to={to}
+        earliest={props.earliest}
+        today={props.today}
+        locale={props.locale}
+        onPick={pick}
+      />
 
-              return (
-                <Pressable
-                  key={preset.key}
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: !reachable }}
-                  disabled={!reachable}
-                  onPress={() => {
-                    props.onApply(period);
-                  }}
-                  style={{
-                    borderWidth: 1.5,
-                    borderColor: theme.palette.line,
-                    borderRadius: 999,
-                    paddingVertical: 8,
-                    paddingHorizontal: 14,
-                    opacity: reachable ? 1 : 0.55,
-                  }}
-                >
-                  <AppText variant="secondary" color={reachable ? 'ink' : 'inkFaint'}>
-                    {t(preset.key)}
-                  </AppText>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 14,
-            }}
-          >
-            <CalendarStep
-              glyph="‹"
-              enabled={startOfMonth(props.earliest) < month}
-              onPress={() => {
-                setMonth(addMonths(month, -1));
-              }}
-            />
-            <AppText variant="body">
-              {month.toLocaleDateString(props.locale, { month: 'long', year: 'numeric' })}
-            </AppText>
-            <CalendarStep
-              glyph="›"
-              enabled={month < startOfMonth(props.today)}
-              onPress={() => {
-                setMonth(addMonths(month, 1));
-              }}
-            />
-          </View>
-
-          <Calendar
-            month={month}
-            from={from}
-            to={to}
-            earliest={props.earliest}
-            today={props.today}
-            locale={props.locale}
-            onPick={pick}
-          />
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18 }}>
-            <AppText variant="secondary" color="inkSoft" style={{ flex: 1 }}>
-              {from === null
-                ? t('dict.pickStart')
-                : `${dayLabel(from, props.locale)} – ${to === null ? '…' : dayLabel(to, props.locale)}`}
-            </AppText>
-            {from !== null && to !== null ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  props.onApply({ from, to: addDays(to, 1) });
-                }}
-                style={{
-                  borderRadius: 999,
-                  backgroundColor: theme.palette.solid,
-                  paddingVertical: 13,
-                  paddingHorizontal: 24,
-                }}
-              >
-                <AppText variant="body" style={{ color: theme.palette.onSolid }}>
-                  {t('dict.apply')}
-                </AppText>
-              </Pressable>
-            ) : null}
-          </View>
-
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18 }}>
+        <AppText variant="secondary" color="inkSoft" style={{ flex: 1 }}>
+          {from === null
+            ? t('dict.pickStart')
+            : `${dayLabel(from, props.locale)} – ${to === null ? '…' : dayLabel(to, props.locale)}`}
+        </AppText>
+        {from !== null && to !== null ? (
           <Pressable
             accessibilityRole="button"
-            onPress={props.onClose}
-            style={{ paddingTop: 16, alignItems: 'center' }}
+            onPress={() => {
+              props.onApply({ from, to: addDays(to, 1) });
+            }}
+            style={{
+              borderRadius: 999,
+              backgroundColor: theme.palette.solid,
+              paddingVertical: 13,
+              paddingHorizontal: 24,
+            }}
           >
-            <AppText variant="body" color="inkFaint">
-              {t('common.cancel')}
+            <AppText variant="body" style={{ color: theme.palette.onSolid }}>
+              {t('dict.apply')}
             </AppText>
           </Pressable>
-        </View>
+        ) : null}
       </View>
-    </Modal>
+    </ModalSheet>
   );
 }
 

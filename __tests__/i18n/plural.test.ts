@@ -2,7 +2,7 @@ import { createTranslator, LOCALES } from '@/i18n';
 import { countedKey, pluralFormOf } from '@/i18n/plural';
 
 /** Every prefix used with `countedKey` has to exist in all three forms. */
-const COUNTED = ['stats.weekCount', 'stats.mention'];
+const COUNTED = ['feed.entry', 'stats.mention'];
 
 describe('counted words', () => {
   it('takes the Ukrainian form the number actually calls for', () => {

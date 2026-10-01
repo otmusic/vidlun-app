@@ -59,6 +59,20 @@ export interface Palette {
   readonly low: string;
   readonly lowSoft: string;
   readonly lowInk: string;
+  /**
+   * Every emotion — chips and names alike, a word of the person's own
+   * included — in one blue (owner's word, 2026-10-01): the drawing's own blue,
+   * the one it fixed for "lonely". The colour of an entry is its mood's.
+   */
+  readonly tag: string;
+  /** Deleting an entry. Red, and only ever a control's colour, never a feeling's. */
+  readonly danger: string;
+  /**
+   * What a sheet lays over the screen behind it. Darker than the 42% two
+   * sheets had, and now on every sheet (owner's word, 2026-10-01); darker
+   * still at night, where a dark screen needs more to recede.
+   */
+  readonly scrim: string;
 }
 
 export const lightPalette: Palette = {
@@ -101,6 +115,9 @@ export const lightPalette: Palette = {
   low: '#C0663A',
   lowSoft: '#F6E7DF',
   lowInk: '#8F4530',
+  tag: '#2E7DE9',
+  danger: '#D93A2E',
+  scrim: 'rgba(10,12,16,0.6)',
 };
 
 /**
@@ -153,6 +170,9 @@ export const darkPalette: Palette = {
   low: '#E0875C',
   lowSoft: '#2E1F1A',
   lowInk: '#EBA684',
+  tag: '#6BAEFF',
+  danger: '#FF6B5F',
+  scrim: 'rgba(0,0,0,0.7)',
 };
 
 /** An 8-grid, with 4 reserved for the gaps inside a control. */

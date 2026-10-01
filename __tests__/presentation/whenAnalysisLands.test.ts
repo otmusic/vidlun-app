@@ -1,7 +1,11 @@
 import { MoodEntry } from '@/domain/entities/MoodEntry';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
-import { whenAnalysisLands, type CaptureStage } from '@/presentation/hooks/useCaptureFlow';
+import {
+  declinedVidlunsWords,
+  whenAnalysisLands,
+  type CaptureStage,
+} from '@/presentation/hooks/useCaptureFlow';
 
 const NOW = new Date('2026-08-28T19:00:00.000Z');
 
@@ -28,11 +32,13 @@ const asking: CaptureStage = {
   draft: null,
   holding: false,
   unheard: false,
+  together: false,
+  mood: null,
 };
 
 describe('what happens when the analysis lands', () => {
   it('leaves the question exactly as it was, whatever the analysis found', () => {
-    const after = whenAnalysisLands(asking, analysis(), true);
+    const after = whenAnalysisLands(asking, analysis());
 
     /*
      * The one defect nobody would notice in use: the card would simply look a
@@ -50,7 +56,7 @@ describe('what happens when the analysis lands', () => {
   });
 
   it('holds the analysis without putting it on screen', () => {
-    const after = whenAnalysisLands(asking, analysis(), true);
+    const after = whenAnalysisLands(asking, analysis());
 
     // TurnScreen is handed the transcript, the chosen words and `holding`, and
     // nothing else — so carrying the draft here is what makes the comparison
@@ -58,50 +64,127 @@ describe('what happens when the analysis lands', () => {
     expect(after.kind === 'turn' ? after.draft : null).not.toBeNull();
   });
 
-  it('goes on to the comparison for someone who answered before it arrived', () => {
-    const after = whenAnalysisLands({ ...asking, holding: true }, analysis(), true);
+  it("saves a named feeling at once, with no card and no list of Vidlun's words", () => {
+    const after = whenAnalysisLands({ ...asking, holding: true }, analysis());
+
+    // Owner's word, 2026-09-30: someone who named the feeling goes on to
+    // "saved" — the card after the answer was one screen too many. What
+    // Vidlun heard is still kept, as the proposal.
+    expect(after.kind).toBe('saving');
+    expect(after.kind === 'saving' ? after.draft.emotionIds : null).toEqual(['bad.tired']);
+    expect(after.kind === 'saving' ? after.draft.selfEmotionIds : null).toEqual(['bad.tired']);
+    expect(after.kind === 'saving' ? after.draft.proposedEmotionIds : null).toEqual([
+      'happy.proud',
+      'bad.tired',
+    ]);
+  });
+
+  it("keeps the mood set on the card's scale, over Vidlun's reading", () => {
+    const after = whenAnalysisLands({ ...asking, holding: true, mood: 2 }, analysis());
+
+    // Owner's word, 2026-10-01: the mood is set on the card itself.
+    expect(after.kind === 'saving' ? after.draft.mood?.value : null).toBe(2);
+    expect(after.kind === 'saving' ? after.proposed.mood?.value : null).toBe(4);
+  });
+
+  it("keeps Vidlun's mood when the scale was left alone", () => {
+    const after = whenAnalysisLands({ ...asking, holding: true }, analysis());
+
+    expect(after.kind === 'saving' ? after.draft.mood?.value : null).toBe(4);
+  });
+
+  it('carries the mood set on the card into choosing together, and back', () => {
+    const after = whenAnalysisLands(
+      { ...asking, holding: true, together: true, mood: 5 },
+      analysis(),
+    );
+
+    expect(after.kind === 'comparing' ? after.draft.mood?.value : null).toBe(5);
+    expect(after.kind === 'comparing' ? after.card.mood : null).toBe(5);
+  });
+
+  it("shows Vidlun's answer to someone who went on without naming anything", () => {
+    const after = whenAnalysisLands({ ...asking, chosen: [], holding: true }, analysis());
 
     expect(after.kind).toBe('comparing');
   });
 
-  it('never sets a difficult entry beside the answer', () => {
-    const after = whenAnalysisLands(
-      { ...asking, holding: true },
-      analysis({ safetyFlag: 'distress' }),
-      true,
-    );
+  it("offers Vidlun's words already chosen, after the person's own, when choosing together", () => {
+    const after = whenAnalysisLands({ ...asking, holding: true, together: true }, analysis());
 
-    // §M6: setting somebody's answer against Vidlun's and naming the gap is a
-    // thing to do with an ordinary day, not with a hard one.
-    expect(after.kind).toBe('reflecting');
+    // Owner's word, 2026-10-01: one list, everything in it chosen to start
+    // with. Their word stays the unaided answer.
+    expect(after.kind).toBe('comparing');
+    expect(after.kind === 'comparing' ? after.draft.emotionIds : null).toEqual([
+      'bad.tired',
+      'happy.proud',
+    ]);
+    expect(after.kind === 'comparing' ? after.draft.selfEmotionIds : null).toEqual(['bad.tired']);
   });
 
-  it('takes the question out of the path entirely when it is switched off', () => {
-    const after = whenAnalysisLands({ kind: 'processing' }, analysis(), false);
+  it('starts with no more than the four words an entry can hold', () => {
+    const after = whenAnalysisLands(
+      { ...asking, chosen: ['angry', 'sad', 'fearful'], holding: true, together: true },
+      analysis(),
+    );
 
-    expect(after.kind).toBe('reflecting');
+    expect(after.kind === 'comparing' ? after.draft.emotionIds : null).toEqual([
+      'angry',
+      'sad',
+      'fearful',
+      'happy.proud',
+    ]);
+  });
+
+  it('remembers the card it came from, for the way back', () => {
+    const after = whenAnalysisLands({ ...asking, holding: true, together: true }, analysis());
+    const card = after.kind === 'comparing' ? after.card : null;
+
+    // Back is the card as it was — the words, what was named, the reading in
+    // hand — and no longer on its way anywhere.
+    expect(card).toMatchObject({
+      kind: 'turn',
+      spoken: asking.spoken,
+      chosen: ['bad.tired'],
+      holding: false,
+      together: false,
+    });
+    expect(card?.draft?.emotionIds).toEqual(['happy.proud', 'bad.tired']);
+  });
+
+  it('brings a difficult entry to the same words when choosing together', () => {
+    const after = whenAnalysisLands(
+      { ...asking, chosen: [], holding: true, together: true },
+      analysis({ safetyFlag: 'distress' }),
+    );
+
+    // The answer is no longer set beside Vidlun's, so there is no comparison
+    // left to spare a hard entry; its flag still brings grounding after.
+    expect(after.kind).toBe('comparing');
+    expect(after.kind === 'comparing' ? after.draft.safetyFlag : null).toBe('distress');
   });
 
   it('drops an analysis that belongs to a card nobody is on any more', () => {
-    const after = whenAnalysisLands({ kind: 'idle' }, analysis(), true);
+    const after = whenAnalysisLands({ kind: 'idle' }, analysis());
 
     expect(after).toEqual({ kind: 'idle' });
   });
 
-  it("keeps the person's own words on the hard entry's card", () => {
+  it("saves the person's own words on a hard entry too, keeping what Vidlun heard apart", () => {
     const after = whenAnalysisLands(
       { ...asking, holding: true },
       analysis({ safetyFlag: 'distress', emotionIds: ['angry', 'fearful.scared'] }),
-      true,
     );
 
-    // Their answer survives the skipped comparison: the plain card holds what
-    // they named, and what Vidlun heard stays in the proposal.
-    expect(after.kind === 'reflecting' ? after.draft.emotionIds : null).toEqual(['bad.tired']);
+    // Their answer is the entry; the flag travels with it, so the saved
+    // screen still offers grounding.
+    expect(after.kind).toBe('saving');
+    expect(after.kind === 'saving' ? after.draft.emotionIds : null).toEqual(['bad.tired']);
+    expect(after.kind === 'saving' ? after.draft.safetyFlag : null).toBe('distress');
   });
 
   it('drops an analysis of wording the person has since corrected', () => {
-    const after = whenAnalysisLands(asking, analysis(), true, 'what the recorder misheard');
+    const after = whenAnalysisLands(asking, analysis(), 'what the recorder misheard');
 
     // The corrected words' own analysis is on its way; emotions read off the
     // mishearing must never reach the card, held or shown.
@@ -112,7 +195,6 @@ describe('what happens when the analysis lands', () => {
     const after = whenAnalysisLands(
       { ...asking, holding: true },
       analysis(),
-      true,
       'what the recorder misheard',
     );
 
@@ -120,8 +202,44 @@ describe('what happens when the analysis lands', () => {
   });
 
   it('lands an analysis that matches the wording it was started for', () => {
-    const after = whenAnalysisLands(asking, analysis(), true, asking.spoken.text);
+    const after = whenAnalysisLands(asking, analysis(), asking.spoken.text);
 
     expect(after.kind === 'turn' ? after.draft : null).not.toBeNull();
   });
 });
+
+describe("what counts as declining Vidlun's words", () => {
+  const heard = analysis({ emotionIds: ['happy.proud', 'bad.tired'] });
+
+  function chosenTogether(selfEmotionIds: readonly string[], emotionIds: readonly string[]) {
+    return MoodEntry.create({ ...heard.toProps(), selfEmotionIds, emotionIds });
+  }
+
+  it('is nothing while every word Vidlun started with is still in', () => {
+    expect(declinedVidlunsWords(heard, chosenTogether([], ['happy.proud', 'bad.tired']))).toBe(
+      false,
+    );
+  });
+
+  it('is taking off one of the words that came already chosen', () => {
+    expect(declinedVidlunsWords(heard, chosenTogether([], ['bad.tired']))).toBe(true);
+  });
+
+  it('is not a word the four-word ceiling kept out to begin with', () => {
+    const draft = chosenTogether(
+      ['angry', 'sad', 'fearful'],
+      ['angry', 'sad', 'fearful', 'happy.proud'],
+    );
+
+    // bad.tired never made it into the list as chosen; nobody took it off.
+    expect(declinedVidlunsWords(heard, draft)).toBe(false);
+  });
+
+  it('is nothing when Vidlun heard nothing to decline', () => {
+    const silent = analysis({ emotionIds: [] });
+    const draft = MoodEntry.create({ ...silent.toProps(), emotionIds: ['own:Calm'] });
+
+    expect(declinedVidlunsWords(silent, draft)).toBe(false);
+  });
+});
+

@@ -3,12 +3,15 @@ import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TAP_TARGET } from '../theme/tokens';
 import { AppText } from './AppText';
+import { Icon, ICON_SIZE, type IconName } from './Icon';
 
 export interface ButtonProps {
   readonly label: string;
   readonly onPress: () => void;
   readonly variant?: 'primary' | 'secondary' | 'ghost';
   readonly disabled?: boolean;
+  /** A glyph before the label, in the label's colour. */
+  readonly icon?: IconName;
   readonly style?: StyleProp<ViewStyle>;
 }
 
@@ -59,14 +62,19 @@ export function Button(props: ButtonProps): React.JSX.Element {
         props.style,
       ]}
     >
-      <AppText
-        variant="label"
-        color={color}
-        align="center"
-        style={variant === 'ghost' ? undefined : { fontSize: 16 }}
-      >
-        {props.label}
-      </AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {props.icon === undefined ? null : (
+          <Icon name={props.icon} size={ICON_SIZE.inline} color={color} />
+        )}
+        <AppText
+          variant="label"
+          color={color}
+          align="center"
+          style={variant === 'ghost' ? undefined : { fontSize: 16 }}
+        >
+          {props.label}
+        </AppText>
+      </View>
     </Pressable>
   );
 }

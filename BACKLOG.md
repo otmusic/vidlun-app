@@ -1479,6 +1479,613 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3π. The period sheet closes with an X, and build 43 — 2026-10-01
+
+The owner's word: the period sheet gets the reminder sheet's X top right
+(`SheetClose`, shared by both from `ModalSheet.tsx`) and loses "Скасувати"
+under its buttons; the backdrop still closes it. Seen on the simulator: the
+X beside "Показати за період", and it closes the sheet.
+
+Build 43 (1.2) carries everything since build 42: §3β through §3π, the
+text-slack fix of §3δ included.
+
+---
+
+## 3ο. Emotions instead of a vocabulary, a quieter statistics screen, the reminder sheet — 2026-10-01
+
+The owner's word, item by item.
+
+- **The entry page** lost its footnote "Vidlun описує сказане й не дає
+  порад, оцінок чи медичних висновків." (`detail.disclaimer` removed). The
+  same statement stays in the terms, §2.
+- **"Твій словник" is "Твої емоції"** / "Your emotions" (`dict.title`), with
+  no purpose line under it ("Скільки різних слів…", `dict.purpose`), no
+  "Різних слів: жовт. 5" line (`dict.perMonth` and its `monthsLine`) and no
+  "Дивитися тиждень" button (`dict.seeWeek`); the round back arrow still
+  returns to the week.
+- **Statistics:** the "11 записів" count under the chart is gone (`Count`,
+  `stats.weekCount*`; the plural test now checks `feed.entry`), and the
+  "твій словник →" link is a secondary button "Твої емоції".
+- **Deleting an entry asks** "Видалити цей запис?" over "Ви впевнені? Весь
+  зміст картки буде видалено." (`delete.body`; English "Are you sure?
+  Everything on this card will be deleted."). The owner's wording is formal
+  "Ви" where the rest of the app says "ти" — kept as written, raised.
+- **The reminder sheet:** titled "Нагадувати" / "Remind me", with no line
+  under it ("Вечір, коли ти зазвичай уже нікуди не йдеш", `time.body`); an X
+  top right (`common.close`); "Зберегти" / "Save" instead of "Готово".
+  **Closing no longer saves:** the X, the backdrop and the system's back
+  leave the setting as it was, and only "Зберегти" keeps the draft — with a
+  save button on the sheet, closing it is not agreeing to it.
+- **Every sheet dims the screen more.** One `scrim` token (60% near-black on
+  light, 70% black on dark) on all four: the reminder and period sheets had
+  no dimming at all, the milestone and feedback sheets 42%. `ModalSheet`
+  (unused until now) carries the two Modal sheets: the Modal fades, so the
+  backdrop darkens in place, and the card rises on its own (still under
+  Reduce Motion). `Sheet` fades its scrim in with the card.
+
+Seen on the simulator: statistics without the count and with the button;
+"Твої емоції" with the words alone; the period sheet dimmed; the reminder
+sheet with its title, X and "Зберегти", the X leaving "Вимкнене" as it was;
+the entry page without the footnote; the new confirmation, answered
+"Лишити". The period calendar still leaves Sunday empty and wraps
+(2026-09-27's bug 2). Not in build 42; goes with the next.
+
+---
+
+## 3ξ. The splash is the name alone — 2026-10-01
+
+The owner's word: the splash shows "Vidlun" and nothing else — no circle,
+no animation.
+
+- **`SplashOverlay`** lost the halo that circled while the journal opened
+  and the three echo dots that arrived one by one; the wordmark image sits
+  centred on the canvas, still the same pixels as the phone's launch image.
+  What stays: the "couldn't open" line with its retry after five seconds,
+  the 1.2-second minimum, and the crossfade into the screen underneath when
+  it leaves (a screen change, not the splash moving; say if that goes too).
+  `DOTS_SPAN` and the dot constants are gone.
+- **The launch image is centred too.** It sat 18.25 pt left so the word
+  held still when the dots joined it; with no dots the JS splash centres the
+  word, and an offset launch image would make it jump right at the handoff.
+  `scripts/generate-splash-assets.sh` now takes the offset out (it used to
+  put it in), and `ios/Vidlun/SplashScreen.storyboard` was patched in place;
+  it compiles with `ibtool`. Takes effect with the next native build.
+- **Not seen on the simulator for the native half:** this Debug build shows
+  a white launch screen before the bundle with the old storyboard and the
+  new one alike, so the launch image can only be judged on a real build. The
+  JS half was seen: "Vidlun" alone, centred, then the crossfade to home.
+  Not in build 42; goes with the next.
+
+---
+
+## 3ν. The week's prose is gone; the narrative is the month's — 2026-10-01
+
+The owner's word: "Твій тиждень" said what "Твій вересень" says, so the
+weekly narrative goes, and with it the month's card on the statistics
+screen — the month lives on home alone.
+
+- **The week is days and counts.** `GetWeekSummary` lost its narrative
+  generator, `withNarrative` and `narrative`; the statistics screen lost the
+  "Твій тиждень" panel and its lead ("Vidlun напише про цей тиждень…"), the
+  "too few entries" line and the subscription button inside it. It is now
+  the dates, mood by day, the count, the pattern card, topics and the
+  vocabulary link. Patterns were already read over the month.
+- **The month card left the statistics screen** (and the month's own
+  locked lead "Vidlun напише про цей місяць…" with it). Home's month card
+  now opens a page of its own (`MonthScreen`, stage `month`): the card's
+  two lines, then the prose — "Пишеться…" with ghost lines while it is
+  written, the paragraphs after; a failure goes home with the usual line.
+  Without access the card goes straight to the plans, since the prose is
+  the paid half.
+- **One narrative in code:** `ClaudeNarrativeGenerator` has the month's
+  prompt only (no `NarrativeSpan`; the prompt version stays 2, the month's
+  text unchanged), and `CachedNarrativeGenerator` files rows by month only.
+  Weekly rows already stored under `vidlun.narrative.<y>-<m>-<d>` are no
+  longer read; nothing deletes them.
+- **Copy says month:** the plans screen is "Місячний наратив" / "The
+  monthly narrative" and "Раз на місяць Vidlun пише…"; the empty pattern
+  card says "Цього місяця нічого не повторювалося. Патерни трапляються не
+  щомісяця…". Retired: `stats.yourWeek`, `stats.proseLater`,
+  `stats.narrLockedLead`, `stats.narrLockedAction`, `stats.monthLockedLead`.
+  The trial lines ("Пробний тиждень триває") are about the free trial, not
+  the narrative, and stay.
+- **Terms and privacy (source and in-app copies) say month**, with the
+  effective dates moved to 1 October 2026; the privacy table names the
+  weekly texts earlier versions stored. **The landing's paid list** says
+  "Місячний наратив". Neither is deployed: the pages.dev site still shows
+  the weekly wording until the owner says to redeploy, and the dates should
+  match the day the new terms actually go out.
+- **For the simulator:** `EXPO_PUBLIC_FAKE_ANALYSIS=1` also swaps in
+  `FakeNarrativeGenerator`, a pretend month marked as such and wired without
+  the cache, so the month page can be walked with
+  `EXPO_PUBLIC_FAKE_PURCHASES=active`.
+- **Overruled in CLAUDE.md:** §2 "Sonnet for weekly summary", M5's
+  "paywalled weekly narrative", and the BACKLOG M5 notes that sell the
+  week.
+
+Seen on the simulator: statistics free and paid with no week panel and no
+month card; home's month card → the plans (free) and → the month page,
+writing then the pretend text (paid); the plans titled "Місячний наратив".
+Not in build 42; goes with the next. App Store Connect's subscription
+description and screenshots may still sell the week — not in the repo.
+
+---
+
+## 3μ. The stats screen: dates for every week, home's month card — 2026-10-01
+
+The owner's word.
+
+- **Every week is its dates.** The title read "Цей тиждень" with the range
+  under it; now it is the range itself ("28 вер. – 4 жовт."), as earlier
+  weeks already were, with nothing under it (`stats.title` removed). The
+  count under the chart says only "13 записів" — "цього тижня" is gone from
+  `stats.weekCount*`, which also ends 2026-09-27's bug of "this week" on an
+  earlier week.
+- **The month card opens as home's does:** "Твій вересень" as the small
+  kicker over "Подивись, яким він був." (home's own keys), in home's
+  measures (20/22 padding, 21-pt lead), then the month's text, the writing
+  ghosts or the locked lead as before. `stats.monthLabel` ("Місяць") and
+  `stats.monthTitle` went.
+
+Seen on the simulator (after Metro had stopped again and was restarted).
+Not in build 42; goes with the next.
+
+---
+
+## 3λ. The entry count moved to the journal — 2026-10-01
+
+The owner's word: the profile ("Я") lost both of its tiles — the entry count
+went to the journal, and the run of days already shows on home. The journal
+puts the count opposite its title as the same pill home uses for days
+(`CountPill`, shared now; `StreakPill` folded into it), absent at zero, and
+the "N записів · <month>" line under the title is gone with `feed.summary`,
+so the count is not said twice. `openSettings` no longer reads the journal
+just to count it; the `profile.entries*` and `profile.streak*` keys went too.
+
+Seen on the simulator: the profile opens on the subscription row; the
+journal reads "Щоденник" with "• 28 записів" beside it. Not in build 42;
+goes with the next.
+
+---
+
+## 3κ. One blue for feelings, the mood's colour for entries, the mood on the card — 2026-10-01
+
+The owner's word, from a screenshot of "Поганий день…" offered pleasant words.
+
+- **Those words were the pretend analysis, not the matching.** In the
+  simulator `FakeReflectionAnalyzer` ignores the text and goes round
+  pleasant → hard → mixed → ordinary per entry from launch; the first entry
+  after a relaunch is always pleasant. The same sentence as the second entry
+  got the hard side (Біль, Втома, Відкинутість…), as `emotionsNear` is
+  tested to do. Real readings need the phone.
+- **The card:** the box of named words lost its "Твій вибір" caption
+  (`turn.chosen` removed; the box stays on top); "+ Своє слово" is
+  "+ Додати емоцію" / "+ Add an emotion"; the typed field has no placeholder
+  (`turn.ownWordPlaceholder` removed).
+- **The mood is set on the card.** A compact scale (the old `MoodScale`
+  without end labels) under "+ Додати емоцію", "Настрій" and the mood's word
+  in its colour above it; Vidlun's reading comes already chosen, one tap
+  changes it. `TurnStage.mood` holds the person's point (null until touched)
+  and every save takes it — the named answer, choosing together and an
+  unheard entry. The choose-together list lost its mood block. ConfirmEntry
+  now logs a revision when the saved mood differs from Vidlun's reading
+  (not when Vidlun read none), since nothing marks such an entry revised.
+- **Feelings in one blue, entries in their mood's colour.** New token `tag`
+  — the drawing's own blue, the one it fixed for "lonely" (#2E7DE9 /
+  #6BAEFF) — for every emotion chip and emotion name, a word of the
+  person's own included (it was ink). `emotionTint` returns it; the palette
+  derivation in `emotionColor.ts` is drawn nowhere now, kept with its tests.
+  Entries are marked by mood (`moodTint`): the dot on home, journal and
+  search rows and on the echo cards, and the week strip by the day's average.
+  One mapping for mood colour — `toneFor`, now in `emotionTone.ts`, the
+  scale's bands (1–2 terracotta, 3 amber, 4–5 green); the mood line on the
+  entry page had its own copy, which coloured "Низький" amber.
+- **The saved entry's page:** no "Виправити текст" (and `fixEntryWording`
+  gone), which also settles §3θ's open question — the plain card now shows
+  only when a save fails. "Видалити запис" is a red bin icon top right (new
+  token `danger`, #D93A2E / #FF6B5F), still asking first; the journal's
+  swipe-to-delete is the same red instead of the low mood's terracotta.
+- **Overruled in CLAUDE.md:** §7.1 "Emotion colour is derived, never
+  assigned", and §9's "no part of Vidlun's answer before the person's — that
+  includes … the mood".
+
+Seen on the simulator: the card in blue with the mood scale at "Високий",
+moved to "Низький", "Безсилля" typed in blue on top, saved — home marks it
+terracotta with "Безсилля" in blue, the page shows the red bin, no fix
+button and "Низький"; the week strip by mood; the same sentence again → the
+hard side and "Низький"; choosing together in blue with no mood block. Not
+in build 42; goes with the next.
+
+---
+
+## 3ι. What was named sits on top, in its own section — 2026-10-01
+
+The owner's word: on the question card the chosen words, in a row right
+under the offered ones, read as more of the list. They now sit above it, in
+a bordered paper block captioned "Твій вибір" / "Your choice" (new key
+`turn.chosen`), shown once something is chosen; a word typed through
+"+ Своє слово" lands there too, and the field itself stays under the
+offered words, as the way out when none of them fits. The offered words
+keep their own state (a chosen one fills faintly) and their drill-down into
+children. The cost, named when the row was first put underneath: the list
+moves down when the first word goes in.
+
+The choose-together list is untouched: there the person's words from the
+card still lead the one list under "Vidlun почув". Offered to the owner.
+
+Seen on the simulator: one word chosen → the section appears with it; a
+second word and "Тиша всередині" typed in join it. Not in build 42; goes
+with the next.
+
+---
+
+## 3θ. One way on from the card, and the text screen reworded — 2026-10-01
+
+The owner's word, answering §3η's two questions and adding the text screen.
+
+- **The plain card says "Зберегти" and nothing else.** `reflection.confirm`
+  is now "Зберегти" / "Save" and serves both cards (`compare.save` folded
+  into it); "Не зовсім" is gone. With it went the only way into the edit
+  screen, so the edit path is removed whole: `EditScreen.tsx`, the
+  `editing` stage, `beginEditing`, `applyEdits`, the hook's `reviseEntry`
+  and fourteen `edit.*` keys (`edit.refine` stays, the palette uses it).
+  `ReviseEntry` itself stays in the application layer and the container,
+  tested and unwired. Two of 2026-09-27's bugs went with the screen: the
+  gendered "Що ти сказав" caption and the edit that kept the old reading.
+  Nothing marks an entry `wasRevisedByUser` from the app any more, so the
+  revision log now receives only disagreements; the proposal and the kept
+  words are both still on every entry.
+- **The plain card is now reached only** when a save fails, and after the
+  text of a saved entry is corrected on its page. In the second case
+  Vidlun's new reading replaces the entry's words — the person's own
+  included — and the card has no way to change them or to step back.
+  Raised with the owner; routing that re-read through the choosing-together
+  list would fix both.
+- **The processing title stays "Складаю відлуння"** (owner's word), though
+  it now shows before every card and a free entry has no echo.
+- **The text screen:** "Опиши свій стан" over the field (was "Скажи одним
+  реченням"), "Введи текст…" inside it (was "Сьогодні я…"), "Поділитись"
+  on the button (was "Прочитати"); English "Describe how you feel",
+  "Type here…", "Share". "Скасувати" under the button is gone; the way out
+  is the back arrow top left (`BackButton`, the prop is now `onBack`).
+
+Seen on the simulator: the text screen with the arrow, the new title,
+placeholder and button, and the arrow going home; the plain card after a
+saved entry's corrected text, with "Зберегти" alone. Not in build 42; goes
+with the next.
+
+---
+
+## 3η. The card goes up whole, and choosing together is one list — 2026-10-01
+
+The owner's word, after clicking through §3ζ.
+
+- **"Виправити текст" is a button, under the words.** The pencil pill inside
+  the transcript block read as one more tag beside the emotion chips. It is
+  now a whole-width secondary `Button` with the pencil (Button took an
+  optional `icon`), under the block rather than in it; tapped, the block
+  turns into the editor as before. `FixWording` draws it, so the entry page
+  got the same button.
+- **The card goes up only once the words to offer are there.** While Vidlun
+  reads, the turn stage is drawn as the processing screen; the card appears
+  whole, transcript, button, question and words together, and so does a
+  re-read after a corrected transcript. "Добираю емоції до сказаного…" and
+  the waiting line under the buttons are gone (`turn.gathering`,
+  `turn.waiting`). **This moves M4's measure:** the wait now runs to
+  Vidlun's reading — about two seconds on the phone — not to the
+  transcript. On a network that hangs rather than fails, the processing
+  screen stays until the analysis gives up (20 s an attempt, one retry), and
+  only then does the card come up with the broad words.
+- **Choosing together is one list, everything in it chosen.** "Твій
+  варіант" is gone, with the "Порівняння" eyebrow over it (there is no
+  comparison left), "Ні, залишу своє" and "+ Назвати самому". Under "Vidlun
+  почув": the person's own words from the card first, then Vidlun's, all
+  solid with the mark that takes them off (four at most, the entry's
+  ceiling); a word taken off becomes "+ word" and the same tap puts it back;
+  "+ Своє слово" adds one of the person's own at the end. `toggleKept`,
+  `addKept`. Taking off any word Vidlun started with is logged as the
+  disagreement — they come already chosen, so that is an act, not an
+  absence of taps (`declinedVidlunsWords`, which leaves out a word the
+  ceiling kept out to begin with).
+- **"Саме так" is "Зберегти" there, and "Не зовсім" is gone** (new key
+  `compare.save`). The plain card keeps both: it now shows only when a save
+  fails, and after the text of a saved entry is corrected on its page.
+- **Back goes to the card, as it was:** the comparing stage remembers the
+  turn it came from (`card`), with the reading and any echo since in hand.
+- **A hard entry chooses together on the same list.** It used to get the
+  plain card so its answer was never set beside Vidlun's; nothing is set
+  beside anything now. Its flag still brings grounding on the saved screen.
+
+Seen on the simulator: text → processing screen → the whole card with the
+new button; "Обрати разом" → the list with Vidlun's two words solid, one
+taken off and put back, "Тиша всередині" typed in, back → the card as it
+was; a word picked on the card then "Обрати разом" → that word first, all
+three chosen, "Зберегти" → saved with all three; the corrected transcript →
+processing → the card with new words; the entry page with the new button.
+Not in build 42; goes with the next.
+
+---
+
+## 3ζ. The question is no longer a setting — 2026-10-01
+
+The owner's word: every entry opens on the words nearest to what was said,
+to choose from or to answer with one's own, and there is no way to switch
+that off.
+
+- **"Питати спочатку мене" is gone from the profile**, with its three copy
+  keys (`settings.asksFirst`, `settings.asksFirstOn`,
+  `settings.asksFirstOff`) and the `asksFirst` field of `Settings`. A
+  stored record that still carries the flag reads without it and the next
+  write drops it, so someone who had switched the question off gets it
+  back.
+- **`useCaptureFlow` no longer takes `asksFirst`.** The question card always
+  goes up; `whenAnalysisLands` lost its `asking` parameter; the path that
+  put the analysis straight onto the plain card, and saved an unheard entry
+  at once with no words, is gone. The plain card stays where §3ε left it: a
+  hard entry after "Обрати разом", and a save that failed.
+- **CLAUDE.md M6's "Done when: … a switch in settings" is overruled by the
+  owner.** Entries saved while the switch was off hold no unaided answer,
+  so the growth view counts nothing for them, as before.
+
+Seen on the simulator: the profile goes from the subscription row straight
+to the reminder; a typed entry opens on the question card with the eight
+nearest words. Not in build 42; goes with the next.
+
+---
+
+## 3ε. A named answer is saved at once — 2026-09-30
+
+The owner's word, after clicking through §3γ: the card after a named answer
+was one screen too many.
+
+- **"Далі" with a word chosen or typed saves the entry** and goes to
+  "Збережено" — no plain card, no comparison. `cardAfterAnswer` returns a
+  new `saving` stage (drawn as the processing screen), and an effect runs
+  the same `save` the card's "Саме так" runs. What Vidlun heard stays on
+  the entry as the proposal, so the revision log and the granularity metric
+  see what they saw before. A hard entry is saved the same way; its flag
+  still brings the grounding offer on the saved screen. CLAUDE.md M6's
+  reveal after every answer is overruled by the owner: it is now on
+  request.
+- **The card still shows** after "Обрати разом" (the comparison, or the
+  plain card on a hard entry), with the question switched off in settings
+  (the plain card, as M6 requires — the switch is gone since §3ζ), after
+  "Не зовсім" (the edit screen),
+  and when a save fails (the plain card comes back with the draft, so
+  "Саме так" tries again).
+- **An echo that lands after the save is written into the entry.** The
+  paid echo comes from a slower model. One that lands while the person is
+  still choosing goes in with the entry, as before; one that lands later
+  is written in by `AttachObservation` (new use case) — only into an entry
+  that exists, has no echo yet, was not edited since, and is not a crisis
+  entry. Home and an entry page already open on it catch up.
+- **Topics are nouns.** The owner's entry "Зараз змінюю додаток…" showed
+  "користуватися" under "Про що говорили" — the pretend analysis's
+  longest-word stand-in from §3γ, now withdrawn: it names no topic, because
+  a stand-in reads as a real, wrong one. The real prompt was tightened all
+  the same: at most three topics in the speaker's language, each a noun in
+  its dictionary form, never a verb, a feeling or a word copied in the form
+  it was said. Not yet checked against the live model — the simulator
+  cannot reach the proxy.
+- **For the simulator:** `EXPO_PUBLIC_FAKE_ANALYSIS=1` also swaps in
+  `FakeObservationWriter`, a pretend echo marked as such that lands eight
+  seconds after the reading, so the late case can be walked with
+  `EXPO_PUBLIC_FAKE_PURCHASES=active`.
+
+Seen on the simulator (Debug build against Metro, frames every 0.2 s): a
+chosen word and "Далі" went to "Збережено" and home with no card between;
+"Обрати разом" opened the comparison; on the paid side the new entry's page
+opened without an echo and the echo appeared on it a few seconds later. Not
+in build 42; goes with the next.
+
+---
+
+## 3δ. A journal card lost its last line to a rounding error — found and fixed 2026-09-30
+
+The owner, on the iPhone 17 simulator: in the journal, the 11 September card
+("Вечір із мамою по телефону. …") showed two lines, the second ending
+"…і сам трохи хви" cut mid-word, then an empty band a line high above
+"Тривога". The card is `EntryCard`, which sets no line limit — the drawing's
+feed shows the whole sentence — so nothing in the app asked for a cut, and
+AppText's Dynamic Type caps had no part in it: at the default size the line
+is 23 points when measured and when drawn.
+
+**React Native's rounding, not our layout.** Fabric on iOS draws a paragraph
+into a TextKit box exactly the size of the view's frame and keeps only the
+lines that fit whole; with no line limit, the last line that fits takes the
+rest of the sentence and is clipped at the edge (the "cut" was half an "л").
+Yoga computes the frame's height as the difference of two edges rounded to
+the pixel grid and stored as float32. The event rule above the card ("Нова
+робота", 13.5 and 12.5 type on one baseline, as drawn) leaves everything under
+it a third of a point off the grid, and this card's text runs from 2008.33 to
+2077.33 — across 2048, where a float32 loses a bit. The two edges rounded
+differently and the frame came out 68.9998779296875 for three 23-point lines
+(`onLayout` on the simulator; `onTextLayout` reported two lines, the second
+holding the rest of the sentence). The same can take the only line of a
+headline or the second line of a clamped row anywhere: it needs a box a third
+of a point off the grid — any text size but the default makes those
+everywhere — straddling a power of two. Open upstream: facebook/react-native#53450;
+the Yoga fix (react/yoga#1860) is unmerged.
+
+**Fixed in AppText, which every text in the app goes through.** On iOS each
+text box gets 0.01 pt of bottom padding and the same taken back as margin
+(`textSlack`, added to whatever padding and margin the caller gave). A box
+whose height is off the grid is one Yoga rounds up rather than down, so the
+frame gets a third of a point more than the text needs and no float error can
+take a line; the margin keeps the box's outer size, so nothing around it
+moves. `textSlack.test.ts` ports Yoga's rounding (float32 included) and
+TextKit's whole-line rule: the model reproduces 68.9998779296875 for the
+card, and with the slack every line survives across every style at every text
+size, 1 to 8 lines, both screen densities and every power of two up to 65536.
+It failed against a slack of nothing.
+
+Seen on the simulator (Debug build against Metro, the seeded journal): the
+card reads "…Вона / хвилюється, я заспокоюю, і сам трохи / хвилююся." with no
+band. Every card sits where it sat, the same `pageY` to the last digit; the
+profile and the top of the journal are pixel-identical with and without the
+slack. Home differs by one pixel: the date line sits in a wrapping row centred
+by `alignItems: 'center'`, where Yoga centres by the border box and the text
+rises 0.005 pt. Remove `textSlack` once React Native ships the rounding fix.
+Not in build 42; goes with the next.
+
+---
+
+## 3γ. The card simplified, the same evening — 2026-09-30
+
+The owner's word, after clicking through §3β on the simulator.
+
+- **The question card.** Titled "Що ти зараз відчуваєш?" with "Можеш
+  обрати одну емоцію або кілька." under it; "Правильної відповіді немає"
+  and the "що почув Vidlun — лише коли попросиш" line are gone.
+- **A handful of words near what was said, with no shelves.** First read
+  as "stop filtering" and shipped to the simulator with the whole palette;
+  the owner corrected it the same hour: the card offers only the words
+  closest to what was said, as one flat list with no category names, and
+  a word of one's own when none fits. `emotionsNear` (emotionTone.ts)
+  takes eight words from the first two levels of the wheel, never a
+  sensitive one nor the `compound` branch: the side of the palette Vidlun's
+  reading falls on (a mixed reading keeps both poles, taking turns from
+  each; with no feeling heard the mood decides), nearest first by valence
+  (weighted double) and energy, the heard word itself leading a tie. While
+  Vidlun reads, "Добираю емоції до сказаного…"; when it cannot listen, the
+  seven broad root words (`wordsWithoutReading`). A chosen word still opens
+  its children. `EmotionPicker.tsx` now exports the flat `EmotionShelf`.
+  **"Далі" is disabled until a word is chosen or typed**; "Обрати разом"
+  stays open. The M6 conflict §3β raised stands; the owner confirmed the
+  narrowing.
+- **Two buttons, one under the other:** "Далі" (primary) and "Обрати
+  разом" (secondary), replacing "Не знаю — покажи одразу". "Далі" with
+  named words → the plain card with them (since §3ε: saved at once);
+  "Обрати разом" → the comparison,
+  the person's words so far kept as their unaided answer beside Vidlun's
+  (`chooseTogether`, a `together` flag on the turn stage for when the
+  analysis is still reading). "Далі" with nothing named still shows the
+  comparison. Offline, either button saves what was named.
+- **The comparison lost its difference block** ("Слова різні…" and the
+  other `diff.*` lines): it confused more than it named. `difference.ts`
+  and its test went with it. CLAUDE.md M6's "third card" is overruled by
+  the owner.
+- **Mood is a word in its colour, not a scale:** `MoodLine` (a dot in the
+  mood scale's tone and the label) replaces the ring on the comparison and
+  the ring plus "N з 5" on the entry screen (`detail.ofFive` removed). The
+  edit screen's 1–5 picker stays — it is how a mood is set.
+- **Tags are named:** "Про що говорили" / "What it was about" over the
+  context tags on the comparison, the plain card (`EntryChips` now puts
+  feelings and topics apart), the entry screen and the edit screen (was
+  "Контекст"). They are the topics the analysis picks out of what was said.
+
+The pretend analysis now names a topic too (the entry's longest word), so
+the caption can be seen in the simulator. Withdrawn in §3ε: the stand-in
+read as a real, wrong topic.
+
+---
+
+## 3β. The question card, reshaped — 2026-09-30
+
+The owner's word, four changes to the card that asks before it answers.
+
+**The palette is open at once, and only its near side.** The card no longer
+hides the shelves behind "+ pick a feeling": once Vidlun has read the words
+(about two seconds; "Добираю емоції до сказаного…" until then) it puts out
+the shelves on the side of the palette what was said falls on —
+`groupsNear` in `emotionTone.ts`, read off Vidlun's proposal side by side,
+never averaged: pleasant words → the two pleasant shelves, hard ones → the
+two hard shelves, a mixed state → all four, no feeling heard → the mood
+decides (≥4 pleasant, ≤2 hard), neither → all four. Offline (Vidlun could
+not listen) → all four. **This goes against CLAUDE.md's M6 rule** that no
+part of Vidlun's answer shows before the person's: which side of the palette
+is offered is a hint of it. Built as asked; the brief needs the owner's
+update if it stays.
+
+**A word of one's own.** "+ Своє слово" under the shelves opens one line.
+A typed word the vocabulary already has, in either language ("вдячність",
+"tired"), becomes that word (`emotionIdForLabel`); anything else is kept as
+typed under an `own:` id (`src/domain/entities/OwnWord.ts`) and travels in
+the same lists as the vocabulary's ids, so the four-word ceiling, the
+revision log and the granularity metric count it. It is drawn in ink
+(`emotionTint`), never in a tag's faint ring; search finds it; the weekly
+narrative gets it as a quoted word; `ReviseEntry` keeps it. The row of
+chosen words moved under the shelves, beside the pill, so the first pick no
+longer pushes the palette down under the finger.
+
+**A named answer is not shown Vidlun's list.** Someone who picked or typed
+anything goes to the plain card with their own words ("Твої слова");
+Vidlun's list appears only after "Не знаю — покажи одразу" (or "Далі" with
+nothing chosen). What Vidlun heard stays on the draft as the proposal.
+`comparisonOf` became `cardAfterAnswer`; the hard-entry rule is unchanged.
+
+**Re-reading after a correction, checked.** On the question card
+("Виправити текст") the corrected words are re-read — seen on the
+simulator: the palette moved from the pleasant shelves to the hard ones.
+On a saved entry the correction re-reads too (`fixEntryWording`). On the
+edit screen ("Не зовсім") it does not: the new text is saved, and the
+emotions, mood, tags and echo stay those of the old text. Reported to the
+owner, not changed.
+
+Copy: `turn.pick` removed; `turn.gathering`, `turn.ownWord`,
+`turn.ownWordPlaceholder` added; `turn.hidden` now says Vidlun's answer is
+shown only when asked. `Vidlun.dc.html` draws none of this — the pill reuses
+the comparison card's dashed "name it" pill, the field the transcript
+repair's ink ring. Checked on the simulator with a scripted analysis (App
+Attest does not run there). Not in build 42; goes with the next.
+
+**Walking the card in the simulator.** `FakeReflectionAnalyzer` answers
+without the network, going round a pleasant, a hard, a mixed and an ordinary
+reading, one per entry (a corrected transcript takes a turn too), after
+1.5 s. Wired only under `__DEV__` and `EXPO_PUBLIC_FAKE_ANALYSIS=1`, like
+the pretend store, so a release build cannot use it. Start Metro with the
+flag and run the Debug simulator build.
+
+---
+
+## 3α. Two things taken out of the way — 2026-09-30
+
+The owner's word, both about what felt awkward in use.
+
+**No "tell about yesterday" before there was a yesterday.** Home offered
+"Розповісти про вчора" whenever yesterday's cell in the strip was empty,
+which on the first day is always: someone who installed the app an hour ago
+was invited to fill a day the app was never there for. The offer now needs a
+real hole — an empty yesterday in a journal that already had an entry before
+it. The rule moved out of the screen into `GetHomeView` (`offersYesterday`,
+read over the same year the streak reads), with five tests: shown over a
+real hole, shown when the only earlier entry was late the day before
+yesterday, hidden for an empty journal, hidden on the first day, hidden when
+yesterday has an entry. Seen on the simulator both ways: a journal whose
+only entry is today shows no offer; the seeded journal, a week quiet, shows
+it.
+
+**"Mark an event" left the statistics screen.** The list of events and the
+dashed "Позначити подію" button under the week's count are gone; the owner
+has not decided where marking an event belongs, so until then an event can
+be made nowhere. Events already marked stay where they were shown: the rule
+in the journal (tap to rename or delete), the dot in home's strip and the
+label over the day in the week chart. `StatsScreen` lost the
+`onMarkMilestone`/`onEditMilestone` props and the `Milestones` block; the
+sheet and the use cases stay for when marking comes back. The copy key
+`stats.milestones` has no reader now and is kept for that return. Both are
+divergences from `Vidlun.dc.html` in the owner's words. Not in build 42;
+goes with the next.
+
+---
+
+## 3z. The month card on home, reworded — 2026-09-29
+
+The owner's word, for the card home shows in a month's first days: the
+caption was "Місяць", the title "Твій вересень", the link "Читати". Now the
+caption names the month ("Твій вересень", `home.monthKicker`), the title
+invites ("Подивись, яким він був.", `home.monthLead`) and the link says
+"Переглянути" (`home.monthCta`). "Він" is the month, and every Ukrainian
+month name is masculine, so the line holds all year. English, written to
+match: "Your September", "See what it was like.", "View". The card got keys
+of its own because the week screen's month card reads `stats.monthLabel`
+and `stats.monthTitle`, which stay as they were. A divergence from
+`Vidlun.dc.html` in the owner's words, so the drawing follows the code.
+Seen on the simulator with the clock moved to 2 October: one line for the
+title in both languages. Not in build 42; goes with the next.
+
+---
+
 ## 3y. The journal counts entries, not echoes — 2026-09-22
 
 The owner's word: the line under the journal's title says "16 записів",

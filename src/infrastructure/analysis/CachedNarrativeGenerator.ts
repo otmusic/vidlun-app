@@ -7,33 +7,30 @@ import type { IKeyValueStore } from '../persistence/IKeyValueStore';
 export const NARRATIVE_KEY_PREFIX = 'vidlun.narrative.';
 
 interface CachedNarrative {
-  /** What the week held when this was written. */
+  /** What the month held when this was written. */
   readonly fingerprint: string;
   readonly narrative: string;
 }
 
 /**
- * A week's narrative is written once and read many times.
+ * A month's narrative is written once and read many times.
  *
- * Before this, opening the insights screen made a Sonnet call every time — and
- * since the drawing gives the first paragraph away, that was true for people
- * who had paid for nothing. The same week read twice in one evening cost twice
- * and said the same thing.
+ * Before this, opening it made a Sonnet call every time; the same month read
+ * twice in one evening cost twice and said the same thing.
  *
- * One key per week, overwritten rather than added to: a week that gains an
+ * One key per month, overwritten rather than added to: a month that gains an
  * entry gets a new narrative and the old one goes with it, so the store holds
- * one row per week the person has looked at and never grows sideways.
+ * one row per month the person has read and never grows sideways. Weekly rows
+ * written before 2026-10-01 stay under the same prefix and are not read again.
  */
 export class CachedNarrativeGenerator implements INarrativeGenerator {
   constructor(
     private readonly inner: INarrativeGenerator,
     private readonly store: IKeyValueStore,
-    /** Derives the row's key; the default is the entries' week. */
-    private readonly keyOf: (entries: readonly MoodEntry[]) => string | null = weekKeyFor,
   ) {}
 
   async generate(entries: readonly MoodEntry[]): Promise<string> {
-    const key = this.keyOf(entries);
+    const key = monthKeyFor(entries);
 
     if (key === null) {
       return this.inner.generate(entries);
@@ -49,7 +46,7 @@ export class CachedNarrativeGenerator implements INarrativeGenerator {
     const narrative = await this.inner.generate(entries);
 
     // Never let storing it cost the sentence itself: the caller asked for a
-    // week, not for a cache to succeed.
+    // month, not for a cache to succeed.
     await this.store
       .setItem(key, JSON.stringify({ fingerprint, narrative } satisfies CachedNarrative))
       .catch(() => undefined);
@@ -58,8 +55,8 @@ export class CachedNarrativeGenerator implements INarrativeGenerator {
   }
 }
 
-/** One row per month, beside the weekly rows under the same prefix. */
-export function monthKeyFor(entries: readonly MoodEntry[]): string | null {
+/** One row per month. Null for an empty list, which has no month to say anything about. */
+function monthKeyFor(entries: readonly MoodEntry[]): string | null {
   const first = entries[0];
 
   if (first === undefined) {
@@ -70,24 +67,8 @@ export function monthKeyFor(entries: readonly MoodEntry[]): string | null {
 }
 
 /**
- * The week the entries fall in. Null for an empty list, which has no week and
- * nothing to say about one.
- */
-function weekKeyFor(entries: readonly MoodEntry[]): string | null {
-  const first = entries[0];
-
-  if (first === undefined) {
-    return null;
-  }
-
-  const monday = startOfWeek(first.createdAt);
-
-  return `${NARRATIVE_KEY_PREFIX}${monday.getFullYear()}-${monday.getMonth() + 1}-${monday.getDate()}`;
-}
-
-/**
  * Everything the narrative was written from. An entry added, deleted or
- * corrected changes this, and a stale sentence about a week that has since
+ * corrected changes this, and a stale sentence about a month that has since
  * changed would be worse than paying for a fresh one.
  */
 function fingerprintOf(entries: readonly MoodEntry[]): string {
@@ -125,14 +106,4 @@ function read(raw: string | null): CachedNarrative | null {
   }
 
   return null;
-}
-
-/** Monday, matching the week `GetWeekSummary` builds. */
-function startOfWeek(date: Date): Date {
-  const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const daysSinceMonday = (midnight.getDay() + 6) % 7;
-
-  midnight.setDate(midnight.getDate() - daysSinceMonday);
-
-  return midnight;
 }

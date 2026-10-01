@@ -1,6 +1,6 @@
 # Vidlun Privacy Policy
 
-**Effective:** 7 September 2026
+**Effective:** 1 October 2026
 
 **Data controller:** the Vidlun developer, support@vidlun.app
 
@@ -11,7 +11,7 @@
 - **Audio never leaves your phone.** Speech recognition runs entirely on the
   device, with a model built into the app.
 - Only the **text** of a transcript leaves — so a language model can name the
-  feelings and write the weekly piece. And what you write to us yourself in
+  feelings and write the monthly piece. And what you write to us yourself in
   the feedback form — but only when you tap "Send".
 - **No accounts, no sign-up, no analytics, no trackers, no advertising.**
 - We have no server that stores your entries. We physically cannot read them.
@@ -24,7 +24,7 @@
 | Transcript, emotions, mood, topics, time | the app's local storage | until you delete it |
 | Revision log: what the app proposed and what you changed | local storage | until you delete it |
 | Settings | local storage | while the app is installed |
-| The saved weekly piece | local storage | until you delete it |
+| The saved monthly piece (and weekly ones from earlier versions) | local storage | until you delete it |
 
 None of this is sent to us. Deleting the app destroys all of it.
 
@@ -32,15 +32,15 @@ None of this is sent to us. Deleting the app destroys all of it.
 
 ### 2.1 The text of an entry, for analysis
 
-**What exactly.** The cleaned transcript of one entry. For the weekly piece: the
-date, the mood number, emotion codes, topics and the transcripts of a week's
+**What exactly.** The cleaned transcript of one entry. For the monthly piece: the
+date, the mood number, emotion codes, topics and the transcripts of a month's
 entries together.
 
 **Where to.** Through our Cloudflare Workers proxy to Anthropic PBC (USA), to
 the Claude API.
 
 **Why.** To propose names for feelings, write an observation, and write the
-weekly piece. This is what the app is installed for.
+monthly piece. This is what the app is installed for.
 
 **Lawful basis** (GDPR Art. 6(1)(b)): performance of our contract with you.
 

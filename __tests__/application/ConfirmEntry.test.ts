@@ -111,6 +111,34 @@ describe('ConfirmEntry', () => {
     ]);
   });
 
+  it("logs a mood moved on the card's scale, though nothing else marks it revised", async () => {
+    const { revisionLog, useCase } = setup();
+    const proposed = draft();
+    const confirmed = proposed.withMood(MoodScore.of(2));
+
+    await useCase.execute({ proposed, confirmed });
+
+    expect(revisionLog.records).toEqual([
+      {
+        entryId: 'entry-1',
+        revisedAt: NOW,
+        proposedMood: 4,
+        finalMood: 2,
+        proposedEmotionIds: ['happy.proud', 'bad.tired'],
+        finalEmotionIds: ['happy.proud', 'bad.tired'],
+      },
+    ]);
+  });
+
+  it('logs nothing for a mood picked where Vidlun read none', async () => {
+    const { revisionLog, useCase } = setup();
+    const proposed = draft({ mood: null });
+
+    await useCase.execute({ proposed, confirmed: proposed.withMood(MoodScore.of(3)) });
+
+    expect(revisionLog.records).toEqual([]);
+  });
+
   it('saves the revised entry, not the proposal it replaced', async () => {
     const { repository, useCase } = setup();
     const proposed = draft();

@@ -42,7 +42,7 @@ export interface SubscriptionStatus {
 /**
  * The store, behind a port like everything else that talks to the outside.
  *
- * §M5 sells one thing — the weekly narrative — in more than one shape. What is
+ * §M5 sells one thing — the monthly narrative since 2026-10-01 — in more than one shape. What is
  * bought is always the same entitlement, so nothing above this layer branches
  * on which plan someone chose.
  */

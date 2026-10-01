@@ -55,11 +55,12 @@ plain = '<color key="backgroundColor" systemColor="systemBackgroundColor"/>'
 if plain in s:
     s = s.replace(plain, '<color key="backgroundColor" name="SplashBackground"/>')
     changed = True
-anchor = 'secondAttribute="centerX" id="zR4-NK-mVN"'
-if anchor in s:
-    # Half the overlay's dots-and-gap span, so the mark holds still when the
-    # JS splash mounts and the ensemble takes the centre.
-    s = s.replace(anchor, 'secondAttribute="centerX" constant="-18.25" id="zR4-NK-mVN"')
+offset = 'secondAttribute="centerX" constant="-18.25" id="zR4-NK-mVN"'
+if offset in s:
+    # The word sat left by half the JS splash's dots-and-gap span, so it held
+    # still when the dots joined it. The dots went on 2026-10-01: the word is
+    # centred alone, here and in the JS splash.
+    s = s.replace(offset, 'secondAttribute="centerX" id="zR4-NK-mVN"')
     changed = True
 stale = '<image name="SplashScreenLogo" width="100" height="90.333335876464844"/>'
 if stale in s:

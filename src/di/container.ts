@@ -22,6 +22,7 @@ import { ForgetOldRecordings } from '../application/use-cases/ForgetOldRecording
 import { GetHistory } from '../application/use-cases/GetHistory';
 import { ReviseEntry } from '../application/use-cases/ReviseEntry';
 import { WriteObservation } from '../application/use-cases/WriteObservation';
+import { AttachObservation } from '../application/use-cases/AttachObservation';
 import type { EmotionVocabulary } from '../domain/entities/EmotionVocabulary';
 import type { IAudioRecorder } from '../domain/ports/IAudioRecorder';
 import type { IClock } from '../domain/ports/IClock';
@@ -41,10 +42,13 @@ import { BiometricScreenLock } from '../infrastructure/system/BiometricScreenLoc
 import { DocumentFilePicker } from '../infrastructure/files/DocumentFilePicker';
 import { ShareSheetFileSharer } from '../infrastructure/files/ShareSheetFileSharer';
 import { JournalCodec } from '../infrastructure/persistence/JournalCodec';
-import { CachedNarrativeGenerator, monthKeyFor } from '../infrastructure/analysis/CachedNarrativeGenerator';
+import { CachedNarrativeGenerator } from '../infrastructure/analysis/CachedNarrativeGenerator';
 import { ClaudeNarrativeGenerator } from '../infrastructure/analysis/ClaudeNarrativeGenerator';
 import { ClaudeObservationWriter } from '../infrastructure/analysis/ClaudeObservationWriter';
 import { ClaudeReflectionAnalyzer } from '../infrastructure/analysis/ClaudeReflectionAnalyzer';
+import { FakeNarrativeGenerator } from '../infrastructure/analysis/FakeNarrativeGenerator';
+import { FakeObservationWriter } from '../infrastructure/analysis/FakeObservationWriter';
+import { FakeReflectionAnalyzer } from '../infrastructure/analysis/FakeReflectionAnalyzer';
 import { createEmotionVocabulary } from '../infrastructure/analysis/emotionVocabularyData';
 import { ExpoAudioRecorder, type NativeRecorder } from '../infrastructure/audio/ExpoAudioRecorder';
 import { ExpoMicrophonePermission } from '../infrastructure/audio/ExpoMicrophonePermission';
@@ -83,6 +87,7 @@ import {
 } from '../infrastructure/diagnostics/timed';
 import {
   readAnthropicApiKey,
+  readFakeAnalysis,
   readFakePurchaseOutcome,
   readProxyUrl,
   readRevenueCatKey,
@@ -108,6 +113,7 @@ export interface Container {
   readonly feedback: FeedbackOutbox;
   readonly forgetAllRecordings: () => Promise<void>;
   readonly writeObservation: WriteObservation;
+  readonly attachObservation: AttachObservation;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
   readonly getMonthSummary: GetMonthSummary;
@@ -213,14 +219,25 @@ export function createContainer(dependencies: ContainerDependencies): Container 
    * needs to be visible while that is worked on.
    */
   const messages = __DEV__ ? new TimedMessagesClient(anthropic.messages) : anthropic.messages;
-  const reflection = new ClaudeReflectionAnalyzer(messages, vocabulary);
+  /*
+   * The pretend analysis is gated on `__DEV__` as well as on its own flag, as
+   * the pretend store is: a release build cannot be talked into answering
+   * someone's words with a made-up reading however the environment is set.
+   */
+  const reflection =
+    __DEV__ && readFakeAnalysis()
+      ? new FakeReflectionAnalyzer()
+      : new ClaudeReflectionAnalyzer(messages, vocabulary);
   /*
    * The card shows the repaired transcript, so the two rewriters on this path
    * — the recogniser and this prompt — are indistinguishable from the outside.
    * Printing both is the only way to tell whose word a wrong word is.
    */
   const analyzer = __DEV__ ? new TimedReflectionAnalyzer(reflection) : reflection;
-  const observationWriter = new ClaudeObservationWriter(messages);
+  const observationWriter =
+    __DEV__ && readFakeAnalysis()
+      ? new FakeObservationWriter()
+      : new ClaudeObservationWriter(messages);
   const transcription = __DEV__
     ? new TimedTranscriptionService(dependencies.transcription)
     : dependencies.transcription;
@@ -266,25 +283,17 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     // request to be rid of the voice, not only to stop adding to it.
     forgetAllRecordings: () => recordings.discardBefore(clock.now()),
     writeObservation: new WriteObservation(observationWriter),
+    attachObservation: new AttachObservation(repository),
     getHomeView: new GetHomeView(repository, clock, recordings),
     getMilestones: new GetMilestones(milestones),
     markMilestone: new MarkMilestone(milestones, clock, idGenerator),
     forgetMilestone: new ForgetMilestone(milestones),
-    getWeekSummary: new GetWeekSummary(
-      repository,
-      new CachedNarrativeGenerator(
-        new ClaudeNarrativeGenerator(anthropic.messages),
-        AsyncStorage,
-      ),
-      clock,
-    ),
+    getWeekSummary: new GetWeekSummary(repository, clock),
     getMonthSummary: new GetMonthSummary(
       repository,
-      new CachedNarrativeGenerator(
-        new ClaudeNarrativeGenerator(anthropic.messages, 'month'),
-        AsyncStorage,
-        monthKeyFor,
-      ),
+      __DEV__ && readFakeAnalysis()
+        ? new FakeNarrativeGenerator()
+        : new CachedNarrativeGenerator(new ClaudeNarrativeGenerator(anthropic.messages), AsyncStorage),
       clock,
     ),
     getWeekThemes: new GetWeekThemes(repository),

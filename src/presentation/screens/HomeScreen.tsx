@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 
-import type { DailyMood } from '@/application/use-cases/GetWeekSummary';
 import type { HomeView } from '@/application/use-cases/GetHomeView';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import type { Milestone } from '@/domain/entities/Milestone';
 import type { ParkedTake } from '@/domain/ports/IParkedTake';
-import { emotionKey, type Locale, type Translate } from '@/i18n';
+import { type Locale, type Translate } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
+import { CountPill } from '../components/CountPill';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { RecordButton } from '../components/RecordButton';
@@ -18,10 +18,10 @@ import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 
 import { WeekStrip } from '../components/WeekStrip';
 import { YearEchoCard } from '../components/YearEchoCard';
-import { colorForEmotion } from '../theme/emotionColor';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
+import { emotionLabel, moodTint } from '../components/emotionDisplay';
 
 export interface HomeScreenProps {
   readonly home: HomeView | null;
@@ -33,6 +33,8 @@ export interface HomeScreenProps {
   readonly locale: Locale;
   readonly today: Date;
   readonly onOpenStats: () => void;
+  /** The month card: the month written back, or the plans without access to it. */
+  readonly onOpenMonth: () => void;
   readonly onOpen: (entry: MoodEntry) => void;
   readonly onDelete: (id: string) => void;
   readonly t: Translate;
@@ -61,6 +63,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const [nudged, setNudged] = useState(false);
   const streak = props.home?.streakDays ?? 0;
   const week = props.home?.week ?? [];
+  const offersYesterday = props.home?.offersYesterday ?? false;
   const recent = props.home?.recentEntries ?? [];
 
   /*
@@ -99,7 +102,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           * at zero is the app saying otherwise.
           */}
         {streak > 0 ? (
-          <StreakPill days={streak} label={props.t(countedKey('home.streak', streak, props.locale))} />
+          <CountPill value={streak} label={props.t(countedKey('home.streak', streak, props.locale))} />
         ) : null}
       </View>
 
@@ -117,7 +120,6 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         >
           <WeekStrip
             week={week}
-            vocabulary={props.vocabulary}
             locale={props.locale}
             noEntryLabel={props.t('home.noEntryThatDay')}
             milestones={props.milestones}
@@ -131,11 +133,11 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
               flexDirection: 'row',
               flexWrap: 'wrap',
               gap: 12,
-              justifyContent: yesterdayEmpty(week) ? 'space-between' : 'flex-end',
+              justifyContent: offersYesterday ? 'space-between' : 'flex-end',
               alignItems: 'baseline',
             }}
           >
-            {yesterdayEmpty(week) ? (
+            {offersYesterday ? (
               /*
                * The hole in the strip, made closable. Quiet on purpose: the
                * strip's own philosophy says a missed day is not a failure,
@@ -241,7 +243,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
       </View>
 
       {props.monthCard === null ? null : (
-        <MonthReadyCard month={props.monthCard} locale={props.locale} t={props.t} onOpen={props.onOpenStats} />
+        <MonthReadyCard month={props.monthCard} locale={props.locale} t={props.t} onOpen={props.onOpenMonth} />
       )}
 
       {props.home?.yearEcho == null ? null : (
@@ -292,39 +294,6 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   );
 }
 
-/**
- * The one place a number is allowed to look like an achievement. It stays a
- * quiet fill rather than the accent: the accent means "Vidlun is speaking",
- * and a streak is the person's own doing.
- */
-function StreakPill(props: { readonly days: number; readonly label: string }): React.JSX.Element {
-  const theme = useTheme();
-
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 7,
-        backgroundColor: theme.palette.limeSoft,
-        borderRadius: theme.radii.pill,
-        paddingVertical: 6,
-        paddingLeft: 10,
-        paddingRight: 12,
-      }}
-    >
-      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.palette.accent }} />
-      {/* The pill shares a row with the date; past 1.2 the two no longer fit side by side. */}
-      <AppText variant="numeric" maxScale={1.2} style={{ fontSize: 14 }}>
-        {String(props.days)}
-      </AppText>
-      <AppText variant="secondary" color="inkSoft" maxScale={1.2} style={{ fontSize: 12 }}>
-        {props.label}
-      </AppText>
-    </View>
-  );
-}
-
 function formatToday(locale: Locale): string {
   return new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
 }
@@ -344,11 +313,8 @@ function EchoFromPast(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const first = props.entry.emotionIds[0];
-  const emotion = first === undefined ? undefined : props.vocabulary.find(first);
-  const colour =
-    emotion === undefined
-      ? theme.palette.line
-      : colorForEmotion(props.vocabulary, emotion, theme.isDark ? 'dark' : 'light');
+  // The mood marks the entry; the emotion's name wears the one blue.
+  const colour = moodTint(props.entry.mood?.value ?? null, theme);
 
   return (
     <Pressable
@@ -382,9 +348,9 @@ function EchoFromPast(props: {
           <AppText
             variant="secondary"
             numberOfLines={1}
-            style={{ fontSize: 13, color: colour, marginLeft: 'auto', flexShrink: 1 }}
+            style={{ fontSize: 13, color: theme.palette.tag, marginLeft: 'auto', flexShrink: 1 }}
           >
-            {props.t(emotionKey(first))}
+            {emotionLabel(first, props.t)}
           </AppText>
         )}
       </View>
@@ -422,10 +388,10 @@ function MonthReadyCard(props: {
       }}
     >
       <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.6 }}>
-        {props.t('stats.monthLabel')}
+        {props.t('home.monthKicker', { month: monthName })}
       </AppText>
       <AppText variant="kicker" style={{ color: theme.palette.onPanel, fontSize: 21 }}>
-        {props.t('stats.monthTitle', { month: monthName })}
+        {props.t('home.monthLead')}
       </AppText>
       <AppText variant="secondary" style={{ color: theme.palette.lime }}>
         {`${props.t('home.monthCta')} ›`}
@@ -434,10 +400,6 @@ function MonthReadyCard(props: {
   );
 }
 
-/** True when yesterday sits in the strip with nothing in it. */
-function yesterdayEmpty(week: readonly DailyMood[]): boolean {
-  return week.length >= 2 && week[week.length - 2]?.entryCount === 0;
-}
 
 
 /** The drawing's underlined accent link. */

@@ -1,6 +1,6 @@
 # Vidlun Terms of Use
 
-**Effective:** 29 August 2026
+**Effective:** 1 October 2026
 
 **Provider:** the Vidlun developer, support@vidlun.app
 
@@ -10,8 +10,8 @@ the app.
 ## 1. What Vidlun is
 
 A voice journal for feelings. You speak, the app transcribes on the phone
-itself, and a language model proposes names for what was said and once a week
-writes a piece about your week.
+itself, and a language model proposes names for what was said and once a month
+writes a piece about your month.
 
 ## 2. This is not a medical service
 
@@ -46,8 +46,8 @@ somewhere safe is yours to do; we never see or hold it.
 the app heard in a recording, the journal, search, the mood chart and the
 emotion vocabulary.
 
-**Paid:** everything the language model writes about your entries — the weekly
-piece that reads your whole week, the observations on individual entries and
+**Paid:** everything the language model writes about your entries — the monthly
+piece that reads your whole month, the observations on individual entries and
 the week's themes — and recording up to five minutes.
 
 **Plans.** Monthly, with no trial. Annual, with seven free days at the start.

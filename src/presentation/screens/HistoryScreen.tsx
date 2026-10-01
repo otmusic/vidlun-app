@@ -9,6 +9,7 @@ import type { Locale, Translate } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
+import { CountPill } from '../components/CountPill';
 import { EntryCard } from '../components/EntryCard';
 import { Button } from '../components/Button';
 import { WaveMark } from '../components/WaveMark';
@@ -103,18 +104,28 @@ export function HistoryScreen(props: {
       maxToRenderPerBatch={8}
       windowSize={7}
       ListHeaderComponent={
-        <View>
-          <AppText variant="display" style={{ marginBottom: 6 }}>
-            {t('feed.title')}
-          </AppText>
+        /*
+         * The count of entries as home counts days (owner's word, 2026-10-01):
+         * a pill opposite the title, moved here from the profile. It wraps
+         * under the title at large type rather than clipping, and is absent
+         * at zero, as home's is.
+         */
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginBottom: 26,
+          }}
+        >
+          <AppText variant="display">{t('feed.title')}</AppText>
           {entries.length === 0 ? null : (
-            <AppText variant="secondary" color="inkSoft" style={{ marginBottom: 26 }}>
-              {t('feed.summary', {
-                n: entries.length,
-                unit: t(countedKey('feed.echo', entries.length, props.locale)),
-                period: periodOf(entries, props.locale),
-              })}
-            </AppText>
+            <CountPill
+              value={entries.length}
+              label={t(countedKey('feed.entry', entries.length, props.locale))}
+            />
           )}
         </View>
       }
@@ -147,14 +158,6 @@ function Gap(): React.JSX.Element {
 }
 
 /** The month the journal reaches back to, which is what the summary is about. */
-function periodOf(entries: readonly MoodEntry[], locale: Locale): string {
-  const oldest = entries[entries.length - 1];
-
-  return oldest === undefined
-    ? ''
-    : oldest.createdAt.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
-}
-
 type Row =
   | { readonly kind: 'entry'; readonly entry: MoodEntry; readonly at: number }
   | { readonly kind: 'milestone'; readonly milestone: Milestone; readonly at: number };

@@ -49,6 +49,17 @@ export function readFakePurchaseOutcome(): string | null {
 }
 
 /**
+ * Whether the capture card reads entries with a pretend analysis instead of
+ * the proxy, for walking the card in the simulator, where App Attest does not
+ * run. Set `EXPO_PUBLIC_FAKE_ANALYSIS=1` when starting Metro.
+ *
+ * Read only in development — see the wiring in ./container.ts.
+ */
+export function readFakeAnalysis(): boolean {
+  return process.env['EXPO_PUBLIC_FAKE_ANALYSIS'] === '1';
+}
+
+/**
  * Where the key lives in a published build. Null on a machine that has not
  * configured one, and then the app falls back to its own key — see the note on
  * `readAnthropicApiKey`. No token any more: access is proven with App Attest,

@@ -25,12 +25,12 @@ export interface GetMonthSummaryInput {
 }
 
 /**
- * The previous month, written back — the weekly narrative's longer breath.
+ * The previous month, written back — the only narrative since 2026-10-01,
+ * when the weekly one went (owner's word).
  *
- * It exists only in the first days of a new month, on the home card and at
- * the top of the statistics screen, then rests until the next first. An
- * event, not furniture: the month is worth a moment of looking back, not a
- * permanent fixture beside the fresher week.
+ * It exists only in the first days of a new month, as the home card and the
+ * page behind it, then rests until the next first. An event, not furniture:
+ * the month is worth a moment of looking back, not a permanent fixture.
  */
 export class GetMonthSummary {
   constructor(

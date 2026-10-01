@@ -11,7 +11,6 @@ import { createTranslator, type Locale, type Translate } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
 import { entitlementOf, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
-import { emotionKey } from '@/i18n';
 import { DEFAULT_SETTINGS, type Settings } from '@/domain/ports/ISettings';
 import { bundledModelUri } from '@/infrastructure/transcription/bundledModel';
 import { SPEECH_MODEL } from '@/infrastructure/transcription/speechModel';
@@ -27,6 +26,7 @@ import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
 import { OnboardingScreen } from '@/presentation/screens/OnboardingScreen';
 import { Screen } from '@/presentation/screens/Screen';
 import { ThemeProvider, useTheme } from '@/presentation/theme/ThemeProvider';
+import { emotionLabel } from '@/presentation/components/emotionDisplay';
 
 /**
  * How long an absence stays forgiven. Under a minute is answering a message;
@@ -182,14 +182,13 @@ function Vidlun(props: {
     createVoiceEntry: container.createVoiceEntry,
     createTextEntry: container.createTextEntry,
     confirmEntry: container.confirmEntry,
-    reviseEntry: container.reviseEntry,
     writeObservation: container.writeObservation,
+    attachObservation: container.attachObservation,
     deleteEntry: container.deleteEntry,
     getHistory: container.getHistory,
     forgetOldRecordings: container.forgetOldRecordings,
     findRecording: container.findRecording,
     keepRecordings: props.settings.keepRecordings,
-    asksFirst: props.settings.asksFirst,
     parkedTake: container.parkedTake,
     createUnheardEntry: container.createUnheardEntry,
     unheardEntries: container.unheardEntries,
@@ -281,7 +280,7 @@ function Vidlun(props: {
     (shape: 'backup' | 'markdown') => {
       void (async () => {
         const journal = await container.exportJournal.execute({
-          labelOf: (id) => t(emotionKey(id)),
+          labelOf: (id) => emotionLabel(id, t),
           dayOf: (date) =>
             date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }),
           timeOf: (date) => date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),

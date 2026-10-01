@@ -103,7 +103,7 @@
       "paid": {
         "title": "Підписка",
         "items": [
-          "Тижневий наратив: раз на тиждень Vidlun пише, що помітив",
+          "Місячний наратив: раз на місяць Vidlun пише, що помітив",
           "Відлуння до кожного запису",
           "Теми тижня",
           "Записи до п’яти хвилин"
@@ -354,7 +354,7 @@
       "paid": {
         "title": "Subscription",
         "items": [
-          "The weekly narrative: once a week Vidlun writes what it noticed",
+          "The monthly narrative: once a month Vidlun writes what it noticed",
           "An echo on every entry",
           "Themes of the week",
           "Recordings up to five minutes"

@@ -1,68 +1,95 @@
-import { Pressable, ScrollView, View } from 'react-native';
-import { Circle, Path, Svg } from 'react-native-svg';
+import { useEffect, useState } from 'react';
+import { ScrollView, View } from 'react-native';
+import { Path, Svg } from 'react-native-svg';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
-import type { MoodEntry } from '@/domain/entities/MoodEntry';
-import { emotionKey, type Translate, type TranslationKey } from '@/i18n';
+import { MoodEntry } from '@/domain/entities/MoodEntry';
+import { type Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { BackButton } from '../components/BackButton';
 import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
-import { moodTone } from '../components/emotionTone';
+import { emotionLabel, emotionTint, idForTypedWord } from '../components/emotionDisplay';
+import { OwnWordField } from '../components/OwnWordField';
 import { WaveMark } from '../components/WaveMark';
-import { colorForEmotion } from '../theme/emotionColor';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
-import { differenceBetween } from './difference';
-
-const MOOD_LABELS: readonly TranslationKey[] = ['mood.1', 'mood.2', 'mood.3', 'mood.4', 'mood.5'];
-const RING_RADIUS = 30;
-const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
 /**
- * Two answers, side by side and never merged, with a third block naming the
- * difference in the person's own words.
+ * Choosing together: the words for the entry, Vidlun's already chosen beside
+ * whatever the person named on the card (owner's word, 2026-10-01). One list
+ * rather than two answers set side by side — a tap takes a word off or puts
+ * it back, and a word of one's own is typed in at the end of it.
  *
  * Vidlun's block is a place rather than a colour: its own violet surface, so
- * "this half is not yours" reads without the accent having to mean a second
- * thing. Nothing here ranks the two — a word Vidlun missed is as much a
- * finding as a word it added.
+ * the accent does not have to mean a second thing.
  */
 export function CompareScreen(props: {
   readonly proposed: MoodEntry;
   readonly draft: MoodEntry;
   readonly vocabulary: EmotionVocabulary;
   readonly t: Translate;
-  readonly onAdopt: (id: string) => void;
-  readonly onUnkeep: (id: string) => void;
-  readonly onKeepMine: () => void;
-  readonly keptMine: boolean;
+  /** Takes a word off the entry or puts it back. */
+  readonly onToggle: (id: string) => void;
+  /** Adds a word typed here; a word already in stays in. */
+  readonly onAddWord: (id: string) => void;
   readonly onConfirm: () => void;
-  readonly onEdit: () => void;
+  /** Back to the question card, as it was. */
   readonly onBack: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
-  const scheme = theme.isDark ? 'dark' : 'light';
-  const mine = props.draft.selfEmotionIds;
-  const difference = differenceBetween(mine, props.proposed.emotionIds);
+  const kept = props.draft.emotionIds;
+  const { onConfirm } = props;
   /** §6 calls an empty proposal correct and common; the drawing gives it a state. */
   const heardNothing = props.proposed.emotionIds.length === 0;
+  /*
+   * The person's own words first — named before Vidlun answered — then
+   * Vidlun's. The list holds still while words go off and on; only a word
+   * typed here joins it at the end, and leaves it when taken off.
+   */
+  const offered = unique([...props.draft.selfEmotionIds, ...props.proposed.emotionIds]);
+  const typedHere = kept.filter((id) => !offered.includes(id));
+  const full = kept.length >= MoodEntry.MAX_EMOTIONS;
+  /** Null while the own-word field is closed; the word so far while open. */
+  const [typing, setTyping] = useState<string | null>(null);
+  /** A typed word committed by "save", waited for before the entry is written. */
+  const [saveAfter, setSaveAfter] = useState<string | null>(null);
 
-  const colorOf = (id: string): string | undefined => {
-    const emotion = props.vocabulary.find(id);
+  const colorOf = (id: string): string | undefined => emotionTint(id, props.vocabulary, theme);
+  const label = (id: string): string => emotionLabel(id, props.t);
 
-    return emotion === undefined ? undefined : colorForEmotion(props.vocabulary, emotion, scheme);
+  /** Adds the word being typed, if any; returns its id when it is new. */
+  const commit = (): string | null => {
+    const id = typing === null ? null : idForTypedWord(typing, props.vocabulary);
+
+    setTyping(null);
+
+    if (id === null || kept.includes(id) || full) {
+      return null;
+    }
+
+    props.onAddWord(id);
+
+    return id;
   };
 
-  const label = (id: string): string => props.t(emotionKey(id));
+  // Saved from the render that has the word: the handler reads its own stage.
+  useEffect(() => {
+    if (saveAfter !== null && kept.includes(saveAfter)) {
+      setSaveAfter(null);
+      onConfirm();
+    }
+  }, [kept, onConfirm, saveAfter]);
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
       contentContainerStyle={{
         paddingTop: top,
         ...sides,
@@ -73,46 +100,6 @@ export function CompareScreen(props: {
       <View style={{ marginBottom: 12 }}>
         <BackButton t={props.t} onPress={props.onBack} />
       </View>
-
-      <AppText variant="caption" color="inkFaint">
-        {props.t('compare.eyebrow')}
-      </AppText>
-
-      <Block bordered>
-        <AppText variant="caption" color="inkFaint">
-          {props.t('compare.mine')}
-        </AppText>
-        {props.draft.emotionIds.length === 0 ? (
-          <AppText variant="secondary" color="inkFaint">
-            {props.t('compare.mineEmpty')}
-          </AppText>
-        ) : (
-          /*
-           * The living set, not the frozen answer: an adopted word arrives
-           * here and comes off with a tap, which is also the way past the
-           * four-word ceiling. The person's own words sit plain — the card
-           * offers no way to un-say an answer already given; the editor does.
-           */
-          <Row>
-            {props.draft.emotionIds.map((id) =>
-              mine.includes(id) ? (
-                <Chip key={id} label={label(id)} color={colorOf(id)} solid />
-              ) : (
-                <Chip
-                  key={id}
-                  label={label(id)}
-                  color={colorOf(id)}
-                  solid
-                  action="remove"
-                  onPress={() => {
-                    props.onUnkeep(id);
-                  }}
-                />
-              ),
-            )}
-          </Row>
-        )}
-      </Block>
 
       <Block surface={theme.palette.voiceSoft}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -125,95 +112,70 @@ export function CompareScreen(props: {
           /*
            * Not an empty slot but a finding, and one §6 calls correct and
            * common: an entry about what the day held rather than how it felt
-           * has no emotion in it to hear. The way out is offered, never taken
-           * on the person's behalf.
+           * has no emotion in it to hear.
            */
-          <>
-            <AppText variant="body">{props.t('compare.noneCopy')}</AppText>
-            {props.draft.selfEmotionIds.length > 0 ? (
-              <AppText variant="secondary" color="inkSoft" style={{ paddingTop: 14 }}>
-                {props.t('compare.noneKept')}
-              </AppText>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                onPress={props.onEdit}
-                hitSlop={8}
-                style={{
-                  alignSelf: 'flex-start',
-                  marginTop: 14,
-                  borderWidth: 1.5,
-                  borderStyle: 'dashed',
-                  borderColor: theme.palette.line,
-                  borderRadius: 999,
-                  paddingVertical: 9,
-                  paddingHorizontal: 16,
+          <AppText variant="body">{props.t('compare.noneCopy')}</AppText>
+        ) : null}
+        <Row>
+          {offered.map((id) =>
+            /*
+             * A word in the entry is solid, with the mark that takes it off;
+             * one taken off becomes a ring with a plus, and the same tap puts
+             * it back. Vidlun's words start in (owner's word, 2026-10-01), so
+             * agreeing costs nothing and disagreeing is one tap per word.
+             */
+            kept.includes(id) ? (
+              <Chip
+                key={id}
+                label={label(id)}
+                color={colorOf(id)}
+                solid
+                action="remove"
+                onPress={() => {
+                  props.onToggle(id);
                 }}
-              >
-                <AppText variant="secondary" color="inkSoft">
-                  {`+ ${props.t('compare.noneName')}`}
-                </AppText>
-              </Pressable>
-            )}
-          </>
-        ) : (
-          <>
-            <Row>
-              {props.proposed.emotionIds.map((id) => {
-                const kept = props.draft.emotionIds.includes(id);
-
-                /*
-                 * A word already in the entry is solid; one Vidlun offers is a
-                 * ring with a plus, and tapping it moves it across. The
-                 * difference is the whole interaction — there is no accept
-                 * button, because accepting everything at once is not a thing
-                 * anyone means.
-                 */
-                return kept ? (
-                  <Chip key={id} label={label(id)} color={colorOf(id)} solid />
-                ) : (
-                  <Chip
-                    key={id}
-                    label={`+ ${label(id)}`}
-                    color={colorOf(id)}
-                    onPress={() => {
-                      props.onAdopt(id);
-                    }}
-                  />
-                );
-              })}
-            </Row>
-            {props.keptMine ? (
-              <AppText variant="secondary" color="inkSoft">
-                {props.t('compare.kept')}
-              </AppText>
+              />
             ) : (
-              /*
-               * As prominent as adopting, and deliberately so: Vidlun is not an
-               * authority on someone else's feelings, and disagreeing has to be
-               * one tap rather than a thing you do by ignoring the screen.
-               */
-              <Pressable accessibilityRole="button" onPress={props.onKeepMine} hitSlop={12}>
-                <AppText variant="label" color="accentInk">
-                  {props.t('compare.keepMine')}
-                </AppText>
-              </Pressable>
-            )}
-          </>
-        )}
+              <Chip
+                key={id}
+                label={`+ ${label(id)}`}
+                color={colorOf(id)}
+                onPress={() => {
+                  props.onToggle(id);
+                }}
+              />
+            ),
+          )}
+          {typedHere.map((id) => (
+            <Chip
+              key={id}
+              label={label(id)}
+              color={colorOf(id)}
+              solid
+              action="remove"
+              onPress={() => {
+                props.onToggle(id);
+              }}
+            />
+          ))}
+          {full ? null : (
+            <OwnWordField
+              typing={typing}
+              t={props.t}
+              onOpen={() => {
+                setTyping('');
+              }}
+              onChange={setTyping}
+              onCommit={() => {
+                commit();
+              }}
+              onClose={() => {
+                setTyping(null);
+              }}
+            />
+          )}
+        </Row>
       </Block>
-
-      {heardNothing ? null : (
-      <Block bordered>
-        <AppText variant="body">
-          {props.t(`diff.${difference.kind}`, {
-            word: difference.word === undefined ? '' : label(difference.word),
-            mine: difference.mine === undefined ? '' : label(difference.mine),
-            theirs: difference.theirs === undefined ? '' : label(difference.theirs),
-          })}
-        </AppText>
-      </Block>
-      )}
 
       {heardNothing ? (
         /*
@@ -245,36 +207,42 @@ export function CompareScreen(props: {
         </Block>
       )}
 
-      {heardNothing || props.draft.mood === null ? null : (
-      <Block bordered>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
-          <MoodRing value={props.draft.mood.value} />
-          <View style={{ gap: theme.spacing.xs }}>
-            <AppText variant="caption" color="inkFaint">
-              {props.t('compare.mood')}
-            </AppText>
-            <AppText variant="body" color={moodTone(props.draft.mood.value)}>
-              {props.t(MOOD_LABELS[props.draft.mood.value - 1] ?? 'mood.3')}
-            </AppText>
-          </View>
-        </View>
-      </Block>
-      )}
-
       {props.draft.contextTags.length > 0 ? (
-        <Row>
-          {props.draft.contextTags.map((tag) => (
-            <Chip key={tag} label={tag} tone="neutral" />
-          ))}
-        </Row>
+        <View style={{ gap: 10, marginTop: 4 }}>
+          {/* What the entry was about, named so the grey chips are not mistaken for feelings. */}
+          <AppText variant="caption" color="inkFaint">
+            {props.t('entry.topics')}
+          </AppText>
+          <Row>
+            {props.draft.contextTags.map((tag) => (
+              <Chip key={tag} label={tag} tone="neutral" />
+            ))}
+          </Row>
+        </View>
       ) : null}
 
-      <View style={{ gap: theme.spacing.xs, marginTop: 12 }}>
-        <Button label={props.t('reflection.confirm')} onPress={props.onConfirm} />
-        <Button label={props.t('reflection.edit')} variant="ghost" onPress={props.onEdit} />
+      <View style={{ marginTop: 12 }}>
+        {/* A word still being typed is part of the entry, so it goes in first. */}
+        <Button
+          label={props.t('reflection.confirm')}
+          disabled={saveAfter !== null}
+          onPress={() => {
+            const added = commit();
+
+            if (added === null) {
+              onConfirm();
+            } else {
+              setSaveAfter(added);
+            }
+          }}
+        />
       </View>
     </ScrollView>
   );
+}
+
+function unique(ids: readonly string[]): readonly string[] {
+  return ids.filter((id, at) => ids.indexOf(id) === at);
 }
 
 function Block(props: {
@@ -303,29 +271,6 @@ function Block(props: {
 function Row(props: { readonly children: React.ReactNode }): React.JSX.Element {
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{props.children}</View>
-  );
-}
-
-/** The mood as a share of the ring rather than a number: it is a feeling. */
-function MoodRing(props: { readonly value: number }): React.JSX.Element {
-  const theme = useTheme();
-  const filled = (props.value / 5) * RING_LENGTH;
-
-  return (
-    <Svg width={52} height={52} viewBox="0 0 72 72">
-      <Circle cx={36} cy={36} r={RING_RADIUS} fill="none" stroke={theme.palette.line} strokeWidth={7} />
-      <Circle
-        cx={36}
-        cy={36}
-        r={RING_RADIUS}
-        fill="none"
-        stroke={theme.palette[moodTone(props.value)]}
-        strokeWidth={7}
-        strokeLinecap="round"
-        strokeDasharray={`${filled} ${RING_LENGTH}`}
-        transform="rotate(-90 36 36)"
-      />
-    </Svg>
   );
 }
 

@@ -4,6 +4,7 @@ import { TooManyEmotionsError } from '@/domain/errors/MoodEntryErrors';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
 import { createEmotionVocabulary } from '@/infrastructure/analysis/emotionVocabularyData';
+import { ownWordId } from '@/domain/entities/OwnWord';
 
 const useCase = new ReviseEntry(createEmotionVocabulary());
 
@@ -80,5 +81,12 @@ describe('ReviseEntry', () => {
 
     expect(original.emotionIds).toEqual(['happy.proud', 'bad.tired']);
     expect(original.wasRevisedByUser).toBe(false);
+  });
+
+  it('keeps a feeling the person named in their own word', () => {
+    const own = ownWordId('drained') ?? '';
+    const revised = useCase.execute(draft(), { emotionIds: ['bad.tired', own] });
+
+    expect(revised.emotionIds).toEqual(['bad.tired', own]);
   });
 });

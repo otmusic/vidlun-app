@@ -4,13 +4,15 @@ import { useTheme } from '../theme/ThemeProvider';
 import type { Palette } from '../theme/tokens';
 import { MIN_TAP_TARGET } from '../theme/tokens';
 import { AppText } from './AppText';
+import { toneFor } from './emotionTone';
 
 export interface MoodScaleProps {
   /** Null when the entry never said how the day was: no point is filled. */
   readonly value: number | null;
   readonly onChange: (value: number) => void;
-  readonly lowLabel: string;
-  readonly highLabel: string;
+  /** The words under the two ends; the card goes without them. */
+  readonly lowLabel?: string;
+  readonly highLabel?: string;
   readonly accessibilityLabel: string;
 }
 
@@ -20,24 +22,6 @@ const POINTS = [1, 2, 3, 4, 5];
  * There is no signalling red on this scale: the lowest state is a warm
  * terracotta, because a difficult day must not look like an error.
  */
-/**
- * Three bands across five points, split where the words split them: `mood.1`
- * and `mood.2` are both low, `mood.3` is even, `mood.4` and `mood.5` are the
- * good end. Colouring a "low" day the same as an "even" one said something the
- * label denied.
- *
- * Exported because the week chart colours its bars by this too. Two mappings
- * drifted apart once already, and §7 asks that one colour mean exactly one
- * thing.
- */
-export function toneFor(point: number): keyof Palette {
-  if (point <= 2) {
-    return 'low';
-  }
-
-  return point < 4 ? 'tension' : 'calm';
-}
-
 export function MoodScale(props: MoodScaleProps): React.JSX.Element {
   const theme = useTheme();
 
@@ -79,14 +63,16 @@ export function MoodScale(props: MoodScaleProps): React.JSX.Element {
           );
         })}
       </View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <AppText variant="caption" color="inkFaint">
-          {props.lowLabel}
-        </AppText>
-        <AppText variant="caption" color="inkFaint">
-          {props.highLabel}
-        </AppText>
-      </View>
+      {props.lowLabel === undefined || props.highLabel === undefined ? null : (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <AppText variant="caption" color="inkFaint">
+            {props.lowLabel}
+          </AppText>
+          <AppText variant="caption" color="inkFaint">
+            {props.highLabel}
+          </AppText>
+        </View>
+      )}
     </View>
   );
 }

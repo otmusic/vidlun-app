@@ -94,7 +94,7 @@ emotionIds: choose only from the list below, exact strings.
 - Prefer a broad emotion you are sure of over a specific one you are guessing at.
 - At most four.
 
-contextTags: at most three short lowercase tags naming what the entry was about, in the speaker's language. Empty array if nothing is named.
+contextTags: at most three short lowercase topics naming what the entry was about, in the speaker's language — each a noun in its dictionary form (nominative singular), the kind of word someone would file the day under: work, family, sleep, the app. Never a verb, never a feeling, never a word copied from the sentence in the form it was said. Empty array if nothing is named.
 
 safetyFlag: read only the content of the sentence. Use "distress" when the speaker sounds badly overwhelmed, "crisis" when they refer to harming themselves, and "none" otherwise. Feeling bad is not a crisis.
 

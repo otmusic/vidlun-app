@@ -2,12 +2,12 @@ import { View } from 'react-native';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
-import { emotionKey, type Translate } from '@/i18n';
+import { type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
 import { Chip } from './Chip';
-import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
+import { emotionLabel, emotionTint } from './emotionDisplay';
 
 /**
  * What Vidlun heard, as chips. Shared by the card and the entry it becomes, so
@@ -30,25 +30,39 @@ export function EntryChips(props: {
   }
 
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-      {props.entry.emotionIds.map((id) => {
-        const emotion = props.vocabulary.find(id);
-
-        return (
-          <Chip
-            key={id}
-            label={props.t(emotionKey(id))}
-            color={
-              emotion === undefined
-                ? undefined
-                : colorForEmotion(props.vocabulary, emotion, theme.isDark ? 'dark' : 'light')
-            }
-          />
-        );
-      })}
-      {props.entry.contextTags.map((tag) => (
-        <Chip key={tag} label={tag} tone="neutral" />
-      ))}
+    <View style={{ gap: theme.spacing.md }}>
+      {props.entry.hasEmotions ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+          {props.entry.emotionIds.map((id) => (
+            <Chip
+              key={id}
+              label={emotionLabel(id, props.t)}
+              color={emotionTint(id, props.vocabulary, theme)}
+            />
+          ))}
+        </View>
+      ) : (
+        <AppText variant="secondary" color="inkFaint">
+          {props.t('reflection.noEmotions')}
+        </AppText>
+      )}
+      {/*
+        * The tags are what the entry was about, not feelings, and a row of
+        * grey chips beside the coloured ones read as more feelings (owner's
+        * word, 2026-09-30) — so they sit apart, under their own name.
+        */}
+      {props.entry.contextTags.length === 0 ? null : (
+        <View style={{ gap: theme.spacing.sm }}>
+          <AppText variant="secondary" color="inkSoft">
+            {props.t('entry.topics')}
+          </AppText>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+            {props.entry.contextTags.map((tag) => (
+              <Chip key={tag} label={tag} tone="neutral" />
+            ))}
+          </View>
+        </View>
+      )}
     </View>
   );
 }

@@ -43,6 +43,45 @@ export function createTranslator(locale: Locale): Translate {
 }
 
 /**
+ * The vocabulary id whose label a typed word already is, in either language,
+ * or null. A person who types "sad" or "tired" means the word the palette
+ * has, and keeping it as that word keeps its colour, its place in search and
+ * its depth in the granularity metric. Case and spacing are ignored. Where
+ * two emotions share a label, the broader word wins: fewer dots, shallower.
+ */
+export function emotionIdForLabel(typed: string): string | null {
+  const wanted = typed.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+
+  if (wanted.length === 0) {
+    return null;
+  }
+
+  let best: string | null = null;
+
+  for (const labels of [enEmotions, ukEmotions]) {
+    for (const [key, label] of Object.entries(labels)) {
+      if (label.toLocaleLowerCase() !== wanted) {
+        continue;
+      }
+
+      const id = key.slice(EMOTION_PREFIX.length);
+
+      if (best === null || depthOf(id) < depthOf(best)) {
+        best = id;
+      }
+    }
+  }
+
+  return best;
+}
+
+const EMOTION_PREFIX = 'emotion.';
+
+function depthOf(id: string): number {
+  return id.split('.').length;
+}
+
+/**
  * Emotion ids are the join key between the vocabulary and its labels. The cast
  * is covered by a test asserting every shipped id has a label in every locale.
  */

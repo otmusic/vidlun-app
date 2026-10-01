@@ -3,6 +3,7 @@ import { MoodEntry, type MoodEntryProps } from '@/domain/entities/MoodEntry';
 import { InMemoryMoodEntryRepository } from '@/infrastructure/persistence/InMemoryMoodEntryRepository';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
+import { ownWordId } from '@/domain/entities/OwnWord';
 
 let nextId = 0;
 
@@ -84,5 +85,14 @@ describe('finding an entry again', () => {
 
   it('offers nothing to narrow by in an empty journal', async () => {
     expect(await search([])).toEqual({ entries: [], filterIds: [] });
+  });
+
+  it("matches a feeling the person named in their own word", async () => {
+    const result = await search(
+      [entry({ emotionIds: [ownWordId('Drained') ?? ''] }), entry({ emotionIds: ['bad.tired'] })],
+      { query: 'drain' },
+    );
+
+    expect(result.entries).toHaveLength(1);
   });
 });

@@ -37,18 +37,18 @@ function setup() {
   return { inner, store, subject: new CachedNarrativeGenerator(inner, store) };
 }
 
-describe('the week is written once', () => {
-  it('reads the same week back rather than paying for it twice', async () => {
+describe('the month is written once', () => {
+  it('reads the same month back rather than paying for it twice', async () => {
     const { inner, subject } = setup();
-    const week = [entry('a'), entry('b')];
+    const month = [entry('a'), entry('b')];
 
-    const first = await subject.generate(week);
+    const first = await subject.generate(month);
 
-    expect(await subject.generate(week)).toBe(first);
+    expect(await subject.generate(month)).toBe(first);
     expect(inner.calls).toBe(1);
   });
 
-  it('writes again when the week gained an entry', async () => {
+  it('writes again when the month gained an entry', async () => {
     const { inner, subject } = setup();
 
     await subject.generate([entry('a')]);
@@ -63,11 +63,11 @@ describe('the week is written once', () => {
     await subject.generate([entry('a', { emotionIds: ['bad.tired'] })]);
     await subject.generate([entry('a', { emotionIds: ['happy'] })]);
 
-    // A sentence about a week that has since changed is worse than a new one.
+    // A sentence about a month that has since changed is worse than a new one.
     expect(inner.calls).toBe(2);
   });
 
-  it('keeps one row per week rather than one per version of it', async () => {
+  it('keeps one row per month rather than one per version of it', async () => {
     const { store, subject } = setup();
 
     await subject.generate([entry('a')]);
@@ -78,11 +78,11 @@ describe('the week is written once', () => {
     expect(keys.filter((key) => key.startsWith('vidlun.narrative.'))).toHaveLength(1);
   });
 
-  it('files two different weeks apart', async () => {
+  it('files two different months apart', async () => {
     const { store, subject } = setup();
 
     await subject.generate([entry('a')]);
-    await subject.generate([entry('c', { createdAt: new Date(2026, 7, 18, 20, 0) })]);
+    await subject.generate([entry('c', { createdAt: new Date(2026, 6, 18, 20, 0) })]);
 
     expect(await store.getAllKeys()).toHaveLength(2);
   });
@@ -90,7 +90,7 @@ describe('the week is written once', () => {
   it('still answers when the cache cannot be read', async () => {
     const { store, subject } = setup();
 
-    store.poison('vidlun.narrative.2026-8-24', 'not json');
+    store.poison('vidlun.narrative.month.2026-8', 'not json');
 
     await expect(subject.generate([entry('a')])).resolves.toContain('Calmer mornings');
   });

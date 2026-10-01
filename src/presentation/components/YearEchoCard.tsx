@@ -3,13 +3,13 @@ import { Pressable, View } from 'react-native';
 import type { YearEcho } from '@/application/use-cases/GetHomeView';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
-import { emotionKey, type Locale, type Translate } from '@/i18n';
+import { type Locale, type Translate } from '@/i18n';
 
-import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 import { Playback } from './Playback';
+import { emotionLabel, moodTint } from './emotionDisplay';
 
 /**
  * The drawing's card for a year ago today: the entry's own colour in the
@@ -29,11 +29,8 @@ export function YearEchoCard(props: {
   const theme = useTheme();
   const { entry } = props.echo;
   const first = entry.emotionIds[0];
-  const emotion = first === undefined ? undefined : props.vocabulary.find(first);
-  const colour =
-    emotion === undefined
-      ? theme.palette.line
-      : colorForEmotion(props.vocabulary, emotion, theme.isDark ? 'dark' : 'light');
+  // The mood marks the entry; the emotion's name wears the one blue.
+  const colour = moodTint(entry.mood?.value ?? null, theme);
 
   return (
     <View
@@ -62,9 +59,9 @@ export function YearEchoCard(props: {
           <AppText
             variant="secondary"
             numberOfLines={1}
-            style={{ fontSize: 13, color: colour, marginLeft: 'auto', flexShrink: 1 }}
+            style={{ fontSize: 13, color: theme.palette.tag, marginLeft: 'auto', flexShrink: 1 }}
           >
-            {props.t(emotionKey(first))}
+            {emotionLabel(first, props.t)}
           </AppText>
         )}
       </View>

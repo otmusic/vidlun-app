@@ -2,12 +2,12 @@ import { Pressable, View } from 'react-native';
 
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
-import { emotionKey, type Locale, type Translate } from '@/i18n';
+import { type Locale, type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
 import { dayWordOf } from './EntryRow';
-import { colorForEmotion } from '../theme/emotionColor';
 import { useTheme } from '../theme/ThemeProvider';
+import { emotionLabel, moodTint } from './emotionDisplay';
 
 /**
  * A dot in the entry's own colour, the day and time, the first emotion's own
@@ -26,13 +26,9 @@ export function EntryCard(props: {
   readonly showEmotions?: boolean;
 }): React.JSX.Element {
   const theme = useTheme();
-  const scheme = theme.isDark ? 'dark' : 'light';
   const first = props.entry.emotionIds[0];
-  const emotion = first === undefined ? undefined : props.vocabulary.find(first);
-  const colour =
-    emotion === undefined
-      ? theme.palette.line
-      : colorForEmotion(props.vocabulary, emotion, scheme);
+  // The mood marks the entry; the emotion's name wears the one blue.
+  const marker = moodTint(props.entry.mood?.value ?? null, theme);
 
   return (
     <Pressable
@@ -49,7 +45,7 @@ export function EntryCard(props: {
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
-        <View style={{ width: 9, height: 9, borderRadius: 9, backgroundColor: colour }} />
+        <View style={{ width: 9, height: 9, borderRadius: 9, backgroundColor: marker }} />
         <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13 }}>
           {`${dayWordOf(props.entry.createdAt, props.today, props.locale, props.t)} · ${timeOf(props.entry.createdAt, props.locale)}`}
         </AppText>
@@ -57,9 +53,9 @@ export function EntryCard(props: {
           <AppText
             variant="secondary"
             numberOfLines={1}
-            style={{ fontSize: 13, color: colour, marginLeft: 'auto', flexShrink: 1 }}
+            style={{ fontSize: 13, color: theme.palette.tag, marginLeft: 'auto', flexShrink: 1 }}
           >
-            {props.t(emotionKey(first))}
+            {emotionLabel(first, props.t)}
           </AppText>
         )}
       </View>
@@ -69,7 +65,7 @@ export function EntryCard(props: {
         </AppText>
         {props.showEmotions !== true || props.entry.emotionIds.length === 0 ? null : (
           <AppText variant="secondary" color="inkFaint">
-            {props.entry.emotionIds.map((id) => props.t(emotionKey(id))).join(' · ')}
+            {props.entry.emotionIds.map((id) => emotionLabel(id, props.t)).join(' · ')}
           </AppText>
         )}
       </View>

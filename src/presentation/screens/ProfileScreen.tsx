@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Switch, useColorScheme, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, useColorScheme, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings, ThemeChoice } from '@/domain/ports/ISettings';
 import type { Translate, TranslationKey } from '@/i18n';
-import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
+import { ModalSheet, SheetClose } from '../components/ModalSheet';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
@@ -33,17 +33,12 @@ const HOURS = Array.from({ length: 24 }, (_unused, hour) => hour);
 const MINUTES = Array.from({ length: 12 }, (_unused, at) => at * 5);
 
 /**
- * The person's own corner: what they have made, and the handful of things they
- * get to decide.
+ * The person's own corner: the handful of things they get to decide.
  *
- * Two numbers at the top and nothing else quantified. Entries and days in a row
- * are counts of what someone did, not scores on how they are — the difference
- * between those two is the whole reason the insights screen has no headline
- * number either.
+ * No numbers at the top any more (owner's word, 2026-10-01): the entries are
+ * counted in the journal and the days on home, each where it is read.
  */
 export function ProfileScreen(props: {
-  readonly entryCount: number | null;
-  readonly streakDays: number;
   readonly settings: Settings;
   readonly t: Translate;
   readonly onChange: (settings: Settings) => void;
@@ -82,20 +77,6 @@ export function ProfileScreen(props: {
         {t('profile.title')}
       </AppText>
 
-      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 26 }}>
-        <Tile
-          value={props.entryCount === null ? '—' : String(props.entryCount)}
-          unit={t(countedKey('profile.entries', props.entryCount ?? 0, settings.locale))}
-          background={theme.palette.limeSoft}
-        />
-        <Tile
-          value={String(props.streakDays)}
-          unit={t(countedKey('profile.streak', props.streakDays, settings.locale))}
-          background={theme.palette.voiceSoft}
-          valueColor={theme.palette.accentInk}
-        />
-      </View>
-
       <Section>
         <Row
           title={t('subs.name')}
@@ -103,24 +84,6 @@ export function ProfileScreen(props: {
           onPress={props.onOpenSubscription}
         >
           <Pill label={t('profile.open')} />
-        </Row>
-      </Section>
-
-      {/* The card's question is §M6's whole point, so whether it is asked
-          belongs where someone would look for it. Drawn in the third round. */}
-      <Section>
-        <Row
-          title={t('settings.asksFirst')}
-          hint={t(settings.asksFirst ? 'settings.asksFirstOn' : 'settings.asksFirstOff')}
-        >
-          <Switch
-            value={settings.asksFirst}
-            onValueChange={(asksFirst) => {
-              props.onChange({ ...settings, asksFirst });
-            }}
-            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
-            accessibilityLabel={t('settings.asksFirst')}
-          />
         </Row>
       </Section>
 
@@ -315,6 +278,9 @@ export function ProfileScreen(props: {
           setPickingTime(false);
           props.onChange(next);
         }}
+        onClose={() => {
+          setPickingTime(false);
+        }}
       />
     </ScrollView>
   );
@@ -479,29 +445,6 @@ function Pill(props: { readonly label: string }): React.JSX.Element {
   );
 }
 
-function Tile(props: {
-  readonly value: string;
-  readonly unit: string;
-  readonly background: string;
-  readonly valueColor?: string;
-}): React.JSX.Element {
-  return (
-    <View
-      style={{ flex: 1, borderRadius: 22, backgroundColor: props.background, padding: 20 }}
-    >
-      <AppText
-        variant="display"
-        style={[{ fontSize: 26 }, props.valueColor === undefined ? null : { color: props.valueColor }]}
-      >
-        {props.value}
-      </AppText>
-      <AppText variant="secondary" color="inkSoft" style={{ marginTop: 4 }}>
-        {props.unit}
-      </AppText>
-    </View>
-  );
-}
-
 /*
  * A card of rows and nothing over it. The drawing captions each group —
  * "Plans", "Conversation" — and the owner took every caption off on
@@ -577,17 +520,19 @@ function Row(props: {
  * the sheet closed under the finger that was still choosing — a time picker
  * that closes when you pick a time is a time picker you cannot use.
  *
- * Closing commits, whether by the button or by the scrim: nobody expects a
- * clock to discard the hour they just set.
+ * The save button keeps the draft; the X top right, the backdrop and the system's
+ * back close the sheet and leave the setting as it was (owner's word,
+ * 2026-10-01). Closing used to save: with a save button on the sheet,
+ * closing it is no longer agreeing to it.
  */
 function TimeSheet(props: {
   readonly open: boolean;
   readonly settings: Settings;
   readonly t: Translate;
   readonly onDone: (settings: Settings) => void;
+  readonly onClose: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
-  const sides = useDrawnSides(20);
   const { settings, t } = props;
   const [draft, setDraft] = useState({
     hour: settings.reminderHour,
@@ -617,91 +562,80 @@ function TimeSheet(props: {
   };
 
   return (
-    <Modal visible={props.open} transparent animationType="slide" onRequestClose={commit}>
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('time.done')}
-          onPress={commit}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
+    <ModalSheet open={props.open} closeLabel={t('common.close')} onClose={props.onClose}>
+      <View style={{ gap: 18 }}>
         <View
           style={{
-            backgroundColor: theme.palette.paper,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            paddingTop: 24,
-            ...sides,
-            paddingBottom: 26,
-            gap: 18,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
           }}
         >
-          <View style={{ gap: 6 }}>
-            <AppText variant="kicker">{t('time.title')}</AppText>
-            <AppText variant="body" color="inkSoft">
-              {t('time.body')}
-            </AppText>
-          </View>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 26 }}>
-            <Wheel
-              label={t('time.hour')}
-              values={HOURS}
-              value={draft.hour}
-              onChange={(hour) => {
-                // Spinning a wheel is asking to be reminded, so the switch
-                // follows rather than having to be found afterwards.
-                setDraft((current) => ({ ...current, hour, on: true }));
-              }}
-            />
-            <Wheel
-              label={t('time.minute')}
-              values={MINUTES}
-              value={draft.minute}
-              onChange={(minute) => {
-                setDraft((current) => ({ ...current, minute, on: true }));
-              }}
-            />
-          </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 14,
-            }}
-          >
-            <AppText variant="label" style={{ flex: 1 }}>
-              {t('time.remindDaily')}
-            </AppText>
-            <Switch
-              value={draft.on}
-              onValueChange={(on) => {
-                setDraft((current) => ({ ...current, on }));
-              }}
-              trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
-              accessibilityLabel={t('time.remindDaily')}
-            />
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={commit}
-            style={{
-              borderRadius: 999,
-              backgroundColor: theme.palette.solid,
-              paddingVertical: 15,
-              alignItems: 'center',
-            }}
-          >
-            <AppText variant="body" style={{ color: theme.palette.onSolid }}>
-              {t('time.done')}
-            </AppText>
-          </Pressable>
+          <AppText variant="kicker" style={{ flexShrink: 1 }}>
+            {t('time.title')}
+          </AppText>
+          <SheetClose label={t('common.close')} onPress={props.onClose} />
         </View>
+
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 26 }}>
+          <Wheel
+            label={t('time.hour')}
+            values={HOURS}
+            value={draft.hour}
+            onChange={(hour) => {
+              // Spinning a wheel is asking to be reminded, so the switch
+              // follows rather than having to be found afterwards.
+              setDraft((current) => ({ ...current, hour, on: true }));
+            }}
+          />
+          <Wheel
+            label={t('time.minute')}
+            values={MINUTES}
+            value={draft.minute}
+            onChange={(minute) => {
+              setDraft((current) => ({ ...current, minute, on: true }));
+            }}
+          />
+        </View>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 14,
+          }}
+        >
+          <AppText variant="label" style={{ flex: 1 }}>
+            {t('time.remindDaily')}
+          </AppText>
+          <Switch
+            value={draft.on}
+            onValueChange={(on) => {
+              setDraft((current) => ({ ...current, on }));
+            }}
+            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
+            accessibilityLabel={t('time.remindDaily')}
+          />
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={commit}
+          style={{
+            borderRadius: 999,
+            backgroundColor: theme.palette.solid,
+            paddingVertical: 15,
+            alignItems: 'center',
+          }}
+        >
+          <AppText variant="body" style={{ color: theme.palette.onSolid }}>
+            {t('time.done')}
+          </AppText>
+        </Pressable>
       </View>
-    </Modal>
+    </ModalSheet>
   );
 }
 

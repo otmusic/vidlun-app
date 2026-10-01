@@ -10,26 +10,16 @@ import { useTheme } from '../theme/ThemeProvider';
 
 /** The wordmark image's point size, fixed by the generator script. */
 const WORDMARK = { width: 129, height: 47 };
-/** Echo dots: three diminishing returns of the same voice. */
-const DOTS = [7, 5, 3.5] as const;
-const DOT_GAP = 6;
-const ROW_GAP = 9;
-/**
- * The native launch screen and the font gate show the wordmark alone, shifted
- * left by half the dots' span, so the mark does not move when this overlay
- * mounts and the ensemble takes the centre.
- */
-export const DOTS_SPAN = DOTS.reduce((sum, size) => sum + size, DOT_GAP * (DOTS.length - 1));
-
-const ENTER_EASING = Easing.out(Easing.ease);
 
 /**
- * The splash: what the launch looks like while the journal opens.
+ * The splash: what the launch looks like while the journal opens — the name
+ * and nothing else (owner's word, 2026-10-01). The echo dots that arrived one
+ * by one and the halo that circled while the journal opened are gone.
  *
- * The wordmark never animates — it is already on screen in the native launch
- * image, and replaying an entrance over it would make one screen read as two.
- * The dots arrive one echo at a time, and the halo circles only while the
- * journal is still opening: it is the progress indicator, not a decoration.
+ * The word holds still: it is the same pixels in the same place as the
+ * phone's own launch image, centred in both, so the launch reads as one
+ * screen. Leaving is still a crossfade into the screen underneath — that is
+ * the screen changing, not the splash moving.
  */
 export function SplashOverlay(props: {
   readonly phase: 'loading' | 'failed' | 'leaving';
@@ -39,57 +29,7 @@ export function SplashOverlay(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const quiet = theme.reduceMotion;
-  const dots = useRef(DOTS.map(() => new Animated.Value(0))).current;
-  const halo = useRef(new Animated.Value(0)).current;
   const screen = useRef(new Animated.Value(1)).current;
-  const loading = props.phase === 'loading';
-
-  useEffect(() => {
-    if (quiet) {
-      dots.forEach((dot) => {
-        dot.setValue(1);
-      });
-
-      return;
-    }
-
-    const arrivals = dots.map((dot, at) =>
-      Animated.timing(dot, {
-        toValue: 1,
-        duration: 500,
-        delay: 450 + at * 170,
-        easing: ENTER_EASING,
-        useNativeDriver: true,
-      }),
-    );
-
-    Animated.parallel(arrivals).start();
-  }, [dots, quiet]);
-
-  useEffect(() => {
-    if (quiet || !loading) {
-      halo.stopAnimation();
-      halo.setValue(0);
-
-      return;
-    }
-
-    const cycle = Animated.loop(
-      Animated.timing(halo, {
-        toValue: 1,
-        duration: 2600,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    );
-    const opening = Animated.sequence([Animated.delay(350), cycle]);
-
-    opening.start();
-
-    return () => {
-      opening.stop();
-    };
-  }, [halo, loading, quiet]);
 
   const leaving = props.phase === 'leaving';
   /*
@@ -145,74 +85,13 @@ export function SplashOverlay(props: {
         backgroundColor: theme.palette.canvas,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 22,
         opacity: screen,
       }}
     >
-      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-        {quiet ? null : (
-          <Animated.View
-            style={{
-              position: 'absolute',
-              width: 132,
-              height: 132,
-              borderRadius: 999,
-              borderWidth: 1.5,
-              borderColor: theme.palette.accent,
-              opacity: halo.interpolate({ inputRange: [0, 1], outputRange: [0.38, 0] }),
-              transform: [
-                { scale: halo.interpolate({ inputRange: [0, 1], outputRange: [0.65, 2.1] }) },
-              ],
-            }}
-          />
-        )}
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: ROW_GAP }}>
-          <Image
-            source={theme.isDark ? wordmarkDark : wordmarkLight}
-            style={{ width: WORDMARK.width, height: WORDMARK.height }}
-          />
-          {/* Raised to the wordmark's baseline, as the drawing sets them. */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: DOT_GAP,
-              paddingBottom: 19,
-            }}
-          >
-            {DOTS.map((size, at) => {
-              const dot = dots[at];
-
-              return (
-                <Animated.View
-                  key={size}
-                  style={{
-                    width: size,
-                    height: size,
-                    borderRadius: 999,
-                    backgroundColor: theme.palette.accent,
-                    opacity:
-                      dot === undefined
-                        ? 0.4
-                        : dot.interpolate({ inputRange: [0, 0.45, 1], outputRange: [0, 1, 0.4] }),
-                    transform: [
-                      {
-                        scale:
-                          dot === undefined
-                            ? 1
-                            : dot.interpolate({
-                                inputRange: [0, 0.45, 1],
-                                outputRange: [0.35, 1, 1],
-                              }),
-                      },
-                    ],
-                  }}
-                />
-              );
-            })}
-          </View>
-        </View>
-      </View>
+      <Image
+        source={theme.isDark ? wordmarkDark : wordmarkLight}
+        style={{ width: WORDMARK.width, height: WORDMARK.height }}
+      />
       {props.phase === 'failed' ? (
         /* Quiet on purpose: no spinner, no alert — a sentence and a way out. */
         <View style={{ position: 'absolute', bottom: 96, alignItems: 'center', gap: 14 }}>

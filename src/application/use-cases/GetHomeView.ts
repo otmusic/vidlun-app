@@ -32,6 +32,11 @@ export interface HomeView {
    * a year back is not the same as reading it.
    */
   readonly yearEcho: YearEcho | null;
+  /**
+   * Whether home offers to say something about yesterday: only over a real
+   * hole, an empty yesterday in a journal that already existed before it.
+   */
+  readonly offersYesterday: boolean;
 }
 
 /** A streak longer than this stops being a number anyone reads. */
@@ -61,6 +66,7 @@ export class GetHomeView {
       week: buildWeek(window, today),
       echo,
       yearEcho,
+      offersYesterday: offersYesterday(window, today),
     };
   }
 
@@ -185,6 +191,25 @@ function countStreak(entries: readonly MoodEntry[], today: Date): number {
 
 function dayKey(date: Date): string {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+/**
+ * An empty yesterday is a day someone missed only if the journal was already
+ * there. On the first day, or in a journal with nothing in it yet, the app was
+ * simply not on the phone yesterday, and offering to fill that day reads as a
+ * reproach for a day that never belonged to it (owner's word, 2026-09-30).
+ *
+ * Read from the same year the streak reads: a journal left alone for longer
+ * than that starts over quietly too.
+ */
+function offersYesterday(entries: readonly MoodEntry[], today: Date): boolean {
+  const yesterday = addDays(today, -1);
+  const yesterdayHasEntry = entries.some(
+    (entry) => entry.createdAt >= yesterday && entry.createdAt < today,
+  );
+  const journalBeganEarlier = entries.some((entry) => entry.createdAt < yesterday);
+
+  return !yesterdayHasEntry && journalBeganEarlier;
 }
 
 function startOfDay(date: Date): Date {

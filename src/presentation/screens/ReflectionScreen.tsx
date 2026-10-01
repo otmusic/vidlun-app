@@ -17,7 +17,6 @@ export interface ReflectionScreenProps {
   readonly vocabulary: EmotionVocabulary;
   readonly t: Translate;
   readonly onConfirm: () => void;
-  readonly onEdit: () => void;
 }
 
 export function ReflectionScreen(props: ReflectionScreenProps): React.JSX.Element {
@@ -66,10 +65,8 @@ export function ReflectionScreen(props: ReflectionScreenProps): React.JSX.Elemen
 
         <View style={{ flex: 1 }} />
 
-        <View style={{ gap: theme.spacing.sm }}>
-          <Button label={props.t('reflection.confirm')} onPress={props.onConfirm} />
-          <Button label={props.t('reflection.edit')} variant="secondary" onPress={props.onEdit} />
-        </View>
+        {/* One way on: "save", and no "not quite" beside it (owner's word, 2026-10-01). */}
+        <Button label={props.t('reflection.confirm')} onPress={props.onConfirm} />
       </ScrollView>
     </View>
   );

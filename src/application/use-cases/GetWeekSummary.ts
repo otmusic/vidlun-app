@@ -1,7 +1,6 @@
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import type { IClock } from '../../domain/ports/IClock';
 import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryRepository';
-import type { INarrativeGenerator } from '../../domain/ports/INarrativeGenerator';
 
 export interface DailyMood {
   /**
@@ -22,16 +21,13 @@ export interface WeekSummary {
   readonly weekEnd: Date;
   readonly days: readonly DailyMood[];
   readonly entryCount: number;
-  /** Null unless the caller asked for it and the week has something to say. */
-  readonly narrative: string | null;
 }
 
+/**
+ * Free, all of it: the week is days and counts. Its prose went on 2026-10-01
+ * (owner's word) — the month says it, with room to see it repeat.
+ */
 export interface GetWeekSummaryInput {
-  /**
-   * Entitlement lives with the caller. The daily trend is never gated: only
-   * the AI narrative is paid.
-   */
-  readonly withNarrative: boolean;
   /** Any day inside the week of interest. Defaults to today. */
   readonly containing?: Date;
 }
@@ -42,11 +38,10 @@ const MONDAY = 1;
 export class GetWeekSummary {
   constructor(
     private readonly repository: IMoodEntryRepository,
-    private readonly narrativeGenerator: INarrativeGenerator,
     private readonly clock: IClock,
   ) {}
 
-  async execute(input: GetWeekSummaryInput): Promise<WeekSummary> {
+  async execute(input: GetWeekSummaryInput = {}): Promise<WeekSummary> {
     const weekStart = startOfWeek(input.containing ?? this.clock.now());
     const weekEnd = addDays(weekStart, DAYS_IN_WEEK);
     const entries = await this.repository.findBetween(weekStart, weekEnd);
@@ -57,10 +52,6 @@ export class GetWeekSummary {
       weekEnd,
       days: buildDays(weekStart, oldestFirst),
       entryCount: oldestFirst.length,
-      narrative:
-        input.withNarrative && oldestFirst.length > 0
-          ? await this.narrativeGenerator.generate(oldestFirst)
-          : null,
     };
   }
 }

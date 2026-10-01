@@ -1,3 +1,4 @@
+import type { Emotion } from '@/domain/entities/Emotion';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings } from '@/domain/ports/ISettings';
@@ -7,12 +8,12 @@ import { legalDocument } from '@/i18n/legal';
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { emotionsNear, wordsWithoutReading } from '../components/emotionTone';
 import { FeedbackSheet } from '../components/FeedbackSheet';
 import { MilestoneSheet } from '../components/MilestoneSheet';
 import { TabBar, type Tab } from '../components/TabBar';
 import { Toast, type ToastLine } from '../components/Toast';
 import type { CaptureFlow, Notice } from '../hooks/useCaptureFlow';
-import { EditScreen } from './EditScreen';
 import { EntryDetailScreen } from './EntryDetailScreen';
 import { HistoryScreen } from './HistoryScreen';
 import { HomeScreen } from './HomeScreen';
@@ -29,6 +30,7 @@ import { SearchScreen } from './SearchScreen';
 import { LegalScreen } from './LegalScreen';
 import { SubscriptionScreen } from './SubscriptionScreen';
 import { StatsScreen } from './StatsScreen';
+import { MonthScreen } from './MonthScreen';
 import { VocabularyScreen } from './VocabularyScreen';
 import { TextEntryScreen } from './TextEntryScreen';
 
@@ -141,6 +143,31 @@ function lineFor(notice: Notice | null, t: Translate): ToastLine | null {
     : { id: notice.id, title: t('failure.title'), detail: notice.message };
 }
 
+/**
+ * The words the question card offers: the handful nearest to Vidlun's
+ * reading, the broad words when Vidlun could not listen, and none yet while
+ * it is still reading — the processing screen stands in for the card until
+ * then. The draft itself never reaches the card.
+ */
+function wordsFor(
+  stage: Extract<CaptureFlow['stage'], { kind: 'turn' }>,
+  vocabulary: EmotionVocabulary,
+): readonly Emotion[] | null {
+  if (stage.unheard) {
+    return wordsWithoutReading(vocabulary.all());
+  }
+
+  if (stage.draft === null) {
+    return null;
+  }
+
+  const heard = stage.draft.proposedEmotionIds
+    .map((id) => vocabulary.find(id))
+    .filter((emotion): emotion is Emotion => emotion !== undefined);
+
+  return emotionsNear(heard, stage.draft.mood?.value ?? null, vocabulary.all());
+}
+
 function Stage(
   props: CaptureFlowScreenProps & { readonly onWriteFeedback: () => void },
 ): React.JSX.Element {
@@ -163,9 +190,10 @@ function Stage(
     }
 
     case 'writing':
-      return <TextEntryScreen t={t} onSubmit={flow.submitText} onCancel={flow.backHome} />;
+      return <TextEntryScreen t={t} onSubmit={flow.submitText} onBack={flow.backHome} />;
 
     case 'processing':
+    case 'saving':
       return <ProcessingScreen t={t} />;
 
     case 'parked':
@@ -173,21 +201,32 @@ function Stage(
         <ParkedScreen t={t} onHome={flow.backHome} />
       );
 
-    case 'turn':
+    case 'turn': {
+      const offered = wordsFor(flow.stage, props.vocabulary);
+
+      // The card goes up whole, once there are words to offer (owner's word, 2026-10-01).
+      if (offered === null) {
+        return <ProcessingScreen t={t} />;
+      }
+
       return (
         <TurnScreen
           transcript={flow.stage.spoken.text}
           chosen={flow.stage.chosen}
           vocabulary={props.vocabulary}
-          holding={flow.stage.holding}
+          offered={offered}
           t={t}
           onToggle={flow.toggleOwnWord}
           onRefine={flow.refineOwnWord}
+          onAddWord={flow.addOwnWord}
           onCorrect={flow.correctWording}
           onNext={flow.answer}
-          onSkip={flow.skipAnswer}
+          onTogether={flow.chooseTogether}
+          mood={flow.stage.mood ?? flow.stage.draft?.mood?.value ?? null}
+          onMood={flow.setMood}
         />
       );
+    }
 
     case 'comparing':
       return (
@@ -196,13 +235,10 @@ function Stage(
           draft={flow.stage.draft}
           vocabulary={props.vocabulary}
           t={t}
-          onAdopt={flow.adopt}
-          onUnkeep={flow.unkeep}
-          onKeepMine={flow.keepMine}
-          keptMine={flow.keptMine}
+          onToggle={flow.toggleKept}
+          onAddWord={flow.addKept}
           onConfirm={flow.confirm}
-          onEdit={flow.beginEditing}
-          onBack={flow.backHome}
+          onBack={flow.backToCard}
         />
       );
 
@@ -213,17 +249,6 @@ function Stage(
           vocabulary={props.vocabulary}
           t={t}
           onConfirm={flow.confirm}
-          onEdit={flow.beginEditing}
-        />
-      );
-
-    case 'editing':
-      return (
-        <EditScreen
-          draft={flow.stage.draft}
-          vocabulary={props.vocabulary}
-          t={t}
-          onDone={flow.applyEdits}
         />
       );
 
@@ -243,12 +268,6 @@ function Stage(
     case 'settings':
       return (
         <ProfileScreen
-          entryCount={
-            flow.history === null
-              ? null
-              : flow.history.reduce((total, day) => total + day.entries.length, 0)
-          }
-          streakDays={flow.home?.streakDays ?? 0}
           settings={props.settings}
           onExport={props.onExport}
           onRestore={props.onRestore}
@@ -274,10 +293,16 @@ function Stage(
           onOpenDay={flow.openHistory}
           onOpenSubscription={flow.openSubscription}
           milestones={flow.milestones}
-          onMarkMilestone={() => {
-            flow.openMilestone();
-          }}
-          onEditMilestone={flow.openMilestone}
+        />
+      );
+
+    case 'month':
+      return (
+        <MonthScreen
+          month={flow.stage.month}
+          locale={props.locale}
+          t={t}
+          onBack={flow.backHome}
         />
       );
 
@@ -369,7 +394,6 @@ function Stage(
           entry={flow.stage.entry}
           recordingUri={flow.stage.recordingUri}
           keepRecordings={props.settings.keepRecordings}
-          onFix={flow.fixEntryWording}
           vocabulary={props.vocabulary}
           locale={props.locale}
           t={t}
@@ -395,6 +419,7 @@ function Stage(
           mic={flow.micStatus}
           milestones={flow.milestones}
           onOpenStats={flow.openStats}
+          onOpenMonth={flow.openMonth}
           onOpen={flow.openEntry}
           onDelete={flow.deleteEntry}
         />

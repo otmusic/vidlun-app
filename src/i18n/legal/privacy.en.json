@@ -2,7 +2,7 @@
   "title": "Vidlun Privacy Policy",
   "blocks": [
     {
-      "text": "*Effective:* 7 September 2026"
+      "text": "*Effective:* 1 October 2026"
     },
     {
       "text": "*Data controller:* the Vidlun developer, support@vidlun.app"
@@ -16,7 +16,7 @@
     {
       "bullets": [
         "*Audio never leaves your phone.* Speech recognition runs entirely on the device, with a model built into the app.",
-        "Only the *text* of a transcript leaves — so a language model can name the feelings and write the weekly piece. And what you write to us yourself in the feedback form — but only when you tap \"Send\".",
+        "Only the *text* of a transcript leaves — so a language model can name the feelings and write the monthly piece. And what you write to us yourself in the feedback form — but only when you tap \"Send\".",
         "*No accounts, no sign-up, no analytics, no trackers, no advertising.*",
         "We have no server that stores your entries. We physically cannot read them."
       ]
@@ -47,7 +47,7 @@
           "while the app is installed"
         ],
         [
-          "The saved weekly piece",
+          "The saved monthly piece (and weekly ones from earlier versions)",
           "local storage",
           "until you delete it"
         ]
@@ -63,13 +63,13 @@
       "sub": "2.1 The text of an entry, for analysis"
     },
     {
-      "text": "*What exactly.* The cleaned transcript of one entry. For the weekly piece: the date, the mood number, emotion codes, topics and the transcripts of a week's entries together."
+      "text": "*What exactly.* The cleaned transcript of one entry. For the monthly piece: the date, the mood number, emotion codes, topics and the transcripts of a month's entries together."
     },
     {
       "text": "*Where to.* Through our Cloudflare Workers proxy to Anthropic PBC (USA), to the Claude API."
     },
     {
-      "text": "*Why.* To propose names for feelings, write an observation, and write the weekly piece. This is what the app is installed for."
+      "text": "*Why.* To propose names for feelings, write an observation, and write the monthly piece. This is what the app is installed for."
     },
     {
       "text": "*Lawful basis* (GDPR Art. 6(1)(b)): performance of our contract with you."

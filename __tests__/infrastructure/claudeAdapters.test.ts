@@ -3,6 +3,7 @@ import { AnalysisRefusedError, UnreadableAnalysisError } from '@/domain/errors/A
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
 import { ClaudeNarrativeGenerator } from '@/infrastructure/analysis/ClaudeNarrativeGenerator';
+import { ownWordId } from '@/domain/entities/OwnWord';
 import { ClaudeReflectionAnalyzer } from '@/infrastructure/analysis/ClaudeReflectionAnalyzer';
 import { createEmotionVocabulary } from '@/infrastructure/analysis/emotionVocabularyData';
 import { FakeMessagesClient, textReply } from './fakes';
@@ -116,7 +117,7 @@ describe('ClaudeNarrativeGenerator', () => {
     });
   }
 
-  it('returns the written week', async () => {
+  it('returns the written month', async () => {
     const client = new FakeMessagesClient(textReply('Calmer mornings, tense evenings.'));
 
     const narrative = await new ClaudeNarrativeGenerator(client).generate([entry('a', 27, 5)]);
@@ -125,7 +126,7 @@ describe('ClaudeNarrativeGenerator', () => {
   });
 
   it('uses the stronger model without paying it to deliberate', async () => {
-    const client = new FakeMessagesClient(textReply('A week.'));
+    const client = new FakeMessagesClient(textReply('A month.'));
 
     await new ClaudeNarrativeGenerator(client).generate([entry('a', 27, 5)]);
 
@@ -137,7 +138,7 @@ describe('ClaudeNarrativeGenerator', () => {
   });
 
   it('hands the model every entry it was given', async () => {
-    const client = new FakeMessagesClient(textReply('A week.'));
+    const client = new FakeMessagesClient(textReply('A month.'));
 
     await new ClaudeNarrativeGenerator(client).generate([entry('a', 27, 5), entry('b', 31, 2)]);
 
@@ -149,7 +150,7 @@ describe('ClaudeNarrativeGenerator', () => {
   });
 
   it('describes an ordinary day without inventing emotions or tags for it', async () => {
-    const client = new FakeMessagesClient(textReply('A week.'));
+    const client = new FakeMessagesClient(textReply('A month.'));
     const mundane = MoodEntry.create({
       id: 'a',
       createdAt: new Date(2026, 6, 27, 9, 0),
@@ -167,7 +168,29 @@ describe('ClaudeNarrativeGenerator', () => {
     );
   });
 
-  it('reports a refusal rather than saving an empty week', async () => {
+  it("hands the model a feeling typed in the person's own word as that word", async () => {
+    const client = new FakeMessagesClient(textReply('A month.'));
+    const typed = MoodEntry.create({
+      id: 'a',
+      createdAt: new Date(2026, 6, 27, 9, 0),
+      source: 'voice',
+      rawTranscript: 'raw',
+      cleanTranscript: 'A long day.',
+      mood: MoodScore.of(2),
+      emotionIds: ['bad.tired', ownWordId('drained') ?? ''],
+      confidence: Confidence.of(0.9),
+    });
+
+    await new ClaudeNarrativeGenerator(client).generate([typed]);
+
+    const content = JSON.stringify(client.requests[0]?.messages[0]?.content);
+
+    expect(content).toContain('bad.tired');
+    expect(content).toContain('Drained');
+    expect(content).not.toContain('own:');
+  });
+
+  it('reports a refusal rather than saving an empty month', async () => {
     const client = new FakeMessagesClient({
       stop_reason: 'refusal',
       stop_details: { type: 'refusal', category: null, explanation: 'declined' },

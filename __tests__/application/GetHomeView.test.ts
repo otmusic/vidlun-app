@@ -205,4 +205,35 @@ describe('the echo from a year ago', () => {
 
     expect(leap.yearEcho).toBeNull();
   });
+  describe('offering to tell about yesterday', () => {
+    it('offers it when yesterday is empty and the journal began before it', async () => {
+      const useCase = await setup([entryOn(daysBefore(0)), entryOn(daysBefore(3))]);
+
+      expect((await useCase.execute(3)).offersYesterday).toBe(true);
+    });
+
+    it('offers it when the only earlier entry was late the day before yesterday', async () => {
+      const useCase = await setup([entryOn(daysBefore(2, 23))]);
+
+      expect((await useCase.execute(3)).offersYesterday).toBe(true);
+    });
+
+    it('does not offer it to an empty journal', async () => {
+      const useCase = await setup([]);
+
+      expect((await useCase.execute(3)).offersYesterday).toBe(false);
+    });
+
+    it('does not offer it on the first day, when every entry is from today', async () => {
+      const useCase = await setup([entryOn(daysBefore(0, 8)), entryOn(daysBefore(0, 9))]);
+
+      expect((await useCase.execute(3)).offersYesterday).toBe(false);
+    });
+
+    it('does not offer it when yesterday already holds an entry', async () => {
+      const useCase = await setup([entryOn(daysBefore(1)), entryOn(daysBefore(4))]);
+
+      expect((await useCase.execute(3)).offersYesterday).toBe(false);
+    });
+  });
 });

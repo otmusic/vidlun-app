@@ -80,9 +80,9 @@ const MOST_PAIRS = 3;
  * **Read from `selfEmotionIds` and nothing else.** After the reveal the kept
  * set is a mix of what the person found and what they adopted from Vidlun, so
  * counting it would measure our vocabulary and call it theirs. That is the
- * whole reason §3b keeps three separate fields. The price is that entries made
- * with the question switched off say nothing here, which is correct: they hold
- * no unaided answer to count.
+ * whole reason §3b keeps three separate fields. The price is that entries saved
+ * while the question was switched off (a setting until 2026-10-01) say nothing
+ * here, which is correct: they hold no unaided answer to count.
  */
 export class GetVocabularyGrowth {
   constructor(
