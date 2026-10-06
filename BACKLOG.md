@@ -1511,6 +1511,11 @@ when "Твій жовтень" takes its place.
 - **The search field** says "Пошук" / "Search" (`search.placeholder`, was
   "Слово з речення" / "A word from a sentence"), owner's word, same day.
 
+**1.3 (45)** carries §3τ and §3υ on top of 44, uploaded 2026-10-06 18:09
+EEST. The helpline number in it is the owner's as given and still
+unconfirmed by a public source (§3τ): it must be checked before 1.3 goes
+to review.
+
 ---
 
 ## 3τ. Grounding on pages of its own, in new words — 2026-10-06
