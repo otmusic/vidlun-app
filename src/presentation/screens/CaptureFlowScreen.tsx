@@ -31,6 +31,7 @@ import { LegalScreen } from './LegalScreen';
 import { SubscriptionScreen } from './SubscriptionScreen';
 import { StatsScreen } from './StatsScreen';
 import { MonthScreen } from './MonthScreen';
+import { MonthsScreen } from './MonthsScreen';
 import { VocabularyScreen } from './VocabularyScreen';
 import { TextEntryScreen } from './TextEntryScreen';
 
@@ -48,6 +49,8 @@ export interface CaptureFlowScreenProps {
   readonly onEnableLock: () => Promise<boolean>;
   /** Mails a note to support; rejects when it could not be delivered. */
   readonly onFeedback: (text: string) => Promise<void>;
+  /** Whether the phone looks to be in Ukraine, for the grounding's helpline. */
+  readonly inUkraine: () => boolean;
 }
 
 /**
@@ -141,6 +144,11 @@ function lineFor(notice: Notice | null, t: Translate): ToastLine | null {
   return notice.kind === 'unheard'
     ? { id: notice.id, title: t('notice.offlineTitle'), detail: t('notice.offlineBody') }
     : { id: notice.id, title: t('failure.title'), detail: notice.message };
+}
+
+/** A month as "YYYY-MM", the way a closed month card is remembered. */
+function monthKey(month: Date): string {
+  return `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
 }
 
 /**
@@ -259,14 +267,22 @@ function Stage(
       return (
         <SavedScreen
           t={t}
-          offersGrounding={flow.stage.offersGrounding}
-          onGround={flow.startGrounding}
-          onHome={flow.backHome}
+          // After a hard entry the grounding offer follows on a page of its own.
+          onDone={flow.stage.offersGrounding ? flow.startGrounding : flow.backHome}
         />
       );
 
     case 'grounding':
-      return <GroundingScreen t={t} onLeave={flow.backHome} />;
+      return (
+        <GroundingScreen
+          t={t}
+          offered={flow.stage.from === 'saved'}
+          helpline={props.inUkraine()}
+          onClose={flow.leaveGrounding}
+          onHome={flow.backHome}
+          onNotice={flow.noticed}
+        />
+      );
 
     case 'settings':
       return (
@@ -280,6 +296,7 @@ function Stage(
           onChange={props.onSettingsChange}
           entitlement={props.entitlement}
           onOpenSubscription={flow.openSubscription}
+          onGround={flow.openGrounding}
         />
       );
 
@@ -293,6 +310,7 @@ function Stage(
           onEarlierWeek={flow.showEarlierWeek}
           onLaterWeek={flow.showLaterWeek}
           onOpenVocabulary={flow.openVocabulary}
+          onOpenMonths={flow.openMonths}
           onOpenDay={flow.openHistory}
           onOpenSubscription={flow.openSubscription}
           milestones={flow.milestones}
@@ -304,8 +322,20 @@ function Stage(
         <MonthScreen
           month={flow.stage.month}
           locale={props.locale}
+          today={props.today}
           t={t}
-          onBack={flow.backHome}
+          onBack={flow.closeMonth}
+        />
+      );
+
+    case 'months':
+      return (
+        <MonthsScreen
+          months={flow.stage.months}
+          locale={props.locale}
+          t={t}
+          onBack={flow.openStats}
+          onOpen={flow.openMonthOf}
         />
       );
 
@@ -409,7 +439,16 @@ function Stage(
       return (
         <HomeScreen
           home={flow.home}
-          monthCard={flow.monthCard}
+          monthCard={
+            flow.monthCard !== null && monthKey(flow.monthCard) !== props.settings.monthCardClosed
+              ? flow.monthCard
+              : null
+          }
+          onCloseMonth={() => {
+            if (flow.monthCard !== null) {
+              props.onSettingsChange({ ...props.settings, monthCardClosed: monthKey(flow.monthCard) });
+            }
+          }}
           onSayYesterday={flow.startYesterday}
           vocabulary={props.vocabulary}
           locale={props.locale}

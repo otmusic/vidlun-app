@@ -60,6 +60,8 @@ export function StatsScreen(props: {
   readonly onEarlierWeek: () => void;
   readonly onLaterWeek: () => void;
   readonly onOpenVocabulary: () => void;
+  /** Every past month, each written back (owner's word, 2026-10-06). */
+  readonly onOpenMonths: () => void;
   readonly onOpenDay: () => void;
   readonly onOpenSubscription: () => void;
   /**
@@ -129,8 +131,18 @@ export function StatsScreen(props: {
           ) : (
             <TopicsLocked t={t} onOpenSubscription={props.onOpenSubscription} />
           )}
-          <Button label={t('stats.dictLink')} variant="secondary" onPress={props.onOpenVocabulary} />
         </>
+      )}
+
+      {/*
+        * The ways on to the longer views, under any week, a quiet one too:
+        * a Monday with nothing in it yet must not hide the months.
+        */}
+      {view === null ? null : (
+        <View style={{ gap: 10, marginTop: view.week.entryCount === 0 ? 34 : 0 }}>
+          <Button label={t('stats.dictLink')} variant="secondary" onPress={props.onOpenVocabulary} />
+          <Button label={t('stats.monthsLink')} variant="secondary" onPress={props.onOpenMonths} />
+        </View>
       )}
     </ScrollView>
   );

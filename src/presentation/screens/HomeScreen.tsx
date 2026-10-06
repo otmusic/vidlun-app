@@ -10,6 +10,7 @@ import { type Locale, type Translate } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
+import { TapTarget } from '../components/Button';
 import { CountPill } from '../components/CountPill';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { Icon, ICON_SIZE } from '../components/Icon';
@@ -35,6 +36,8 @@ export interface HomeScreenProps {
   readonly onOpenStats: () => void;
   /** The month card: the month written back, or the plans without access to it. */
   readonly onOpenMonth: () => void;
+  /** The month card's X: that month's card stays closed. */
+  readonly onCloseMonth: () => void;
   readonly onOpen: (entry: MoodEntry) => void;
   readonly onDelete: (id: string) => void;
   readonly t: Translate;
@@ -243,7 +246,13 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
       </View>
 
       {props.monthCard === null ? null : (
-        <MonthReadyCard month={props.monthCard} locale={props.locale} t={props.t} onOpen={props.onOpenMonth} />
+        <MonthReadyCard
+          month={props.monthCard}
+          locale={props.locale}
+          t={props.t}
+          onOpen={props.onOpenMonth}
+          onClose={props.onCloseMonth}
+        />
       )}
 
       {props.home?.yearEcho == null ? null : (
@@ -370,6 +379,7 @@ function MonthReadyCard(props: {
   readonly locale: Locale;
   readonly t: Translate;
   readonly onOpen: () => void;
+  readonly onClose: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const monthName = props.month.toLocaleDateString(props.locale, { month: 'long' });
@@ -387,9 +397,21 @@ function MonthReadyCard(props: {
         gap: 10,
       }}
     >
-      <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.6 }}>
-        {props.t('home.monthKicker', { month: monthName })}
-      </AppText>
+      {/*
+        * An X to put the card away before its week is up (owner's word,
+        * 2026-10-06), pulled into the corner by its own margin so the row
+        * keeps its height and the finger still gets 44 points.
+        */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <AppText variant="caption" style={{ color: theme.palette.onPanel, opacity: 0.6 }}>
+          {props.t('home.monthKicker', { month: monthName })}
+        </AppText>
+        <View style={{ marginRight: -12, marginVertical: -12, opacity: 0.6 }}>
+          <TapTarget onPress={props.onClose} accessibilityLabel={props.t('common.close')}>
+            <Icon name="x" size={ICON_SIZE.inline} color="onPanel" />
+          </TapTarget>
+        </View>
+      </View>
       <AppText variant="kicker" style={{ color: theme.palette.onPanel, fontSize: 21 }}>
         {props.t('home.monthLead')}
       </AppText>

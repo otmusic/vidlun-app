@@ -53,6 +53,8 @@ export function ProfileScreen(props: {
   /** Mails a note to support; rejects when it could not be delivered. */
   /** Opens the note-to-support sheet, which lives above the tabs rather than in here. */
   readonly onWriteFeedback: () => void;
+  /** Opens the grounding exercise. */
+  readonly onGround: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
@@ -77,6 +79,18 @@ export function ProfileScreen(props: {
       <AppText variant="display" style={{ marginBottom: 22 }}>
         {t('profile.title')}
       </AppText>
+
+      {/*
+        * The way back into the grounding exercise at any time (owner's word,
+        * 2026-10-06): its last page promises one, and after a hard entry was
+        * the only door. First, because it is the one thing here that is not
+        * a setting.
+        */}
+      <Section>
+        <Row title={t('profile.grounding')} hint={t('profile.groundingHint')} onPress={props.onGround}>
+          <Pill label={t('profile.groundingAction')} />
+        </Row>
+      </Section>
 
       <Section>
         <Row

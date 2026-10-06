@@ -5,15 +5,26 @@ import TOPICS from '@/infrastructure/analysis/fakeTopics.json';
 import { createEmotionVocabulary } from '@/infrastructure/analysis/emotionVocabularyData';
 
 describe('the pretend analysis for walking the card in development', () => {
-  it('goes round a pleasant, a hard, a mixed and an ordinary reading in turn', async () => {
+  it('goes round a pleasant, a hard, a mixed, an ordinary and an overwhelmed reading', async () => {
     const analyzer = new FakeReflectionAnalyzer(0);
     const moods = [];
 
-    for (let turn = 0; turn < 5; turn += 1) {
+    for (let turn = 0; turn < 6; turn += 1) {
       moods.push((await analyzer.analyze('Words.')).mood);
     }
 
-    expect(moods).toEqual([5, 2, 4, 3, 5]);
+    expect(moods).toEqual([5, 2, 4, 3, 1, 5]);
+  });
+
+  it('flags the overwhelmed reading alone, so the simulator reaches the grounding offer', async () => {
+    const analyzer = new FakeReflectionAnalyzer(0);
+    const flags = [];
+
+    for (let turn = 0; turn < 5; turn += 1) {
+      flags.push((await analyzer.analyze('Words.')).safetyFlag);
+    }
+
+    expect(flags).toEqual(['none', 'none', 'none', 'none', 'distress']);
   });
 
   it('names a topic in its dictionary form, whatever form the word came in', async () => {
@@ -70,7 +81,7 @@ describe('the pretend analysis for walking the card in development', () => {
     const vocabulary = createEmotionVocabulary();
     const analyzer = new FakeReflectionAnalyzer(0);
 
-    for (let turn = 0; turn < 4; turn += 1) {
+    for (let turn = 0; turn < 5; turn += 1) {
       const { emotionIds } = await analyzer.analyze('Words.');
 
       expect(vocabulary.keepProposableByAi(emotionIds)).toEqual(emotionIds);

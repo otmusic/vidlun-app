@@ -22,6 +22,7 @@ import type { AttachObservation } from '@/application/use-cases/AttachObservatio
 import { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { LegalDocumentKind } from '@/i18n/legal';
 import type { GetMonthSummary, MonthSummary } from '@/application/use-cases/GetMonthSummary';
+import type { GetPastMonths, PastMonth } from '@/application/use-cases/GetPastMonths';
 import type { StatsView } from '@/presentation/screens/StatsScreen';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import { Confidence } from '@/domain/value-objects/Confidence';
@@ -115,15 +116,20 @@ export type CaptureStage =
       readonly streakDays: number;
       /**
        * True when the entry sounded overwhelmed — distress, never crisis —
-       * and the saved screen offers a minute of grounding. The drawing gates
-       * it the same way: `hard && !crisis`.
+       * and a minute of grounding is offered after "saved", on a page of its
+       * own (owner's word, 2026-10-06). The drawing gates it the same way:
+       * `hard && !crisis`.
        */
       readonly offersGrounding: boolean;
       /** True when the entry was saved without Vidlun's answer, which is still owed. */
       readonly unheard: boolean;
     }
   /** The grounding exercise. Keeps nothing, and must never learn to. */
-  | { readonly kind: 'grounding' }
+  | {
+      readonly kind: 'grounding';
+      /** Offered after a hard entry, or opened from "Me" (owner's word, 2026-10-06). */
+      readonly from: 'saved' | 'settings';
+    }
   | { readonly kind: 'history' }
   | { readonly kind: 'settings' }
   /** The one thing sold, and what the store said about buying it. */
@@ -156,11 +162,14 @@ export type CaptureStage =
    */
   | { readonly kind: 'stats'; readonly weeksBack: number; readonly view: StatsView | null }
   /**
-   * The previous month written back, behind home's month card — its only way
-   * in since the statistics screen let it go (owner's word, 2026-10-01). Null
-   * while its shape is read; the prose is written in after.
+   * A month written back: the one just ended behind home's card, or any
+   * earlier one from the list of past months (owner's word, 2026-10-06).
+   * Null while its shape is read; the prose is written in after. `from` is
+   * where its back arrow goes.
    */
-  | { readonly kind: 'month'; readonly month: MonthSummary | null }
+  | { readonly kind: 'month'; readonly month: MonthSummary | null; readonly from: 'idle' | 'months' }
+  /** Every past month with something to read, behind the statistics screen. Null while counted. */
+  | { readonly kind: 'months'; readonly months: readonly PastMonth[] | null }
   /** The other half of the insights screen, and its own screen in the drawing. */
   | {
       readonly kind: 'vocabulary';
@@ -222,6 +231,7 @@ export interface CaptureDependencies {
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
   readonly getMonthSummary: GetMonthSummary;
+  readonly getPastMonths: GetPastMonths;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
   readonly searchEntries: SearchEntries;
@@ -312,13 +322,26 @@ export interface CaptureFlow {
   readonly search: (query: string, emotionId: string | null) => void;
   readonly openSubscription: () => void;
   readonly openLegal: (doc: LegalDocumentKind) => void;
+  /** The grounding offer, after an entry that sounded overwhelmed. */
   readonly startGrounding: () => void;
+  /** The exercise opened from "Me": no offer first, the person asked for it. */
+  readonly openGrounding: () => void;
+  /** The exercise's X: back to "Me" when it was opened there, home otherwise. */
+  readonly leaveGrounding: () => void;
+  /** A tick for each thing noticed in the exercise, felt rather than seen. */
+  readonly noticed: () => void;
   readonly subscribe: (planId: string) => void;
   readonly restorePurchase: () => void;
   readonly dismissPurchaseOutcome: () => void;
   readonly openStats: () => void;
   /** Home's month card: the month written back, or the plans without access to it. */
   readonly openMonth: () => void;
+  /** Every past month, from the statistics screen. */
+  readonly openMonths: () => void;
+  /** One month from that list: its page, or the plans without access to it. */
+  readonly openMonthOf: (monthStart: Date) => void;
+  /** The month page's back: to the list when it was opened there, home otherwise. */
+  readonly closeMonth: () => void;
   readonly openVocabulary: () => void;
   /** Re-counts the vocabulary over a period the person picked. */
   readonly showPeriod: (period: { readonly from: Date; readonly to: Date }) => void;
@@ -1065,28 +1088,49 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * prose, a model call that takes seconds and is cached after. The prose is
    * the paid half, so without it the card leads to what it costs instead.
    */
+  const showMonth = useCallback(
+    (month: Date | undefined, from: 'idle' | 'months') => {
+      if (!dependencies.hasNarrativeAccess) {
+        openSubscription();
+
+        return;
+      }
+
+      setStage({ kind: 'month', month: null, from });
+
+      void dependencies.getMonthSummary
+        .execute({ withNarrative: false, month })
+        .then(async (shape) => {
+          setStage((current) => (current.kind === 'month' ? { ...current, month: shape } : current));
+
+          const written = await dependencies.getMonthSummary.execute({ withNarrative: true, month });
+
+          setStage((current) => (current.kind === 'month' ? { ...current, month: written } : current));
+        })
+        .catch((error: unknown) => {
+          // From the list the page stays, its back arrow intact; from home it closes.
+          fail(error, from === 'idle' ? { kind: 'idle' } : undefined);
+        });
+    },
+    [dependencies.getMonthSummary, dependencies.hasNarrativeAccess, fail, openSubscription],
+  );
+
   const openMonth = useCallback(() => {
-    if (!dependencies.hasNarrativeAccess) {
-      openSubscription();
+    showMonth(undefined, 'idle');
+  }, [showMonth]);
 
-      return;
-    }
+  const openMonths = useCallback(() => {
+    setStage({ kind: 'months', months: null });
 
-    setStage({ kind: 'month', month: null });
-
-    void dependencies.getMonthSummary
-      .execute({ withNarrative: false })
-      .then(async (shape) => {
-        setStage((current) => (current.kind === 'month' ? { ...current, month: shape } : current));
-
-        const written = await dependencies.getMonthSummary.execute({ withNarrative: true });
-
-        setStage((current) => (current.kind === 'month' ? { ...current, month: written } : current));
+    void dependencies.getPastMonths
+      .execute()
+      .then((months) => {
+        setStage((current) => (current.kind === 'months' ? { ...current, months } : current));
       })
       .catch((error: unknown) => {
         fail(error, { kind: 'idle' });
       });
-  }, [dependencies.getMonthSummary, dependencies.hasNarrativeAccess, fail, openSubscription]);
+  }, [dependencies.getPastMonths, fail]);
 
   const runSearch = useCallback(
     (query: string, emotionId: string | null) => {
@@ -1529,12 +1573,45 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     search: runSearch,
     openSubscription,
     openMonth,
+    openMonths,
+    openMonthOf: useCallback(
+      (monthStart: Date) => {
+        showMonth(monthStart, 'months');
+      },
+      [showMonth],
+    ),
+    closeMonth: useCallback(() => {
+      if (stage.kind === 'month' && stage.from === 'months') {
+        openMonths();
+
+        return;
+      }
+
+      setStage({ kind: 'idle' });
+      reloadHome();
+    }, [openMonths, reloadHome, stage]),
     openLegal: useCallback((doc: LegalDocumentKind) => {
       setStage({ kind: 'legal', doc });
     }, []),
     startGrounding: useCallback(() => {
-      setStage({ kind: 'grounding' });
+      setStage({ kind: 'grounding', from: 'saved' });
     }, []),
+    openGrounding: useCallback(() => {
+      setStage({ kind: 'grounding', from: 'settings' });
+    }, []),
+    leaveGrounding: useCallback(() => {
+      if (stage.kind === 'grounding' && stage.from === 'settings') {
+        setStage({ kind: 'settings' });
+
+        return;
+      }
+
+      setStage({ kind: 'idle' });
+      reloadHome();
+    }, [reloadHome, stage]),
+    noticed: useCallback(() => {
+      dependencies.haptics.notice();
+    }, [dependencies.haptics]),
     subscribe: useCallback((planId: string) => {
       void dependencies.purchases
         .subscribe(planId)

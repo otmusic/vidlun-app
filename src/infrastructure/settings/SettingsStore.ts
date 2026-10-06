@@ -75,6 +75,7 @@ function merge(parsed: unknown): Settings {
         : DEFAULT_SETTINGS.reminderOn,
     reminderHour: hourOr(record['reminderHour'], DEFAULT_SETTINGS.reminderHour),
     reminderMinute: minuteOr(record['reminderMinute'], DEFAULT_SETTINGS.reminderMinute),
+    monthCardClosed: monthOr(record['monthCardClosed']),
   };
 }
 
@@ -83,6 +84,11 @@ function hourOr(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 23
     ? value
     : fallback;
+}
+
+/** A closed month is a "YYYY-MM" or nothing; anything else hides no card. */
+function monthOr(value: unknown): string | null {
+  return typeof value === 'string' && /^\d{4}-\d{2}$/.test(value) ? value : null;
 }
 
 function minuteOr(value: unknown, fallback: number): number {

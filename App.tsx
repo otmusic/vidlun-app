@@ -197,6 +197,7 @@ function Vidlun(props: {
     getHomeView: container.getHomeView,
     getWeekSummary: container.getWeekSummary,
     getMonthSummary: container.getMonthSummary,
+    getPastMonths: container.getPastMonths,
     getWeekThemes: container.getWeekThemes,
     findMoodPatterns: container.findMoodPatterns,
     searchEntries: container.searchEntries,
@@ -484,6 +485,7 @@ function Vidlun(props: {
       onRestore={restoreJournal}
       onEnableLock={enableLock}
       onFeedback={(text) => container.feedback.send(text)}
+      inUkraine={container.inUkraine}
     />
   );
 

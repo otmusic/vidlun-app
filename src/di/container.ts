@@ -36,6 +36,7 @@ import type { IFileSharer } from '../domain/ports/IFileSharer';
 import type { IScreenLock } from '../domain/ports/IScreenLock';
 import { ExportJournal } from '../application/use-cases/ExportJournal';
 import { GetMonthSummary } from '../application/use-cases/GetMonthSummary';
+import { GetPastMonths } from '../application/use-cases/GetPastMonths';
 import { ImportJournal } from '../application/use-cases/ImportJournal';
 import { ProxyAuth, attestedFetch } from '../infrastructure/attest/ProxyAuth';
 import { BiometricScreenLock } from '../infrastructure/system/BiometricScreenLock';
@@ -55,7 +56,7 @@ import { ExpoMicrophonePermission } from '../infrastructure/audio/ExpoMicrophone
 import { AsyncStorageMoodEntryRepository } from '../infrastructure/persistence/AsyncStorageMoodEntryRepository';
 import { AsyncStorageRevisionLog } from '../infrastructure/persistence/AsyncStorageRevisionLog';
 import { FileRecordingStore } from '../infrastructure/persistence/FileRecordingStore';
-import { detectLocale } from '../infrastructure/settings/deviceLocale';
+import { detectLocale, deviceInUkraine } from '../infrastructure/settings/deviceLocale';
 import { SettingsStore } from '../infrastructure/settings/SettingsStore';
 import { ExpoParkedFiles } from '../infrastructure/persistence/ExpoParkedFiles';
 import { FileParkedTake } from '../infrastructure/persistence/FileParkedTake';
@@ -117,6 +118,7 @@ export interface Container {
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
   readonly getMonthSummary: GetMonthSummary;
+  readonly getPastMonths: GetPastMonths;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
   readonly searchEntries: SearchEntries;
@@ -136,6 +138,8 @@ export interface Container {
   readonly vocabulary: EmotionVocabulary;
   /** The screens need one too — the insights screen counts backwards from today. */
   readonly clock: IClock;
+  /** Whether the phone looks to be in Ukraine, asked when a screen needs to know. */
+  readonly inUkraine: () => boolean;
   /**
    * expo-audio hands out recorders through a React hook, so the screen creates
    * the native instance and the container only wraps it.
@@ -250,6 +254,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
   return {
     vocabulary,
     clock,
+    inUkraine: deviceInUkraine,
     haptics: new ExpoHaptics(),
     transcribeTake: new TranscribeTake(transcription),
     createVoiceEntry: new CreateVoiceEntry(analyzer, vocabulary, clock, idGenerator),
@@ -296,6 +301,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
         : new CachedNarrativeGenerator(new ClaudeNarrativeGenerator(anthropic.messages), AsyncStorage),
       clock,
     ),
+    getPastMonths: new GetPastMonths(repository, clock),
     getWeekThemes: new GetWeekThemes(repository),
     findMoodPatterns: new FindMoodPatterns(repository, clock),
     searchEntries: new SearchEntries(repository),

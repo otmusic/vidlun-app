@@ -27,6 +27,12 @@ export interface Settings {
   /** Local time, 24 hour. */
   readonly reminderHour: number;
   readonly reminderMinute: number;
+  /**
+   * The month whose home card was closed with its X, as "YYYY-MM" (owner's
+   * word, 2026-10-06). Only that month's card stays away: the next month's
+   * comes on its own first.
+   */
+  readonly monthCardClosed: string | null;
 }
 
 /**
@@ -48,6 +54,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reminderOn: false,
   reminderHour: 21,
   reminderMinute: 0,
+  monthCardClosed: null,
 };
 
 /**

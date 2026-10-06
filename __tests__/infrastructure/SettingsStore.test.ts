@@ -43,6 +43,7 @@ describe('SettingsStore', () => {
       reminderOn: true,
       reminderHour: 22,
       reminderMinute: 30,
+      monthCardClosed: '2026-09',
     });
 
     expect(await subject.read()).toEqual({
@@ -54,6 +55,7 @@ describe('SettingsStore', () => {
       reminderOn: true,
       reminderHour: 22,
       reminderMinute: 30,
+      monthCardClosed: '2026-09',
     });
   });
 
@@ -89,6 +91,7 @@ describe('SettingsStore', () => {
       reminderHour: 21,
       reminderMinute: 0,
       hasOnboarded: false,
+      monthCardClosed: null,
     });
   });
 
@@ -138,5 +141,13 @@ describe('SettingsStore', () => {
 
     expect(settings.reminderHour).toBe(21);
     expect(settings.reminderMinute).toBe(0);
+  });
+
+  it('hides no month card it cannot read as a month', async () => {
+    const { store, subject } = setup();
+    await store.setItem('vidlun.settings', JSON.stringify({ monthCardClosed: 'September' }));
+
+    // A closed card is one named month; anything else must not hide a card.
+    expect((await subject.read()).monthCardClosed).toBeNull();
   });
 });

@@ -20,13 +20,16 @@ const SIGNS: readonly TopicSign[] = TOPICS;
  * The readings the pretend analysis goes round, one per entry: pleasant,
  * hard, mixed, ordinary — the shapes the question card treats differently
  * (a pleasant or a hard side of the palette, both sides for a mixed day,
- * every shelf by mood for a day with no feeling in it).
+ * every shelf by mood for a day with no feeling in it) — and overwhelmed,
+ * flagged as distress, the one reading after which saving leads on to the
+ * grounding offer, so the simulator can walk it too.
  */
 const READINGS: readonly Omit<ReflectionProposal, 'cleanTranscript' | 'contextTags'>[] = [
   { mood: 5, emotionIds: ['happy.content', 'happy.optimistic'], safetyFlag: 'none' },
   { mood: 2, emotionIds: ['sad.hurt', 'bad.tired'], safetyFlag: 'none' },
   { mood: 4, emotionIds: ['happy.proud', 'bad.tired'], safetyFlag: 'none' },
   { mood: 3, emotionIds: [], safetyFlag: 'none' },
+  { mood: 1, emotionIds: ['bad.stressed.overwhelmed', 'fearful.anxious'], safetyFlag: 'distress' },
 ];
 
 /** About what Haiku takes on the phone, so the card's waiting line is seen. */

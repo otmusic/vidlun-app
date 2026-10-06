@@ -1,6 +1,12 @@
-import { getLocales } from 'expo-localization';
+import { getCalendars, getLocales } from 'expo-localization';
 
 import type { Settings } from '../../domain/ports/ISettings';
+import { inUkraine } from './inUkraine';
+
+/** Read when asked rather than at launch, so a phone that travelled answers for where it is. */
+export function deviceInUkraine(): boolean {
+  return inUkraine(getLocales()[0]?.regionCode ?? null, getCalendars()[0]?.timeZone ?? null);
+}
 
 /**
  * The language the phone is set to, when we speak it.

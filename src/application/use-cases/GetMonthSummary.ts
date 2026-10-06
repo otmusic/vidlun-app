@@ -4,7 +4,7 @@ import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryReposito
 import type { INarrativeGenerator } from '../../domain/ports/INarrativeGenerator';
 
 /** Under this many entries a month has too little in it for prose worth reading. */
-const NARRATIVE_FROM_ENTRIES = 3;
+export const NARRATIVE_FROM_ENTRIES = 3;
 
 /** The card and the panel appear this many days into the new month, then rest. */
 const FRESH_DAYS = 7;
@@ -22,15 +22,21 @@ export interface MonthSummary {
 export interface GetMonthSummaryInput {
   /** False fetches the shape without paying for the prose. */
   readonly withNarrative: boolean;
+  /**
+   * Any day of the month to read, for one opened from the list of past
+   * months (owner's word, 2026-10-06). Left out, the month just ended.
+   */
+  readonly month?: Date;
 }
 
 /**
  * The previous month, written back — the only narrative since 2026-10-01,
  * when the weekly one went (owner's word).
  *
- * It exists only in the first days of a new month, as the home card and the
+ * It surfaces in the first days of a new month, as the home card and the
  * page behind it, then rests until the next first. An event, not furniture:
  * the month is worth a moment of looking back, not a permanent fixture.
+ * Every past month can still be read from the statistics screen's list.
  */
 export class GetMonthSummary {
   constructor(
@@ -46,8 +52,9 @@ export class GetMonthSummary {
 
   async execute(input: GetMonthSummaryInput): Promise<MonthSummary> {
     const now = this.clock.now();
-    const monthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+    const anchor = input.month ?? new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1);
     const entries = await this.repository.findBetween(monthStart, monthEnd);
     const oldestFirst = [...entries].reverse();
     const hasEnough = oldestFirst.length >= NARRATIVE_FROM_ENTRIES;

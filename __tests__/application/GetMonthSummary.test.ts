@@ -64,6 +64,21 @@ describe('GetMonthSummary', () => {
     expect(generator.calls[0]?.[0]?.createdAt).toEqual(new Date(2026, 7, 5, 9, 0));
   });
 
+  it('reads the month it is given, for one opened from the list of past months', async () => {
+    const { generator, useCase } = await setup([
+      entryOn(new Date(2026, 5, 3, 9, 0)),
+      entryOn(new Date(2026, 5, 14, 9, 0)),
+      entryOn(new Date(2026, 5, 29, 9, 0)),
+      entryOn(new Date(2026, 7, 5, 9, 0)),
+    ]);
+
+    const month = await useCase.execute({ withNarrative: true, month: new Date(2026, 5, 17) });
+
+    expect(month.monthStart).toEqual(new Date(2026, 5, 1));
+    expect(month.entryCount).toBe(3);
+    expect(generator.calls[0]).toHaveLength(3);
+  });
+
   it('does not pay the model for a month too thin to read', async () => {
     const { generator, useCase } = await setup([entryOn(new Date(2026, 7, 5, 9, 0))]);
 

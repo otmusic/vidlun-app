@@ -10,15 +10,17 @@ import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 
 /**
- * The previous month written back, behind home's month card: the card's own
- * two lines, then the prose (owner's word, 2026-10-01 — the month left the
- * statistics screen, and the week's prose went with the week). Only someone
- * who can read it is brought here; the card takes everyone else to the plans.
+ * A month written back: the one just ended behind home's card, any earlier
+ * one from the list of past months (owner's word, 2026-10-06). The card's own
+ * two lines, then the prose. Only someone who can read it is brought here;
+ * everyone else is taken to the plans.
  */
 export function MonthScreen(props: {
   /** Null for the moment its shape is read. */
   readonly month: MonthSummary | null;
   readonly locale: Locale;
+  /** Today, so a month from another year says which year. */
+  readonly today: Date;
   readonly t: Translate;
   readonly onBack: () => void;
 }): React.JSX.Element {
@@ -33,7 +35,7 @@ export function MonthScreen(props: {
     >
       <RoundBack t={props.t} onPress={props.onBack} />
       {props.month === null ? null : (
-        <MonthPanel month={props.month} locale={props.locale} t={props.t} />
+        <MonthPanel month={props.month} locale={props.locale} today={props.today} t={props.t} />
       )}
     </ScrollView>
   );
@@ -47,10 +49,14 @@ export function MonthScreen(props: {
 function MonthPanel(props: {
   readonly month: MonthSummary;
   readonly locale: Locale;
+  readonly today: Date;
   readonly t: Translate;
 }): React.JSX.Element {
   const theme = useTheme();
-  const monthName = props.month.monthStart.toLocaleDateString(props.locale, { month: 'long' });
+  const start = props.month.monthStart;
+  const name = start.toLocaleDateString(props.locale, { month: 'long' });
+  const monthName =
+    start.getFullYear() === props.today.getFullYear() ? name : `${name} ${start.getFullYear()}`;
   const paragraphs = (props.month.narrative ?? '')
     .split('\n')
     .filter((line) => line.trim().length > 0);

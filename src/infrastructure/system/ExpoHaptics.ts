@@ -18,6 +18,10 @@ export class ExpoHaptics implements IHaptics {
   success(): void {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(ignore);
   }
+
+  notice(): void {
+    void Haptics.selectionAsync().catch(ignore);
+  }
 }
 
 function ignore(): void {

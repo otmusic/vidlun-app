@@ -12,4 +12,6 @@ export interface IHaptics {
   settle(): void;
   /** The entry was written. */
   success(): void;
+  /** One thing noticed in the grounding exercise: the eyes are on the room, so the hand counts. */
+  notice(): void;
 }
