@@ -1479,6 +1479,122 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3υ. The month card closes; where do past months live? — 2026-10-06
+
+The owner's word: the home card "Твій вересень" seemed always there, so it
+gets an X. It is not always there: `GetMonthSummary.isFresh()` shows it
+in the first seven days of a month, about the month before, when that
+month held three entries or more; on the 8th it rests until the next 1st,
+when "Твій жовтень" takes its place.
+
+- **The X** sits in the card's top corner (`TapTarget`, the glyph at the
+  kicker's 60%) and stores the month as `Settings.monthCardClosed`
+  ("YYYY-MM", validated on read, `null` by default). Only that month's
+  card stays away, across launches; the next month's card comes on its
+  own. Seen on the simulator: closed, gone, still gone after a relaunch.
+- **Open, asked by the owner**: "де можна почитати всі місяці?" Nowhere
+  yet. The month's page opens only from that card, only that week, and
+  only for the month just ended; once the week is over, or the card is
+  closed, a paid narrative the person already has (it is cached per
+  month) cannot be reached.
+- **"Твої місяці"** (owner's word, the same day): a button on the stats
+  screen under "Твої емоції" — both now stand under any week, a quiet one
+  too, so a Monday with nothing in it does not hide them — opening
+  `MonthsScreen`: every finished month with three entries or more, newest
+  first, as "Вересень 2026 · 23 записи" (`GetPastMonths`, tested). A
+  month opens its page through the same road as home's card
+  (`GetMonthSummary` takes `month`; without the narrative, the plans), and
+  that page's back arrow returns to the list (`month.from`). A month from
+  another year says its year in the kicker ("Твій вересень 2025").
+  Walked on the simulator both ways: without access a month leads to the
+  plans; with it, to the month's prose and back to the list.
+- **The search field** says "Пошук" / "Search" (`search.placeholder`, was
+  "Слово з речення" / "A word from a sentence"), owner's word, same day.
+
+---
+
+## 3τ. Grounding on pages of its own, in new words — 2026-10-06
+
+The owner's word: the offer sat under "Збережено", a screen that leaves by
+itself, so it moves to a page of its own after it; the copy is the owner's,
+line for line.
+
+- **"Збережено" always leaves after its beat** (`SavedScreen` takes one
+  `onDone`). After an entry flagged distress it hands over to the
+  grounding stage instead of home, and `GroundingScreen` opens on the
+  offer: "Є хвилина для себе?", "Спробуй помітити, що зараз навколо тебе.
+  Це коротка вправа на заземлення — нічого не записується й не
+  зберігається.", "Спробувати", and an X top right in place of "Не
+  зараз".
+- **The steps** close with the X (`SheetClose`) in place of "Вийти":
+  "Озирнися навколо." / "Прислухайся." / "Відчуй." (the owner's third had
+  no full stop; it got one, like the other two), each with its own hint
+  ("Знайди 5 речей, які бачиш. За кожну — торкнися кружечка." and so on,
+  `ground.hint1–3` for the shared `ground.hint`). Whispering is no longer
+  mentioned: the exercise only ever counted taps.
+- **The last page**: "Готово 💛", "Зроби ще один повільний вдих і видих.",
+  "Ти можеш повертатися до цієї вправи щоразу, коли хочеться трохи
+  зупинитися й побути в моменті.", and "На головну". The "nothing is kept"
+  line moved from here to the offer, before the exercise starts (M8 put it
+  on the closing screen; the owner put it first).
+- **A helpline on the last page for a phone in Ukraine**: "Якщо тобі зараз
+  потрібна підтримка, ти можеш звернутися на гарячу лінію UA Mental Help:
+  0 800 331 200. Безкоштовно та конфіденційно." In Ukraine means the
+  phone's region is Ukraine or it keeps Kyiv time (`inUkraine`, read when
+  asked through `Container.inUkraine`); the number dials on a tap.
+  **The number is unconfirmed**: on 2026-10-06 no public source listed
+  0 800 331 200, UA Mental Help appeared with social channels only, and the
+  nearest listed number was the Red Cross's "Поговорімо" line, 0 800 331
+  800. It waits on the owner to be checked before a build carries it.
+- **A way in from "Я"** (owner's word, the same day): the first row there,
+  "Хвилина для себе" / "Коротка вправа на заземлення. Нічого не
+  записується." / "Почати" (copy not the owner's; open to change). It
+  opens on the first step, not the offer, since the person asked for it;
+  the stage remembers where it came from (`from: 'saved' | 'settings'`),
+  so the X goes back to "Я" from there and home after a hard entry, and
+  "На головну" always goes home. The last page's promise now has a door.
+- **"1 з 3"** in place of "перше з трьох" (owner's word): one key,
+  `ground.progress` = "{{n}} з {{total}}" / "{{n}} of {{total}}", set
+  without the caption's capitals and tracking.
+- **The steps' look is open**: the owner finds the column of circles
+  unclear (nothing says it is tapped) and too empty, and asked for
+  animation and a few options. Three playable variants on the canvas
+  "Варіанти заземлення" (claude.ai/artifact/SnUxRDKTGaFdPdicDQeM5R),
+  beside the current screen: A, a breathing circle with the sense's glyph,
+  progress dots and a button named for the act ("Бачу" / "Чую" /
+  "Відчуваю", present tense and so genderless); B, the ring as the button,
+  segments sweeping in, the count inside; C, one concrete prompt at a time
+  ("Щось велике", "Найтихіший звук", "Що під ногами") over the same
+  button.
+- **The owner picked B**, without "Пропустити крок" and without the
+  sense's glyph in the centre, and with the count's two halves closer in
+  size ("0 з 5" on one line, 44 and 26, the second in `inkSoft`; the canvas
+  had 52 over 14). Built in `GroundingScreen`'s `Ring`: 268 pt, one arc per
+  thing (16 pt, 10° apart), the inner disc on `paper`; it breathes (1 to
+  1.03 over 6 s), a tap sends out an `accent` ripple, sweeps the next arc
+  in along its own length (`strokeDashoffset`, 550 ms) and ticks the hand
+  (`IHaptics.notice`, the selection feedback: the eyes are on the room);
+  a full ring turns `solid` with a tick mark and the next step follows
+  1.5 s later. Reduce Motion stills all of it. The hints say "торкнися
+  кола", and the steps have no "Далі" any more (`ground.next` removed):
+  M8's "skip is always available" still holds, since nothing checks what
+  was noticed and the X is always there.
+- **Leaving asks first** (owner's word, the same day): the steps' X opens
+  "Вийти з вправи?" / "Повернутися до неї можна будь-коли в «Я»." with
+  "Залишитися" (cancel) and "Вийти", neither in red. The offer's X and the
+  last page leave without asking: declining an offer should cost nothing.
+- **Green, not ink** (owner's word, the same day): the filled arcs, the
+  full centre and the ripple are `calm` (#6F9B00, #AFD64A at night). Lime
+  stays the record button's alone; `calm` already means the good end of
+  the mood scale, and a calm minute is the nearest thing to it. The tick
+  on the full centre is `onSolid`, which flips with the theme and reads on
+  both greens.
+- The simulator's pretend analysis gained a fifth reading, overwhelmed and
+  flagged distress, so the whole path can be walked there: every fifth
+  reading after a launch, a correction of the wording counting as one.
+
+---
+
 ## 3σ. The mood in one line, the feedback sheet's X, the subscription last — 2026-10-01
 
 The owner's word, item by item.
