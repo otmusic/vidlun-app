@@ -1477,6 +1477,44 @@ from lower and slightly smaller — scroll-driven `view()` timelines with
 `cover` ranges for the text so the reveal lasts a real distance; the step
 as a whole no longer fades. Reduced motion turns all of it off.
 
+**The page for 1.3, 2026-10-07.** The owner's word ("онови інформацію на
+сайті та скріни").
+- **Screenshots.** Twenty new ones, in both languages and both themes. They
+  were taken at 9:41 from a seeded demo journal:
+  - the home screen;
+  - recording;
+  - the card with the nearest words, two of them chosen and "more
+    precisely?" open;
+  - the entry page with its recording, topics and echo;
+  - the week with a noticed pattern and topics.
+
+  `journal` and `turn` went, since the page never used them.
+- **Copy follows 1.3.**
+  - Step 2 is the card offering the nearest words: pick one, go more
+    precise, or add one's own, with mood and topics on the same card.
+  - Step 3 is the entry page ("come back to any entry"), with the echo
+    named as the subscription's.
+  - Step 4 is the week, and the month written for subscribers.
+  - The free and paid lists say what 1.3 gives and sells: recording up to
+    a minute is free, the week's topics and patterns are paid. The prices
+    were read from App Store Connect again and had not changed.
+- **A fourth feature.** "Хвилина для себе" is drawn as the exercise's ring
+  in the app's calm green.
+  - The features grid is four columns from 1080 px, two below that, one on
+    phones.
+  - The chips drawing keeps the cards' common height, so the titles line
+    up.
+- **Fingerprinted image URLs.** They carry `?v=` and a fingerprint of
+  `site/shots` or `site/og`. Both are cached for a week under fixed names,
+  so without it a returning visitor would see last week's screenshots
+  beside this week's words.
+- **og.py.** It read `<lang>-home-light.jpg`, a name gone since the 640/960
+  split, and now reads `-640.jpg`.
+- **Hero alt.** The hero image has its own alt (`hero.alt`) instead of the
+  first step's.
+- **Deployed the same day.** The terms and privacy pages went out with it
+  and finally say month; the repo had said so since e0b6395.
+
 ---
 
 ## 3υ. The month card closes; where do past months live? — 2026-10-06
