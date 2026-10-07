@@ -1537,9 +1537,14 @@ What it costs, offered to the owner:
   sensitive ones included. CLAUDE.md §6 says so.
 
 The same day: the site's step 2 dropped "уточни" / "go more precise", and
-its four shots show one chosen word. The 1.3 App Store description still
-says "go more precise", and build 45 still has the row. Seen on the
-simulator: a second tap on "Оптимізм" lets it go, nothing opens.
+its four shots show one chosen word. Seen on the simulator: a second tap
+on "Оптимізм" lets it go, nothing opens.
+
+It goes out with 1.4 (owner's word): 1.3 stays in review with build 45,
+which still has the row, and its description keeps "go more precise" to
+match. Build 46 is 1.4. The 1.4 description drops the phrase: "pick one
+or several, or add your own". When nothing was heard, the card keeps the
+seven broad words (owner's word).
 
 ---
 
