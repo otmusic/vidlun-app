@@ -123,7 +123,6 @@ p{margin:0;max-width:62ch}
 @supports (animation-timeline: scroll()){.top{animation:stick both;animation-timeline:scroll(root);animation-range:0px 120px}@keyframes stick{from{background:transparent;border-color:transparent}to{background:color-mix(in srgb,var(--canvas) 82%,transparent);border-color:var(--line)}}}
 section{scroll-margin-top:72px}
 .brand{font-family:Unbounded,sans-serif;font-weight:500;font-size:22px;letter-spacing:-.03em;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;gap:9px}
-.brand svg{width:26px;height:16px}
 .nav{display:flex;gap:4px 18px;flex-wrap:wrap;margin-inline:auto;font-size:15px}
 .nav a{color:var(--ink-soft);text-decoration:none;padding:6px 2px}
 .nav a:hover{color:var(--ink)}
@@ -282,7 +281,6 @@ const THEME_ICONS = {
 /** The down arrow on the hero's second button. */
 const ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
 
-const MARK = `<svg viewBox="0 0 52 32" aria-hidden="true" fill="none" stroke="var(--lime)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c4-12 7-12 10-1s6 10 9-2 6-10 9 1"/><circle cx="41" cy="20" r="2.4" fill="var(--lime)" stroke="none"/><circle cx="48" cy="20" r="1.6" fill="var(--lime)" stroke="none"/></svg>`;
 const APPLE = `<svg viewBox="0 0 17 20" aria-hidden="true"><path d="M14.2 10.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.5-1-2.5-3.8zM11.8 3.4c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4z"/></svg>`;
 
 function page(lang) {
@@ -297,7 +295,7 @@ function page(lang) {
 
   const body = `<a class="skip" href="#main">${lang === 'en' ? 'Skip to content' : 'До змісту'}</a>
 <header class="top"><div class="wrap top-in">
-  <a class="brand" href="${lang === 'en' ? '/en' : '/'}">${MARK}Vidlun</a>
+  <a class="brand" href="${lang === 'en' ? '/en' : '/'}">Vidlun</a>
   <nav class="nav" aria-label="${lang === 'en' ? 'Sections' : 'Розділи'}">
     <a href="#how">${escape(c.nav.how)}</a><a href="#features">${escape(c.nav.features)}</a><a href="#privacy">${escape(c.nav.privacy)}</a><a href="#price">${escape(c.nav.price)}</a><a href="#faq">${escape(c.nav.faq)}</a>
   </nav>

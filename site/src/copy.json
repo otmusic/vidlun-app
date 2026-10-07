@@ -41,9 +41,9 @@
         {
           "n": "2",
           "title": "Назви, що відчуваєш",
-          "body": "Vidlun пропонує слова, найближчі до сказаного. Обери одне чи кілька, уточни або додай своє. На тій самій картці — настрій і теми запису.",
+          "body": "Vidlun пропонує емоції, найближчі до сказаного. Обери одну чи кілька або додай свою. На тій самій картці — настрій і теми запису.",
           "shot": "turn-picker",
-          "alt": "Картка запису: найближчі емоції, уточнення і настрій"
+          "alt": "Картка запису: найближчі емоції, вибрана емоція і настрій"
         },
         {
           "n": "3",
@@ -299,9 +299,9 @@
         {
           "n": "2",
           "title": "Name what you feel",
-          "body": "Vidlun offers the words closest to what you said. Pick one or several, go more precise, or add your own. The mood and the topics sit on the same card.",
+          "body": "Vidlun offers the emotions closest to what you said. Pick one or several, or add your own. The mood and the topics sit on the same card.",
           "shot": "turn-picker",
-          "alt": "The entry card: the closest emotions, a more precise word and the mood"
+          "alt": "The entry card: the closest emotions, the one chosen and the mood"
         },
         {
           "n": "3",
