@@ -14,7 +14,7 @@ for lang, lines, sub, mark_w in (
     ('uk', ['Скажи, як минув день.', 'Vidlun назве,', 'що ти відчуваєш.'], 'Голосовий щоденник емоцій для iPhone', 520),
     ('en', ['Say how the day went.', 'Vidlun names', 'what you feel.'], 'A voice emotion journal for iPhone', 500),
 ):
-    shot = base64.b64encode((ROOT / f'site/shots/{lang}-home-light.jpg').read_bytes()).decode()
+    shot = base64.b64encode((ROOT / f'site/shots/{lang}-home-light-640.jpg').read_bytes()).decode()
     text = ''.join(f'<text x="72" y="{236 + i * 62}" font-family="Unbounded" font-size="48" fill="#16181D" letter-spacing="-1.8">{l}</text>' for i, l in enumerate(lines))
     svg = f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630">
 <defs>

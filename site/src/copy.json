@@ -24,7 +24,8 @@
       "title": "Скажи, як минув день. Vidlun назве, що ти відчуваєш.",
       "cta": "Завантажити в App Store",
       "secondary": "Як це працює",
-      "mark": "як минув день"
+      "mark": "як минув день",
+      "alt": "Головний екран Vidlun: тиждень, кнопка запису і запис місяць тому"
     },
     "how": {
       "title": "Як це працює",
@@ -40,23 +41,23 @@
         {
           "n": "2",
           "title": "Назви, що відчуваєш",
-          "body": "Спершу Vidlun питає тебе. Вибери емоції зі словника емоцій або натисни «не знаю».",
+          "body": "Vidlun пропонує слова, найближчі до сказаного. Обери одне чи кілька, уточни або додай своє. На тій самій картці — настрій і теми запису.",
           "shot": "turn-picker",
-          "alt": "Картка вибору емоції зі словником"
+          "alt": "Картка запису: найближчі емоції, уточнення і настрій"
         },
         {
           "n": "3",
-          "title": "Побач, що почув Vidlun",
-          "body": "Потім Vidlun показує свою версію: емоції, настрій від 1 до 5 і одне коротке речення. Він описує сказане і не дає порад чи оцінок.",
+          "title": "Повертайся до записів",
+          "body": "У кожного запису своя сторінка: твої слова, голос, настрій, емоції й теми. З підпискою Vidlun додає одне коротке речення — відлуння. Воно описує сказане й не дає порад чи оцінок.",
           "shot": "detail",
-          "alt": "Картка запису: аудіо, настрій, емоції та відлуння"
+          "alt": "Сторінка запису: слова, голос, настрій, емоції, теми й відлуння"
         },
         {
           "n": "4",
           "title": "Записи складаються в картину",
-          "body": "Щоденник із пошуком, настрій по днях, позначені події. За тиждень видно, що повторювалось і що змінилось.",
+          "body": "Настрій по днях, теми, які повертаються, і твій власний словник емоцій. З підпискою Vidlun раз на місяць пише, що помітив у твоїх записах.",
           "shot": "week",
-          "alt": "Тиждень: настрій по днях і події"
+          "alt": "Тиждень: настрій по днях, помічений патерн і теми"
         }
       ]
     },
@@ -77,6 +78,11 @@
           "title": "Тиждень і події",
           "body": "Настрій по днях і події, які позначають, що було до і після: переїзд, нова робота.",
           "art": "bars"
+        },
+        {
+          "title": "Хвилина для себе",
+          "body": "Коротка вправа на заземлення: озирнутися, прислухатися, відчути. Нічого не записується.",
+          "art": "ring"
         }
       ]
     },
@@ -93,19 +99,20 @@
       "free": {
         "title": "Безкоштовно назавжди",
         "items": [
-          "Запис і розпізнавання мови",
-          "Назви емоцій і настрій",
+          "Запис до хвилини і розпізнавання мови",
+          "Найближчі емоції, настрій і теми запису",
           "Щоденник, пошук, події",
-          "Настрій по днях",
+          "Настрій по днях і словник емоцій",
+          "Вправа на заземлення",
           "Резервна копія"
         ]
       },
       "paid": {
         "title": "Підписка",
         "items": [
-          "Місячний наратив: раз на місяць Vidlun пише, що помітив",
+          "Місячний наратив: раз на місяць Vidlun пише, що помітив у твоїх записах",
           "Відлуння до кожного запису",
-          "Теми тижня",
+          "Теми й патерни тижня",
           "Записи до п’яти хвилин"
         ],
         "plans": [
@@ -275,7 +282,8 @@
       "title": "Say how the day went. Vidlun names what you feel.",
       "cta": "Download on the App Store",
       "secondary": "How it works",
-      "mark": "how the day went"
+      "mark": "how the day went",
+      "alt": "Vidlun’s home screen: the week, the record button and an entry from a month ago"
     },
     "how": {
       "title": "How it works",
@@ -291,23 +299,23 @@
         {
           "n": "2",
           "title": "Name what you feel",
-          "body": "Vidlun asks you first. Pick emotions from the emotion vocabulary, or tap “I don’t know”.",
+          "body": "Vidlun offers the words closest to what you said. Pick one or several, go more precise, or add your own. The mood and the topics sit on the same card.",
           "shot": "turn-picker",
-          "alt": "The card asking for an emotion, with the vocabulary open"
+          "alt": "The entry card: the closest emotions, a more precise word and the mood"
         },
         {
           "n": "3",
-          "title": "See what Vidlun heard",
-          "body": "Then Vidlun shows its version: emotions, a mood from 1 to 5 and one short sentence. It describes what was said and gives no advice or grades.",
+          "title": "Come back to any entry",
+          "body": "Every entry has its own page: your words, your voice, the mood, the emotions and the topics. With a subscription, Vidlun adds one short sentence, the echo. It describes what was said and gives no advice or grades.",
           "shot": "detail",
-          "alt": "An entry card: audio, mood, emotions and the echo"
+          "alt": "An entry page: the words, the recording, mood, emotions, topics and the echo"
         },
         {
           "n": "4",
           "title": "Entries add up to a picture",
-          "body": "A journal with search, mood by day, marked events. Over a week you see what kept coming back and what changed.",
+          "body": "Mood by day, the topics that keep coming back, and your own vocabulary of emotions. With a subscription, Vidlun writes once a month about what it noticed in your entries.",
           "shot": "week",
-          "alt": "The week: mood by day and events"
+          "alt": "The week: mood by day, a noticed pattern and topics"
         }
       ]
     },
@@ -328,6 +336,11 @@
           "title": "Week and events",
           "body": "Mood by day, and events that mark what came before and after: a move, a new job.",
           "art": "bars"
+        },
+        {
+          "title": "A minute for yourself",
+          "body": "A short grounding exercise: look around, listen, feel. Nothing is recorded.",
+          "art": "ring"
         }
       ]
     },
@@ -344,19 +357,20 @@
       "free": {
         "title": "Free forever",
         "items": [
-          "Recording and speech recognition",
-          "Emotion names and mood",
+          "Recording up to a minute and speech recognition",
+          "The closest emotions, mood and topics of each entry",
           "Journal, search, events",
-          "Mood by day",
+          "Mood by day and your emotion vocabulary",
+          "A grounding exercise",
           "Backup"
         ]
       },
       "paid": {
         "title": "Subscription",
         "items": [
-          "The monthly narrative: once a month Vidlun writes what it noticed",
+          "The monthly narrative: once a month Vidlun writes what it noticed in your entries",
           "An echo on every entry",
-          "Themes of the week",
+          "The week’s topics and patterns",
           "Recordings up to five minutes"
         ],
         "plans": [

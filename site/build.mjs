@@ -10,6 +10,7 @@
  * site/preview-<lang>.html, the same page without the document skeleton,
  * for the Artifact viewer.
  */
+import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +22,21 @@ const SITE = 'https://vidlun.app';
 const APP_STORE = 'https://apps.apple.com/app/id6806530807';
 const preview = process.argv.includes('--preview');
 
+/**
+ * A short fingerprint of a folder's files, put on their URLs. The images are
+ * cached for a week under names that never change, so without it a returning
+ * visitor would see last week's screenshots beside this week's copy.
+ */
+function fingerprint(folder) {
+  const hash = createHash('sha1');
+  for (const file of readdirSync(join(ROOT, 'site', folder)).sort()) {
+    hash.update(file).update(readFileSync(join(ROOT, 'site', folder, file)));
+  }
+  return hash.digest('hex').slice(0, 8);
+}
+const SHOTS_VERSION = fingerprint('shots');
+const OG_VERSION = fingerprint('og');
+
 const escape = (text) =>
   String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -30,13 +46,14 @@ const escape = (text) =>
  */
 function shot(lang, name, alt, { eager = false } = {}) {
   const base = (theme) => `shots/${lang}-${name}-${theme}`;
-  const avif = (theme) => `${base(theme)}-640.avif 1x, ${base(theme)}-960.avif 1.5x`;
+  const file = (theme, ending) => `${base(theme)}-${ending}?v=${SHOTS_VERSION}`;
+  const avif = (theme) => `${file(theme, '640.avif')} 1x, ${file(theme, '960.avif')} 1.5x`;
   const loading = eager ? 'fetchpriority="high"' : 'loading="lazy" decoding="async"';
   return `<picture class="shot">
   <source data-dark srcset="${avif('dark')}" type="image/avif" media="(prefers-color-scheme: dark)">
-  <source data-dark srcset="${base('dark')}-640.jpg" media="(prefers-color-scheme: dark)">
+  <source data-dark srcset="${file('dark', '640.jpg')}" media="(prefers-color-scheme: dark)">
   <source srcset="${avif('light')}" type="image/avif">
-  <img src="${base('light')}-640.jpg" width="640" height="1391" alt="${escape(alt)}" ${loading}>
+  <img src="${file('light', '640.jpg')}" width="640" height="1391" alt="${escape(alt)}" ${loading}>
 </picture>`;
 }
 
@@ -54,7 +71,10 @@ function words(list, twin = false) {
     .join('');
 }
 
-/** The small drawing a feature card carries: a voice wave, a few chips, a week of bars. */
+/**
+ * The small drawing a feature card carries: a voice wave, a few chips, the
+ * grounding exercise's ring, a week of bars.
+ */
 function art(kind, list) {
   if (kind === 'wave') {
     const heights = [18, 34, 52, 26, 60, 40, 22, 48, 30, 56, 36, 20, 44, 28];
@@ -63,14 +83,28 @@ function art(kind, list) {
   if (kind === 'chips') {
     return `<div class="art chips" aria-hidden="true">${list.slice(0, 6).map(([word, tone]) => `<i style="--tone:var(--${tone})">${escape(word)}</i>`).join('')}</div>`;
   }
+  if (kind === 'ring') {
+    // Five steps round the circle with a gap between each, two of them taken, as the exercise draws it.
+    const point = (degrees) => {
+      const radians = (degrees * Math.PI) / 180;
+      return `${(32 + 26 * Math.cos(radians)).toFixed(2)} ${(32 + 26 * Math.sin(radians)).toFixed(2)}`;
+    };
+    const arcs = [0, 1, 2, 3, 4]
+      .map((i) => {
+        const from = -90 + i * 72 + 7;
+        return `<path${i < 2 ? ' class="on"' : ''} d="M${point(from)}A26 26 0 0 1 ${point(from + 58)}"/>`;
+      })
+      .join('');
+    return `<div class="art ring" aria-hidden="true"><svg viewBox="0 0 64 64">${arcs}<text x="32" y="38.5" text-anchor="middle">2</text></svg></div>`;
+  }
   const week = [['warm', 40], ['calm', 60], ['low', 28], ['calm', 60], ['calm', 60], ['low', 28], ['calm', 60]];
   return `<div class="art bars" aria-hidden="true">${week.map(([tone, h]) => `<i style="--tone:var(--${tone});--h:${h}px"></i>`).join('')}</div>`;
 }
 
 const CSS = `
-:root{--canvas:#FBF7F0;--paper:#FFFCF6;--ink:#16181D;--ink-soft:#6C6F78;--ink-faint:#8A8D95;--line:#E2DACB;--line-soft:#F7F1E6;--accent:#4433E0;--accent-ink:#3226BF;--accent-soft:#E8E5FD;--lime:#D7F26B;--lime-soft:#EEF6D2;--panel:#16181D;--on-panel:#FBF7F0;--on-panel-soft:rgba(251,247,240,.7);--on-panel-line:rgba(251,247,240,.16);--panel-glow:rgba(215,242,107,.3);--bezel:#16181D;--shadow:0 34px 70px -34px rgba(22,24,29,.45);--calm:#2E8B6A;--warm:#B8860B;--cool:#3A7CA5;--low:#B5602F;--violet:#8A4FD1;--glow1:rgba(215,242,107,.55);--glow2:rgba(232,229,253,.9);--numeral:#C9C2F5;color-scheme:light}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--canvas:#14161B;--paper:#1B1E25;--ink:#F2EEE6;--ink-soft:#A9AEB8;--ink-faint:#8B9099;--line:#2C313B;--line-soft:#232833;--accent:#8B7BFF;--accent-ink:#A79BFF;--accent-soft:#232149;--lime:#AFD64A;--lime-soft:#27311C;--panel:#22262F;--on-panel:#F2EEE6;--on-panel-soft:rgba(242,238,230,.7);--on-panel-line:rgba(242,238,230,.14);--panel-glow:rgba(175,214,74,.2);--bezel:#2A2F38;--shadow:0 34px 70px -34px rgba(0,0,0,.7);--calm:#6FCBA6;--warm:#E2B23B;--cool:#7FB6DE;--low:#E0875C;--violet:#B79BFF;--glow1:rgba(175,214,74,.16);--glow2:rgba(139,123,255,.16);--numeral:#5A4FA0;color-scheme:dark}}
-:root[data-theme="dark"]{--canvas:#14161B;--paper:#1B1E25;--ink:#F2EEE6;--ink-soft:#A9AEB8;--ink-faint:#8B9099;--line:#2C313B;--line-soft:#232833;--accent:#8B7BFF;--accent-ink:#A79BFF;--accent-soft:#232149;--lime:#AFD64A;--lime-soft:#27311C;--panel:#22262F;--on-panel:#F2EEE6;--on-panel-soft:rgba(242,238,230,.7);--on-panel-line:rgba(242,238,230,.14);--panel-glow:rgba(175,214,74,.2);--bezel:#2A2F38;--shadow:0 34px 70px -34px rgba(0,0,0,.7);--calm:#6FCBA6;--warm:#E2B23B;--cool:#7FB6DE;--low:#E0875C;--violet:#B79BFF;--glow1:rgba(175,214,74,.16);--glow2:rgba(139,123,255,.16);--numeral:#5A4FA0;color-scheme:dark}
+:root{--canvas:#FBF7F0;--paper:#FFFCF6;--ink:#16181D;--ink-soft:#6C6F78;--ink-faint:#8A8D95;--line:#E2DACB;--line-soft:#F7F1E6;--accent:#4433E0;--accent-ink:#3226BF;--accent-soft:#E8E5FD;--lime:#D7F26B;--lime-soft:#EEF6D2;--panel:#16181D;--on-panel:#FBF7F0;--on-panel-soft:rgba(251,247,240,.7);--on-panel-line:rgba(251,247,240,.16);--panel-glow:rgba(215,242,107,.3);--bezel:#16181D;--shadow:0 34px 70px -34px rgba(22,24,29,.45);--calm:#2E8B6A;--warm:#B8860B;--cool:#3A7CA5;--low:#B5602F;--violet:#8A4FD1;--glow1:rgba(215,242,107,.55);--glow2:rgba(232,229,253,.9);--numeral:#C9C2F5;--ring:#6F9B00;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--canvas:#14161B;--paper:#1B1E25;--ink:#F2EEE6;--ink-soft:#A9AEB8;--ink-faint:#8B9099;--line:#2C313B;--line-soft:#232833;--accent:#8B7BFF;--accent-ink:#A79BFF;--accent-soft:#232149;--lime:#AFD64A;--lime-soft:#27311C;--panel:#22262F;--on-panel:#F2EEE6;--on-panel-soft:rgba(242,238,230,.7);--on-panel-line:rgba(242,238,230,.14);--panel-glow:rgba(175,214,74,.2);--bezel:#2A2F38;--shadow:0 34px 70px -34px rgba(0,0,0,.7);--calm:#6FCBA6;--warm:#E2B23B;--cool:#7FB6DE;--low:#E0875C;--violet:#B79BFF;--glow1:rgba(175,214,74,.16);--glow2:rgba(139,123,255,.16);--numeral:#5A4FA0;--ring:#AFD64A;color-scheme:dark}}
+:root[data-theme="dark"]{--ring:#AFD64A;--canvas:#14161B;--paper:#1B1E25;--ink:#F2EEE6;--ink-soft:#A9AEB8;--ink-faint:#8B9099;--line:#2C313B;--line-soft:#232833;--accent:#8B7BFF;--accent-ink:#A79BFF;--accent-soft:#232149;--lime:#AFD64A;--lime-soft:#27311C;--panel:#22262F;--on-panel:#F2EEE6;--on-panel-soft:rgba(242,238,230,.7);--on-panel-line:rgba(242,238,230,.14);--panel-glow:rgba(175,214,74,.2);--bezel:#2A2F38;--shadow:0 34px 70px -34px rgba(0,0,0,.7);--calm:#6FCBA6;--warm:#E2B23B;--cool:#7FB6DE;--low:#E0875C;--violet:#B79BFF;--glow1:rgba(175,214,74,.16);--glow2:rgba(139,123,255,.16);--numeral:#5A4FA0;color-scheme:dark}
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
@@ -158,19 +192,22 @@ section{padding-block:clamp(40px,7vw,88px)}
 .step h3{font-size:clamp(22px,2.4vw,28px)}
 .step p{margin-top:12px;color:var(--ink-soft);font-size:18px}
 @media (max-width:860px){.step{grid-template-columns:1fr;gap:20px}.step:nth-child(even) .phone{order:0}.step .phone{width:min(260px,72vw);margin-inline:0}}
-.features{list-style:none;margin:32px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.features{list-style:none;margin:32px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .features li{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:22px 22px 24px;display:flex;flex-direction:column;gap:6px}
 .art{height:64px;display:flex;align-items:flex-end;gap:5px;margin-bottom:14px}
 .art.wave{align-items:center}.art.wave i{display:block;width:5px;border-radius:3px;background:var(--accent);height:var(--h)}
 .art.wave i:nth-child(3n){background:var(--lime)}
-.art.chips{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;gap:6px;height:auto;min-height:64px}
+.art.chips{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;gap:6px;overflow:hidden}
 .art.chips i{font-style:normal;font-size:12px;border:1.5px solid var(--tone);color:var(--tone);border-radius:999px;padding:4px 10px}
 .art.bars i{display:block;flex:1;border-radius:6px 6px 3px 3px;height:var(--h);background:var(--tone)}
+.art.ring svg{width:64px;height:64px;fill:none;stroke:var(--line);stroke-width:6;stroke-linecap:round}
+.art.ring .on{stroke:var(--ring)}
+.art.ring text{fill:var(--ink);stroke:none;font:500 17px Unbounded,sans-serif;letter-spacing:-.03em}
 .features li:hover .art.wave i{animation:pulse 1.1s ease-in-out infinite alternate}
 @keyframes pulse{to{transform:scaleY(.55)}}
 @media (prefers-reduced-motion: reduce){.features li:hover .art.wave i{animation:none}}
 .features p{margin-top:8px;color:var(--ink-soft);font-size:16px}
-@media (max-width:900px){.features{grid-template-columns:1fr 1fr}}
+@media (max-width:1080px){.features{grid-template-columns:1fr 1fr}}
 @media (max-width:560px){.features{grid-template-columns:1fr}}
 .panel{position:relative;isolation:isolate;overflow:hidden;background:var(--panel);color:var(--on-panel);border-radius:26px;padding:clamp(28px,5vw,56px);margin-block:8px}
 .panel::before{content:"";position:absolute;right:-12%;bottom:-45%;width:min(62%,560px);aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,var(--panel-glow),transparent);pointer-events:none;z-index:-1}
@@ -276,7 +313,7 @@ function page(lang) {
       <h1>${headline(c.hero.title, c.hero.mark)}</h1>
       <div class="cta">${cta}<a class="how" href="#how">${escape(c.hero.secondary)}${ARROW}</a></div>
     </div>
-    <div class="phone">${shot(lang, 'home', c.how.steps[0].alt.split(':')[0], { eager: true })}</div>
+    <div class="phone">${shot(lang, 'home', c.hero.alt, { eager: true })}</div>
   </section>
 
   <div class="words" aria-hidden="true"><ul>${words(c.words)}${words(c.words, true)}</ul></div>
@@ -372,7 +409,7 @@ function page(lang) {
     installUrl: APP_STORE,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     inLanguage: [lang === 'en' ? 'en' : 'uk'],
-    image: `${SITE}/og/og-${lang}.jpg`,
+    image: `${SITE}/og/og-${lang}.jpg?v=${OG_VERSION}`,
     screenshot: ['home', 'recording', 'turn-picker', 'detail', 'week'].map((name) => `${SITE}/shots/${lang}-${name}-light-640.jpg`),
     author: { '@type': 'Organization', name: 'Vidlun', url: SITE },
   });
@@ -395,7 +432,7 @@ function page(lang) {
 <meta property="og:title" content="${escape(c.title)}">
 <meta property="og:description" content="${escape(c.description)}">
 <meta property="og:url" content="${canonical}">
-<meta property="og:image" content="${SITE}/og/og-${lang}.jpg">
+<meta property="og:image" content="${SITE}/og/og-${lang}.jpg?v=${OG_VERSION}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="${escape(c.ogAlt)}">
@@ -404,7 +441,7 @@ function page(lang) {
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escape(c.title)}">
 <meta name="twitter:description" content="${escape(c.description)}">
-<meta name="twitter:image" content="${SITE}/og/og-${lang}.jpg">
+<meta name="twitter:image" content="${SITE}/og/og-${lang}.jpg?v=${OG_VERSION}">
 <meta name="keywords" content="${escape(c.keywords)}">
 <meta name="author" content="Vidlun">
 <meta name="robots" content="index, follow">
