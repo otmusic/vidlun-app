@@ -225,7 +225,6 @@ function Stage(
           offered={offered}
           t={t}
           onToggle={flow.toggleOwnWord}
-          onRefine={flow.refineOwnWord}
           onAddWord={flow.addOwnWord}
           onCorrect={flow.correctWording}
           onNext={flow.answer}

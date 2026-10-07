@@ -288,8 +288,6 @@ export interface CaptureFlow {
   readonly toggleOwnWord: (id: string) => void;
   /** Adds a word typed on the card; never takes one away, so a repeat is harmless. */
   readonly addOwnWord: (id: string) => void;
-  /** Trades one of their words for a more exact child of it. */
-  readonly refineOwnWord: (parentId: string, childId: string) => void;
   /** Sets the mood on the card's scale, in place of Vidlun's reading. */
   readonly setMood: (value: number) => void;
   /** Takes one of Vidlun's topics off the card, or puts it back. */
@@ -1402,24 +1400,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           ? current
           : { ...current, chosen: [...current.chosen, id] },
       );
-    }, []),
-    refineOwnWord: useCallback((parentId: string, childId: string) => {
-      setStage((current) => {
-        if (current.kind !== 'turn' || !current.chosen.includes(parentId)) {
-          return current;
-        }
-
-        /*
-         * In place, so the more exact word inherits the position the broad one
-         * held rather than arriving at the end of the row. Filtered afterwards
-         * because the child may already be there — refining twice into the same
-         * word is one word, not two.
-         */
-        const replaced = current.chosen.map((each) => (each === parentId ? childId : each));
-        const chosen = replaced.filter((each, at) => replaced.indexOf(each) === at);
-
-        return { ...current, chosen };
-      });
     }, []),
     setMood: useCallback((value: number) => {
       setStage((current) => (current.kind === 'turn' ? { ...current, mood: value } : current));

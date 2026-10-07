@@ -53,9 +53,10 @@ const isPleasant = (emotion: Emotion): boolean => emotion.valence >= GOOD_MOOD;
  * mood offers both. Nearness weighs valence double: whether a feeling is
  * pleasant matters more here than how much energy it carries.
  *
- * The first two levels of the wheel only, as the palette always offered —
- * a chosen word opens its own children — and never a sensitive word: this
- * list is the analysis speaking, and §6 bars it from proposing those.
+ * The first two levels of the wheel only, as the palette always offered,
+ * and never a sensitive word: this list is the analysis speaking, and §6
+ * bars it from proposing those. Since the card stopped opening a chosen
+ * word's children (2026-10-07), a deeper word is one the person types.
  */
 export function emotionsNear(
   heard: readonly Emotion[],
@@ -106,7 +107,7 @@ export function emotionsNear(
 
 /**
  * What the card offers when there is no reading at all — Vidlun could not
- * listen: the broad words at the root of the wheel, each opening its own.
+ * listen: the broad words at the root of the wheel.
  */
 export function wordsWithoutReading(pool: readonly Emotion[]): readonly Emotion[] {
   return offerable(pool).filter((emotion) => emotion.depth === 1);

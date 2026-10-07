@@ -296,7 +296,7 @@ Seven roots: `happy`, `surprised`, `bad`, `fearful`, `angry`, `disgusted`,
 | **Zero emotions is a valid entry**, not an incomplete one. | Ordinary days exist. |
 | **Mood is independent of emotions.** Someone can feel `bad.tired` and rate the day 4. | Tiredness after achievement is a good day. |
 | **Mixed states are never averaged.** Return both, from different branches. | Averaging erases the entry's meaning. |
-| **AI never proposes `sensitive` emotions** — only exact text matches. The user may still pick them manually via drill-down. | Suggesting "worthlessness" in one tap can push someone deeper than they actually feel. |
+| **AI never proposes `sensitive` emotions** — only exact text matches. The user may still name them by typing the word, which matches the vocabulary's own label (the drill-down that also reached them was removed by the owner's word on 2026-10-07). | Suggesting "worthlessness" in one tap can push someone deeper than they actually feel. |
 | **`safetyFlag: 'crisis'` forces `observation = null`.** | A cheerful reflection on a crisis entry does harm. What the app shows instead is a product decision, not the model's. |
 | **Choosing a heavy emotion is not itself a crisis signal.** The flag comes from content analysis only. | People are allowed to feel bad without the product reacting. |
 | **Drafts are not persisted.** `CreateVoiceEntry` returns an entry; only `ConfirmEntry` writes it. | The card is a proposal. |

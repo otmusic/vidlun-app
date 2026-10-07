@@ -1517,6 +1517,32 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3φ. The question card without "more precisely?" — 2026-10-07
+
+The owner's word, after seeing "точніше?" on the site's step-2 shot: no
+sub-groups on the card, the offered words and nothing under them. A tap on
+an offered word chooses it and a second tap lets it go. `Refinement`,
+`onRefine`, `refineOwnWord` and `edit.refine` are gone.
+
+What it costs, offered to the owner:
+- **Third-level words are typed now.** The card offers the first two levels
+  (`emotionsNear`, unchanged), so "Надія" or "Натхнення" come only through
+  "+ Додати емоцію". The month's "ти уточнюєш" line counts them the same
+  way, so it may read lower.
+- **No reading leaves seven broad words.** `wordsWithoutReading` offers the
+  roots of the wheel only; they used to open their own children.
+- **Sensitive words.** §6 bars the analyzer from proposing them, and the
+  drill-down was one way to reach them. Typing is the way now:
+  `idForTypedWord` turns a typed label into the vocabulary's own word, the
+  sensitive ones included. CLAUDE.md §6 says so.
+
+The same day: the site's step 2 dropped "уточни" / "go more precise", and
+its four shots show one chosen word. The 1.3 App Store description still
+says "go more precise", and build 45 still has the row. Seen on the
+simulator: a second tap on "Оптимізм" lets it go, nothing opens.
+
+---
+
 ## 3υ. The month card closes; where do past months live? — 2026-10-06
 
 The owner's word: the home card "Твій вересень" seemed always there, so it

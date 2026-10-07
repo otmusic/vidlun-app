@@ -42,7 +42,6 @@ export function TurnScreen(props: {
   readonly offered: readonly Emotion[];
   readonly t: Translate;
   readonly onToggle: (id: string) => void;
-  readonly onRefine: (parentId: string, childId: string) => void;
   /** Adds a word the person typed; a word already chosen stays chosen. */
   readonly onAddWord: (id: string) => void;
   /** The transcript as the person corrects it — the mishearing's escape hatch. */
@@ -231,11 +230,9 @@ export function TurnScreen(props: {
 
       <EmotionShelf
         emotions={props.offered}
-        vocabulary={props.vocabulary}
         selected={chosen}
         t={props.t}
         onToggle={props.onToggle}
-        onRefine={props.onRefine}
       />
 
       {/* For when none of the offered words has it; a typed word joins the section above. */}
