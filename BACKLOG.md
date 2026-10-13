@@ -1540,7 +1540,9 @@ The owner's word, for 1.4:
   until the files answer, and search results show none.
 
 - **A quiet week on the stats screen has no "На головну" button** any
-  more; the back arrow above goes home. `stats.toHome` is gone.
+  more; the back arrow above goes home. `stats.toHome` is gone. Its line is
+  shorter too: "Цього тижня записів ще немає." / "No entries this week
+  yet.", like the past week's "Того тижня записів немає."
 
 Seen on the simulator: the bars for October, both icons in the journal,
 and the quiet week without its button.
