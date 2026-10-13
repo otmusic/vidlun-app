@@ -1517,6 +1517,65 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ϊ. No Face ID lock — 2026-10-13
+
+The owner's word, for 1.4: the journal no longer locks.
+- **Gone:** the "Face ID" row on "Я", the locked door with its relock after
+  a minute away, `IScreenLock`, `BiometricScreenLock`, the `appLock`
+  setting, and the `lock.*` and `profile.appLock*` copy. A phone that had
+  the lock on in 1.3 opens straight into the journal, because a stored
+  `appLock` is no longer read (there is a test for this).
+- **The privacy policy** drops its Face ID permission line in both
+  languages, and the in-app JSON is rebuilt. The effective date stays
+  1 October.
+  - vidlun.app still serves the old text, which is right while 1.3 (with
+    the lock) is the version in review.
+  - Redeploy the legal site when 1.4 ships.
+- **The library went too** (owner's word, the same day):
+  `expo-local-authentication` is uninstalled, and `NSFaceIDUsageDescription`
+  is gone from app.json and from the built Info.plist. `pod install` dropped
+  ExpoLocalAuthentication before build 48.
+
+Seen on the simulator: "Я" goes from "Зберігати аудіо" straight to
+"Резервна копія".
+
+---
+
+## 3ω. No search tab; the journal filters by emotion — 2026-10-13
+
+The owner's word, for 1.4:
+- **The search page is gone.** That means the tab (the bar has three now),
+  `SearchScreen`, the `search` stage, the `SearchEntries` use case with its
+  test, and the `search.*` and `tab.search` copy. Finding an entry by a
+  word in its text goes with it.
+- **The journal's header has a filter button**, a round 44 pt control with
+  Feather's `filter` beside the count. It opens a sheet (`EmotionFilterSheet`,
+  a `ModalSheet`) holding every emotion on the person's entries, the most
+  used first. The chips are picked there, and "Показати" narrows the
+  journal to the entries that hold any of them.
+  - The sheet has no "Скинути" (the owner took it out the same day). A
+    second tap lets a chip go, "Показати" with nothing picked shows every
+    entry, and closing the sheet changes nothing.
+  - The quick way out is under the title instead (owner's word, the same
+    day). While a filter is on, its emotions sit there as chips, each with
+    an X that drops just that one, followed by "Скинути", which clears the
+    filter in one tap.
+  - While a filter is on, a badge on the button says how many emotions it
+    holds (owner's word, the same day; the button stays outlined so the
+    badge reads). The count pill shows the filtered count, and the
+    milestones step aside.
+  - The filter lives in the flow (`journalFilter`). It survives opening an
+    entry and coming back, and it clears when the journal is opened from
+    the bar.
+- `journalFilter.ts` holds the two pure parts, `emotionsUsed` and
+  `entriesWithAny`, with a test. `EntryCard` lost `showEmotions`: with
+  search gone, every card shows its words.
+
+Seen on the simulator: three tabs, the sheet, "Спокій" + "Тривога" giving
+five entries, and the filter kept after opening one of them.
+
+---
+
 ## 3ψ. "Твої емоції" counts the emotions; the journal says which entries have audio — 2026-10-13
 
 The owner's word, for 1.4:

@@ -15,7 +15,6 @@ import { FindMoodPatterns } from '../application/use-cases/FindMoodPatterns';
 import { GetVocabularyGrowth } from '../application/use-cases/GetVocabularyGrowth';
 import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
 import { GetWeekThemes } from '../application/use-cases/GetWeekThemes';
-import { SearchEntries } from '../application/use-cases/SearchEntries';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
 import { FindRecordedEntries } from '../application/use-cases/FindRecordedEntries';
 import { FindRecording } from '../application/use-cases/FindRecording';
@@ -34,13 +33,11 @@ import type { IReminders } from '../domain/ports/IReminders';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
 import type { IFilePicker } from '../domain/ports/IFilePicker';
 import type { IFileSharer } from '../domain/ports/IFileSharer';
-import type { IScreenLock } from '../domain/ports/IScreenLock';
 import { ExportJournal } from '../application/use-cases/ExportJournal';
 import { GetMonthSummary } from '../application/use-cases/GetMonthSummary';
 import { GetPastMonths } from '../application/use-cases/GetPastMonths';
 import { ImportJournal } from '../application/use-cases/ImportJournal';
 import { ProxyAuth, attestedFetch } from '../infrastructure/attest/ProxyAuth';
-import { BiometricScreenLock } from '../infrastructure/system/BiometricScreenLock';
 import { DocumentFilePicker } from '../infrastructure/files/DocumentFilePicker';
 import { ShareSheetFileSharer } from '../infrastructure/files/ShareSheetFileSharer';
 import { JournalCodec } from '../infrastructure/persistence/JournalCodec';
@@ -123,7 +120,6 @@ export interface Container {
   readonly getPastMonths: GetPastMonths;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
-  readonly searchEntries: SearchEntries;
   readonly purchases: IPurchases;
   readonly reminders: IReminders;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
@@ -134,7 +130,6 @@ export interface Container {
   readonly importJournal: ImportJournal;
   readonly fileSharer: IFileSharer;
   readonly filePicker: IFilePicker;
-  readonly screenLock: IScreenLock;
   readonly microphonePermission: IMicrophonePermission;
   readonly haptics: IHaptics;
   readonly vocabulary: EmotionVocabulary;
@@ -307,7 +302,6 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     getPastMonths: new GetPastMonths(repository, clock),
     getWeekThemes: new GetWeekThemes(repository),
     findMoodPatterns: new FindMoodPatterns(repository, clock),
-    searchEntries: new SearchEntries(repository),
     reminders: new ExpoReminders(expoNotificationCenter()),
     purchases: purchasesFor(readRevenueCatKey()),
     getVocabularyGrowth: new GetVocabularyGrowth(repository, vocabulary, clock),
@@ -315,7 +309,6 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     importJournal: new ImportJournal(repository, new JournalCodec()),
     fileSharer: new ShareSheetFileSharer(),
     filePicker: new DocumentFilePicker(),
-    screenLock: new BiometricScreenLock(),
     microphonePermission: new ExpoMicrophonePermission({
       getRecordingPermissionsAsync,
       requestRecordingPermissionsAsync,

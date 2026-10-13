@@ -6,14 +6,14 @@ import type { Translate, TranslationKey } from '@/i18n';
 
 import { useTheme } from '../theme/ThemeProvider';
 
-export type Tab = 'home' | 'journal' | 'search' | 'me';
+/** No search tab since 2026-10-13: the journal filters by emotion instead (owner's word). */
+export type Tab = 'home' | 'journal' | 'me';
 
-export const TABS: readonly Tab[] = ['home', 'journal', 'search', 'me'];
+export const TABS: readonly Tab[] = ['home', 'journal', 'me'];
 
 const LABELS: Record<Tab, TranslationKey> = {
   home: 'tab.home',
   journal: 'tab.journal',
-  search: 'tab.search',
   me: 'tab.me',
 };
 
@@ -111,12 +111,6 @@ function TabGlyph(props: { readonly tab: Tab; readonly color: string }): React.J
         <>
           <Path d="M6 3.6h10.5a1.9 1.9 0 0 1 1.9 1.9V20.4H7.9A1.9 1.9 0 0 1 6 18.5V3.6Z" {...line} />
           <Path d="M9.6 8.4h5.4M9.6 12.4h5.4" {...line} />
-        </>
-      ) : null}
-      {props.tab === 'search' ? (
-        <>
-          <Circle cx={10.6} cy={10.6} r={6.4} fill="none" stroke={props.color} strokeWidth={STROKE} />
-          <Path d="M15.4 15.4 20 20" {...line} />
         </>
       ) : null}
       {props.tab === 'me' ? (

@@ -13,7 +13,6 @@
         "com.apple.developer.devicecheck.appattest-environment": "production"
       },
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Face ID opens Vidlun when the journal lock is on, so nobody else holding your device can read your entries.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "buildNumber": "47",

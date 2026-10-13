@@ -102,9 +102,6 @@ the text, we use it only to reply.
 - **Notifications** — only for the reminder you switch on yourself, at the time
   you choose. The phone schedules it itself; there is no push server, and
   nobody outside can send you a notification through Vidlun.
-- **Face ID** — only if you turn the entry lock on. iOS performs the scan in
-  the phone's secure chip; the app never sees biometric data — only the
-  answer, open or not.
 
 ## 4. Apple backups
 

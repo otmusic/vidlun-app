@@ -26,7 +26,6 @@ import { ReflectionScreen } from './ReflectionScreen';
 import { GroundingScreen } from './GroundingScreen';
 import { SavedScreen } from './SavedScreen';
 import { ProfileScreen } from './ProfileScreen';
-import { SearchScreen } from './SearchScreen';
 import { LegalScreen } from './LegalScreen';
 import { SubscriptionScreen } from './SubscriptionScreen';
 import { StatsScreen } from './StatsScreen';
@@ -46,7 +45,6 @@ export interface CaptureFlowScreenProps {
   readonly entitlement: Entitlement;
   readonly onExport: (shape: 'backup' | 'markdown') => void;
   readonly onRestore: () => void;
-  readonly onEnableLock: () => Promise<boolean>;
   /** Mails a note to support; rejects when it could not be delivered. */
   readonly onFeedback: (text: string) => Promise<void>;
   /** Whether the phone looks to be in Ukraine, for the grounding's helpline. */
@@ -60,7 +58,6 @@ export interface CaptureFlowScreenProps {
 const TAB_FOR_STAGE: Partial<Record<CaptureFlow['stage']['kind'], Tab>> = {
   idle: 'home',
   history: 'journal',
-  search: 'search',
   settings: 'me',
 };
 
@@ -96,8 +93,6 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
               props.flow.backHome();
             } else if (next === 'journal') {
               props.flow.openHistory();
-            } else if (next === 'search') {
-              props.flow.openSearch();
             } else if (next === 'me') {
               props.flow.openSettings();
             }
@@ -289,7 +284,6 @@ function Stage(
           settings={props.settings}
           onExport={props.onExport}
           onRestore={props.onRestore}
-          onEnableLock={props.onEnableLock}
           onWriteFeedback={props.onWriteFeedback}
           t={t}
           onChange={props.onSettingsChange}
@@ -381,35 +375,13 @@ function Stage(
         />
       );
 
-    case 'search':
-      return (
-        <SearchScreen
-          result={flow.stage.result}
-          journalEmpty={flow.home !== null && flow.home.recentEntries.length === 0}
-          query={flow.stage.query}
-          emotionId={flow.stage.emotionId}
-          vocabulary={props.vocabulary}
-          locale={props.locale}
-          today={props.today}
-          t={t}
-          onQuery={(query) => {
-            flow.search(query, flow.stage.kind === 'search' ? flow.stage.emotionId : null);
-          }}
-          onFilter={(emotionId) => {
-            flow.search(flow.stage.kind === 'search' ? flow.stage.query : '', emotionId);
-          }}
-          onReset={() => {
-            flow.search('', null);
-          }}
-          onOpen={flow.openEntry}
-        />
-      );
-
     case 'history':
       return (
         <HistoryScreen
           days={flow.history}
           recorded={flow.recorded}
+          filter={flow.journalFilter}
+          onFilter={flow.filterJournal}
           vocabulary={props.vocabulary}
           locale={props.locale}
           today={props.today}

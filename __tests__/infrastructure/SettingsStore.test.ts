@@ -39,7 +39,6 @@ describe('SettingsStore', () => {
       locale: 'en',
       theme: 'dark',
       hasOnboarded: true,
-      appLock: true,
       reminderOn: true,
       reminderHour: 22,
       reminderMinute: 30,
@@ -51,7 +50,6 @@ describe('SettingsStore', () => {
       locale: 'en',
       theme: 'dark',
       hasOnboarded: true,
-      appLock: true,
       reminderOn: true,
       reminderHour: 22,
       reminderMinute: 30,
@@ -71,6 +69,18 @@ describe('SettingsStore', () => {
     expect(await subject.read()).not.toHaveProperty('asksFirst');
   });
 
+  it('lets go of the retired Face ID lock in a stored record', async () => {
+    const { store, subject } = setup();
+    await store.setItem(
+      'vidlun.settings',
+      JSON.stringify({ keepRecordings: true, locale: 'uk', hasOnboarded: true, appLock: true }),
+    );
+
+    // The lock went in 1.4 (owner's word, 2026-10-13); a phone that had it on
+    // opens straight into the journal, and nothing reads the old switch.
+    expect(await subject.read()).not.toHaveProperty('appLock');
+  });
+
   it('falls back to defaults rather than failing on an unreadable file', async () => {
     const { store, subject } = setup();
     await store.setItem('vidlun.settings', 'not json');
@@ -86,7 +96,6 @@ describe('SettingsStore', () => {
       keepRecordings: true,
       locale: 'en',
       theme: 'system',
-      appLock: false,
       reminderOn: false,
       reminderHour: 21,
       reminderMinute: 0,

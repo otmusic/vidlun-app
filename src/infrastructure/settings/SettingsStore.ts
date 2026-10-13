@@ -67,8 +67,6 @@ function merge(parsed: unknown): Settings {
       typeof record['hasOnboarded'] === 'boolean'
         ? record['hasOnboarded']
         : DEFAULT_SETTINGS.hasOnboarded,
-    appLock:
-      typeof record['appLock'] === 'boolean' ? record['appLock'] : DEFAULT_SETTINGS.appLock,
     reminderOn:
       typeof record['reminderOn'] === 'boolean'
         ? record['reminderOn']

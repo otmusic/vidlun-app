@@ -48,8 +48,6 @@ export function ProfileScreen(props: {
   /** Hands one export file to the share sheet; null label means nothing yet. */
   readonly onExport: (shape: 'backup' | 'markdown') => void;
   readonly onRestore: () => void;
-  /** Resolves false when the phone has no biometrics to lock with. */
-  readonly onEnableLock: () => Promise<boolean>;
   /** Mails a note to support; rejects when it could not be delivered. */
   /** Opens the note-to-support sheet, which lives above the tabs rather than in here. */
   readonly onWriteFeedback: () => void;
@@ -61,15 +59,6 @@ export function ProfileScreen(props: {
   const sides = useDrawnSides();
   const { settings, t } = props;
   const [pickingTime, setPickingTime] = useState(false);
-  /*
-   * The lock switch while Face ID is being asked. The native switch flips
-   * itself on at the tap; if the ask is declined the setting stays false,
-   * and a prop that stays false is no change for React to push back to the
-   * native side — the switch would sit on, lying. Holding "true" here for
-   * the duration and dropping it after gives the native switch a real
-   * true→false to follow.
-   */
-  const [armingLock, setArmingLock] = useState(false);
 
   return (
     <ScrollView
@@ -144,46 +133,6 @@ export function ProfileScreen(props: {
             }}
             trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
             accessibilityLabel={t('profile.keepAudio')}
-          />
-        </Row>
-      </Section>
-
-      {/* No drawing for this section either; it wears Row like the rest. */}
-      <Section>
-        <Row
-          title={t('profile.appLock')}
-          hint={t(settings.appLock ? 'profile.appLockOn' : 'profile.appLockOff')}
-        >
-          <Switch
-            value={settings.appLock || armingLock}
-            onValueChange={(appLock) => {
-              if (!appLock) {
-                props.onChange({ ...settings, appLock: false });
-
-                return;
-              }
-
-              /*
-               * Proven before promised: the switch flips on only after one
-               * successful unlock, so nobody locks themselves out behind a
-               * Face ID that was never set up.
-               */
-              setArmingLock(true);
-              void props.onEnableLock().then(
-                (unlocked) => {
-                  setArmingLock(false);
-
-                  if (unlocked) {
-                    props.onChange({ ...settings, appLock: true });
-                  }
-                },
-                () => {
-                  setArmingLock(false);
-                },
-              );
-            }}
-            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
-            accessibilityLabel={t('profile.appLock')}
           />
         </Row>
       </Section>

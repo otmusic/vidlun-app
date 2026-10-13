@@ -7,7 +7,7 @@ import { useAudioRecorder } from 'expo-audio';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService';
 import { createContainer, type Container } from '@/di/container';
-import { createTranslator, type Locale, type Translate } from '@/i18n';
+import { createTranslator, type Locale } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
 import { entitlementOf, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
@@ -19,7 +19,6 @@ import { openParakeetEngine } from '@/infrastructure/transcription/parakeetEngin
 import { openSpeechEngine } from '@/infrastructure/transcription/whisperEngine';
 import { AppText } from '@/presentation/components/AppText';
 import { SplashOverlay } from '@/presentation/components/SplashOverlay';
-import { Button } from '@/presentation/components/Button';
 import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
 import { useRecordLink } from '@/presentation/hooks/useRecordLink';
 import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
@@ -27,12 +26,6 @@ import { OnboardingScreen } from '@/presentation/screens/OnboardingScreen';
 import { Screen } from '@/presentation/screens/Screen';
 import { ThemeProvider, useTheme } from '@/presentation/theme/ThemeProvider';
 import { emotionLabel } from '@/presentation/components/emotionDisplay';
-
-/**
- * How long an absence stays forgiven. Under a minute is answering a message;
- * over it, the phone has plausibly changed hands.
- */
-const RELOCK_AFTER_MS = 60_000;
 
 /** The splash holds at least this long, so a fast open is a beat, not a blink. */
 const MIN_SPLASH_MS = 1_200;
@@ -201,7 +194,6 @@ function Vidlun(props: {
     getPastMonths: container.getPastMonths,
     getWeekThemes: container.getWeekThemes,
     findMoodPatterns: container.findMoodPatterns,
-    searchEntries: container.searchEntries,
     getVocabularyGrowth: container.getVocabularyGrowth,
     getMilestones: container.getMilestones,
     markMilestone: container.markMilestone,
@@ -334,22 +326,12 @@ function Vidlun(props: {
   }, [container, t]);
 
   /*
-   * The door. The relock decision happens on the way back in, not on the way
-   * out: asking the system for Face ID while the app is still in the
-   * background gets silently refused, which is how the door once showed a
-   * button instead of a prompt. A short absence does not relock at all —
-   * stepping out to answer a message and coming straight back is not the
-   * situation the lock exists for.
-   */
-  const [unlocked, setUnlocked] = useState(!props.settings.appLock);
-
-  /*
    * "Record in Vidlun" from a widget, Siri, the Control Center or the Action
    * Button arrives as a URL and waits for the journal to be open: not over
-   * onboarding, not behind the lock, not in the middle of a card.
+   * onboarding, not in the middle of a card.
    */
   useRecordLink({
-    ready: props.settings.hasOnboarded && unlocked && flow.stage.kind === 'idle',
+    ready: props.settings.hasOnboarded && flow.stage.kind === 'idle',
     onRecord: flow.startRecording,
   });
 
@@ -366,51 +348,6 @@ function Vidlun(props: {
       watch.remove();
     };
   }, [flow.hearUnheard]);
-  const leftAt = useRef<number | null>(null);
-  const tryUnlock = useCallback(() => {
-    void container.screenLock.unlock(t('lock.reason')).then(setUnlocked);
-  }, [container.screenLock, t]);
-
-  useEffect(() => {
-    if (!props.settings.appLock) {
-      setUnlocked(true);
-
-      return;
-    }
-
-    const watch = AppState.addEventListener('change', (state) => {
-      if (state === 'background') {
-        leftAt.current = Date.now();
-
-        return;
-      }
-
-      if (state === 'active' && leftAt.current !== null) {
-        const awayMs = Date.now() - leftAt.current;
-
-        leftAt.current = null;
-
-        if (awayMs > RELOCK_AFTER_MS) {
-          setUnlocked(false);
-        }
-      }
-    });
-
-    return () => {
-      watch.remove();
-    };
-  }, [props.settings.appLock]);
-
-  const enableLock = useCallback(async () => {
-    if (!(await container.screenLock.available())) {
-      Alert.alert(t('profile.appLockUnavailableTitle'), t('profile.appLockUnavailableBody'));
-
-      return false;
-    }
-
-    return container.screenLock.unlock(t('lock.reason'));
-  }, [container.screenLock, t]);
-
   /*
    * The splash lifts when the journal is open — settings read, entries read —
    * but never before MIN_SPLASH_MS, so a fast phone gets a beat rather than a
@@ -470,8 +407,6 @@ function Vidlun(props: {
       onAskMicrophone={() => container.microphonePermission.request()}
       onDone={() => changeSettings({ ...props.settings, hasOnboarded: true })}
     />
-  ) : props.settings.appLock && !unlocked ? (
-    <LockedDoor t={t} onUnlock={tryUnlock} />
   ) : (
     <CaptureFlowScreen
       flow={flow}
@@ -484,7 +419,6 @@ function Vidlun(props: {
       entitlement={entitlement}
       onExport={exportJournal}
       onRestore={restoreJournal}
-      onEnableLock={enableLock}
       onFeedback={(text) => container.feedback.send(text)}
       inUkraine={container.inUkraine}
     />
@@ -557,48 +491,6 @@ function PrivacyCurtain(): React.JSX.Element | null {
       tint={theme.isDark ? 'dark' : 'light'}
       style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
     />
-  );
-}
-
-/** The one screen shown while the journal is shut. */
-function LockedDoor(props: {
-  readonly t: Translate;
-  readonly onUnlock: () => void;
-}): React.JSX.Element {
-  const { onUnlock } = props;
-
-  /*
-   * Asks as soon as the door appears, and again whenever the app returns to
-   * the foreground while it is still shut: opening the app is the request.
-   * The button below is only for a prompt someone dismissed by hand.
-   */
-  useEffect(() => {
-    onUnlock();
-
-    const watch = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        onUnlock();
-      }
-    });
-
-    return () => {
-      watch.remove();
-    };
-  }, [onUnlock]);
-
-  return (
-    <Screen centered>
-      <View style={{ alignItems: 'center', gap: 14, paddingHorizontal: 32 }}>
-        <AppText variant="display" align="center">
-          {props.t('lock.title')}
-        </AppText>
-        <AppText variant="body" color="inkSoft" align="center">
-          {props.t('lock.body')}
-        </AppText>
-        <View style={{ height: 10 }} />
-        <Button label={props.t('lock.unlock')} onPress={onUnlock} />
-      </View>
-    </Screen>
   );
 }
 

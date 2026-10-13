@@ -12,7 +12,6 @@ import type {
 import type { GetWeekSummary } from '@/application/use-cases/GetWeekSummary';
 import type { FindMoodPatterns } from '@/application/use-cases/FindMoodPatterns';
 import type { GetWeekThemes } from '@/application/use-cases/GetWeekThemes';
-import type { SearchEntries, SearchResult } from '@/application/use-cases/SearchEntries';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
 import type { FindRecordedEntries } from '@/application/use-cases/FindRecordedEntries';
 import type { FindRecording } from '@/application/use-cases/FindRecording';
@@ -146,17 +145,6 @@ export type CaptureStage =
    */
   | { readonly kind: 'legal'; readonly doc: LegalDocumentKind }
   /**
-   * The query and the filter live on the stage rather than beside it, so
-   * leaving search and coming back starts clean — a screen that remembers what
-   * you were looking for last week is one you have to clear before using.
-   */
-  | {
-      readonly kind: 'search';
-      readonly query: string;
-      readonly emotionId: string | null;
-      readonly result: SearchResult | null;
-    }
-  /**
    * The insights screen. `weeksBack` lives on the stage rather than beside it
    * so that leaving and coming back starts at this week again — a screen that
    * remembers you were reading June is a screen you have to navigate out of.
@@ -236,7 +224,6 @@ export interface CaptureDependencies {
   readonly getPastMonths: GetPastMonths;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
-  readonly searchEntries: SearchEntries;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
   readonly getMilestones: GetMilestones;
   readonly markMilestone: MarkMilestone;
@@ -316,12 +303,17 @@ export interface CaptureFlow {
   /** The entries that still have their audio; null until looked up. */
   readonly recorded: ReadonlySet<string> | null;
   readonly openHistory: () => void;
+  /**
+   * The emotions the journal is narrowed to; empty shows every entry. Kept
+   * while an entry is opened from the list and closed again, cleared when the
+   * journal is opened from the bar (owner's word, 2026-10-13).
+   */
+  readonly journalFilter: readonly string[];
+  readonly filterJournal: (emotionIds: readonly string[]) => void;
   /** Leaves an open card for wherever it was opened from. */
   readonly closeEntry: () => void;
   readonly openEntry: (entry: MoodEntry) => void;
   readonly openSettings: () => void;
-  readonly openSearch: () => void;
-  readonly search: (query: string, emotionId: string | null) => void;
   readonly openSubscription: () => void;
   readonly openLegal: (doc: LegalDocumentKind) => void;
   /** The grounding offer, after an entry that sounded overwhelmed. */
@@ -565,6 +557,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [monthCard, setMonthCard] = useState<Date | null>(null);
   const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
   const [recorded, setRecorded] = useState<ReadonlySet<string> | null>(null);
+  const [journalFilter, setJournalFilter] = useState<readonly string[]>([]);
   /*
    * The take behind the draft on screen, held only until it is confirmed or
    * abandoned. Not on the entry: MoodEntry is about what someone felt, and a
@@ -1135,26 +1128,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       });
   }, [dependencies.getPastMonths, fail]);
 
-  const runSearch = useCallback(
-    (query: string, emotionId: string | null) => {
-      // The typed text lands immediately and the results follow, so the field
-      // never lags behind the keyboard.
-      setStage({ kind: 'search', query, emotionId, result: null });
-
-      void dependencies.searchEntries
-        .execute({ query, emotionId })
-        .then((result) => {
-          setStage((current) =>
-            current.kind === 'search' && current.query === query && current.emotionId === emotionId
-              ? { ...current, result }
-              : current,
-          );
-        })
-        .catch(fail);
-    },
-    [dependencies.searchEntries, fail],
-  );
-
   const loadVocabulary = useCallback(
     (period?: { readonly from: Date; readonly to: Date }) => {
       setStage((current) =>
@@ -1355,6 +1328,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, [reloadHome]),
     history,
     recorded,
+    journalFilter,
+    filterJournal: setJournalFilter,
     openEntry: useCallback(
       (entry: MoodEntry) => {
         setStage((current) => ({
@@ -1553,10 +1528,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     openSettings: useCallback(() => {
       setStage({ kind: 'settings' });
     }, []),
-    openSearch: useCallback(() => {
-      runSearch('', null);
-    }, [runSearch]),
-    search: runSearch,
     openSubscription,
     openMonth,
     openMonths,
@@ -1661,6 +1632,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, [loadStats, stage]),
     openHistory: useCallback(() => {
       setStage({ kind: 'history' });
+      setJournalFilter([]);
       void dependencies.getHistory.execute().then(setHistory).catch(fail);
       // A card without its icon until the files answer, rather than a guess.
       void dependencies.findRecordedEntries.execute().then(setRecorded).catch(() => undefined);

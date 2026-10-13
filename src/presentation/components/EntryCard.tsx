@@ -23,8 +23,6 @@ export function EntryCard(props: {
   readonly today: Date;
   readonly t: Translate;
   readonly onOpen: () => void;
-  /** The words underneath, which the search results do without. */
-  readonly showEmotions?: boolean;
   /** Whether the entry still has its audio; no icon at all while unknown. */
   readonly hasAudio?: boolean;
 }): React.JSX.Element {
@@ -75,7 +73,7 @@ export function EntryCard(props: {
         <AppText variant="body" style={{ fontSize: 16, lineHeight: 23 }}>
           {props.entry.cleanTranscript}
         </AppText>
-        {props.showEmotions !== true || props.entry.emotionIds.length === 0 ? null : (
+        {props.entry.emotionIds.length === 0 ? null : (
           <AppText variant="secondary" color="inkFaint">
             {props.entry.emotionIds.map((id) => emotionLabel(id, props.t)).join(' · ')}
           </AppText>
