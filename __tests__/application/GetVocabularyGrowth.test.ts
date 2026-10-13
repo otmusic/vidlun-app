@@ -50,16 +50,30 @@ describe('how the person’s own vocabulary is changing', () => {
      * reason §3b keeps the three fields apart.
      */
     expect(growth.distinctCount).toBe(1);
-    expect(growth.firstTimeIds).toEqual(['sad']);
   });
 
-  it('calls a word new only when no earlier month held it', async () => {
+  it('counts how often each emotion was on the period’s entries, the most frequent first', async () => {
     const growth = await growthOver([
-      entry(LAST_MONTH, { selfEmotionIds: ['sad'] }),
-      entry(TODAY, { selfEmotionIds: ['sad', 'happy'] }),
+      entry(LAST_MONTH, { emotionIds: ['sad'] }),
+      entry(new Date(2026, 7, 3, 21, 0), { emotionIds: ['happy.content', 'bad.tired'] }),
+      entry(new Date(2026, 7, 10, 21, 0), { emotionIds: ['bad.tired'] }),
+      entry(TODAY, { selfEmotionIds: ['sad'], emotionIds: ['bad.tired', 'happy.content'] }),
     ]);
 
-    expect(growth.firstTimeIds).toEqual(['happy']);
+    // What the entries hold, not what was named unaided, and only this month.
+    expect(growth.counts).toEqual([
+      { id: 'bad.tired', count: 3 },
+      { id: 'happy.content', count: 2 },
+    ]);
+  });
+
+  it('puts the emotion named most recently first when two are as frequent', async () => {
+    const growth = await growthOver([
+      entry(new Date(2026, 7, 3, 21, 0), { emotionIds: ['sad'] }),
+      entry(TODAY, { emotionIds: ['happy'] }),
+    ]);
+
+    expect(growth.counts.map((each) => each.id)).toEqual(['happy', 'sad']);
   });
 
   it('reads a broad word replaced by one of its children as a refinement', async () => {
@@ -102,7 +116,7 @@ describe('how the person’s own vocabulary is changing', () => {
   it('says it has nothing rather than showing a row of zeroes', async () => {
     const growth = await growthOver([entry(TODAY, { selfEmotionIds: [] })]);
 
-    expect(growth).toMatchObject({ hasAnything: false, distinctCount: 0, firstTimeIds: [] });
+    expect(growth).toMatchObject({ hasAnything: false, distinctCount: 0, counts: [] });
   });
 
   it('describes this month by default, not the day it was asked', async () => {
@@ -135,9 +149,6 @@ describe('how the person’s own vocabulary is changing', () => {
       { monthStart: new Date(2026, 6, 1), distinctCount: 1 },
       { monthStart: new Date(2026, 7, 1), distinctCount: 2 },
     ]);
-    // Both words are new against everything before July, and the period is one
-    // stretch rather than two months compared with each other.
-    expect([...growth.firstTimeIds].sort()).toEqual(['happy', 'sad']);
   });
 
   it('names the root the person really used, and only when it opened out', async () => {

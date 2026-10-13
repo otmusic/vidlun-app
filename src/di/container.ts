@@ -17,6 +17,7 @@ import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
 import { GetWeekThemes } from '../application/use-cases/GetWeekThemes';
 import { SearchEntries } from '../application/use-cases/SearchEntries';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
+import { FindRecordedEntries } from '../application/use-cases/FindRecordedEntries';
 import { FindRecording } from '../application/use-cases/FindRecording';
 import { ForgetOldRecordings } from '../application/use-cases/ForgetOldRecordings';
 import { GetHistory } from '../application/use-cases/GetHistory';
@@ -104,6 +105,7 @@ export interface Container {
   readonly getHistory: GetHistory;
   readonly forgetOldRecordings: ForgetOldRecordings;
   readonly findRecording: FindRecording;
+  readonly findRecordedEntries: FindRecordedEntries;
   readonly settings: SettingsStore;
   /** The take recorded before the phone could hear, if one waits. */
   readonly parkedTake: IParkedTake;
@@ -265,6 +267,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     getHistory: new GetHistory(repository),
     forgetOldRecordings: new ForgetOldRecordings(recordings, clock),
     findRecording: new FindRecording(recordings),
+    findRecordedEntries: new FindRecordedEntries(recordings),
     settings: new SettingsStore(AsyncStorage, detectLocale),
     parkedTake: new FileParkedTake(AsyncStorage, new ExpoParkedFiles()),
     createUnheardEntry: new CreateUnheardEntry(clock, idGenerator),

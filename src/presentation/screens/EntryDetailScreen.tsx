@@ -15,6 +15,7 @@ import { WaveMark } from '../components/WaveMark';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
+import { fonts } from '../theme/tokens';
 import { audioNoteKey } from './audioNote';
 import { emotionLabel, emotionTint } from '../components/emotionDisplay';
 
@@ -68,7 +69,8 @@ export function EntryDetailScreen(props: {
         }}
       >
         <BackButton t={t} onPress={props.onBack} />
-        <AppText variant="secondary" color="inkFaint">
+        {/* Heavier and in ink, so the day is what the eye finds first (owner's word, 2026-10-12). */}
+        <AppText variant="secondary" color="ink" style={{ fontFamily: fonts.strong }}>
           {formatWhen(entry.createdAt, props.locale)}
         </AppText>
         {/* A bin in red (owner's word, 2026-10-01); it still asks first. */}
@@ -112,19 +114,19 @@ export function EntryDetailScreen(props: {
         </View>
       )}
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {entry.emotionIds.map((id) => {
-          return (
-            <Chip
-              key={id}
-              label={emotionLabel(id, t)}
-              color={
-                emotionTint(id, props.vocabulary, theme)
-              }
-            />
-          );
-        })}
-      </View>
+      {/* Captioned like the topics under it (owner's word, 2026-10-12). */}
+      {entry.emotionIds.length === 0 ? null : (
+        <View style={{ gap: 10 }}>
+          <AppText variant="caption" color="inkFaint">
+            {t('entry.emotions')}
+          </AppText>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {entry.emotionIds.map((id) => (
+              <Chip key={id} label={emotionLabel(id, t)} color={emotionTint(id, props.vocabulary, theme)} />
+            ))}
+          </View>
+        </View>
+      )}
 
       {entry.contextTags.length === 0 ? null : (
         <View style={{ gap: 10 }}>

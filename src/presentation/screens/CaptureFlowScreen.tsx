@@ -409,6 +409,7 @@ function Stage(
       return (
         <HistoryScreen
           days={flow.history}
+          recorded={flow.recorded}
           vocabulary={props.vocabulary}
           locale={props.locale}
           today={props.today}

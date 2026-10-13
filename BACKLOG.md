@@ -1517,6 +1517,54 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψ. "Твої емоції" counts the emotions; the journal says which entries have audio — 2026-10-13
+
+The owner's word, for 1.4:
+- **"Твої емоції" shows how often each emotion came up** in the chosen
+  period, the most frequent first, with a bar against the most frequent
+  one and the number of entries. "Вперше цього місяця" and "ті самі слова,
+  що й раніше" are gone (`firstTimeIds` and five copy keys with them).
+  - `GetVocabularyGrowth.counts` reads `emotionIds`, the words on the
+    journal's cards, unlike the rest of the use case, which measures the
+    person's own vocabulary from `selfEmotionIds`. An entry counts once
+    per emotion.
+  - At the same count, the emotion named most recently comes first.
+  - The trades for a finer word and Vidlun's sentence about them stay
+    under the bars, each shown only when there is one.
+  - The bars wear `emotionTint`, which is the one blue for every word
+    since the identity change.
+- **The journal's cards carry a microphone beside the time**: `mic` when
+  the entry still has its audio, `mic-off` when it does not. The answer
+  comes from the files (`IRecordingStore.withAudio`, `FindRecordedEntries`),
+  not from `source`, since a voice entry can outlive its audio. No icon
+  until the files answer, and search results show none.
+
+- **A quiet week on the stats screen has no "На головну" button** any
+  more; the back arrow above goes home. `stats.toHome` is gone.
+
+Seen on the simulator: the bars for October, both icons in the journal,
+and the quiet week without its button.
+
+---
+
+## 3χ. Captions and words on the entry page, the delete dialog, the empty journal — 2026-10-12
+
+The owner's word, for 1.4:
+- **The entry page.** The emotions get a caption, "Емоції" / "Emotions"
+  (new key `entry.emotions`), shown only when there are emotions; with
+  none, the "Vidlun не почув емоції" box stays as it was. The date at the
+  top is semibold in ink instead of faint.
+- **"Теми" / "Topics"** replaces "Про що говорили" / "What it was about".
+  `entry.topics` is one key, so the question card, the compare card and
+  the entry chips say "Теми" too.
+- **The delete dialog** keeps with "Залишити" instead of "Лишити".
+- **The empty journal** says "Тут поки порожньо" and "Розкажи, як минув
+  твій день." ("Nothing here yet", "Say how your day went.").
+
+Seen on the simulator: the date, the caption, and the dialog's button.
+
+---
+
 ## 3φ. The question card without "more precisely?" — 2026-10-07
 
 The owner's word, after seeing "точніше?" on the site's step-2 shot: no

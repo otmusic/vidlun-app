@@ -9,6 +9,13 @@ export interface RefinementPair {
   readonly toId: string;
 }
 
+/** How often one emotion was on the person's entries in the period. */
+export interface EmotionCount {
+  readonly id: string;
+  /** Entries that held it; an entry counts once however it was named. */
+  readonly count: number;
+}
+
 /** How many different words one month held, for the line across the period. */
 export interface MonthlyDistinct {
   /** Midnight on the first of that month. */
@@ -39,8 +46,13 @@ export interface VocabularyGrowth {
   readonly wide: boolean;
   /** One entry per month the period touches, oldest first. */
   readonly months: readonly MonthlyDistinct[];
-  /** Named this month and in no month before it. */
-  readonly firstTimeIds: readonly string[];
+  /**
+   * Every emotion on the period's entries, the most frequent first; at the
+   * same count, the one named most recently first. Read from `emotionIds`,
+   * unlike everything else here: this is what the journal holds, the words
+   * on its cards, not a measure of the person's own vocabulary.
+   */
+  readonly counts: readonly EmotionCount[];
   /** A broad word used earlier, a child of it used now. */
   readonly refinements: readonly RefinementPair[];
   /** How many different words this month, however deep. */
@@ -98,7 +110,6 @@ export class GetVocabularyGrowth {
 
     const inPeriod = entries.filter((entry) => within(entry, from, to));
     const words = wordsIn(inPeriod);
-    const before = wordsIn(entries.filter((entry) => entry.createdAt < from));
     const months = monthsBetween(from, to);
 
     return {
@@ -111,7 +122,7 @@ export class GetVocabularyGrowth {
           inPeriod.filter((entry) => within(entry, monthStart, addMonths(monthStart, 1))),
         ).size,
       })),
-      firstTimeIds: [...words].filter((id) => !before.has(id)),
+      counts: countsIn(inPeriod),
       refinements: this.refinementsWithin(entries, months),
       widening: this.wideningWithin(inPeriod, months[0], to),
       distinctCount: words.size,
@@ -221,6 +232,22 @@ export class GetVocabularyGrowth {
   private depthOf(id: string): number {
     return this.vocabulary.find(id)?.depth ?? ROOT_DEPTH;
   }
+}
+
+function countsIn(entries: readonly MoodEntry[]): readonly EmotionCount[] {
+  const counts = new Map<string, number>();
+  const newestFirst = [...entries].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  for (const entry of newestFirst) {
+    for (const id of new Set(entry.emotionIds)) {
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+  }
+
+  // A stable sort, so ties keep the newest-first order they were met in.
+  return [...counts.entries()]
+    .map(([id, count]) => ({ id, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 function wordsIn(entries: readonly MoodEntry[]): ReadonlySet<string> {

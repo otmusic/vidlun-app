@@ -61,6 +61,19 @@ export class FileRecordingStore implements IRecordingStore {
     return Promise.resolve(file.exists ? file.uri : null);
   }
 
+  withAudio(): Promise<ReadonlySet<string>> {
+    if (!this.directory.exists) {
+      return Promise.resolve(new Set());
+    }
+
+    const ids = this.directory
+      .list()
+      .filter((item): item is File => item instanceof File && item.name.endsWith(EXTENSION))
+      .map((file) => file.name.slice(0, -EXTENSION.length));
+
+    return Promise.resolve(new Set(ids));
+  }
+
   private fileFor(entryId: string): File {
     return new File(this.directory, `${entryId}${EXTENSION}`);
   }

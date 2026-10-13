@@ -151,4 +151,8 @@ export class InMemoryRecordingStore implements IRecordingStore {
   find(entryId: string): Promise<string | null> {
     return Promise.resolve(this.kept.get(entryId) ?? null);
   }
+
+  withAudio(): Promise<ReadonlySet<string>> {
+    return Promise.resolve(new Set(this.kept.keys()));
+  }
 }

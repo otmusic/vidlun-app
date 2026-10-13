@@ -14,4 +14,6 @@ export interface IRecordingStore {
   discardBefore(cutoff: Date): Promise<void>;
   /** Null when the entry has no audio, or when its year has passed. */
   find(entryId: string): Promise<string | null>;
+  /** Every entry that still has its audio, in one look rather than one per entry. */
+  withAudio(): Promise<ReadonlySet<string>>;
 }

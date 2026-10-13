@@ -6,6 +6,7 @@ import { type Locale, type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
 import { dayWordOf } from './EntryRow';
+import { Icon } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
 import { emotionLabel, moodTint } from './emotionDisplay';
 
@@ -24,6 +25,8 @@ export function EntryCard(props: {
   readonly onOpen: () => void;
   /** The words underneath, which the search results do without. */
   readonly showEmotions?: boolean;
+  /** Whether the entry still has its audio; no icon at all while unknown. */
+  readonly hasAudio?: boolean;
 }): React.JSX.Element {
   const theme = useTheme();
   const first = props.entry.emotionIds[0];
@@ -49,6 +52,15 @@ export function EntryCard(props: {
         <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13 }}>
           {`${dayWordOf(props.entry.createdAt, props.today, props.locale, props.t)} · ${timeOf(props.entry.createdAt, props.locale)}`}
         </AppText>
+        {/* With its audio or without, beside the time (owner's word, 2026-10-13). */}
+        {props.hasAudio === undefined ? null : (
+          <View
+            accessible
+            accessibilityLabel={props.t(props.hasAudio ? 'feed.withAudio' : 'feed.withoutAudio')}
+          >
+            <Icon name={props.hasAudio ? 'mic' : 'mic-off'} size={14} color="inkFaint" />
+          </View>
+        )}
         {first === undefined ? null : (
           <AppText
             variant="secondary"

@@ -188,6 +188,7 @@ function Vidlun(props: {
     getHistory: container.getHistory,
     forgetOldRecordings: container.forgetOldRecordings,
     findRecording: container.findRecording,
+    findRecordedEntries: container.findRecordedEntries,
     keepRecordings: props.settings.keepRecordings,
     parkedTake: container.parkedTake,
     createUnheardEntry: container.createUnheardEntry,

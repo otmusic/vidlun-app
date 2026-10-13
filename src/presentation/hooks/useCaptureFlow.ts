@@ -14,6 +14,7 @@ import type { FindMoodPatterns } from '@/application/use-cases/FindMoodPatterns'
 import type { GetWeekThemes } from '@/application/use-cases/GetWeekThemes';
 import type { SearchEntries, SearchResult } from '@/application/use-cases/SearchEntries';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
+import type { FindRecordedEntries } from '@/application/use-cases/FindRecordedEntries';
 import type { FindRecording } from '@/application/use-cases/FindRecording';
 import type { ForgetOldRecordings } from '@/application/use-cases/ForgetOldRecordings';
 import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory';
@@ -219,6 +220,7 @@ export interface CaptureDependencies {
   readonly getHistory: GetHistory;
   readonly forgetOldRecordings: ForgetOldRecordings;
   readonly findRecording: FindRecording;
+  readonly findRecordedEntries: FindRecordedEntries;
   /** False stops a confirmed take from being kept at all. */
   readonly keepRecordings: boolean;
   readonly parkedTake: IParkedTake;
@@ -311,6 +313,8 @@ export interface CaptureFlow {
   readonly backHome: () => void;
   readonly deleteEntry: (id: string) => void;
   readonly history: readonly HistoryDay[] | null;
+  /** The entries that still have their audio; null until looked up. */
+  readonly recorded: ReadonlySet<string> | null;
   readonly openHistory: () => void;
   /** Leaves an open card for wherever it was opened from. */
   readonly closeEntry: () => void;
@@ -560,6 +564,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [home, setHome] = useState<HomeView | null>(null);
   const [monthCard, setMonthCard] = useState<Date | null>(null);
   const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
+  const [recorded, setRecorded] = useState<ReadonlySet<string> | null>(null);
   /*
    * The take behind the draft on screen, held only until it is confirmed or
    * abandoned. Not on the entry: MoodEntry is about what someone felt, and a
@@ -1349,6 +1354,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       reloadHome();
     }, [reloadHome]),
     history,
+    recorded,
     openEntry: useCallback(
       (entry: MoodEntry) => {
         setStage((current) => ({
@@ -1656,7 +1662,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     openHistory: useCallback(() => {
       setStage({ kind: 'history' });
       void dependencies.getHistory.execute().then(setHistory).catch(fail);
-    }, [dependencies.getHistory, fail]),
+      // A card without its icon until the files answer, rather than a guess.
+      void dependencies.findRecordedEntries.execute().then(setRecorded).catch(() => undefined);
+    }, [dependencies.getHistory, dependencies.findRecordedEntries, fail]),
     deleteEntry: useCallback(
       (id: string) => {
         // Reloading rather than dropping the row locally: the streak is
@@ -1676,10 +1684,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             );
             reloadHome();
             setHistory(await dependencies.getHistory.execute());
+            setRecorded(await dependencies.findRecordedEntries.execute());
           })
           .catch(fail);
       },
-      [dependencies.deleteEntry, dependencies.getHistory, reloadHome, fail],
+      [dependencies.deleteEntry, dependencies.getHistory, dependencies.findRecordedEntries, reloadHome, fail],
     ),
   };
 }

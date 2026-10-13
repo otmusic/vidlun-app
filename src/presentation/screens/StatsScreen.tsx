@@ -97,12 +97,13 @@ export function StatsScreen(props: {
       />
 
       {view === null ? null : view.week.entryCount === 0 ? (
-        /* A quiet week is its own screen in the drawing, not an empty card. */
-        <View style={{ marginTop: 44, gap: 26, alignItems: 'flex-start' }}>
+        /* A quiet week is its own screen in the drawing, not an empty card.
+           No home button under it (owner's word, 2026-10-13): the back
+           arrow above already goes there. */
+        <View style={{ marginTop: 44 }}>
           <AppText variant="lede" color="inkSoft">
             {t(view.weeksBack === 0 ? 'stats.quietWeek' : 'stats.quietPast')}
           </AppText>
-          <Button label={t('stats.toHome')} onPress={props.onBack} />
         </View>
       ) : (
         <>

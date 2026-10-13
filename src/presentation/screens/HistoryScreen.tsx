@@ -29,6 +29,8 @@ const BOTTOM_ROOM = 118;
  */
 export function HistoryScreen(props: {
   readonly days: readonly HistoryDay[] | null;
+  /** Entries that still have their audio; null while the files are being read. */
+  readonly recorded: ReadonlySet<string> | null;
   readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
   readonly today: Date;
@@ -58,6 +60,7 @@ export function HistoryScreen(props: {
           today={props.today}
           t={t}
           showEmotions
+          hasAudio={props.recorded?.has(row.entry.id)}
           onOpen={() => {
             onOpen(row.entry);
           }}
@@ -84,7 +87,16 @@ export function HistoryScreen(props: {
           <View style={{ flex: 1, height: 1, backgroundColor: theme.palette.ink, opacity: 0.35 }} />
         </Pressable>
       ),
-    [onEditMilestone, onOpen, props.locale, props.today, props.vocabulary, t, theme.palette.ink],
+    [
+      onEditMilestone,
+      onOpen,
+      props.locale,
+      props.recorded,
+      props.today,
+      props.vocabulary,
+      t,
+      theme.palette.ink,
+    ],
   );
 
   return (

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import type { VocabularyGrowth } from '@/application/use-cases/GetVocabularyGrowth';
+import type { EmotionCount, VocabularyGrowth } from '@/application/use-cases/GetVocabularyGrowth';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { type Locale, type Translate } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
@@ -14,12 +14,11 @@ import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 import { emotionLabel, emotionTint } from '../components/emotionDisplay';
 
-/** Four fit a row on the narrowest phone before the list starts wrapping oddly. */
-const SHOWN_WORDS = 4;
-
 /**
- * How many different words this person finds for what they feel — §M6's core
- * value signal, and the half of the insights screen the product exists for.
+ * Which emotions the person's entries held, and how often — the most frequent
+ * on top (owner's word, 2026-10-13, in place of the words named for the first
+ * time). Under it, the trades for a more exact word and Vidlun's sentence about
+ * them, each only when there is one.
  *
  * Its own screen rather than a section under the week, because the two answer
  * different questions and the week would always win the attention.
@@ -39,17 +38,12 @@ export function VocabularyScreen(props: {
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
   const [pickingPeriod, setPickingPeriod] = useState(false);
-  /** The list is trimmed to what fits; the rest are one tap away, not gone. */
-  const [showingAll, setShowingAll] = useState(false);
   const { growth, t } = props;
 
   const label = (id: string): string => emotionLabel(id, t);
   const colourOf = (id: string): string => {
     return emotionTint(id, props.vocabulary, theme) ?? theme.palette.inkSoft;
   };
-
-  const shown = showingAll ? growth.firstTimeIds : growth.firstTimeIds.slice(0, SHOWN_WORDS);
-  const rest = growth.firstTimeIds.length - shown.length;
 
   return (
     <ScrollView
@@ -90,42 +84,7 @@ export function VocabularyScreen(props: {
           <AppText variant="secondary">{periodLabel(growth, props.locale)}</AppText>
         </Pressable>
       </View>
-      <AppText variant="kicker" style={{ marginTop: 24, marginBottom: 16 }}>
-        {t(growth.wide ? 'dict.newWordsTitlePeriod' : 'stats.newWordsTitle')}
-      </AppText>
-
-      {shown.length === 0 ? (
-        <AppText variant="body" color="inkSoft" style={{ marginBottom: 26 }}>
-          {t(growth.wide ? 'dict.noNewWordsPeriod' : 'stats.noNewWords')}
-        </AppText>
-      ) : (
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 26,
-          }}
-        >
-          {shown.map((id) => (
-            <Outlined key={id} label={label(id)} colour={colourOf(id)} />
-          ))}
-          {rest > 0 ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setShowingAll(true);
-              }}
-              hitSlop={8}
-            >
-              <AppText variant="body" color="inkSoft">
-                {t('stats.newWordsMore', { n: rest })}
-              </AppText>
-            </Pressable>
-          ) : null}
-        </View>
-      )}
+      <Frequencies counts={growth.counts} label={label} colourOf={colourOf} t={t} />
 
       {growth.refinements.length === 0 ? null : (
         <>
@@ -185,6 +144,70 @@ export function VocabularyScreen(props: {
         }}
       />
     </ScrollView>
+  );
+}
+
+/**
+ * One row per emotion: its name, how many entries held it, and a bar measured
+ * against the most frequent one, in the emotion's own colour. The longest bar
+ * is always full, so the eye reads the order before it reads a number.
+ */
+function Frequencies(props: {
+  readonly counts: readonly EmotionCount[];
+  readonly label: (id: string) => string;
+  readonly colourOf: (id: string) => string;
+  readonly t: Translate;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const most = props.counts[0]?.count ?? 0;
+
+  if (most === 0) {
+    return (
+      <AppText variant="body" color="inkSoft" style={{ marginTop: 24, marginBottom: 26 }}>
+        {props.t('dict.countsEmpty')}
+      </AppText>
+    );
+  }
+
+  return (
+    <View style={{ gap: 16, marginTop: 24, marginBottom: 28 }}>
+      {props.counts.map(({ id, count }) => (
+        <View key={id} accessible accessibilityLabel={`${props.label(id)}: ${count}`} style={{ gap: 7 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: 12,
+            }}
+          >
+            <AppText variant="body" style={{ flexShrink: 1 }}>
+              {props.label(id)}
+            </AppText>
+            <AppText variant="numeric" color="inkSoft" style={{ fontSize: 15 }}>
+              {String(count)}
+            </AppText>
+          </View>
+          <View
+            style={{
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: theme.palette.line,
+              overflow: 'hidden',
+            }}
+          >
+            <View
+              style={{
+                width: `${(count / most) * 100}%`,
+                height: '100%',
+                borderRadius: 4,
+                backgroundColor: props.colourOf(id),
+              }}
+            />
+          </View>
+        </View>
+      ))}
+    </View>
   );
 }
 
