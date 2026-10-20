@@ -90,8 +90,8 @@ Null when the sentence does not say how the day was — someone testing the app,
 
 emotionIds: choose only from the list below, exact strings.
 - An empty array is a correct and common answer. Ordinary days exist. Never invent an emotion to fill the field: one fabricated insight destroys trust in every later one.
-- If the sentence holds two opposite feelings, return both, from different branches. Never average them into one neutral emotion; averaging erases what the entry meant.
-- Prefer a broad emotion you are sure of over a specific one you are guessing at.
+- If the sentence holds two opposite feelings, return both. Never average them into one neutral emotion; averaging erases what the entry meant.
+- Prefer an emotion you are sure of over one you are guessing at.
 - At most four.
 
 contextTags: at most three short lowercase topics naming what the entry was about, in the speaker's language — each a noun in its dictionary form (nominative singular), the kind of word someone would file the day under: work, family, sleep, the app. Never a verb, never a feeling, never a word copied from the sentence in the form it was said. Empty array if nothing is named.

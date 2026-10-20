@@ -185,12 +185,18 @@ export function SubscriptionScreen(props: {
         {/* Apple asks for these to work, and someone deciding whether to pay
             is exactly who wants to read them. Nothing else follows: the way
             out is the round back button at the top. */}
-        <View style={{ flexDirection: 'row', gap: 20, marginTop: 18 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 }}>
           <Pressable accessibilityRole="link" onPress={props.onOpenTerms} hitSlop={10}>
             <AppText variant="secondary" color="accentInk">
               {t('subs.terms')}
             </AppText>
           </Pressable>
+          {/* A separator for the eye only; each link reads on its own. */}
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <AppText variant="secondary" color="inkFaint">
+              ·
+            </AppText>
+          </View>
           <Pressable accessibilityRole="link" onPress={props.onOpenPrivacy} hitSlop={10}>
             <AppText variant="secondary" color="accentInk">
               {t('subs.privacy')}
@@ -230,15 +236,15 @@ function PlanCard(props: {
   const theme = useTheme();
   const { plan, t } = props;
 
+  // The free days, when a plan has them; the lifetime card's "one-time
+  // payment" under its price says the rest (owner's word, 2026-10-20).
   const note =
     plan.trialDays > 0
       ? t('subs.trialDays', {
           n: plan.trialDays,
           days: t(countedKey('subs.day', plan.trialDays, props.locale)),
         })
-      : plan.kind === 'lifetime'
-        ? t('subs.lifetimeNote')
-        : null;
+      : null;
 
   return (
     <Pressable
@@ -304,7 +310,8 @@ function PlanCard(props: {
         <AppText variant="numeric" style={{ fontSize: 18 }}>
           {plan.price}
         </AppText>
-        <AppText variant="caption" color="inkFaint" style={{ textTransform: 'none' }}>
+        {/* No tracking: spaced out, the one-time caption pushed the plan's name onto two lines. */}
+        <AppText variant="caption" color="inkFaint" style={{ textTransform: 'none', letterSpacing: 0 }}>
           {t(PLAN_PERIODS[plan.kind])}
         </AppText>
       </View>

@@ -1,6 +1,16 @@
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 
 /**
+ * A handful of entries the journal is opened on from somewhere else — the
+ * stats screen's "see these days" (owner's word, 2026-10-14) — under a label
+ * that says which handful it is.
+ */
+export interface JournalFocus {
+  readonly label: string;
+  readonly entryIds: readonly string[];
+}
+
+/**
  * Every emotion on the journal's entries, the most used first, for the
  * journal's filter to offer: what this person has felt, not the whole
  * vocabulary. The id breaks a tie, so the sheet reads the same twice.

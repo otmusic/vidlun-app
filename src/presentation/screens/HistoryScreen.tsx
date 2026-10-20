@@ -20,7 +20,7 @@ import { emotionLabel } from '../components/emotionDisplay';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
-import { emotionsUsed, entriesWithAny } from './journalFilter';
+import { emotionsUsed, entriesWithAny, type JournalFocus } from './journalFilter';
 
 /** The bar floats over this screen, so the last card needs room under it. */
 const BOTTOM_ROOM = 118;
@@ -39,6 +39,9 @@ export function HistoryScreen(props: {
   /** The emotions the journal is narrowed to; empty shows every entry. */
   readonly filter: readonly string[];
   readonly onFilter: (emotionIds: readonly string[]) => void;
+  /** A pattern's days, opened from the stats screen; null shows the journal. */
+  readonly focus: JournalFocus | null;
+  readonly onClearFocus: () => void;
   readonly vocabulary: EmotionVocabulary;
   readonly locale: Locale;
   readonly today: Date;
@@ -56,15 +59,25 @@ export function HistoryScreen(props: {
   const [filtering, setFiltering] = useState(false);
   const entries = useMemo(() => (props.days ?? []).flatMap((day) => day.entries), [props.days]);
   const offered = useMemo(() => emotionsUsed(entries), [entries]);
+  const { focus } = props;
   const filtered = props.filter.length > 0;
-  const shown = useMemo(() => entriesWithAny(entries, props.filter), [entries, props.filter]);
+  const narrowed = filtered || focus !== null;
+  const shown = useMemo(() => {
+    if (focus === null) {
+      return entriesWithAny(entries, props.filter);
+    }
+
+    const wanted = new Set(focus.entryIds);
+
+    return entries.filter((entry) => wanted.has(entry.id));
+  }, [entries, props.filter, focus]);
   // Sorted once per journal, not once per frame: a year of entries is a
   // few hundred rows, and the list re-renders on every scroll tick. The
   // milestones step aside while the journal is filtered: between a few
   // chosen days they would stand next to each other with nothing between.
   const rows = useMemo(
-    () => interleave(shown, filtered ? [] : props.milestones),
-    [shown, filtered, props.milestones],
+    () => interleave(shown, narrowed ? [] : props.milestones),
+    [shown, narrowed, props.milestones],
   );
 
   const renderRow = useCallback<ListRenderItem<Row>>(
@@ -221,6 +234,17 @@ export function HistoryScreen(props: {
             own X, and a reset for all of them: letting the filter go is
             one tap here, not a trip into the sheet (owner's word, 2026-10-13).
           */}
+          {/* A pattern's days: one chip naming them, and its X back to the whole journal. */}
+          {focus === null ? null : (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Chip
+                label={focus.label}
+                color={theme.palette.tag}
+                action="remove"
+                onPress={props.onClearFocus}
+              />
+            </View>
+          )}
           {filtered ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
               {props.filter.map((id) => (
@@ -251,7 +275,7 @@ export function HistoryScreen(props: {
           </View>
         }
         ListEmptyComponent={
-          props.days === null ? null : filtered ? (
+          props.days === null ? null : narrowed ? (
             <AppText variant="body" color="inkSoft" style={{ paddingVertical: 24 }}>
               {t('feed.filterNothing')}
             </AppText>

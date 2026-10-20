@@ -29,14 +29,14 @@ describe('CreateTextEntry', () => {
 
   it('trusts typed words completely, so nothing is broadened', async () => {
     const { subject } = useCase(
-      proposal({ emotionIds: ['happy.proud.successful', 'bad.tired.drained'] }),
+      proposal({ emotionIds: ['happy.optimistic.hopeful', 'bad.tired.drained'] }),
     );
 
     const entry = await subject.execute('Finished three tasks, happy, but very tired.');
 
     expect(entry.confidence.value).toBe(1);
     expect(entry.needsUserReview).toBe(false);
-    expect(entry.emotionIds).toEqual(['happy.proud.successful', 'bad.tired.drained']);
+    expect(entry.emotionIds).toEqual(['happy.optimistic.hopeful', 'bad.tired.drained']);
   });
 
   it('reads the trimmed text, and keeps it as the raw transcript', async () => {

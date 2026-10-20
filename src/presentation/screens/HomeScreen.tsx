@@ -311,6 +311,11 @@ function formatToday(locale: Locale): string {
  * The drawing's echo card: three dots fading like a sound dying away, the
  * marker, the old entry's own words. Most days it is simply not there —
  * which is what makes the day it appears feel like being remembered.
+ *
+ * Set apart from the entries under it (owner's word, 2026-10-15): bordered
+ * and unfilled, it read as one more of them. Now it sits on the accent's soft
+ * tint with no border, its caption in the accent and the old words quoted —
+ * Vidlun bringing something back, which is what the accent means.
  */
 function EchoFromPast(props: {
   readonly entry: MoodEntry;
@@ -332,9 +337,8 @@ function EchoFromPast(props: {
         props.onOpen(props.entry);
       }}
       style={{
-        borderWidth: 1,
-        borderColor: theme.palette.line,
         borderRadius: 22,
+        backgroundColor: theme.palette.accentSoft,
         paddingVertical: 18,
         paddingHorizontal: 20,
         marginBottom: 20,
@@ -350,7 +354,7 @@ function EchoFromPast(props: {
             style={{ width: 3, height: 3, borderRadius: 3, backgroundColor: colour, opacity: 0.3 }}
           />
         </View>
-        <AppText variant="caption" color="inkFaint">
+        <AppText variant="caption" color="accentInk">
           {props.t(props.alsoYear ? 'home.echoAlsoPast' : 'home.echoPast')}
         </AppText>
         {first === undefined ? null : (
@@ -364,7 +368,7 @@ function EchoFromPast(props: {
         )}
       </View>
       <AppText variant="body" numberOfLines={2} style={{ fontSize: 16, lineHeight: 23 }}>
-        {props.entry.cleanTranscript}
+        {`«${props.entry.cleanTranscript}»`}
       </AppText>
     </Pressable>
   );

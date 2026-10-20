@@ -3,8 +3,9 @@ import { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { DuplicateEmotionIdError, MissingParentEmotionError } from '@/domain/errors/EmotionErrors';
 
 /**
- * `sad.depressed` is deliberately sensitive at level 2 with an ordinary child,
- * which is the only shape that exercises the guard after depth lifting.
+ * `sad.depressed` is deliberately sensitive with an ordinary child, and
+ * `happy.proud.successful` is retired: a word old entries may hold and nothing
+ * may offer again.
  */
 const DEFINITIONS: readonly EmotionDefinition[] = [
   { id: 'happy', valence: 5, energy: 4, tier: 'core' },
@@ -12,7 +13,7 @@ const DEFINITIONS: readonly EmotionDefinition[] = [
   { id: 'bad', valence: 2, energy: 2, tier: 'core' },
   { id: 'happy.proud', valence: 5, energy: 4, tier: 'core' },
   { id: 'happy.proud.confident', valence: 5, energy: 4, tier: 'extended' },
-  { id: 'happy.proud.successful', valence: 5, energy: 4, tier: 'extended' },
+  { id: 'happy.proud.successful', valence: 5, energy: 4, tier: 'extended', retired: true },
   { id: 'sad.lonely', valence: 1, energy: 2, tier: 'core' },
   { id: 'sad.lonely.abandoned', valence: 1, energy: 2, tier: 'sensitive' },
   { id: 'sad.depressed', valence: 1, energy: 2, tier: 'sensitive' },
@@ -78,19 +79,15 @@ describe('hierarchy traversal', () => {
   });
 });
 
-describe('depth lifting', () => {
-  it('leaves an emotion alone when it is already broad enough', () => {
-    expect(vocabulary.liftTo('sad.lonely', 3)?.id).toBe('sad.lonely');
-    expect(vocabulary.liftTo('sad.lonely', 2)?.id).toBe('sad.lonely');
+describe('retired words', () => {
+  it('leaves them out of the words people are offered', () => {
+    expect(vocabulary.current().map((emotion) => emotion.id)).not.toContain('happy.proud.successful');
+    expect(vocabulary.current()).toHaveLength(DEFINITIONS.length - 1);
   });
 
-  it('broadens a specific emotion rather than dropping it', () => {
-    expect(vocabulary.liftTo('sad.lonely.abandoned', 2)?.id).toBe('sad.lonely');
-    expect(vocabulary.liftTo('sad.lonely.abandoned', 1)?.id).toBe('sad');
-  });
-
-  it('cannot lift an emotion it does not know', () => {
-    expect(vocabulary.liftTo('nope', 1)).toBeUndefined();
+  it('still knows them, so an old entry reads as it was', () => {
+    expect(vocabulary.find('happy.proud.successful')?.retired).toBe(true);
+    expect(vocabulary.keepKnown(['happy.proud.successful'])).toEqual(['happy.proud.successful']);
   });
 });
 
@@ -107,7 +104,7 @@ describe('filtering model output', () => {
 });
 
 describe('normalising an AI proposal', () => {
-  const fullConfidence = { maxDepth: 3, limit: 4 } as const;
+  const fullConfidence = { limit: 4 } as const;
 
   it('never crashes on an emotion the model invented', () => {
     expect(vocabulary.normalizeAiProposal(['happy.proud', 'happy.smug'], fullConfidence)).toEqual([
@@ -117,25 +114,24 @@ describe('normalising an AI proposal', () => {
 
   it('keeps both poles of a mixed state instead of averaging them', () => {
     expect(
-      vocabulary.normalizeAiProposal(['happy.proud.successful', 'bad.tired.drained'], fullConfidence),
-    ).toEqual(['happy.proud.successful', 'bad.tired.drained']);
+      vocabulary.normalizeAiProposal(['happy.proud.confident', 'bad.tired.drained'], fullConfidence),
+    ).toEqual(['happy.proud.confident', 'bad.tired.drained']);
   });
 
-  it('broadens every emotion when the transcript was only half heard', () => {
-    expect(
-      vocabulary.normalizeAiProposal(['happy.proud.successful', 'bad.tired.drained'], {
-        maxDepth: 1,
-        limit: 4,
-      }),
-    ).toEqual(['happy', 'bad']);
+  it('keeps the words as they came rather than lifting them to broader ones', () => {
+    // The list is flat since 2026-10-20: there is nothing broader to lift to.
+    expect(vocabulary.normalizeAiProposal(['bad.tired.drained'], fullConfidence)).toEqual([
+      'bad.tired.drained',
+    ]);
   });
 
-  it('collapses siblings that lift onto the same parent', () => {
+  it('names each word once', () => {
+    expect(vocabulary.normalizeAiProposal(['bad.tired', 'bad.tired'], fullConfidence)).toEqual(['bad.tired']);
+  });
+
+  it('never proposes a retired word', () => {
     expect(
-      vocabulary.normalizeAiProposal(['happy.proud.confident', 'happy.proud.successful'], {
-        maxDepth: 2,
-        limit: 4,
-      }),
+      vocabulary.normalizeAiProposal(['happy.proud.successful', 'happy.proud'], fullConfidence),
     ).toEqual(['happy.proud']);
   });
 
@@ -145,19 +141,15 @@ describe('normalising an AI proposal', () => {
     ]);
   });
 
-  it('refuses an ordinary emotion whose broader form is sensitive', () => {
+  it('lets an ordinary word through even when the one above it is sensitive', () => {
     expect(vocabulary.normalizeAiProposal(['sad.depressed.restless'], fullConfidence)).toEqual([
       'sad.depressed.restless',
     ]);
-    expect(vocabulary.normalizeAiProposal(['sad.depressed.restless'], { maxDepth: 2, limit: 4 })).toEqual([]);
   });
 
   it('stops at the limit the entry can hold', () => {
     expect(
-      vocabulary.normalizeAiProposal(['happy', 'sad', 'bad', 'happy.proud', 'sad.lonely'], {
-        maxDepth: 3,
-        limit: 4,
-      }),
+      vocabulary.normalizeAiProposal(['happy', 'sad', 'bad', 'happy.proud', 'sad.lonely'], fullConfidence),
     ).toEqual(['happy', 'sad', 'bad', 'happy.proud']);
   });
 

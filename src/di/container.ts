@@ -304,7 +304,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     findMoodPatterns: new FindMoodPatterns(repository, clock),
     reminders: new ExpoReminders(expoNotificationCenter()),
     purchases: purchasesFor(readRevenueCatKey()),
-    getVocabularyGrowth: new GetVocabularyGrowth(repository, vocabulary, clock),
+    getVocabularyGrowth: new GetVocabularyGrowth(repository, clock),
     exportJournal: new ExportJournal(repository, new JournalCodec(), clock),
     importJournal: new ImportJournal(repository, new JournalCodec()),
     fileSharer: new ShareSheetFileSharer(),

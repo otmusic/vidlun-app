@@ -5,6 +5,7 @@ import type { Translate } from '@/i18n';
 
 import { useTheme } from '../theme/ThemeProvider';
 import { AppText } from './AppText';
+import { Icon } from './Icon';
 import { SheetClose } from './ModalSheet';
 import { Sheet } from './Sheet';
 
@@ -54,26 +55,36 @@ export function FeedbackSheet(props: {
       <AppText variant="secondary" color="inkSoft" style={{ fontSize: 14.5, lineHeight: 22 }}>
         {t('feedback.body')}
       </AppText>
-      <TextInput
-        value={text}
-        onChangeText={setText}
-        placeholder={t('feedback.placeholder')}
-        placeholderTextColor={theme.palette.inkFaint}
-        multiline
-        style={{
-          ...theme.type.quote,
-          // Five lines, or three on a phone too short for five and a keyboard.
-          minHeight: (windowHeight < 720 ? 3 : 5) * 24,
-          color: theme.palette.ink,
-          backgroundColor: theme.palette.canvas,
-          borderWidth: 1,
-          borderColor: theme.palette.line,
-          borderRadius: 20,
-          paddingVertical: 16,
-          paddingHorizontal: 18,
-          textAlignVertical: 'top',
-        }}
-      />
+      {/*
+        No placeholder words, only a pen where the writing starts (owner's
+        word, 2026-10-20). It steps aside on the first letter.
+      */}
+      <View>
+        <TextInput
+          value={text}
+          onChangeText={setText}
+          accessibilityLabel={t('feedback.title')}
+          multiline
+          style={{
+            ...theme.type.quote,
+            // Five lines, or three on a phone too short for five and a keyboard.
+            minHeight: (windowHeight < 720 ? 3 : 5) * 24,
+            color: theme.palette.ink,
+            backgroundColor: theme.palette.canvas,
+            borderWidth: 1,
+            borderColor: theme.palette.line,
+            borderRadius: 20,
+            paddingVertical: 16,
+            paddingHorizontal: 18,
+            textAlignVertical: 'top',
+          }}
+        />
+        {text.length > 0 ? null : (
+          <View pointerEvents="none" style={{ position: 'absolute', top: 18, left: 18 }}>
+            <Icon name="edit-3" size={18} color="inkFaint" />
+          </View>
+        )}
+      </View>
       <AppText
         variant="caption"
         color="inkFaint"

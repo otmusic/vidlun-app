@@ -47,5 +47,7 @@ export function moodTint(mood: number | null, theme: Pick<Theme, 'palette'>): st
 export function idForTypedWord(text: string, vocabulary: EmotionVocabulary): string | null {
   const known = emotionIdForLabel(text);
 
-  return known !== null && vocabulary.has(known) ? known : ownWordId(text);
+  // A word that has left the list comes back as the person's own word, not
+  // as the vocabulary's: nothing reintroduces a retired word.
+  return known !== null && vocabulary.find(known)?.retired === false ? known : ownWordId(text);
 }

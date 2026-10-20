@@ -35,7 +35,6 @@ export function draftFromProposal(input: DraftInput): MoodEntry {
      */
     mood: input.proposal.mood === null ? null : MoodScore.clamped(input.proposal.mood),
     emotionIds: input.vocabulary.normalizeAiProposal(input.proposal.emotionIds, {
-      maxDepth: input.confidence.maxEmotionDepth,
       limit: MoodEntry.MAX_EMOTIONS,
     }),
     contextTags: input.proposal.contextTags,

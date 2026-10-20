@@ -1517,6 +1517,224 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψ++. The feedback sheet's words — 2026-10-20
+
+The owner's word:
+- **Body:** "Щось не так? Чогось не вистачає? Розкажи." / "Something wrong?
+  Something missing? Tell us."
+- **The field:** no placeholder words, only Feather's `edit-3` pen where the
+  writing starts. It steps aside on the first letter, and the field reads
+  as "Написати нам" to a screen reader. `feedback.placeholder` is gone.
+- **Note:** "Нічого з твоїх записів не додається — ми отримуємо лише цей
+  текст." / "None of your entries are attached — we receive only this text."
+- The title "Написати нам" and the button "Надіслати" are unchanged.
+
+The same day, the reminder sheet: its title "Нагадувати" became "Нагадати
+про запис" / "Remind me to write", and its switch "Нагадувати щодня" became
+"Повторювати щодня" / "Repeat every day".
+
+And the bottom of "Я":
+- **"Відновити з копії":** "Для нового телефона або після перевстановлення.
+  Відкрий файл резервної копії — і записи повернуться у щоденник."
+- **"Написати нам":** the hint is "Щось зламалося або чогось не вистачає?".
+- **Language:** the choice gets the title "Мова" / "Language" (new key
+  `profile.languageTitle`). It now sits in a card like the theme's, with
+  the same soft track and a paper pill for the chosen one, where before the
+  pills stood alone with no name.
+- **Subscription:** with no plan the button says "Підключити" (it was
+  "Оформити"). The status "Не активна" is unchanged.
+
+And the top of "Я":
+- **"Хвилина для себе":** the hint is now "…Нічого не записується й не
+  зберігається."
+- **"Нагадування":** when off, the row says "Вимкнено ›" where the time
+  would be and has no hint. When on, it shows the time and "Щодня" as
+  before. `Row` and `Heading` take an optional hint.
+- **"Тема":** with "Системна" chosen, the hint reads "Визначається
+  налаштуваннями телефону" instead of naming the current look, so
+  `profile.themeNow*` is gone.
+- **"Зберігати аудіо":** "Аудіозаписи зберігаються на цьому телефоні 13
+  місяців. Потім видаляються автоматично. Текстові розшифровки
+  залишаються."
+- **"Резервна копія":** "Збережи свої записи, щоб не втратити їх під час
+  зміни телефону." It no longer says the audio does not come along. That
+  is still true, and the owner chose the shorter line.
+
+All seen on the simulator.
+
+---
+
+## 3ψψ+0. The paywall's words — 2026-10-20
+
+The owner's word, after keeping "Місячний наратив" earlier the same day:
+- **Title and body:** "Твій місяць" — "Раз на місяць Vidlun збирає твої
+  думки, емоції та теми в один підсумок." In English: "Your month" — "Once a
+  month Vidlun gathers your thoughts, emotions and topics into one summary."
+- **Plans:** "Місячна підписка $3.99 / місяць", "Річна підписка −47%
+  $24.99 / рік, 7 днів безкоштовно", and "Довічний доступ $79.99,
+  одноразовий платіж". The lifetime card lost its "без поновлення" note.
+  The captions under the prices have no letter spacing, so "Довічний
+  доступ" fits on one line.
+- **The note under the plans, per plan:**
+  - Yearly: "7 днів безкоштовно, потім $24.99/рік." and "Скасувати підписку
+    можна будь-коли."
+  - Monthly: "$3.99/місяць, поновлюється автоматично." and the same cancel
+    line. The monthly plan has no free days, so it does not get the
+    owner's "7 днів безкоштовно" template.
+  - Lifetime: "$79.99 одним платежем — доступ назавжди." There is nothing
+    to cancel, so no cancel line.
+- **Restore:** "Відновити підписку" (was "Відновити покупку").
+- **Links:** "Умови · Приватність", with the dot hidden from screen readers.
+
+Seen on the simulator with each plan chosen.
+
+---
+
+## 3ψψ+. The active subscription's line — 2026-10-20
+
+The owner's word: under "Підписка активна", the text now reads "Керування та
+скасування — в App Store. Усе, що ти вже переглянув, залишиться тобі." The
+English is "Manage or cancel in the App Store. Everything you have already
+seen stays yours."
+
+- "Місячний наратив" and its description stay. The owner had seen
+  "Тижневий наратив" on an older build, was asked, and chose to keep the
+  monthly title.
+- "переглянув" is masculine. The owner chose it knowingly over the
+  genderless "Усе вже переглянуте залишиться тобі", which goes against
+  §7.9 of the brief.
+
+---
+
+## 3ψψ. The owner's flat list of emotions — 2026-10-20
+
+The owner's word: the vocabulary is now the owner's list of 76 words, flat. Asked and
+answered:
+- **No levels.** Every word is on the same footing, and the card offers the
+  8 nearest of all 76.
+- **Old entries keep their words.** Nothing is rewritten.
+- **"Неприйняття"** covers both "I don't accept something" and "I don't
+  accept myself", depending on the situation. It is not sensitive.
+
+What changed in the list:
+- 72 words stay.
+- 3 are renamed, labels only: Пустотливість → Пустощі, Приголомшеність →
+  Приголомшення, Нервовість → Нервозність.
+- 1 is new: `disgusted.nonacceptance` (Неприйняття / Non-acceptance,
+  valence 2, energy 3).
+- 50 leave and become `retired` in the data, among them "Погано", the
+  compound branch except "Вигорання", Прийняття, Біль, Приємна втома,
+  Полегшення після зусиль, Покинутість and Зрада.
+
+In code:
+- `Emotion.retired`.
+- `isProposableByAi` excludes retired words.
+- `EmotionVocabulary.current()` lists the words in use.
+- `normalizeAiProposal` no longer lifts by confidence. `liftTo` and
+  `Confidence.maxEmotionDepth` are gone, and a low-confidence entry is still
+  flagged for review.
+- The analyzer's prompt lists only current, non-sensitive ids, and its
+  "different branches" and "broad over specific" lines are reworded.
+- The card offers any current word, not only levels 1–2.
+- With no reading, the card offers the six old roots still in the list.
+- A typed retired word becomes the person's own word.
+- "Твої емоції" lost the refinement block and the dark prose panel, and
+  `GetVocabularyGrowth` keeps only `counts` and the period.
+- CLAUDE.md §5 regression 3 and the §6 depth rule record the change.
+
+Still to do:
+- The site says "Словник зі 125 емоцій". Change it to 76 when 1.4 ships,
+  since 1.3, with 125, is the version on sale.
+- The 1.4 store shot of "Your emotions" shows words that are all still in
+  the list.
+
+Seen on the simulator: the card offers Задоволення, Оптимізм, Ніжність,
+Гордість, Вдячність, Радість, Впевненість, Пустощі. The owner's month-ago
+card still shows the retired "Полегшення після зусиль".
+
+---
+
+## 3ϋ++. The month-ago card stands apart — 2026-10-15
+
+The owner's word: on home, "Місяць тому цього дня" blended into the entry
+cards under it. It had a border and no fill, which made it look like one
+more entry. Now:
+- it is filled with `accentSoft` and has no border;
+- its caption is in `accentInk`;
+- the old entry's words are quoted («…»), as on the entry page.
+
+The accent means Vidlun speaking, and this card is Vidlun bringing a day
+back. The year-ago card (`YearEchoCard`, ink border) is unchanged. Seen on
+the simulator in both themes with the Ukrainian demo journal.
+
+---
+
+## 3ϋ+. The week screen's words — 2026-10-14
+
+The owner's word, the same evening:
+- **Title:** "Твій тиждень" / "Your week" (new key `stats.yourWeek`), with
+  the dates under it in `PeriodHeader`'s second line. Until now the dates
+  were the title (since 2026-09-22).
+- **Captions:**
+  - "Настрій по днях" → "Емоції по днях" / "Emotions by day".
+  - "Помічений патерн" → "Що помітно" / "What stands out".
+  - "Про що ти говориш" → "Про що був твій тиждень" / "What your week was
+    about".
+- **No pattern:** "Цього тижня твої записи були різними — спільної
+  тенденції не видно."
+- **The unpaid topics link:** "Читати повністю" → "Читати записи повністю".
+
+Seen on the simulator with the owner's journal (a week with one entry).
+
+---
+
+## 3ϋ. The pattern names days and emotions, and opens them — 2026-10-14
+
+The owner's word, in two steps the same day.
+1. **No average of moods.** The person never sees a number on the scale, so
+   the pattern counts its words: "Добрий"/"Високий" (4–5) and
+   "Низький"/"Дуже низький" (1–2). "Рівний" sits on neither side.
+2. **Two kinds of sentence, plus a button.** The owner found "у записах із
+   «кава» настрій здебільшого добрий: 3 з 3" uninformative and chose these
+   two from the options offered:
+   - **From the days to the topic.** Take the month's hardest days (any
+     entry low or very low) or its best (any entry good or high). The
+     pattern names the topic on most of them, provided it sits on a third
+     more of them than of the month's other days. Days, not entries; three
+     on each side at least; hardest first on a tie.
+     Example: "Вересень: усі 3 найважчі дні — з темою «робота»."
+   - **From the topic to the emotion.** Name the emotion on most of a
+     topic's entries, provided it is a third more common there than
+     elsewhere. The first sentence's topic is preferred ("Поруч із цією
+     темою найчастіше звучить «Втома»: 4 з 5 записів"). Otherwise any
+     topic qualifies: "Поруч із темою «прогулянка» найчастіше звучить
+     «Спокій»: 2 з 3 записів."
+   - **"Подивитися ці дні ›"** (or "ці записи" for an emotion sentence
+     alone) opens the journal on exactly those entries. A chip above the
+     list names them, e.g. "Найважчі дні · «робота»", and its X brings back
+     the whole journal. The journal tab and the emotion filter clear it as
+     well.
+- The month is named in the sentence ("Вересень: …"), because the week on
+  screen can belong to an earlier month than "this one".
+- The tag stays in the nominative inside quotes, after "з темою", because
+  tags cannot be declined automatically.
+- **Code:** `MoodPattern` is now `DaysPattern | CompanionPattern`, both
+  with `entryIds`. `JournalFocus` lives in `journalFilter.ts` and in the
+  flow as `journalFocus`. The `stats.patternHigher/Lower` and
+  `stats.times*` keys are gone. Still paid; the unpaid card is unchanged.
+
+Seen on the simulator with the Ukrainian demo journal:
+- The 5–11 Oct week shows "Поруч із темою «робота» найчастіше звучить
+  «Втома»: 3 з 5 записів."
+- The 28 Sep – 4 Oct week shows both sentences.
+- "Подивитися ці дні" opens the three entries, and the chip's X brings back
+  all 39.
+
+The 1.4 store shot 06-week still quotes the old sentence. Retake it before
+1.4 goes to review.
+
+---
+
 ## 3ϊ. No Face ID lock — 2026-10-13
 
 The owner's word, for 1.4: the journal no longer locks.

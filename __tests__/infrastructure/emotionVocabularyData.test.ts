@@ -30,16 +30,23 @@ describe('the shipped emotion vocabulary', () => {
     ]);
   });
 
-  it('names the everyday compound states the brief calls for', () => {
-    for (const id of ['compound.money_anxiety', 'compound.awaiting', 'compound.good_tired']) {
-      expect(vocabulary.has(id)).toBe(true);
+  it('offers exactly the owner’s list of seventy-six words', () => {
+    // The list of 2026-10-20; everything else in the data is retired.
+    expect(vocabulary.current()).toHaveLength(76);
+    expect(vocabulary.find('disgusted.nonacceptance')?.retired).toBe(false);
+    expect(vocabulary.find('compound.burnout')?.retired).toBe(false);
+  });
+
+  it('keeps the words that left the list, so old entries still read', () => {
+    for (const id of ['compound.good_tired', 'happy.accepted', 'sad.hurt', 'bad']) {
+      expect(vocabulary.find(id)?.retired).toBe(true);
     }
   });
 
   it('carries no human-language labels, only ids and metadata', () => {
     const fields = new Set(EMOTION_VOCABULARY_DATA.flatMap((definition) => Object.keys(definition)));
 
-    expect([...fields].sort()).toEqual(['energy', 'id', 'tier', 'valence']);
+    expect([...fields].sort()).toEqual(['energy', 'id', 'retired', 'tier', 'valence']);
   });
 
   it('gives every branch somewhere to drill down to', () => {
@@ -48,16 +55,14 @@ describe('the shipped emotion vocabulary', () => {
     }
   });
 
-  it('leaves a proposable emotion at every level of every branch', () => {
-    for (const root of vocabulary.roots()) {
-      expect(root.isProposableByAi).toBe(true);
-    }
-  });
+  it('lets the model name every current word except the sensitive ones', () => {
+    const current = vocabulary.current();
+    const proposable = current.filter((emotion) => emotion.isProposableByAi);
 
-  it('always has something safe to lift to when confidence is low', () => {
-    for (const emotion of everyEmotion()) {
-      expect(vocabulary.liftTo(emotion.id, 1)).toBeDefined();
-    }
+    expect(proposable.length).toBe(current.filter((emotion) => emotion.tier !== 'sensitive').length);
+    expect(everyEmotion().filter((emotion) => emotion.retired).every((emotion) => !emotion.isProposableByAi)).toBe(
+      true,
+    );
   });
 
   it('reserves the sensitive tier for states the model must not volunteer', () => {

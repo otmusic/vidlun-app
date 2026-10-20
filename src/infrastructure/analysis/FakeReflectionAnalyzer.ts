@@ -26,7 +26,7 @@ const SIGNS: readonly TopicSign[] = TOPICS;
  */
 const READINGS: readonly Omit<ReflectionProposal, 'cleanTranscript' | 'contextTags'>[] = [
   { mood: 5, emotionIds: ['happy.content', 'happy.optimistic'], safetyFlag: 'none' },
-  { mood: 2, emotionIds: ['sad.hurt', 'bad.tired'], safetyFlag: 'none' },
+  { mood: 2, emotionIds: ['sad.lonely', 'bad.tired'], safetyFlag: 'none' },
   { mood: 4, emotionIds: ['happy.proud', 'bad.tired'], safetyFlag: 'none' },
   { mood: 3, emotionIds: [], safetyFlag: 'none' },
   { mood: 1, emotionIds: ['bad.stressed.overwhelmed', 'fearful.anxious'], safetyFlag: 'distress' },

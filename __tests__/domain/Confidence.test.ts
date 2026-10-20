@@ -32,12 +32,6 @@ describe('Confidence', () => {
     expect(Confidence.of(value).level).toBe(level);
   });
 
-  it('allows a specific emotion only when it is sure it heard correctly', () => {
-    expect(Confidence.of(0.9).maxEmotionDepth).toBe(3);
-    expect(Confidence.of(0.6).maxEmotionDepth).toBe(2);
-    expect(Confidence.of(0.2).maxEmotionDepth).toBe(1);
-  });
-
   it('asks the user to check a transcript it barely made out', () => {
     expect(Confidence.of(0.2).needsUserReview).toBe(true);
     expect(Confidence.of(0.6).needsUserReview).toBe(false);

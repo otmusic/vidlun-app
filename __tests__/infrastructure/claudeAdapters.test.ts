@@ -41,19 +41,23 @@ describe('ClaudeReflectionAnalyzer', () => {
     expect(request?.output_config?.effort).toBeUndefined();
   });
 
-  it('offers the model no sensitive emotion to choose from', async () => {
+  it('offers the model no sensitive or retired emotion to choose from', async () => {
     const client = new FakeMessagesClient(textReply(JSON.stringify(PROPOSAL)));
 
     await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words');
 
-    const system = JSON.stringify(client.requests[0]?.system);
-    const sensitive = vocabulary.all().filter((emotion) => !emotion.isProposableByAi);
+    const block = client.requests[0]?.system?.[0];
+    const prompt = typeof block === 'object' ? block.text : '';
+    // One id per line after the heading, so a retired "bad" is not found inside "bad.tired".
+    const allowed = new Set(prompt.slice(prompt.indexOf('Allowed emotion ids:')).split('\n').slice(1));
+    const barred = vocabulary.all().filter((emotion) => !emotion.isProposableByAi);
 
-    expect(sensitive.length).toBeGreaterThan(0);
-    for (const emotion of sensitive) {
-      expect(system).not.toContain(emotion.id);
+    expect(barred.length).toBeGreaterThan(0);
+    for (const emotion of barred) {
+      expect(allowed.has(emotion.id)).toBe(false);
     }
-    expect(system).toContain('bad.tired.drained');
+    expect(allowed.has('bad.tired.drained')).toBe(true);
+    expect(allowed.has('disgusted.nonacceptance')).toBe(true);
   });
 
   it('tells the model that an empty emotion list is a correct answer', async () => {

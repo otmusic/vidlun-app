@@ -26,6 +26,11 @@ export interface EmotionDefinition {
   readonly valence: number;
   readonly energy: EmotionEnergy;
   readonly tier: EmotionTier;
+  /**
+   * No longer in the vocabulary people are offered, kept so an entry saved
+   * with it still reads as it was. Never proposed, offered or matched.
+   */
+  readonly retired?: boolean;
 }
 
 const ID_SEGMENT = /^[a-z][a-z0-9_]*$/;
@@ -45,6 +50,7 @@ export class Emotion {
     readonly energy: EmotionEnergy,
     readonly tier: EmotionTier,
     readonly parentId: string | null,
+    readonly retired: boolean,
   ) {}
 
   static create(definition: EmotionDefinition): Emotion {
@@ -69,7 +75,15 @@ export class Emotion {
 
     const parentId = depth === 1 ? null : segments.slice(0, -1).join(ID_SEPARATOR);
 
-    return new Emotion(definition.id, depth, definition.valence, definition.energy, definition.tier, parentId);
+    return new Emotion(
+      definition.id,
+      depth,
+      definition.valence,
+      definition.energy,
+      definition.tier,
+      parentId,
+      definition.retired === true,
+    );
   }
 
   /** The Feeling Wheel branch this belongs to, e.g. `sad` for `sad.lonely.abandoned`. */
@@ -77,8 +91,9 @@ export class Emotion {
     return this.parentId === null ? this.id : this.id.slice(0, this.id.indexOf(ID_SEPARATOR));
   }
 
+  /** A word Vidlun may name on its own: current, and not one only the person may choose. */
   get isProposableByAi(): boolean {
-    return this.tier !== 'sensitive';
+    return !this.retired && this.tier !== 'sensitive';
   }
 
   isDescendantOf(ancestorId: string): boolean {

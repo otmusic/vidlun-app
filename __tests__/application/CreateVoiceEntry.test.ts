@@ -50,13 +50,13 @@ describe('regression suite from real recordings', () => {
       ...proposal({
         cleanTranscript: 'Finished three tasks, happy, but very tired.',
         mood: 4,
-        emotionIds: ['happy.proud.successful', 'bad.tired.drained'],
+        emotionIds: ['happy.proud', 'bad.tired.drained'],
       }),
     });
 
     const entry = await run();
 
-    expect(entry.emotionIds).toEqual(['happy.proud.successful', 'bad.tired.drained']);
+    expect(entry.emotionIds).toEqual(['happy.proud', 'bad.tired.drained']);
     expect(entry.mood?.value).toBe(4);
 
     const branches = entry.emotionIds.map((id) => vocabulary.find(id)?.rootId);
@@ -75,15 +75,20 @@ describe('regression suite from real recordings', () => {
     expect(entry.hasEmotions).toBe(false);
   });
 
-  it('broadens emotions and asks for a look when the transcript was barely heard', async () => {
+  it('asks for a look when the transcript was barely heard, and keeps the words as they came', async () => {
     const { run } = capture(
       { text: 'something something tired', confidence: 0.3 },
-      proposal({ emotionIds: ['happy.proud.successful', 'bad.tired.drained'] }),
+      proposal({ emotionIds: ['happy.optimistic.hopeful', 'bad.tired.drained'] }),
     );
 
     const entry = await run();
 
-    expect(entry.emotionIds).toEqual(['happy', 'bad']);
+    /*
+     * The list is flat since 2026-10-20 (owner's word): there is no broader
+     * word to lift to, so a shaky transcript is answered by the review, not
+     * by swapping the words.
+     */
+    expect(entry.emotionIds).toEqual(['happy.optimistic.hopeful', 'bad.tired.drained']);
     expect(entry.needsUserReview).toBe(true);
   });
 
@@ -119,11 +124,11 @@ describe('CreateVoiceEntry', () => {
     const { run } = capture(
       CLEARLY_HEARD,
       proposal({
-        emotionIds: ['happy', 'sad', 'bad', 'angry', 'fearful', 'disgusted'],
+        emotionIds: ['happy', 'sad', 'fearful', 'angry', 'disgusted', 'surprised'],
       }),
     );
 
-    expect((await run()).emotionIds).toEqual(['happy', 'sad', 'bad', 'angry']);
+    expect((await run()).emotionIds).toEqual(['happy', 'sad', 'fearful', 'angry']);
   });
 
   it('hands back a draft with nothing said yet, whatever the entry is', async () => {

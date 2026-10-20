@@ -1,10 +1,7 @@
 import { DuplicateEmotionIdError, MissingParentEmotionError } from '../errors/EmotionErrors';
-import type { EmotionDepth } from '../value-objects/EmotionDepth';
 import { Emotion, type EmotionDefinition } from './Emotion';
 
 export interface AiProposalLimits {
-  /** Lifted from `Confidence.maxEmotionDepth`. */
-  readonly maxDepth: EmotionDepth;
   /** Lifted from `MoodEntry.MAX_EMOTIONS`. */
   readonly limit: number;
 }
@@ -68,6 +65,11 @@ export class EmotionVocabulary {
     return this.rootEmotions;
   }
 
+  /** The words people are offered now, in the data's order: everything not retired. */
+  current(): readonly Emotion[] {
+    return [...this.byId.values()].filter((emotion) => !emotion.retired);
+  }
+
   all(): readonly Emotion[] {
     return [...this.byId.values()];
   }
@@ -89,24 +91,6 @@ export class EmotionVocabulary {
     return ancestors;
   }
 
-  /**
-   * Walk up the tree until the emotion is no deeper than `maxDepth`. Broadening
-   * a correct emotion keeps the entry true; guessing a specific one does not.
-   */
-  liftTo(id: string, maxDepth: EmotionDepth): Emotion | undefined {
-    const emotion = this.byId.get(id);
-
-    if (emotion === undefined) {
-      return undefined;
-    }
-
-    if (emotion.depth <= maxDepth) {
-      return emotion;
-    }
-
-    return this.ancestorsOf(id).find((ancestor) => ancestor.depth <= maxDepth);
-  }
-
   /** Model output referring to emotions we do not have is dropped, never fatal. */
   keepKnown(ids: readonly string[]): readonly string[] {
     return ids.filter((id) => this.byId.has(id));
@@ -118,19 +102,15 @@ export class EmotionVocabulary {
 
   /**
    * The full gate between what the model returned and what Vidlun is allowed to
-   * show as a proposal.
+   * show as a proposal: words it knows, current and not sensitive, each once.
+   *
+   * Nothing is lifted to a broader word any more. Since the owner's flat list
+   * of 2026-10-20 there is no broader word to lift to, and a shaky transcript
+   * is answered by asking the person to look (`Confidence.needsUserReview`),
+   * not by swapping their words for ones further up a tree.
    */
   normalizeAiProposal(ids: readonly string[], limits: AiProposalLimits): readonly string[] {
-    const proposable = this.keepProposableByAi(this.keepKnown(ids));
-
-    const lifted = proposable
-      .map((id) => this.liftTo(id, limits.maxDepth))
-      .filter((emotion): emotion is Emotion => emotion !== undefined)
-      // Lifting can surface a sensitive ancestor of an otherwise ordinary leaf.
-      .filter((emotion) => emotion.isProposableByAi)
-      .map((emotion) => emotion.id);
-
-    return [...new Set(lifted)].slice(0, limits.limit);
+    return [...new Set(this.keepProposableByAi(this.keepKnown(ids)))].slice(0, limits.limit);
   }
 
   private parentOf(id: string): Emotion | undefined {

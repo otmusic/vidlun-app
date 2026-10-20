@@ -2,7 +2,11 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { WeekSummary } from '@/application/use-cases/GetWeekSummary';
-import type { MoodPattern } from '@/application/use-cases/FindMoodPatterns';
+import type {
+  CompanionPattern,
+  DaysPattern,
+  MoodPattern,
+} from '@/application/use-cases/FindMoodPatterns';
 import type { Theme } from '@/application/use-cases/GetWeekThemes';
 import { countedKey } from '@/i18n/plural';
 import type { Milestone } from '@/domain/entities/Milestone';
@@ -16,6 +20,8 @@ import { RoundBack } from '../components/RoundBack';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
+import { emotionLabel } from '../components/emotionDisplay';
+import type { JournalFocus } from './journalFilter';
 
 /** Straight off the drawing, not rounded to a grid: the chart is 156 tall. */
 const CHART_HEIGHT = 156;
@@ -34,7 +40,7 @@ const RING = { size: 124, radius: 42, width: 13 } as const;
 export interface StatsView {
   readonly week: WeekSummary;
   readonly themes: readonly Theme[];
-  /** Widest gap first. The card shows one; the rest are only counted. */
+  /** At most two: the month's best or hardest days, then a topic's emotion. */
   readonly patterns: readonly MoodPattern[];
   /** How many weeks back this is. Zero is the current one. */
   readonly weeksBack: number;
@@ -64,6 +70,8 @@ export function StatsScreen(props: {
   readonly onOpenMonths: () => void;
   readonly onOpenDay: () => void;
   readonly onOpenSubscription: () => void;
+  /** Opens the journal on a pattern's days (owner's word, 2026-10-14). */
+  readonly onOpenEntries: (focus: JournalFocus) => void;
   /**
    * Every milestone; the chart marks the week's. The list and "mark an event"
    * left this screen on 2026-09-30 (owner's word): events wait for a better
@@ -82,12 +90,11 @@ export function StatsScreen(props: {
       contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: 40 }}
     >
       <RoundBack t={t} onPress={props.onBack} />
-      {/* Every week is its dates, this one included, and nothing under them:
-          "last week" told the person less than the dates do (owner's word,
-          2026-09-22), and "this week" did too (2026-10-01). */}
+      {/* "Your week" over the week's dates (owner's word, 2026-10-14); the
+          dates alone had been the title since 2026-09-22. */}
       <PeriodHeader
-        title={view === null ? '' : rangeOf(view.week, props.locale)}
-        range=""
+        title={t('stats.yourWeek')}
+        range={view === null ? '' : rangeOf(view.week, props.locale)}
         canGoBack={view?.hasEarlierWeek ?? false}
         canGoForward={(view?.weeksBack ?? 0) > 0}
         backLabel={t('stats.previousWeek')}
@@ -126,6 +133,7 @@ export function StatsScreen(props: {
             locale={props.locale}
             t={t}
             onOpenSubscription={props.onOpenSubscription}
+            onOpenEntries={props.onOpenEntries}
           />
           {view.hasNarrativeAccess ? (
             <Themes themes={view.themes} locale={props.locale} t={t} />
@@ -345,6 +353,7 @@ function Pattern(props: {
   readonly locale: Locale;
   readonly t: Translate;
   readonly onOpenSubscription: () => void;
+  readonly onOpenEntries: (focus: JournalFocus) => void;
 }): React.JSX.Element | null {
   const theme = useTheme();
   const pattern = props.view.patterns[0];
@@ -377,13 +386,13 @@ function Pattern(props: {
           {props.t('stats.patternNoneBody')}
         </AppText>
       ) : props.view.hasNarrativeAccess ? (
-        <AppText variant="body">
-          {props.t(pattern.direction === 'higher' ? 'stats.patternHigher' : 'stats.patternLower', {
-            tag: pattern.tag,
-            n: pattern.occurrences,
-            times: props.t(countedKey('stats.times', pattern.occurrences, props.locale)),
-          })}
-        </AppText>
+        <PatternWords
+          patterns={props.view.patterns}
+          monthStart={props.view.week.weekStart}
+          locale={props.locale}
+          t={props.t}
+          onOpenEntries={props.onOpenEntries}
+        />
       ) : (
         /*
          * Named as a thing that exists, never quoted. The drawing blurs the
@@ -410,6 +419,99 @@ function Pattern(props: {
           </View>
           <AppText variant="body" color="accentInk">
             {props.t('subs.patternLocked')} ›
+          </AppText>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+/**
+ * The month's pattern in two sentences at most (owner's word, 2026-10-14):
+ * what its best or hardest days had in common, then the emotion that kept a
+ * topic company — the first sentence's topic when it has one, so the second
+ * reads as its continuation. Under them, the way to those days in the journal.
+ *
+ * The month is named in the sentence because the week on screen may belong to
+ * an earlier one, and "this month" would then be wrong.
+ */
+function PatternWords(props: {
+  readonly patterns: readonly MoodPattern[];
+  readonly monthStart: Date;
+  readonly locale: Locale;
+  readonly t: Translate;
+  readonly onOpenEntries: (focus: JournalFocus) => void;
+}): React.JSX.Element {
+  const { t } = props;
+  const days = props.patterns.find((each): each is DaysPattern => each.kind === 'days');
+  const companion = props.patterns.find(
+    (each): each is CompanionPattern => each.kind === 'companion',
+  );
+  const name = props.monthStart.toLocaleDateString(props.locale, { month: 'long' });
+  const month = `${name.charAt(0).toLocaleUpperCase(props.locale)}${name.slice(1)}`;
+  const sentences: string[] = [];
+
+  if (days !== undefined) {
+    const hardest = days.side === 'hardest';
+    const all = days.matching === days.total;
+
+    sentences.push(
+      t(
+        all
+          ? countedKey(hardest ? 'stats.patternHardestAll' : 'stats.patternBestAll', days.total, props.locale)
+          : hardest
+            ? 'stats.patternHardestSome'
+            : 'stats.patternBestSome',
+        { month, n: days.total, k: days.matching, tag: days.tag },
+      ),
+    );
+  }
+
+  if (companion !== undefined) {
+    sentences.push(
+      t(companion.tag === days?.tag ? 'stats.patternCompanionSame' : 'stats.patternCompanion', {
+        tag: companion.tag,
+        emotion: emotionLabel(companion.emotionId, t),
+        k: companion.matching,
+        n: companion.total,
+      }),
+    );
+  }
+
+  const focus: JournalFocus | null =
+    days !== undefined
+      ? {
+          label: t(days.side === 'hardest' ? 'feed.focusHardest' : 'feed.focusBest', { tag: days.tag }),
+          entryIds: days.entryIds,
+        }
+      : companion !== undefined
+        ? {
+            label: t('feed.focusCompanion', {
+              tag: companion.tag,
+              emotion: emotionLabel(companion.emotionId, t),
+            }),
+            entryIds: companion.entryIds,
+          }
+        : null;
+
+  return (
+    <View style={{ gap: 12 }}>
+      {/* A paragraph each: the two can be about different topics, and run together they read as one claim. */}
+      {sentences.map((sentence) => (
+        <AppText key={sentence} variant="body">
+          {sentence}
+        </AppText>
+      ))}
+      {focus === null ? null : (
+        <Pressable
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={() => {
+            props.onOpenEntries(focus);
+          }}
+        >
+          <AppText variant="body" color="accentInk">
+            {`${t(days !== undefined ? 'stats.patternOpenDays' : 'stats.patternOpenEntries')} ›`}
           </AppText>
         </Pressable>
       )}

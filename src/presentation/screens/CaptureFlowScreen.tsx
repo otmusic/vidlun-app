@@ -306,6 +306,7 @@ function Stage(
           onOpenMonths={flow.openMonths}
           onOpenDay={flow.openHistory}
           onOpenSubscription={flow.openSubscription}
+          onOpenEntries={flow.openJournalFocus}
           milestones={flow.milestones}
         />
       );
@@ -382,6 +383,8 @@ function Stage(
           recorded={flow.recorded}
           filter={flow.journalFilter}
           onFilter={flow.filterJournal}
+          focus={flow.journalFocus}
+          onClearFocus={flow.clearJournalFocus}
           vocabulary={props.vocabulary}
           locale={props.locale}
           today={props.today}

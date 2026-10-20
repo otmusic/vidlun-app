@@ -83,13 +83,13 @@ describe('the words offered for what was said', () => {
     expect(offered.some((emotion) => emotion.id === 'compound')).toBe(false);
   });
 
-  it('offers the broad words when there is no reading at all', () => {
+  it('offers the broadest words still in the list when there is no reading at all', () => {
     const offered = wordsWithoutReading(pool);
 
+    // "bad" left the list on 2026-10-20 and is never offered again.
     expect(offered.map((emotion) => emotion.id)).toEqual([
       'happy',
       'surprised',
-      'bad',
       'fearful',
       'angry',
       'disgusted',

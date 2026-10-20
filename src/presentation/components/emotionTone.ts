@@ -36,8 +36,6 @@ export const NEAR_COUNT = 8;
 const GOOD_MOOD = 4;
 const HARD_MOOD = 2;
 
-/** A branch of the wheel that names a kind of day rather than a feeling. */
-const NOT_A_FEELING: ReadonlySet<string> = new Set(['compound']);
 
 const isPleasant = (emotion: Emotion): boolean => emotion.valence >= GOOD_MOOD;
 
@@ -53,10 +51,9 @@ const isPleasant = (emotion: Emotion): boolean => emotion.valence >= GOOD_MOOD;
  * mood offers both. Nearness weighs valence double: whether a feeling is
  * pleasant matters more here than how much energy it carries.
  *
- * The first two levels of the wheel only, as the palette always offered,
- * and never a sensitive word: this list is the analysis speaking, and §6
- * bars it from proposing those. Since the card stopped opening a chosen
- * word's children (2026-10-07), a deeper word is one the person types.
+ * From the owner's flat list of 2026-10-20, every word on the same footing,
+ * and never a sensitive one: this list is the analysis speaking, and §6 bars
+ * it from proposing those. Words that left the list are never offered.
  */
 export function emotionsNear(
   heard: readonly Emotion[],
@@ -107,16 +104,17 @@ export function emotionsNear(
 
 /**
  * What the card offers when there is no reading at all — Vidlun could not
- * listen: the broad words at the root of the wheel.
+ * listen: the broadest words still in the list (happy, surprised, fearful,
+ * angry, disgusted and sad — the old roots that stayed), one per kind of
+ * feeling.
  */
 export function wordsWithoutReading(pool: readonly Emotion[]): readonly Emotion[] {
   return offerable(pool).filter((emotion) => emotion.depth === 1);
 }
 
+/** Current and not sensitive. Retired words stay readable but are never offered. */
 function offerable(pool: readonly Emotion[]): readonly Emotion[] {
-  return pool.filter(
-    (emotion) => emotion.depth <= 2 && emotion.isProposableByAi && !NOT_A_FEELING.has(emotion.id),
-  );
+  return pool.filter((emotion) => emotion.isProposableByAi);
 }
 
 interface Anchor {

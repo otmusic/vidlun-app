@@ -247,8 +247,10 @@ always pass:**
 2. **Mundane entry.** "Cooked dinner." → empty emotion array. Failing
    behaviour: inventing any emotion. This is the most important test — one
    fabricated insight destroys trust in every later one.
-3. **Broken transcript.** Low transcription confidence → emotions lifted to
-   level 1, entry flagged for user review.
+3. **Broken transcript.** Low transcription confidence → entry flagged for
+   user review. (Until 2026-10-20 the emotions were also lifted to level 1;
+   the vocabulary is flat since then, so there is nothing broader to lift to
+   and the words are kept as proposed.)
 4. **Out-of-vocabulary output.** If the model returns an unknown emotion id,
    drop it silently. The domain must never crash on model output.
 
@@ -288,11 +290,20 @@ Seven roots: `happy`, `surprised`, `bad`, `fearful`, `angry`, `disgusted`,
 `sad`, plus a `compound` branch for everyday concrete states
 (`compound.money_anxiety`, `compound.awaiting`, `compound.good_tired`).
 
+**Since 2026-10-20 the vocabulary people are offered is the owner's flat list
+of 76 words** (BACKLOG §3ψψ). Every word is on the same footing: the card
+offers the nearest of all of them, and nothing is broader or finer than
+anything else. The ids keep their wheel paths, because they are the join key
+stored entries hold, and one word is new (`disgusted.nonacceptance`,
+"Неприйняття"). The wheel's other words are `retired` in the data. They are
+kept so an old entry still reads as it was, and they are never proposed,
+offered or matched from a typed word.
+
 ### Business rules that must be enforced in code
 
 | Rule | Why |
 |---|---|
-| **Depth equals confidence.** High → level 3, medium → level 2, low → level 1. Lift the emotion up the tree rather than guessing specifics. | Better a broad correct emotion than a narrow invented one. |
+| ~~**Depth equals confidence.**~~ Retired 2026-10-20 with the flat vocabulary: there is no broader word to lift to. A low-confidence transcript is still flagged for the person to look at. | The words are the owner's flat list now; a shaky transcript is answered by asking, not by swapping words. |
 | **Zero emotions is a valid entry**, not an incomplete one. | Ordinary days exist. |
 | **Mood is independent of emotions.** Someone can feel `bad.tired` and rate the day 4. | Tiredness after achievement is a good day. |
 | **Mixed states are never averaged.** Return both, from different branches. | Averaging erases the entry's meaning. |

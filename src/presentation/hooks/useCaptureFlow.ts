@@ -24,6 +24,7 @@ import type { LegalDocumentKind } from '@/i18n/legal';
 import type { GetMonthSummary, MonthSummary } from '@/application/use-cases/GetMonthSummary';
 import type { GetPastMonths, PastMonth } from '@/application/use-cases/GetPastMonths';
 import type { StatsView } from '@/presentation/screens/StatsScreen';
+import type { JournalFocus } from '@/presentation/screens/journalFilter';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
@@ -310,6 +311,13 @@ export interface CaptureFlow {
    */
   readonly journalFilter: readonly string[];
   readonly filterJournal: (emotionIds: readonly string[]) => void;
+  /**
+   * The handful of entries the journal was opened on from a pattern, or null.
+   * Cleared with the bar's journal tab, with its X, and by the emotion filter.
+   */
+  readonly journalFocus: JournalFocus | null;
+  readonly openJournalFocus: (focus: JournalFocus) => void;
+  readonly clearJournalFocus: () => void;
   /** Leaves an open card for wherever it was opened from. */
   readonly closeEntry: () => void;
   readonly openEntry: (entry: MoodEntry) => void;
@@ -558,6 +566,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
   const [recorded, setRecorded] = useState<ReadonlySet<string> | null>(null);
   const [journalFilter, setJournalFilter] = useState<readonly string[]>([]);
+  const [journalFocus, setJournalFocus] = useState<JournalFocus | null>(null);
   /*
    * The take behind the draft on screen, held only until it is confirmed or
    * abandoned. Not on the entry: MoodEntry is about what someone felt, and a
@@ -1329,7 +1338,24 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     history,
     recorded,
     journalFilter,
-    filterJournal: setJournalFilter,
+    filterJournal: useCallback((emotionIds: readonly string[]) => {
+      setJournalFocus(null);
+      setJournalFilter(emotionIds);
+    }, []),
+    journalFocus,
+    openJournalFocus: useCallback(
+      (focus: JournalFocus) => {
+        setStage({ kind: 'history' });
+        setJournalFilter([]);
+        setJournalFocus(focus);
+        void dependencies.getHistory.execute().then(setHistory).catch(fail);
+        void dependencies.findRecordedEntries.execute().then(setRecorded).catch(() => undefined);
+      },
+      [dependencies.getHistory, dependencies.findRecordedEntries, fail],
+    ),
+    clearJournalFocus: useCallback(() => {
+      setJournalFocus(null);
+    }, []),
     openEntry: useCallback(
       (entry: MoodEntry) => {
         setStage((current) => ({
@@ -1633,6 +1659,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     openHistory: useCallback(() => {
       setStage({ kind: 'history' });
       setJournalFilter([]);
+      setJournalFocus(null);
       void dependencies.getHistory.execute().then(setHistory).catch(fail);
       // A card without its icon until the files answer, rather than a guess.
       void dependencies.findRecordedEntries.execute().then(setRecorded).catch(() => undefined);

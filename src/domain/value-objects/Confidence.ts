@@ -1,5 +1,4 @@
 import { InvalidConfidenceError } from '../errors/ValueObjectErrors';
-import type { EmotionDepth } from './EmotionDepth';
 
 export type ConfidenceLevel = 'low' | 'medium' | 'high';
 
@@ -40,21 +39,6 @@ export class Confidence {
     }
 
     return this.value >= MEDIUM_THRESHOLD ? 'medium' : 'low';
-  }
-
-  /**
-   * Depth equals confidence. A shaky transcript may still yield `sad`, but not
-   * `sad.lonely.abandoned` — a broad correct emotion beats a narrow invented one.
-   */
-  get maxEmotionDepth(): EmotionDepth {
-    switch (this.level) {
-      case 'high':
-        return 3;
-      case 'medium':
-        return 2;
-      case 'low':
-        return 1;
-    }
   }
 
   /** A transcript this weak is worth showing the user before it is trusted. */

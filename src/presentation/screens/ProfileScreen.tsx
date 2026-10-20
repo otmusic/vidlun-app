@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, useColorScheme, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import type { Entitlement } from '@/domain/entities/Entitlement';
@@ -82,16 +82,26 @@ export function ProfileScreen(props: {
       </Section>
 
       <Section>
+        {/*
+          Off, the row says so where the time would be (owner's word,
+          2026-10-20); on, the time stands there and "every day" under the name.
+        */}
         <Row
           title={t('profile.reminder')}
-          hint={t(settings.reminderOn ? 'profile.everyDay' : 'profile.reminderOff')}
+          hint={settings.reminderOn ? t('profile.everyDay') : undefined}
           onPress={() => {
             setPickingTime(true);
           }}
         >
-          <AppText variant="numeric" style={{ fontSize: 17 }}>
-            {clockOf(settings)}
-          </AppText>
+          {settings.reminderOn ? (
+            <AppText variant="numeric" style={{ fontSize: 17 }}>
+              {clockOf(settings)}
+            </AppText>
+          ) : (
+            <AppText variant="body" color="inkSoft">
+              {t('profile.reminderOff')}
+            </AppText>
+          )}
           <AppText variant="body" color="inkFaint">
             ›
           </AppText>
@@ -177,51 +187,59 @@ export function ProfileScreen(props: {
       </Section>
 
       {/*
-        No card around this one, unlike every other section: the drawing has the
-        pills standing on their own, and wrapping them produced a border inside
-        a border with the section's padding between them.
+        "Language" over the choice, in a card like the theme's (owner's word,
+        2026-10-20): the pills used to stand on their own with no name, and
+        the two pickers now read as the same kind of thing.
       */}
       <View
         style={{
-          flexDirection: 'row',
-          gap: 8,
-          padding: 6,
           borderWidth: 1,
           borderColor: theme.palette.line,
-          borderRadius: 999,
           backgroundColor: theme.palette.paper,
-          marginBottom: 30,
+          borderRadius: 22,
+          padding: 16,
+          marginBottom: 26,
         }}
       >
-        {/* The drawing's order, which is not the locale list's: uk first. */}
-        {(['uk', 'en'] as const).map((locale) => {
-          const chosen = settings.locale === locale;
+        <AppText variant="body" style={{ fontSize: 16, marginLeft: 4, marginTop: 1, marginBottom: 13 }}>
+          {t('profile.languageTitle')}
+        </AppText>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 4,
+            padding: 4,
+            borderRadius: 999,
+            backgroundColor: theme.palette.lineSoft,
+          }}
+        >
+          {/* The drawing's order, which is not the locale list's: uk first. */}
+          {(['uk', 'en'] as const).map((locale) => {
+            const chosen = settings.locale === locale;
 
-          return (
-            <Pressable
-              key={locale}
-              accessibilityRole="button"
-              accessibilityState={{ selected: chosen }}
-              onPress={() => {
-                props.onChange({ ...settings, locale });
-              }}
-              style={{
-                flex: 1,
-                borderRadius: 999,
-                paddingVertical: 12,
-                alignItems: 'center',
-                backgroundColor: chosen ? theme.palette.solid : 'transparent',
-              }}
-            >
-              <AppText
-                variant="body"
-                style={{ color: chosen ? theme.palette.onSolid : theme.palette.ink }}
+            return (
+              <Pressable
+                key={locale}
+                accessibilityRole="button"
+                accessibilityState={{ selected: chosen }}
+                onPress={() => {
+                  props.onChange({ ...settings, locale });
+                }}
+                style={{
+                  flex: 1,
+                  alignItems: 'center',
+                  paddingVertical: 12,
+                  borderRadius: 999,
+                  backgroundColor: chosen ? theme.palette.paper : 'transparent',
+                }}
               >
-                {t(`language.${locale}` as TranslationKey)}
-              </AppText>
-            </Pressable>
-          );
-        })}
+                <AppText variant="body" color={chosen ? 'ink' : 'inkSoft'}>
+                  {t(`language.${locale}` as TranslationKey)}
+                </AppText>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       {/*
@@ -270,15 +288,15 @@ function Theme(props: {
   readonly onChange: (settings: Settings) => void;
 }): React.JSX.Element {
   const theme = useTheme();
-  const scheme = useColorScheme();
   const { settings, t } = props;
 
-  const hint =
+  const hint = t(
     settings.theme === 'system'
-      ? t('profile.themeHintSystem', {
-          now: t(scheme === 'dark' ? 'profile.themeNowDark' : 'profile.themeNowLight'),
-        })
-      : t(settings.theme === 'dark' ? 'profile.themeHintDark' : 'profile.themeHintLight');
+      ? 'profile.themeHintSystem'
+      : settings.theme === 'dark'
+        ? 'profile.themeHintDark'
+        : 'profile.themeHintLight',
+  );
 
   return (
     <View
@@ -445,7 +463,7 @@ function Section(props: { readonly children: React.ReactNode }): React.JSX.Eleme
 
 function Row(props: {
   readonly title: string;
-  readonly hint: string;
+  readonly hint?: string;
   readonly children: React.ReactNode;
   readonly onPress?: () => void;
 }): React.JSX.Element {
@@ -477,15 +495,17 @@ function Row(props: {
 }
 
 /** A row's name and the line under it that says how it stands. */
-function Heading(props: { readonly title: string; readonly hint: string }): React.JSX.Element {
+function Heading(props: { readonly title: string; readonly hint?: string }): React.JSX.Element {
   return (
     <View style={{ gap: 3 }}>
       <AppText variant="body" style={{ fontSize: 16 }}>
         {props.title}
       </AppText>
-      <AppText variant="secondary" color="inkFaint" style={{ fontSize: 13, letterSpacing: 0 }}>
-        {props.hint}
-      </AppText>
+      {props.hint === undefined ? null : (
+        <AppText variant="secondary" color="inkFaint" style={{ fontSize: 13, letterSpacing: 0 }}>
+          {props.hint}
+        </AppText>
+      )}
     </View>
   );
 }
