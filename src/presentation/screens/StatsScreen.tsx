@@ -397,31 +397,45 @@ function Pattern(props: {
         />
       ) : (
         /*
-         * Named as a thing that exists, never quoted. The drawing blurs the
-         * sentence; native text will not blur, so ghost lines stand where it
-         * would be — the same honest tease without the words.
+         * Named as a thing that exists, never quoted. Lines the length of two
+         * sentences stand where the words would be, under the same glass and
+         * lock as the locked topics (owner's word, 2026-10-23), so the card
+         * says plainly that a subscription opens it without a word of the
+         * person's week behind the blur.
          */
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={props.t('subs.patternLocked')}
           onPress={props.onOpenSubscription}
-          style={{ gap: 16 }}
+          style={{
+            // Out to the card's edges, so the glass reads as the card's lower
+            // half rather than a grey box floating inside it.
+            marginHorizontal: -20,
+            marginBottom: -20,
+            borderBottomLeftRadius: 21,
+            borderBottomRightRadius: 21,
+            overflow: 'hidden',
+          }}
         >
-          <View style={{ gap: 8 }}>
-            {(['92%', '58%'] as const).map((width) => (
+          <View
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={{ gap: 10, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 30 }}
+          >
+            {LOCKED_LINES.map((width) => (
               <View
                 key={width}
                 style={{
-                  height: 13,
+                  height: 12,
                   width,
                   borderRadius: 6,
-                  backgroundColor: theme.palette.skeleton,
+                  backgroundColor: theme.palette.inkFaint,
+                  opacity: 0.45,
                 }}
               />
             ))}
           </View>
-          <AppText variant="body" color="accentInk">
-            {props.t('subs.patternLocked')} ›
-          </AppText>
+          <LockOverlay label={props.t('subs.patternLocked')} />
         </Pressable>
       )}
     </View>
@@ -530,6 +544,52 @@ const LOCKED_SHARES = [0.45, 0.33, 0.22] as const;
 const LOCKED_ROWS = ['72%', '56%', '40%'] as const;
 const LOCKED_RING = 88;
 
+/** Where the locked pattern's two sentences would be: three lines and a short one. */
+const LOCKED_LINES = ['94%', '86%', '90%', '46%'] as const;
+
+/**
+ * What stands over a paid part of the week for someone without a
+ * subscription (owner's word, 2026-10-23): frosted glass over the shape of
+ * the thing, a veil of the card's own paper so the words read against
+ * something quiet, and a lock with the way in. The parent clips it and
+ * takes the tap.
+ */
+function LockOverlay(props: { readonly label: string }): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <>
+      <BlurView
+        intensity={theme.isDark ? 34 : 30}
+        tint={theme.isDark ? 'dark' : 'light'}
+        style={StyleSheet.absoluteFill}
+      />
+      <View
+        style={[StyleSheet.absoluteFill, { backgroundColor: theme.palette.paper, opacity: 0.3 }]}
+      />
+      <View
+        style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', gap: 12 }]}
+      >
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 44,
+            backgroundColor: theme.palette.solid,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Icon name="lock" size={ICON_SIZE.inline} color="onSolid" />
+        </View>
+        <AppText variant="body" color="accentInk">
+          {props.label} ›
+        </AppText>
+      </View>
+    </>
+  );
+}
+
 /**
  * What the topics section looks like unpaid: the paid card's shape under
  * frosted glass, with a lock and the way in over it, so the section says
@@ -606,38 +666,7 @@ function TopicsLocked(props: {
             ))}
           </View>
         </View>
-        <BlurView
-          intensity={theme.isDark ? 34 : 30}
-          tint={theme.isDark ? 'dark' : 'light'}
-          style={StyleSheet.absoluteFill}
-        />
-        {/* A veil of the card's own paper, so the lock and the words over it
-            read against something quiet rather than against the colours. */}
-        <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: theme.palette.paper, opacity: 0.3 }]}
-        />
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            { alignItems: 'center', justifyContent: 'center', gap: 12 },
-          ]}
-        >
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 44,
-              backgroundColor: theme.palette.solid,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Icon name="lock" size={ICON_SIZE.inline} color="onSolid" />
-          </View>
-          <AppText variant="body" color="accentInk">
-            {props.t('stats.readAll')} ›
-          </AppText>
-        </View>
+        <LockOverlay label={props.t('stats.readAll')} />
       </Pressable>
     </View>
   );

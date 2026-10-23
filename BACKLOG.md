@@ -1547,7 +1547,11 @@ Four things the owner raised from the phone, all for 1.5 (50):
 - **The locked topics on the week.** The paid card's shape (a ring and its
   rows, made up) sits under frosted glass with a paper veil. Over it is a
   lock in a solid circle and "Читати записи повністю ›". Seen in both
-  themes. The locked pattern still uses ghost lines.
+  themes. The locked pattern got the same (the owner's word, the same
+  evening): four lines the length of two sentences under the glass, which
+  runs out to the card's edges below "Що помітно", and "Відкрити патерн ›".
+  One `LockOverlay` draws both.
+- **1.5 was already on sale**, so build 50 went up as 1.6.
 
 ---
 
