@@ -17,10 +17,11 @@ const RESPONSE_SCHEMA = {
     // has to decide rather than quietly omit it.
     mood: { anyOf: [{ type: 'integer', enum: [1, 2, 3, 4, 5] }, { type: 'null' }] },
     emotionIds: { type: 'array', items: { type: 'string' } },
+    nearbyEmotionIds: { type: 'array', items: { type: 'string' } },
     contextTags: { type: 'array', items: { type: 'string' } },
     safetyFlag: { type: 'string', enum: [...SAFETY_FLAGS] },
   },
-  required: ['cleanTranscript', 'mood', 'emotionIds', 'contextTags', 'safetyFlag'],
+  required: ['cleanTranscript', 'mood', 'emotionIds', 'nearbyEmotionIds', 'contextTags', 'safetyFlag'],
   additionalProperties: false,
 } as const;
 
@@ -94,6 +95,11 @@ emotionIds: choose only from the list below, exact strings.
 - Prefer an emotion you are sure of over one you are guessing at.
 - At most four.
 
+nearbyEmotionIds: the other words the person is offered to name this entry with, before they see your emotionIds. From the same list, exact strings, none already in emotionIds, the most fitting first, enough that the two lists together make eight.
+- These are choices put in front of the person, not claims about them, so the rules above about inventing do not stop you offering them — but every one must be a word someone who said exactly this might reach for. Look for the same feeling said more precisely or more loosely, and for each side of a mixed sentence.
+- Never a word the sentence gives no ground for. A worry is not contempt, judgement or resentment, however close they may seem in how heavy they are; offering those reads as not having listened.
+- When the sentence names no feeling, offer the words a day like the one described most often holds.
+
 contextTags: at most three short lowercase topics naming what the entry was about, in the speaker's language — each a noun in its dictionary form (nominative singular), the kind of word someone would file the day under: work, family, sleep, the app. Never a verb, never a feeling, never a word copied from the sentence in the form it was said. Empty array if nothing is named.
 
 safetyFlag: read only the content of the sentence. Use "distress" when the speaker sounds badly overwhelmed, "crisis" when they refer to harming themselves, and "none" otherwise. Feeling bad is not a crisis.
@@ -126,6 +132,7 @@ function parseProposal(raw: string): ReflectionProposal {
     // Absent and null are the same thing here, and both mean it was not said.
     mood: record['mood'] === null || record['mood'] === undefined ? null : readNumber(record, 'mood'),
     emotionIds: readStringArray(record, 'emotionIds'),
+    nearbyEmotionIds: readOffered(record),
     contextTags: readStringArray(record, 'contextTags'),
     safetyFlag: readSafetyFlag(record),
   };
@@ -159,6 +166,17 @@ function readStringArray(record: Record<string, unknown>, key: string): readonly
   }
 
   return value;
+}
+
+/**
+ * Words that are only ever offered on the card, so a reading without them, or
+ * with something else in their place, still makes the entry: the card fills
+ * itself from the nearest words instead.
+ */
+function readOffered(record: Record<string, unknown>): readonly string[] {
+  const value = record['nearbyEmotionIds'];
+
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
 
 /**

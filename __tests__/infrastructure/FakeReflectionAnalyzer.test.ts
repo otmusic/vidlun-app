@@ -27,6 +27,19 @@ describe('the pretend analysis for walking the card in development', () => {
     expect(flags).toEqual(['none', 'none', 'none', 'none', 'distress']);
   });
 
+  it('puts beside every reading only words the card may offer, none it already heard', async () => {
+    const vocabulary = createEmotionVocabulary();
+    const analyzer = new FakeReflectionAnalyzer(0);
+
+    for (let turn = 0; turn < 5; turn += 1) {
+      const reading = await analyzer.analyze('Words.');
+
+      expect(reading.nearbyEmotionIds.length).toBeGreaterThan(0);
+      expect(vocabulary.keepProposableByAi(reading.nearbyEmotionIds)).toEqual(reading.nearbyEmotionIds);
+      expect(reading.nearbyEmotionIds.some((id) => reading.emotionIds.includes(id))).toBe(false);
+    }
+  });
+
   it('names a topic in its dictionary form, whatever form the word came in', async () => {
     const reading = await new FakeReflectionAnalyzer(0).analyze('Studied for the exams all evening.');
 

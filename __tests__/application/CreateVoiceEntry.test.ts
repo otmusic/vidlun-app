@@ -36,9 +36,12 @@ function capture(heard: Heard, proposed: ReflectionProposal) {
     new SequentialIdGenerator(),
   );
 
+  const read = async () => useCase.execute(await transcribe.execute(RECORDING));
+
   return {
     analyzer,
-    run: async () => useCase.execute(await transcribe.execute(RECORDING)),
+    read,
+    run: async () => (await read()).draft,
   };
 }
 
@@ -112,6 +115,30 @@ describe('CreateVoiceEntry', () => {
     );
 
     expect((await run()).emotionIds).toEqual(['bad.tired']);
+  });
+
+  it('puts beside the draft the other words its reading offered, and none it may not offer', async () => {
+    const { read } = capture(
+      CLEARLY_HEARD,
+      proposal({
+        emotionIds: ['happy.optimistic', 'fearful.anxious.worried'],
+        nearbyEmotionIds: [
+          'happy.optimistic.hopeful',
+          'fearful.weak.worthless',
+          'happy.smug',
+          'happy.optimistic',
+          'happy.content.free',
+          'fearful.anxious',
+          'happy.optimistic.hopeful',
+        ],
+      }),
+    );
+
+    const reading = await read();
+
+    // Sensitive, unknown, retired, already heard and repeated ones all go.
+    expect(reading.nearbyEmotionIds).toEqual(['happy.optimistic.hopeful', 'fearful.anxious']);
+    expect(reading.draft.emotionIds).toEqual(['happy.optimistic', 'fearful.anxious.worried']);
   });
 
   it('pulls an out-of-range mood back onto the scale', async () => {
@@ -194,7 +221,10 @@ describe('CreateVoiceEntry', () => {
     );
 
     const yesterday = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() - 1, 21, 0);
-    const entry = await useCase.execute({ text: 'About yesterday.', confidence: Confidence.of(0.95) }, yesterday);
+    const { draft: entry } = await useCase.execute(
+      { text: 'About yesterday.', confidence: Confidence.of(0.95) },
+      yesterday,
+    );
 
     expect(entry.createdAt).toEqual(yesterday);
   });

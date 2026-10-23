@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, View } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { WeekSummary } from '@/application/use-cases/GetWeekSummary';
@@ -15,6 +16,7 @@ import type { Locale, Translate } from '@/i18n';
 import { AppText } from '../components/AppText';
 import { toneFor } from '../components/emotionTone';
 import { Button } from '../components/Button';
+import { Icon, ICON_SIZE } from '../components/Icon';
 import { RoundBack } from '../components/RoundBack';
 
 import { useDrawnSides } from '../hooks/useDrawnSides';
@@ -520,15 +522,26 @@ function PatternWords(props: {
 }
 
 /**
- * What the topics section looks like unpaid: the silhouette of the donut and
- * its rows, and the way in. The drawing blurs the real card; ghost shapes are
- * the native equivalent, and they leak nothing at all.
+ * What the shapes under the frosted glass take from the paid card: a ring of
+ * three slices and their rows. Made up, so no topic, count or share of the
+ * person's week is behind the blur — it only says that something is there.
+ */
+const LOCKED_SHARES = [0.45, 0.33, 0.22] as const;
+const LOCKED_ROWS = ['72%', '56%', '40%'] as const;
+const LOCKED_RING = 88;
+
+/**
+ * What the topics section looks like unpaid: the paid card's shape under
+ * frosted glass, with a lock and the way in over it, so the section says
+ * plainly that a subscription opens it (owner's word, 2026-10-23).
  */
 function TopicsLocked(props: {
   readonly t: Translate;
   readonly onOpenSubscription: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  const circumference = 2 * Math.PI * RING.radius;
+  let travelled = 0;
 
   return (
     <View style={{ marginBottom: 28 }}>
@@ -537,43 +550,94 @@ function TopicsLocked(props: {
       </AppText>
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={props.t('stats.readAll')}
         onPress={props.onOpenSubscription}
         style={{
           borderWidth: 1,
           borderColor: theme.palette.line,
           backgroundColor: theme.palette.paper,
           borderRadius: 22,
-          padding: 20,
-          gap: 18,
+          overflow: 'hidden',
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-          <View
-            style={{
-              width: 74,
-              height: 74,
-              borderRadius: 74,
-              borderWidth: 13,
-              borderColor: theme.palette.skeleton,
-            }}
-          />
-          <View style={{ flex: 1, gap: 11 }}>
-            {(['78%', '60%', '44%'] as const).map((width) => (
-              <View
-                key={width}
-                style={{
-                  height: 12,
-                  width,
-                  borderRadius: 6,
-                  backgroundColor: theme.palette.skeleton,
-                }}
-              />
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 22, padding: 22 }}
+        >
+          <Svg width={LOCKED_RING} height={LOCKED_RING} viewBox="0 0 100 100">
+            {LOCKED_SHARES.map((share, at) => {
+              const length = share * circumference;
+              const offset = -travelled;
+
+              travelled += length;
+
+              return (
+                <Circle
+                  key={share}
+                  cx={50}
+                  cy={50}
+                  r={RING.radius}
+                  fill="none"
+                  stroke={themeColour(theme.palette, at)}
+                  strokeWidth={RING.width}
+                  strokeDasharray={`${length} ${circumference - length}`}
+                  strokeDashoffset={offset}
+                  transform="rotate(-90 50 50)"
+                />
+              );
+            })}
+          </Svg>
+          <View style={{ flex: 1, gap: 14 }}>
+            {LOCKED_ROWS.map((width, at) => (
+              <View key={width} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 3,
+                    backgroundColor: themeColour(theme.palette, at),
+                  }}
+                />
+                <View
+                  style={{ height: 11, width, borderRadius: 6, backgroundColor: theme.palette.skeleton }}
+                />
+              </View>
             ))}
           </View>
         </View>
-        <AppText variant="body" color="accentInk">
-          {props.t('stats.readAll')} ›
-        </AppText>
+        <BlurView
+          intensity={theme.isDark ? 34 : 30}
+          tint={theme.isDark ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* A veil of the card's own paper, so the lock and the words over it
+            read against something quiet rather than against the colours. */}
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: theme.palette.paper, opacity: 0.3 }]}
+        />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { alignItems: 'center', justifyContent: 'center', gap: 12 },
+          ]}
+        >
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 44,
+              backgroundColor: theme.palette.solid,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon name="lock" size={ICON_SIZE.inline} color="onSolid" />
+          </View>
+          <AppText variant="body" color="accentInk">
+            {props.t('stats.readAll')} ›
+          </AppText>
+        </View>
       </Pressable>
     </View>
   );

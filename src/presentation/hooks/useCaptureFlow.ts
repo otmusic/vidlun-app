@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ConfirmEntry } from '@/application/use-cases/ConfirmEntry';
 import type { CreateTextEntry } from '@/application/use-cases/CreateTextEntry';
 import type { CreateVoiceEntry } from '@/application/use-cases/CreateVoiceEntry';
+import type { Reading } from '@/application/use-cases/draftFromProposal';
 import type { Spoken, TranscribeTake } from '@/application/use-cases/TranscribeTake';
 import type { GetHomeView, HomeView } from '@/application/use-cases/GetHomeView';
 import type {
@@ -56,6 +57,12 @@ export interface TurnStage {
   readonly chosen: readonly string[];
   /** Null until the analysis lands behind the question. */
   readonly draft: MoodEntry | null;
+  /**
+   * The other words the reading put beside what it heard, for the card to
+   * offer (owner's word, 2026-10-23). Empty until it lands, and when it
+   * could not listen.
+   */
+  readonly nearby: readonly string[];
   /** True once they have answered and are waiting on the analysis. */
   readonly holding: boolean;
   /**
@@ -516,6 +523,8 @@ export function whenAnalysisLands(
   draft: MoodEntry,
   /** The transcript this analysis was started for; absent means any. */
   forText?: string,
+  /** The other words the reading put beside it, for the card to offer. */
+  nearby: readonly string[] = [],
 ): CaptureStage {
   if (current.kind !== 'turn') {
     return current;
@@ -538,7 +547,9 @@ export function whenAnalysisLands(
    * mood and its topics (2026-09-30, 2026-10-01) — and never the observation,
    * so what the card can display and what the stage knows stay two sets.
    */
-  return current.holding ? cardAfterAnswer(current, draft, current.together) : { ...current, draft };
+  const card = { ...current, draft, nearby };
+
+  return current.holding ? cardAfterAnswer(card, draft, current.together) : card;
 }
 
 /**
@@ -777,7 +788,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * stays typed without the stage having to know which it is holding.
    */
   const rebuild = useRef<{
-    readonly heard: (words: Spoken) => Promise<MoodEntry>;
+    readonly heard: (words: Spoken) => Promise<Reading>;
     readonly unheard: (words: Spoken) => MoodEntry;
   } | null>(null);
 
@@ -828,6 +839,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             spoken,
             chosen,
             draft,
+            nearby: [],
             holding: false,
             unheard: true,
             together: false,
@@ -842,7 +854,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const ask = useCallback(
     (
       spoken: Spoken,
-      build: (words: Spoken) => Promise<MoodEntry>,
+      build: (words: Spoken) => Promise<Reading>,
       unheard: (words: Spoken) => MoodEntry,
     ) => {
       rebuild.current = { heard: build, unheard };
@@ -857,6 +869,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         spoken,
         chosen: [],
         draft: null,
+        nearby: [],
         holding: false,
         unheard: false,
         together: false,
@@ -865,10 +878,12 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       });
 
       build(spoken)
-        .then((draft) => {
-          setStage((current) => whenAnalysisLands(current, draft, spoken.text));
+        .then((reading) => {
+          setStage((current) =>
+            whenAnalysisLands(current, reading.draft, spoken.text, reading.nearbyEmotionIds),
+          );
 
-          void withObservation(draft);
+          void withObservation(reading.draft);
         })
         .catch(() => {
           /*
@@ -1495,14 +1510,16 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         // The draft in hand was read off the mishearing; none of it survives,
         // nor does a failure to read it. Their own named words do — the
         // feeling never depended on the typo.
-        setStage({ ...stage, spoken, draft: null, unheard: false });
+        setStage({ ...stage, spoken, draft: null, nearby: [], unheard: false });
 
         builders
           .heard(spoken)
-          .then((draft) => {
-            setStage((current) => whenAnalysisLands(current, draft, corrected));
+          .then((reading) => {
+            setStage((current) =>
+              whenAnalysisLands(current, reading.draft, corrected, reading.nearbyEmotionIds),
+            );
 
-            void withObservation(draft);
+            void withObservation(reading.draft);
           })
           .catch(() => {
             /*

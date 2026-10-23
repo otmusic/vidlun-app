@@ -26,6 +26,7 @@ const asking: CaptureStage = {
   spoken: SPOKEN,
   chosen: ['bad.tired'],
   draft: null,
+  nearby: [],
   holding: false,
   unheard: false,
   together: false,

@@ -225,16 +225,12 @@ section{padding-block:clamp(40px,7vw,88px)}
 .plan .free li::marker{color:var(--calm)}
 .plan .paid li::marker{color:var(--accent-ink)}
 .plan .note{margin-top:16px;max-width:none;font-size:13px}
-.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px;padding-top:28px;border-top:1px solid var(--line)}
-.tier{position:relative;background:var(--canvas);border:1px solid var(--line);border-radius:18px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.tier.pick{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.tier-name{font-size:14px;color:var(--ink-soft)}
-.tier-price{font-family:Unbounded,sans-serif;font-size:clamp(22px,2.4vw,28px);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.tier-period{font-size:13px;color:var(--ink-faint);line-height:1.35}
-.tier-saving{font-size:13px;color:var(--accent-ink);margin-top:4px}
-.badge{position:absolute;top:-11px;left:14px;background:var(--lime);color:#16181D;font-size:12px;font-weight:500;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.tier{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px;margin-top:28px;background:var(--canvas);border:1px solid var(--line);border-radius:18px;padding:18px 22px}
+.tier-name{flex:1 1 auto;font-size:15px;color:var(--ink-soft)}
+.tier-price{font-family:Unbounded,sans-serif;font-size:clamp(24px,2.6vw,30px);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.tier-period{font-size:13px;color:var(--ink-faint)}
 @media (max-width:720px){.plan-cols{grid-template-columns:1fr}.plan-cols>div+div{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:24px}}
-@media (max-width:560px){.tiers{grid-template-columns:1fr}.tier{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:16px 14px}.tier-name{flex:1 0 100%}.tier-period{flex:1 0 100%}.badge{top:-10px}}
+@media (max-width:560px){.tier{padding:16px 18px}.tier-name{flex:1 0 100%}}
 .faq{margin-top:24px;border-top:1px solid var(--line)}
 .faq details{border-bottom:1px solid var(--line)}
 .faq summary{cursor:pointer;list-style:none;padding:18px 0;font-weight:500;display:flex;justify-content:space-between;gap:16px;align-items:center}
@@ -356,18 +352,10 @@ function page(lang) {
         <div class="free"><h3>${escape(c.price.free.title)}</h3><ul>${c.price.free.items.map((i) => `<li>${escape(i)}</li>`).join('')}</ul></div>
         <div class="paid"><h3>${escape(c.price.paid.title)}</h3><ul>${c.price.paid.items.map((i) => `<li>${escape(i)}</li>`).join('')}</ul></div>
       </div>
-      <div class="tiers">
-        ${c.price.paid.plans
-          .map(
-            (plan) => `<div class="tier${plan.badge ? ' pick' : ''}">
-          ${plan.badge ? `<span class="badge">${escape(plan.badge)}</span>` : ''}
-          <span class="tier-name">${escape(plan.name)}</span>
-          <span class="tier-price">${escape(plan.price)}</span>
-          <span class="tier-period">${escape(plan.period)}</span>
-          ${plan.saving ? `<span class="tier-saving">${escape(plan.saving)}</span>` : ''}
-        </div>`,
-          )
-          .join('\n        ')}
+      <div class="tier">
+        <span class="tier-name">${escape(c.price.paid.plan.name)}</span>
+        <span class="tier-price">${escape(c.price.paid.plan.price)}</span>
+        <span class="tier-period">${escape(c.price.paid.plan.period)}</span>
       </div>
       <p class="note">${escape(c.price.paid.note)}</p>
     </div>

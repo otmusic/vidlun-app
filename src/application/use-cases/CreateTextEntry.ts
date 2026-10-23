@@ -1,11 +1,10 @@
 import type { EmotionVocabulary } from '../../domain/entities/EmotionVocabulary';
-import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import { NothingWasSaidError } from '../../domain/errors/MoodEntryErrors';
 import type { IClock } from '../../domain/ports/IClock';
 import type { IIdGenerator } from '../../domain/ports/IIdGenerator';
 import type { IReflectionAnalyzer } from '../../domain/ports/IReflectionAnalyzer';
 import { Confidence } from '../../domain/value-objects/Confidence';
-import { draftFromProposal } from './draftFromProposal';
+import { readingFromProposal, type Reading } from './draftFromProposal';
 
 /**
  * The fallback for someone who cannot speak right now. Confidence is full:
@@ -20,14 +19,14 @@ export class CreateTextEntry {
     private readonly idGenerator: IIdGenerator,
   ) {}
 
-  async execute(text: string, at?: Date): Promise<MoodEntry> {
+  async execute(text: string, at?: Date): Promise<Reading> {
     const typed = text.trim();
 
     if (typed.length === 0) {
       throw new NothingWasSaidError();
     }
 
-    return draftFromProposal({
+    return readingFromProposal({
       id: this.idGenerator.next(),
       /*
        * Yesterday, when the person is filling the day they missed; now

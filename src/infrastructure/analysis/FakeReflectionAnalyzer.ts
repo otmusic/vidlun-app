@@ -25,11 +25,73 @@ const SIGNS: readonly TopicSign[] = TOPICS;
  * grounding offer, so the simulator can walk it too.
  */
 const READINGS: readonly Omit<ReflectionProposal, 'cleanTranscript' | 'contextTags'>[] = [
-  { mood: 5, emotionIds: ['happy.content', 'happy.optimistic'], safetyFlag: 'none' },
-  { mood: 2, emotionIds: ['sad.lonely', 'bad.tired'], safetyFlag: 'none' },
-  { mood: 4, emotionIds: ['happy.proud', 'bad.tired'], safetyFlag: 'none' },
-  { mood: 3, emotionIds: [], safetyFlag: 'none' },
-  { mood: 1, emotionIds: ['bad.stressed.overwhelmed', 'fearful.anxious'], safetyFlag: 'distress' },
+  {
+    mood: 5,
+    emotionIds: ['happy.content', 'happy.optimistic'],
+    nearbyEmotionIds: [
+      'happy.peaceful.thankful',
+      'happy.optimistic.hopeful',
+      'happy.peaceful',
+      'happy.proud.confident',
+      'happy.peaceful.loving',
+      'happy.accepted.respected',
+    ],
+    safetyFlag: 'none',
+  },
+  {
+    mood: 2,
+    emotionIds: ['sad.lonely', 'bad.tired'],
+    nearbyEmotionIds: [
+      'bad.tired.drained',
+      'sad.vulnerable',
+      'angry.distant.withdrawn',
+      'bad.tired.sleepy',
+      'disgusted.disappointed',
+      'fearful.insecure',
+    ],
+    safetyFlag: 'none',
+  },
+  {
+    mood: 4,
+    emotionIds: ['happy.proud', 'bad.tired'],
+    nearbyEmotionIds: [
+      'happy.content',
+      'bad.tired.drained',
+      'happy.proud.confident',
+      'bad.tired.sleepy',
+      'happy.peaceful.thankful',
+      'bad.busy',
+    ],
+    safetyFlag: 'none',
+  },
+  {
+    mood: 3,
+    emotionIds: [],
+    nearbyEmotionIds: [
+      'happy.peaceful',
+      'happy.content',
+      'bad.tired',
+      'bad.bored',
+      'bad.busy',
+      'happy.peaceful.thankful',
+      'bad.tired.sleepy',
+      'surprised.confused.perplexed',
+    ],
+    safetyFlag: 'none',
+  },
+  {
+    mood: 1,
+    emotionIds: ['bad.stressed.overwhelmed', 'fearful.anxious'],
+    nearbyEmotionIds: [
+      'bad.stressed',
+      'fearful.anxious.nervous',
+      'fearful.anxious.worried',
+      'bad.busy.rushed',
+      'fearful.scared.helpless',
+      'bad.tired.drained',
+    ],
+    safetyFlag: 'distress',
+  },
 ];
 
 /** About what Haiku takes on the phone, so the card's waiting line is seen. */

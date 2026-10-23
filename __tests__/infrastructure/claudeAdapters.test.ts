@@ -14,6 +14,7 @@ const PROPOSAL = {
   cleanTranscript: 'Finished three tasks, happy, but very tired.',
   mood: 4,
   emotionIds: ['happy.proud.successful', 'bad.tired.drained'],
+  nearbyEmotionIds: ['happy.content', 'bad.tired'],
   contextTags: ['work'],
   safetyFlag: 'none',
 };
@@ -92,6 +93,31 @@ describe('ClaudeReflectionAnalyzer', () => {
     await expect(
       new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words'),
     ).rejects.toThrow(UnreadableAnalysisError);
+  });
+
+  it('asks the model for the other words the card offers, every time', async () => {
+    const client = new FakeMessagesClient(textReply(JSON.stringify(PROPOSAL)));
+
+    await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words');
+
+    const schema = client.requests[0]?.output_config?.format?.schema as
+      | { readonly required?: readonly string[] }
+      | undefined;
+
+    expect(schema?.required).toContain('nearbyEmotionIds');
+    expect(JSON.stringify(client.requests[0]?.system)).toContain('nearbyEmotionIds');
+  });
+
+  it.each([
+    ['missing', { ...PROPOSAL, nearbyEmotionIds: undefined }],
+    ['not a list', { ...PROPOSAL, nearbyEmotionIds: 'happy' }],
+  ])('keeps the entry when the offered words are %s', async (_label, reply) => {
+    const client = new FakeMessagesClient(textReply(JSON.stringify(reply)));
+
+    const proposal = await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words');
+
+    expect(proposal.nearbyEmotionIds).toEqual([]);
+    expect(proposal.emotionIds).toEqual(PROPOSAL.emotionIds);
   });
 
   it('reads an unknown safety flag as no flag rather than failing the entry', async () => {

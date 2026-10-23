@@ -8,7 +8,7 @@ import { legalDocument } from '@/i18n/legal';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { emotionsNear, wordsWithoutReading } from '../components/emotionTone';
+import { wordsOffered, wordsWithoutReading } from '../components/emotionTone';
 import { FeedbackSheet } from '../components/FeedbackSheet';
 import { MilestoneSheet } from '../components/MilestoneSheet';
 import { TabBar, type Tab } from '../components/TabBar';
@@ -147,10 +147,10 @@ function monthKey(month: Date): string {
 }
 
 /**
- * The words the question card offers: the handful nearest to Vidlun's
- * reading, the broad words when Vidlun could not listen, and none yet while
- * it is still reading — the processing screen stands in for the card until
- * then. The draft itself never reaches the card.
+ * The words the question card offers: what Vidlun heard and the words its
+ * reading put beside it, the broad words when Vidlun could not listen, and
+ * none yet while it is still reading — the processing screen stands in for
+ * the card until then. The draft itself never reaches the card.
  */
 function wordsFor(
   stage: Extract<CaptureFlow['stage'], { kind: 'turn' }>,
@@ -168,7 +168,7 @@ function wordsFor(
     .map((id) => vocabulary.find(id))
     .filter((emotion): emotion is Emotion => emotion !== undefined);
 
-  return emotionsNear(heard, stage.draft.mood?.value ?? null, vocabulary.all());
+  return wordsOffered(heard, stage.nearby, stage.draft.mood?.value ?? null, vocabulary.all());
 }
 
 function Stage(

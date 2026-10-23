@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Linking, Modal, Pressable, ScrollView, View } from 'react-native';
 
 import type { Entitlement } from '@/domain/entities/Entitlement';
@@ -11,26 +10,7 @@ import { RoundBack } from '../components/RoundBack';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
-import { savingAgainstMonthly } from './planSaving';
-
-const PLAN_LABELS = {
-  monthly: 'subs.planMonthly',
-  annual: 'subs.planAnnual',
-  lifetime: 'subs.planLifetime',
-} as const;
-
-const PLAN_PERIODS = {
-  monthly: 'subs.perMonth',
-  annual: 'subs.perYear',
-  lifetime: 'subs.once',
-} as const;
-
-/** What the drawing writes under each plan's price note. */
-const PLAN_NOTES = {
-  monthly: 'subs.noteMonthly',
-  annual: 'subs.noteAnnual',
-  lifetime: 'subs.noteLifetime',
-} as const;
+import { planOnSale } from './planOnSale';
 
 /** Where "manage" goes. The store owns cancelling; we only point at it. */
 const APP_STORE_SUBSCRIPTIONS = 'https://apps.apple.com/account/subscriptions';
@@ -64,14 +44,7 @@ export function SubscriptionScreen(props: {
   const { t } = props;
   // Trial or paid alike: both hold the thing, and both manage it in the store.
   const owns = props.entitlement !== 'none';
-  /*
-   * The year is preselected, and that is the whole argument of the screen: the
-   * month is here so the year can be read against it, and someone who never
-   * touches these cards buys the one worth buying.
-   */
-  const [chosenId, setChosenId] = useState<string | null>(null);
-  const preferred = props.plans.find((plan) => plan.kind === 'annual') ?? props.plans[0];
-  const chosen = props.plans.find((plan) => plan.id === chosenId) ?? preferred;
+  const plan = planOnSale(props.plans);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.palette.canvas }}>
@@ -118,7 +91,7 @@ export function SubscriptionScreen(props: {
               }}
             />
           </>
-        ) : props.plans.length === 0 ? (
+        ) : plan === undefined ? (
           /*
            * Nothing priced means the store has nothing to sell — not
            * configured, or unreachable. A card and a retry, because the
@@ -146,36 +119,14 @@ export function SubscriptionScreen(props: {
           </>
         ) : (
           <>
-            <View style={{ gap: 10, marginBottom: 14 }}>
-              {props.plans.map((plan) => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  chosen={chosen !== undefined && plan.id === chosen.id}
-                  saving={savingAgainstMonthly(plan, props.plans)}
-                  locale={props.locale}
-                  t={t}
-                  onPress={() => {
-                    setChosenId(plan.id);
-                  }}
-                />
-              ))}
-            </View>
-            {chosen === undefined ? null : (
-              <AppText variant="secondary" color="inkFaint" style={{ marginBottom: 14 }}>
-                {t(PLAN_NOTES[chosen.kind], {
-                  price: chosen.price,
-                  n: chosen.trialDays,
-                  days: t(countedKey('subs.day', chosen.trialDays, props.locale)),
-                })}
-              </AppText>
-            )}
+            <PlanCard plan={plan} locale={props.locale} t={t} />
+            <AppText variant="secondary" color="inkFaint" style={{ marginTop: 14, marginBottom: 14 }}>
+              {t('subs.noteMonthly', { price: plan.price })}
+            </AppText>
             <Solid
-              label={buyLabel(chosen, t, props.locale)}
+              label={buyLabel(plan, t, props.locale)}
               onPress={() => {
-                if (chosen !== undefined) {
-                  props.onSubscribe(chosen.id);
-                }
+                props.onSubscribe(plan.id);
               }}
             />
             <Quiet label={t('subs.restore')} onPress={props.onRestore} />
@@ -209,8 +160,8 @@ export function SubscriptionScreen(props: {
         outcome={props.outcome}
         t={t}
         onRetry={() => {
-          if (chosen !== undefined) {
-            props.onSubscribe(chosen.id);
+          if (plan !== undefined) {
+            props.onSubscribe(plan.id);
           }
         }}
         onClose={props.onDismissOutcome}
@@ -220,24 +171,19 @@ export function SubscriptionScreen(props: {
 }
 
 /**
- * One plan, priced by the store and never by us. The year carries what it
- * saves against the month, worked out from the two real prices rather than
- * written into the copy — a percentage in a translation is a number that goes
- * stale the first time a price moves.
+ * The month, priced by the store and never by us. One plan since 2026-10-23
+ * (owner's word), so there is nothing to choose between: the card states
+ * what is sold and what it costs, and the button below buys it.
  */
 function PlanCard(props: {
   readonly plan: Plan;
-  readonly chosen: boolean;
-  readonly saving: number | null;
   readonly locale: Locale;
   readonly t: Translate;
-  readonly onPress: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { plan, t } = props;
 
-  // The free days, when a plan has them; the lifetime card's "one-time
-  // payment" under its price says the rest (owner's word, 2026-10-20).
+  // The free days, if the store ever gives the month some.
   const note =
     plan.trialDays > 0
       ? t('subs.trialDays', {
@@ -247,59 +193,23 @@ function PlanCard(props: {
       : null;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: props.chosen }}
-      onPress={props.onPress}
+    <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         gap: 14,
-        borderWidth: props.chosen ? 2 : 1,
-        borderColor: props.chosen ? theme.palette.ink : theme.palette.line,
-        backgroundColor: props.chosen ? theme.palette.lineSoft : theme.palette.paper,
-        borderRadius: 20,
-        paddingVertical: 16,
-        paddingHorizontal: 18,
+        borderWidth: 1,
+        borderColor: theme.palette.line,
+        backgroundColor: theme.palette.paper,
+        borderRadius: 22,
+        paddingVertical: 20,
+        paddingHorizontal: 22,
       }}
     >
-      <View
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: 22,
-          borderWidth: 2,
-          borderColor: props.chosen ? theme.palette.ink : theme.palette.lineStrong,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {props.chosen ? (
-          <View
-            style={{ width: 10, height: 10, borderRadius: 10, backgroundColor: theme.palette.ink }}
-          />
-        ) : null}
-      </View>
       <View style={{ flex: 1, gap: 3 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <AppText variant="body" style={{ fontSize: 16 }}>
-            {t(PLAN_LABELS[plan.kind])}
-          </AppText>
-          {props.saving === null ? null : (
-            <View
-              style={{
-                borderRadius: 999,
-                backgroundColor: theme.palette.lime,
-                paddingVertical: 3,
-                paddingHorizontal: 9,
-              }}
-            >
-              <AppText variant="caption" style={{ color: theme.palette.ink, textTransform: 'none' }}>
-                {t('subs.saving', { percent: props.saving })}
-              </AppText>
-            </View>
-          )}
-        </View>
+        <AppText variant="body" style={{ fontSize: 16 }}>
+          {t('subs.planMonthly')}
+        </AppText>
         {note === null ? null : (
           <AppText variant="secondary" color="inkSoft">
             {note}
@@ -307,23 +217,18 @@ function PlanCard(props: {
         )}
       </View>
       <View style={{ alignItems: 'flex-end', gap: 2 }}>
-        <AppText variant="numeric" style={{ fontSize: 18 }}>
+        <AppText variant="numeric" style={{ fontSize: 22, lineHeight: 28 }}>
           {plan.price}
         </AppText>
-        {/* No tracking: spaced out, the one-time caption pushed the plan's name onto two lines. */}
         <AppText variant="caption" color="inkFaint" style={{ textTransform: 'none', letterSpacing: 0 }}>
-          {t(PLAN_PERIODS[plan.kind])}
+          {t('subs.perMonth')}
         </AppText>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
-function buyLabel(plan: Plan | undefined, t: Translate, locale: Locale): string {
-  if (plan === undefined) {
-    return t('subs.restore');
-  }
-
+function buyLabel(plan: Plan, t: Translate, locale: Locale): string {
   if (plan.trialDays > 0) {
     return t('subs.ctaTrial', {
       n: plan.trialDays,
@@ -331,7 +236,7 @@ function buyLabel(plan: Plan | undefined, t: Translate, locale: Locale): string 
     });
   }
 
-  return `${t(plan.kind === 'lifetime' ? 'subs.buyOnce' : 'subs.buyFor')} ${plan.price}`;
+  return `${t('subs.buyFor')} ${plan.price}`;
 }
 
 /**

@@ -101,7 +101,7 @@
         "items": [
           "Запис до хвилини і розпізнавання мови",
           "Найближчі емоції, настрій і теми запису",
-          "Щоденник, пошук, події",
+          "Щоденник із фільтром за емоціями, події",
           "Настрій по днях і словник емоцій",
           "Вправа на заземлення",
           "Резервна копія"
@@ -115,26 +115,12 @@
           "Теми й патерни тижня",
           "Записи до п’яти хвилин"
         ],
-        "plans": [
-          {
-            "name": "Місяць",
-            "price": "$4.99",
-            "period": "на місяць"
-          },
-          {
-            "name": "Рік",
-            "price": "$29.99",
-            "period": "на рік",
-            "badge": "7 днів безкоштовно",
-            "saving": "удвічі дешевше за місячну"
-          },
-          {
-            "name": "Назавжди",
-            "price": "$99.99",
-            "period": "один платіж, без поновлення"
-          }
-        ],
-        "note": "Ціни для App Store в Україні. Оформлення, керування і скасування в App Store; підписка поновлюється сама, поки її не скасувати."
+        "plan": {
+          "name": "Місячна підписка",
+          "price": "$4.99",
+          "period": "на місяць"
+        },
+        "note": "Ціна для App Store в Україні. Оформлення, керування і скасування в App Store; підписка поновлюється сама, поки її не скасувати."
       }
     },
     "faq": {
@@ -359,7 +345,7 @@
         "items": [
           "Recording up to a minute and speech recognition",
           "The closest emotions, mood and topics of each entry",
-          "Journal, search, events",
+          "Journal with an emotion filter, events",
           "Mood by day and your emotion vocabulary",
           "A grounding exercise",
           "Backup"
@@ -373,26 +359,12 @@
           "The week’s topics and patterns",
           "Recordings up to five minutes"
         ],
-        "plans": [
-          {
-            "name": "Month",
-            "price": "$3.99",
-            "period": "per month"
-          },
-          {
-            "name": "Year",
-            "price": "$24.99",
-            "period": "per year",
-            "badge": "7 days free",
-            "saving": "about half the monthly price"
-          },
-          {
-            "name": "Forever",
-            "price": "$79.99",
-            "period": "one payment, no renewal"
-          }
-        ],
-        "note": "US App Store prices; the App Store shows the price for your country. Buy, manage and cancel in the App Store; a subscription renews until cancelled."
+        "plan": {
+          "name": "Monthly subscription",
+          "price": "$3.99",
+          "period": "per month"
+        },
+        "note": "US App Store price; the App Store shows the price for your country. Buy, manage and cancel in the App Store; the subscription renews until cancelled."
       }
     },
     "faq": {

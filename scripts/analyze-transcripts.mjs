@@ -51,9 +51,13 @@ async function main() {
 
     const startedAt = Date.now();
     let entry;
+    let nearby;
 
     try {
-      entry = await writeObservation.execute(await useCase.execute(take.text));
+      const reading = await useCase.execute(take.text);
+
+      nearby = reading.nearbyEmotionIds;
+      entry = await writeObservation.execute(reading.draft);
     } catch (failure) {
       console.log(`  FAILED: ${failure.message}`);
       continue;
@@ -62,13 +66,13 @@ async function main() {
     const seconds = (Date.now() - startedAt) / 1000;
 
     results.push({ take, entry, seconds });
-    printEntry(entry, vocabulary, seconds);
+    printEntry(entry, nearby, vocabulary, seconds);
   }
 
   summarise(results);
 }
 
-function printEntry(entry, vocabulary, seconds) {
+function printEntry(entry, nearby, vocabulary, seconds) {
   const emotions =
     entry.emotionIds.length === 0
       ? '(none — an ordinary entry)'
@@ -82,6 +86,7 @@ function printEntry(entry, vocabulary, seconds) {
 
   console.log(`  mood:     ${entry.mood.value}/5`);
   console.log(`  emotions: ${emotions}`);
+  console.log(`  offered:  ${nearby.join(', ') || '(none — the card fills from the chart)'}`);
   console.log(`  context:  ${entry.contextTags.join(', ') || '(none)'}`);
   console.log(`  says:     ${entry.observation ?? '(nothing — correct when there is nothing to say)'}`);
   console.log(`  safety:   ${entry.safetyFlag}`);

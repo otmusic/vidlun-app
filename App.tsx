@@ -335,19 +335,25 @@ function Vidlun(props: {
     onRecord: flow.startRecording,
   });
 
-  // Entries saved without Vidlun's answer are listened to each time the app
-  // comes back to the front; the hook does the first pass on open.
+  /*
+   * Entries saved without Vidlun's answer are listened to each time the app
+   * comes back to the front; the hook does the first pass on open. Home is
+   * read again then too: a phone left with Vidlun open overnight comes back
+   * on a new day, and the link to tell about yesterday, the streak and the
+   * week strip were worked out for the old one.
+   */
   useEffect(() => {
     const watch = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         flow.hearUnheard();
+        flow.reloadHome();
       }
     });
 
     return () => {
       watch.remove();
     };
-  }, [flow.hearUnheard]);
+  }, [flow.hearUnheard, flow.reloadHome]);
   /*
    * The splash lifts when the journal is open — settings read, entries read —
    * but never before MIN_SPLASH_MS, so a fast phone gets a beat rather than a

@@ -1,5 +1,12 @@
 import { Emotion } from '@/domain/entities/Emotion';
-import { EMOTION_GROUPS, NEAR_COUNT, emotionsNear, groupOf, wordsWithoutReading } from '@/presentation/components/emotionTone';
+import {
+  EMOTION_GROUPS,
+  NEAR_COUNT,
+  emotionsNear,
+  groupOf,
+  wordsOffered,
+  wordsWithoutReading,
+} from '@/presentation/components/emotionTone';
 import { createEmotionVocabulary } from '@/infrastructure/analysis/emotionVocabularyData';
 
 function emotion(valence: number, energy: number) {
@@ -83,6 +90,21 @@ describe('the words offered for what was said', () => {
     expect(offered.some((emotion) => emotion.id === 'compound')).toBe(false);
   });
 
+  /*
+   * From a real entry (2026-10-23): a healing tooth and a worry about a
+   * friend's birthday were offered contempt and judgement, which sit at the
+   * same point of the chart as worry and mean nothing like it.
+   */
+  it('keeps a worry among its own kind rather than beside contempt and judgement', () => {
+    const offered = emotionsNear(heard('happy.optimistic', 'fearful.anxious.worried'), 4, pool).map(
+      (emotion) => emotion.id,
+    );
+
+    expect(offered).not.toContain('angry.critical.dismissive');
+    expect(offered).not.toContain('disgusted.disapproving.judgmental');
+    expect(offered).toContain('fearful.anxious');
+  });
+
   it('offers the broadest words still in the list when there is no reading at all', () => {
     const offered = wordsWithoutReading(pool);
 
@@ -98,3 +120,57 @@ describe('the words offered for what was said', () => {
   });
 });
 
+describe('the words offered beside a reading', () => {
+  const vocabulary = createEmotionVocabulary();
+  const pool = vocabulary.all();
+  const heard = (...ids: string[]) => ids.map((id) => vocabulary.find(id)!);
+  const ids = (offered: readonly Emotion[]) => offered.map((emotion) => emotion.id);
+
+  it('leads with what was heard, then the words the reading put beside it', () => {
+    const offered = wordsOffered(
+      heard('happy.optimistic', 'fearful.anxious.worried'),
+      ['happy.optimistic.hopeful', 'fearful.anxious.nervous', 'happy.peaceful.thankful'],
+      4,
+      pool,
+    );
+
+    expect(ids(offered).slice(0, 5)).toEqual([
+      'happy.optimistic',
+      'fearful.anxious.worried',
+      'happy.optimistic.hopeful',
+      'fearful.anxious.nervous',
+      'happy.peaceful.thankful',
+    ]);
+  });
+
+  it('fills a short list up to a handful from the nearest words', () => {
+    const offered = wordsOffered(heard('bad.tired'), ['bad.tired.drained'], 2, pool);
+
+    expect(offered).toHaveLength(NEAR_COUNT);
+    expect(new Set(ids(offered)).size).toBe(NEAR_COUNT);
+  });
+
+  it('offers no more than a handful however many the reading put beside it', () => {
+    const many = pool.filter((emotion) => emotion.isProposableByAi).map((emotion) => emotion.id);
+
+    expect(wordsOffered([], many, 3, pool)).toHaveLength(NEAR_COUNT);
+  });
+
+  it('never offers a sensitive or retired word, nor one it does not know', () => {
+    const offered = wordsOffered(
+      heard('bad.tired'),
+      ['fearful.weak.worthless', 'happy.content.free', 'happy.smug'],
+      2,
+      pool,
+    );
+
+    expect(offered.every((emotion) => emotion.isProposableByAi)).toBe(true);
+    expect(ids(offered)).not.toContain('fearful.weak.worthless');
+  });
+
+  it('is the nearest words alone when the reading put nothing beside it', () => {
+    const reading = heard('happy.proud', 'bad.tired');
+
+    expect(ids(wordsOffered(reading, [], 4, pool))).toEqual(ids(emotionsNear(reading, 4, pool)));
+  });
+});

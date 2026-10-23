@@ -15,6 +15,35 @@ export interface DraftInput {
 }
 
 /**
+ * A draft, and the other words its reading put beside it for the question
+ * card to offer (owner's word, 2026-10-23: the card's words read as if
+ * Vidlun had not listened while they came off the chart alone). The words
+ * are choices, never claims, and stay off the draft: nothing of them reaches
+ * the entry unless the person picks one.
+ */
+export interface Reading {
+  readonly draft: MoodEntry;
+  readonly nearbyEmotionIds: readonly string[];
+}
+
+/** As many as the card has room for; the model is asked for no more. */
+const MAX_NEARBY = 8;
+
+/**
+ * A draft and the words beside it, both through the same gate: the card
+ * offers only what Vidlun may propose — known, current, never sensitive —
+ * each word once, and none it already heard.
+ */
+export function readingFromProposal(input: DraftInput): Reading {
+  const draft = draftFromProposal(input);
+  const nearby = input.vocabulary
+    .keepProposableByAi(input.vocabulary.keepKnown(input.proposal.nearbyEmotionIds))
+    .filter((id) => !draft.emotionIds.includes(id));
+
+  return { draft, nearbyEmotionIds: [...new Set(nearby)].slice(0, MAX_NEARBY) };
+}
+
+/**
  * The one place a model proposal becomes a draft, so a spoken entry and a
  * typed one cannot drift apart in how strictly they are read.
  */

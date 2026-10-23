@@ -54,6 +54,14 @@ const isPleasant = (emotion: Emotion): boolean => emotion.valence >= GOOD_MOOD;
  * From the owner's flat list of 2026-10-20, every word on the same footing,
  * and never a sensitive one: this list is the analysis speaking, and §6 bars
  * it from proposing those. Words that left the list are never offered.
+ *
+ * The chart alone is not meaning. Worry sits at the very point contempt,
+ * judgement and resentment do, and a card that offered those for a worry
+ * about a friend's birthday read as if Vidlun had not listened (owner's
+ * word, 2026-10-23). So a heard word's own kind of feeling — its branch of
+ * the wheel — comes before anything merely as close on the chart. This is
+ * the fallback now: the reading itself names the words that fit the
+ * sentence (`wordsOffered`), and this fills in when it named too few.
  */
 export function emotionsNear(
   heard: readonly Emotion[],
@@ -63,8 +71,13 @@ export function emotionsNear(
 ): readonly Emotion[] {
   const anchors: readonly Anchor[] =
     heard.length > 0
-      ? heard.map((emotion) => ({ id: emotion.id, valence: emotion.valence, energy: emotion.energy }))
-      : [{ id: null, valence: mood ?? 3, energy: 3 }];
+      ? heard.map((emotion) => ({
+          id: emotion.id,
+          rootId: emotion.rootId,
+          valence: emotion.valence,
+          energy: emotion.energy,
+        }))
+      : [{ id: null, rootId: null, valence: mood ?? 3, energy: 3 }];
   const pleasantSide =
     heard.length > 0 ? heard.some(isPleasant) : mood === null || mood > HARD_MOOD;
   const hardSide =
@@ -74,13 +87,15 @@ export function emotionsNear(
   );
   const order = new Map(candidates.map((emotion, at) => [emotion.id, at]));
   /*
-   * Nearest first; at the same distance the word that was heard itself, then
-   * the more exact word before the broad one it sits under ("tired" before
-   * "bad"), then the wheel's own order so the card reads the same twice.
+   * The heard word's own branch first, nearest first within it and then
+   * outside it; at the same distance the word that was heard itself, then
+   * the more exact word before the broad one it sits under ("worried" before
+   * "fearful"), then the wheel's own order so the card reads the same twice.
    */
   const ranked = anchors.map((anchor) =>
     [...candidates].sort(
       (a, b) =>
+        Number(b.rootId === anchor.rootId) - Number(a.rootId === anchor.rootId) ||
         distance(a, anchor) - distance(b, anchor) ||
         Number(b.id === anchor.id) - Number(a.id === anchor.id) ||
         b.depth - a.depth ||
@@ -103,6 +118,38 @@ export function emotionsNear(
 }
 
 /**
+ * The words the question card offers once Vidlun has read the entry: what it
+ * heard, then the other words the reading put beside it — chosen by the
+ * model that read the sentence, so they fit what was said and not only where
+ * it sits on the chart — then, if that came to fewer than a handful, the
+ * nearest words to fill the card.
+ *
+ * Gated here as well as where the reading lands: a sensitive or retired word
+ * is never offered, whoever named it.
+ */
+export function wordsOffered(
+  heard: readonly Emotion[],
+  nearbyIds: readonly string[],
+  mood: number | null,
+  pool: readonly Emotion[],
+  count: number = NEAR_COUNT,
+): readonly Emotion[] {
+  const allowed = new Map(offerable(pool).map((emotion) => [emotion.id, emotion]));
+  const picked: Emotion[] = [];
+  const offer = (emotion: Emotion | undefined): void => {
+    if (emotion !== undefined && picked.length < count && !picked.includes(emotion)) {
+      picked.push(emotion);
+    }
+  };
+
+  heard.forEach((emotion) => offer(allowed.get(emotion.id)));
+  nearbyIds.forEach((id) => offer(allowed.get(id)));
+  emotionsNear(heard, mood, pool, pool.length).forEach(offer);
+
+  return picked;
+}
+
+/**
  * What the card offers when there is no reading at all — Vidlun could not
  * listen: the broadest words still in the list (happy, surprised, fearful,
  * angry, disgusted and sad — the old roots that stayed), one per kind of
@@ -120,6 +167,8 @@ function offerable(pool: readonly Emotion[]): readonly Emotion[] {
 interface Anchor {
   /** The heard word the distance is measured from; null for a mood alone. */
   readonly id: string | null;
+  /** Its branch of the wheel, whose words come first; null for a mood alone. */
+  readonly rootId: string | null;
   readonly valence: number;
   readonly energy: number;
 }

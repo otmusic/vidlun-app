@@ -30,6 +30,7 @@ const asking: CaptureStage = {
   spoken: { text: 'Finished three tasks, happy, but very tired.', confidence: Confidence.of(0.9) },
   chosen: ['bad.tired'],
   draft: null,
+  nearby: [],
   holding: false,
   unheard: false,
   together: false,
@@ -157,6 +158,27 @@ describe('what happens when the analysis lands', () => {
       'fearful',
       'happy.proud',
     ]);
+  });
+
+  it('puts the words the reading offered on the card, and keeps them off the draft', () => {
+    const after = whenAnalysisLands(asking, analysis(), asking.spoken.text, [
+      'happy.content',
+      'bad.tired.drained',
+    ]);
+
+    expect(after).toMatchObject({ kind: 'turn', nearby: ['happy.content', 'bad.tired.drained'] });
+    expect(after.kind === 'turn' ? after.draft?.emotionIds : null).toEqual(['happy.proud', 'bad.tired']);
+  });
+
+  it('keeps the offered words for the way back from choosing together', () => {
+    const after = whenAnalysisLands(
+      { ...asking, holding: true, together: true },
+      analysis(),
+      asking.spoken.text,
+      ['happy.content'],
+    );
+
+    expect(after.kind === 'comparing' ? after.card.nearby : null).toEqual(['happy.content']);
   });
 
   it('remembers the card it came from, for the way back', () => {

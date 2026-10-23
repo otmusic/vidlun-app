@@ -20,7 +20,7 @@ describe('CreateTextEntry', () => {
   it('marks the entry as typed rather than spoken', async () => {
     const { subject } = useCase(proposal());
 
-    const entry = await subject.execute('Finished three tasks.');
+    const { draft: entry } = await subject.execute('Finished three tasks.');
 
     expect(entry.source).toBe('text');
     expect(entry.id).toBe('entry-1');
@@ -32,7 +32,7 @@ describe('CreateTextEntry', () => {
       proposal({ emotionIds: ['happy.optimistic.hopeful', 'bad.tired.drained'] }),
     );
 
-    const entry = await subject.execute('Finished three tasks, happy, but very tired.');
+    const { draft: entry } = await subject.execute('Finished three tasks, happy, but very tired.');
 
     expect(entry.confidence.value).toBe(1);
     expect(entry.needsUserReview).toBe(false);
@@ -42,7 +42,7 @@ describe('CreateTextEntry', () => {
   it('reads the trimmed text, and keeps it as the raw transcript', async () => {
     const { analyzer, subject } = useCase(proposal());
 
-    const entry = await subject.execute('   Cooked dinner.   ');
+    const { draft: entry } = await subject.execute('   Cooked dinner.   ');
 
     expect(analyzer.received).toEqual(['Cooked dinner.']);
     expect(entry.rawTranscript).toBe('Cooked dinner.');
@@ -59,7 +59,7 @@ describe('CreateTextEntry', () => {
       proposal({ mood: 9, emotionIds: ['fearful.weak.worthless', 'not_real'], safetyFlag: 'crisis' }),
     );
 
-    const entry = await subject.execute('Something heavy.');
+    const { draft: entry } = await subject.execute('Something heavy.');
 
     expect(entry.mood?.value).toBe(5);
     expect(entry.emotionIds).toEqual([]);

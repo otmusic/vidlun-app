@@ -1517,6 +1517,40 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ. One plan, words that fit the sentence, a fresh home — 2026-10-23
+
+Four things the owner raised from the phone, all for 1.5 (50):
+- **"Розповісти про вчора" needed a relaunch.** Home worked out whether
+  yesterday was empty only when it loaded, so a phone that kept Vidlun open
+  across midnight came back with yesterday's answer. Home is read again
+  every time the app returns to the front (`App.tsx`, next to the unheard
+  entries).
+- **The card offered contempt and judgement for a worry.** The words came
+  off the chart alone, and worry sits at the same valence and energy as
+  contempt, judgement, resentment and non-acceptance.
+  - The reading now returns `nearbyEmotionIds`: other words from the list
+    that fit what was said, so that with its own emotions there are eight.
+    They are choices, never claims, and never reach the entry unless picked.
+    They pass the same gate (known, current, not sensitive), and
+    `Reading` carries them beside the draft.
+  - The card offers what was heard, then those words, then fills from the
+    chart, where the heard word's own branch now comes first.
+  - Cost: about fifty more output tokens on the capture path. Not yet
+    measured on the phone.
+- **One plan.** The paywall sells the month alone (`planOnSale`): one card,
+  no choice, no saving badge. The year and the lifetime stay configured in
+  the store, and whoever bought one keeps it. The terms (effective 23
+  October) and the site say one plan. Both had also still listed search,
+  gone since 1.4, and now name the journal's emotion filter. The site was
+  built but not deployed: until the RevenueCat offering drops the other
+  two plans, the live 1.4 still sells three.
+- **The locked topics on the week.** The paid card's shape (a ring and its
+  rows, made up) sits under frosted glass with a paper veil. Over it is a
+  lock in a solid circle and "Читати записи повністю ›". Seen in both
+  themes. The locked pattern still uses ghost lines.
+
+---
+
 ## 3ψψ++. The feedback sheet's words — 2026-10-20
 
 The owner's word:

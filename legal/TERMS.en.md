@@ -1,6 +1,6 @@
 # Vidlun Terms of Use
 
-**Effective:** 1 October 2026
+**Effective:** 23 October 2026
 
 **Provider:** the Vidlun developer, support@vidlun.app
 
@@ -43,25 +43,22 @@ somewhere safe is yours to do; we never see or hold it.
 ## 4. Subscription
 
 **Free forever:** recording up to one minute, transcription, the emotion names
-the app heard in a recording, the journal, search, the mood chart and the
-emotion vocabulary.
+the app heard in a recording, the journal with its emotion filter, the mood
+chart and the emotion vocabulary.
 
 **Paid:** everything the language model writes about your entries — the monthly
 piece that reads your whole month, the observations on individual entries and
 the week's themes — and recording up to five minutes.
 
-**Plans.** Monthly, with no trial. Annual, with seven free days at the start.
-Lifetime, a single payment that does not renew. The App Store shows the current
-price in your currency before you buy; we do not repeat it here, so that it
-cannot disagree with what you actually see.
+**Plan.** One: a monthly subscription, with no trial. The App Store shows the
+current price in your currency before you buy; we do not repeat it here, so
+that it cannot disagree with what you actually see. An annual subscription or
+lifetime access bought earlier keeps working on the same terms.
 
 **Auto-renewal.** A subscription renews itself until cancelled. Apple charges
 within 24 hours before the end of the current period. You can cancel any time
 in your Apple ID settings, **at least 24 hours** before the period ends —
 otherwise the renewal has already happened.
-
-**Trial.** If you buy before the free days end, the unused part is forfeited.
-Apple decides trial eligibility itself, once per subscription group.
 
 **Payment and refunds.** All payments go through Apple. We never receive card
 numbers or any other payment details, and **we cannot issue a refund

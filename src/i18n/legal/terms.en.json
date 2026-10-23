@@ -2,7 +2,7 @@
   "title": "Vidlun Terms of Use",
   "blocks": [
     {
-      "text": "*Effective:* 1 October 2026"
+      "text": "*Effective:* 23 October 2026"
     },
     {
       "text": "*Provider:* the Vidlun developer, support@vidlun.app"
@@ -49,19 +49,16 @@
       "heading": "4. Subscription"
     },
     {
-      "text": "*Free forever:* recording up to one minute, transcription, the emotion names the app heard in a recording, the journal, search, the mood chart and the emotion vocabulary."
+      "text": "*Free forever:* recording up to one minute, transcription, the emotion names the app heard in a recording, the journal with its emotion filter, the mood chart and the emotion vocabulary."
     },
     {
       "text": "*Paid:* everything the language model writes about your entries — the monthly piece that reads your whole month, the observations on individual entries and the week's themes — and recording up to five minutes."
     },
     {
-      "text": "*Plans.* Monthly, with no trial. Annual, with seven free days at the start. Lifetime, a single payment that does not renew. The App Store shows the current price in your currency before you buy; we do not repeat it here, so that it cannot disagree with what you actually see."
+      "text": "*Plan.* One: a monthly subscription, with no trial. The App Store shows the current price in your currency before you buy; we do not repeat it here, so that it cannot disagree with what you actually see. An annual subscription or lifetime access bought earlier keeps working on the same terms."
     },
     {
       "text": "*Auto-renewal.* A subscription renews itself until cancelled. Apple charges within 24 hours before the end of the current period. You can cancel any time in your Apple ID settings, *at least 24 hours* before the period ends — otherwise the renewal has already happened."
-    },
-    {
-      "text": "*Trial.* If you buy before the free days end, the unused part is forfeited. Apple decides trial eligibility itself, once per subscription group."
     },
     {
       "text": "*Payment and refunds.* All payments go through Apple. We never receive card numbers or any other payment details, and *we cannot issue a refund ourselves* — Apple handles refunds at https://reportaproblem.apple.com."

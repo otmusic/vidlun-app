@@ -113,6 +113,7 @@ export function proposal(overrides: Partial<ReflectionProposal> = {}): Reflectio
     cleanTranscript: 'Finished three tasks, happy, but very tired.',
     mood: 4,
     emotionIds: [],
+    nearbyEmotionIds: [],
     contextTags: [],
     safetyFlag: 'none',
     ...overrides,

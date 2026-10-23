@@ -48,9 +48,9 @@ export class FakePurchases implements IPurchases {
 
     return Promise.resolve({
       active: this.active,
-      // Whatever was bought here came with free days, which is what the
-      // annual plan really offers and the state the screens differ on.
-      inTrial: this.active,
+      // The month is the one plan sold since 2026-10-23, and it carries no
+      // free days: what is bought here is paid for at once.
+      inTrial: false,
       renewsAt: this.active ? renewsAt : null,
     });
   }

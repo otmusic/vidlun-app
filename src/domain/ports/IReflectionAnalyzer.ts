@@ -9,6 +9,13 @@ export interface ReflectionProposal {
   /** Null where the sentence never said how the day was. */
   readonly mood: number | null;
   readonly emotionIds: readonly string[];
+  /**
+   * Other words that fit what was said, the most fitting first, for the
+   * question card to offer beside the ones heard. Choices put in front of
+   * the person, never claims about them: none reaches the entry unless they
+   * pick it.
+   */
+  readonly nearbyEmotionIds: readonly string[];
   readonly contextTags: readonly string[];
   readonly safetyFlag: SafetyFlag;
 }
