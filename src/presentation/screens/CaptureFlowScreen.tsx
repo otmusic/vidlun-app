@@ -242,6 +242,7 @@ function Stage(
           t={t}
           onToggle={flow.toggleKept}
           onAddWord={flow.addKept}
+          onMood={flow.setMood}
           onConfirm={flow.confirm}
           onBack={flow.backToCard}
         />

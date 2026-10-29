@@ -368,7 +368,7 @@ function EchoFromPast(props: {
         )}
       </View>
       <AppText variant="body" numberOfLines={2} style={{ fontSize: 16, lineHeight: 23 }}>
-        {`«${props.entry.cleanTranscript}»`}
+        {props.t('common.quoted', { text: props.entry.cleanTranscript })}
       </AppText>
     </Pressable>
   );

@@ -94,16 +94,21 @@ export function Chip(props: ChipProps): React.JSX.Element {
   const fill = props.color === undefined ? theme.palette[tone.soft] : `${props.color}22`;
   const removable = props.action === 'remove';
 
+  /*
+   * A little tighter than the drawing's 15 and 8 (owner's word, 2026-10-29),
+   * so a row holds more words; the hit slop below keeps the touch area at
+   * 44pt.
+   */
   const body = (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: removable ? 8 : theme.spacing.xs,
+        gap: removable ? 6 : theme.spacing.xs,
         borderRadius: theme.radii.pill,
-        paddingLeft: removable ? 16 : 15,
-        paddingRight: removable ? 9 : 15,
-        paddingVertical: theme.spacing.sm,
+        paddingLeft: removable ? 13 : 12,
+        paddingRight: removable ? 7 : 12,
+        paddingVertical: 6,
         backgroundColor: props.solid === true ? line : filled ? fill : 'transparent',
         borderWidth: 1.5,
         borderColor: line,

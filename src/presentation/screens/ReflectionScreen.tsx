@@ -40,7 +40,7 @@ export function ReflectionScreen(props: ReflectionScreenProps): React.JSX.Elemen
         </AppText>
 
         <Card tone="quiet">
-          <AppText variant="quote">{`«${props.draft.cleanTranscript}»`}</AppText>
+          <AppText variant="quote">{props.t('common.quoted', { text: props.draft.cleanTranscript })}</AppText>
         </Card>
 
         {/*

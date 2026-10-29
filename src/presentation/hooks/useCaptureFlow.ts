@@ -560,6 +560,31 @@ export function whenAnalysisLands(
  *
  * Exported for the test, like `whenAnalysisLands`.
  */
+/**
+ * Where a tap on the mood scale goes: the question card holds it until the
+ * answer, and choosing together writes it straight into the entry, and onto
+ * the card behind it so the way back shows the same point (owner's word,
+ * 2026-10-29: after "choose together" the scale was gone, and the mood the
+ * reading guessed was the one saved). What Vidlun read stays as it read it.
+ *
+ * Exported for the test, like `whenAnalysisLands`.
+ */
+export function whenMoodSet(current: CaptureStage, value: number): CaptureStage {
+  if (current.kind === 'turn') {
+    return { ...current, mood: value };
+  }
+
+  if (current.kind === 'comparing') {
+    return {
+      ...current,
+      draft: current.draft.withMood(MoodScore.of(value)),
+      card: { ...current.card, mood: value },
+    };
+  }
+
+  return current;
+}
+
 export function whenAnalysisFails(
   current: CaptureStage,
   draft: MoodEntry,
@@ -1424,7 +1449,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       );
     }, []),
     setMood: useCallback((value: number) => {
-      setStage((current) => (current.kind === 'turn' ? { ...current, mood: value } : current));
+      setStage((current) => whenMoodSet(current, value));
     }, []),
     toggleTopic: useCallback((tag: string) => {
       setStage((current) => {

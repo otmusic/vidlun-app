@@ -336,6 +336,30 @@ function Vidlun(props: {
   });
 
   /*
+   * Leaving the app ends the take (owner's word, 2026-10-29). It ends the way
+   * the stop button ends it, so what was said is kept and read as usual, and
+   * the phone does not go on listening from a pocket.
+   */
+  const recording = flow.stage.kind === 'recording';
+  const { stopRecording } = flow;
+
+  useEffect(() => {
+    if (!recording) {
+      return undefined;
+    }
+
+    const watch = AppState.addEventListener('change', (state) => {
+      if (state === 'background') {
+        stopRecording();
+      }
+    });
+
+    return () => {
+      watch.remove();
+    };
+  }, [recording, stopRecording]);
+
+  /*
    * Entries saved without Vidlun's answer are listened to each time the app
    * comes back to the front; the hook does the first pass on open. Home is
    * read again then too: a phone left with Vidlun open overnight comes back

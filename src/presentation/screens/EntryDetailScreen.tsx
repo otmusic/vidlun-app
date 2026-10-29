@@ -81,7 +81,7 @@ export function EntryDetailScreen(props: {
 
       {/* Read, not re-read: a saved entry's words are no longer corrected here (owner's word, 2026-10-01). */}
       <AppText variant="display" style={{ fontSize: 23, lineHeight: 31, marginBottom: 14 }}>
-        {`«${entry.cleanTranscript}»`}
+        {t('common.quoted', { text: entry.cleanTranscript })}
       </AppText>
 
       {props.recordingUri === null ? (

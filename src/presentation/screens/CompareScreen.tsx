@@ -11,6 +11,9 @@ import { BackButton } from '../components/BackButton';
 import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { emotionLabel, emotionTint, idForTypedWord } from '../components/emotionDisplay';
+import { toneFor } from '../components/emotionTone';
+import { moodKey } from '../components/MoodLine';
+import { MoodScale } from '../components/MoodScale';
 import { OwnWordField } from '../components/OwnWordField';
 import { WaveMark } from '../components/WaveMark';
 import { useDrawnSides } from '../hooks/useDrawnSides';
@@ -35,6 +38,8 @@ export function CompareScreen(props: {
   readonly onToggle: (id: string) => void;
   /** Adds a word typed here; a word already in stays in. */
   readonly onAddWord: (id: string) => void;
+  /** Sets the entry's mood, the same scale the question card carries. */
+  readonly onMood: (value: number) => void;
   readonly onConfirm: () => void;
   /** Back to the question card, as it was. */
   readonly onBack: () => void;
@@ -43,6 +48,7 @@ export function CompareScreen(props: {
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
   const kept = props.draft.emotionIds;
+  const mood = props.draft.mood?.value ?? null;
   const { onConfirm } = props;
   /** §6 calls an empty proposal correct and common; the drawing gives it a state. */
   const heardNothing = props.proposed.emotionIds.length === 0;
@@ -220,6 +226,25 @@ export function CompareScreen(props: {
           </Row>
         </View>
       ) : null}
+
+      {/*
+        * The scale from the question card, so choosing together can still
+        * change the mood (owner's word, 2026-10-29); it starts where the card
+        * left it, or at the reading's mood.
+        */}
+      <View style={{ gap: 2, marginTop: 8 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <AppText variant="caption" color="inkFaint">
+            {props.t('compare.mood')}
+          </AppText>
+          {mood === null ? null : (
+            <AppText variant="secondary" color={toneFor(mood)}>
+              {props.t(moodKey(mood))}
+            </AppText>
+          )}
+        </View>
+        <MoodScale value={mood} onChange={props.onMood} accessibilityLabel={props.t('compare.mood')} />
+      </View>
 
       <View style={{ marginTop: 12 }}>
         {/* A word still being typed is part of the entry, so it goes in first. */}

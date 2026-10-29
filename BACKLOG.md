@@ -1517,6 +1517,38 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+. US English, the mood when choosing together, a take that ends with the app — 2026-10-27 and 29
+
+- **The English copy, redone from the Ukrainian** (owner's request, 2026-10-27).
+  Every interface string was checked against its Ukrainian source and 131
+  rewritten in plain US English: the same word for the same thing (entry,
+  journal, echo, topics, mood), buttons named for what they do ("Поділитись"
+  is Continue, since Share means sending it to someone), and nothing the
+  Ukrainian does not say. The microphone permission text was translated
+  from the Ukrainian too; the old one promised "never uploaded".
+  - 24 emotion labels changed. They stay adjectives, as English emotion apps
+    use them. Cheeky (British) became Mischievous. Зневага, Образа and
+    Неприйняття became Scornful, Offended and Not accepting. The two
+    Embarrassed became Awkward (Ніяковість) and Uncomfortable (Незручність).
+    No two current words share a label.
+  - The transcript's quote marks were written into four screens as «…».
+    They now come from `common.quoted`: «…» in Ukrainian, “…” in English.
+  - Left for the owner, in the Ukrainian: the onboarding's legal line names
+    a «Почати» button that is «Далі» and says «ви»; the microphone text says
+    «міг/могла». The English names the real button, Next.
+- **The mood when choosing together** (2026-10-29). The screen had no scale,
+  so the mood the reading guessed was the one saved. It now carries the
+  card's scale, and `whenMoodSet` writes the point into the draft and onto
+  the card behind it.
+- **Leaving the app ends the take** (2026-10-29), the way the stop button
+  ends it. The listener lives in `App.tsx`: the capture hook must not import
+  react-native, or the stage tests that run in plain Node stop parsing.
+- **Chips are tighter** (2026-10-29): 6 and 12 instead of 8 and 15, with
+  the hit slop keeping the touch area at 44pt.
+- 1.6 was already on sale, so build 51 went up as 1.7.
+
+---
+
 ## 3ψψψ. One plan, words that fit the sentence, a fresh home — 2026-10-23
 
 Four things the owner raised from the phone, all for 1.5 (50):

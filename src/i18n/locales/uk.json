@@ -196,6 +196,7 @@
   "language.en": "English",
   "common.back": "Назад",
   "common.close": "Закрити",
+  "common.quoted": "«{{text}}»",
   "onboarding.welcomeTitle": "Розкажи як ти",
   "onboarding.welcomeBody": "Говори про все, що тебе сьогодні хвилювало, тішило чи засмутило. Vidlun допоможе розібратися у твоїх емоціях, назвати їх і краще зрозуміти свій стан.",
   "onboarding.welcomeAction": "Далі",

@@ -147,7 +147,7 @@ export function TurnScreen(props: {
         style={{ gap: theme.spacing.sm }}
       >
         <Card tone="quiet">
-          <AppText variant="quote">{`«${props.transcript}»`}</AppText>
+          <AppText variant="quote">{props.t('common.quoted', { text: props.transcript })}</AppText>
           {/*
             * What the entry was about, under the words it was read from
             * (owner's word, 2026-10-01), and the one place a wrong topic can
