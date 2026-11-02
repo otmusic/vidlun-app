@@ -24,6 +24,7 @@ import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 import { emotionLabel } from '../components/emotionDisplay';
 import type { JournalFocus } from './journalFilter';
+import { topicsSection } from './weekTopics';
 
 /** Straight off the drawing, not rounded to a grid: the chart is 156 tall. */
 const CHART_HEIGHT = 156;
@@ -46,8 +47,12 @@ export interface StatsView {
   readonly patterns: readonly MoodPattern[];
   /** How many weeks back this is. Zero is the current one. */
   readonly weeksBack: number;
-  /** False when nothing was ever written before this week. */
-  readonly hasEarlierWeek: boolean;
+  /**
+   * Where the arrows lead, in weeks back: the nearest week with entries on
+   * either side, or null where the arrow leads nowhere.
+   */
+  readonly earlierWeeksBack: number | null;
+  readonly laterWeeksBack: number | null;
   /** True while a plan or its free days are running. The store decides. */
   readonly hasNarrativeAccess: boolean;
 }
@@ -97,8 +102,8 @@ export function StatsScreen(props: {
       <PeriodHeader
         title={t('stats.yourWeek')}
         range={view === null ? '' : rangeOf(view.week, props.locale)}
-        canGoBack={view?.hasEarlierWeek ?? false}
-        canGoForward={(view?.weeksBack ?? 0) > 0}
+        canGoBack={(view?.earlierWeeksBack ?? null) !== null}
+        canGoForward={(view?.laterWeeksBack ?? null) !== null}
         backLabel={t('stats.previousWeek')}
         forwardLabel={t('stats.nextWeek')}
         onBack={props.onEarlierWeek}
@@ -137,11 +142,11 @@ export function StatsScreen(props: {
             onOpenSubscription={props.onOpenSubscription}
             onOpenEntries={props.onOpenEntries}
           />
-          {view.hasNarrativeAccess ? (
+          {topicsSection(view) === 'open' ? (
             <Themes themes={view.themes} locale={props.locale} t={t} />
-          ) : (
+          ) : topicsSection(view) === 'locked' ? (
             <TopicsLocked t={t} onOpenSubscription={props.onOpenSubscription} />
-          )}
+          ) : null}
         </>
       )}
 

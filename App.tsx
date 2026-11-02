@@ -175,8 +175,6 @@ function Vidlun(props: {
     createVoiceEntry: container.createVoiceEntry,
     createTextEntry: container.createTextEntry,
     confirmEntry: container.confirmEntry,
-    writeObservation: container.writeObservation,
-    attachObservation: container.attachObservation,
     deleteEntry: container.deleteEntry,
     getHistory: container.getHistory,
     forgetOldRecordings: container.forgetOldRecordings,
@@ -190,6 +188,7 @@ function Vidlun(props: {
     microphonePermission: container.microphonePermission,
     getHomeView: container.getHomeView,
     getWeekSummary: container.getWeekSummary,
+    getWeekNeighbours: container.getWeekNeighbours,
     getMonthSummary: container.getMonthSummary,
     getPastMonths: container.getPastMonths,
     getWeekThemes: container.getWeekThemes,
@@ -334,30 +333,6 @@ function Vidlun(props: {
     ready: props.settings.hasOnboarded && flow.stage.kind === 'idle',
     onRecord: flow.startRecording,
   });
-
-  /*
-   * Leaving the app ends the take (owner's word, 2026-10-29). It ends the way
-   * the stop button ends it, so what was said is kept and read as usual, and
-   * the phone does not go on listening from a pocket.
-   */
-  const recording = flow.stage.kind === 'recording';
-  const { stopRecording } = flow;
-
-  useEffect(() => {
-    if (!recording) {
-      return undefined;
-    }
-
-    const watch = AppState.addEventListener('change', (state) => {
-      if (state === 'background') {
-        stopRecording();
-      }
-    });
-
-    return () => {
-      watch.remove();
-    };
-  }, [recording, stopRecording]);
 
   /*
    * Entries saved without Vidlun's answer are listened to each time the app

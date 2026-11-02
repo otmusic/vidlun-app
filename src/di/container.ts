@@ -14,6 +14,7 @@ import { GetHomeView } from '../application/use-cases/GetHomeView';
 import { FindMoodPatterns } from '../application/use-cases/FindMoodPatterns';
 import { GetVocabularyGrowth } from '../application/use-cases/GetVocabularyGrowth';
 import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
+import { GetWeekNeighbours } from '../application/use-cases/GetWeekNeighbours';
 import { GetWeekThemes } from '../application/use-cases/GetWeekThemes';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
 import { FindRecordedEntries } from '../application/use-cases/FindRecordedEntries';
@@ -21,8 +22,6 @@ import { FindRecording } from '../application/use-cases/FindRecording';
 import { ForgetOldRecordings } from '../application/use-cases/ForgetOldRecordings';
 import { GetHistory } from '../application/use-cases/GetHistory';
 import { ReviseEntry } from '../application/use-cases/ReviseEntry';
-import { WriteObservation } from '../application/use-cases/WriteObservation';
-import { AttachObservation } from '../application/use-cases/AttachObservation';
 import type { EmotionVocabulary } from '../domain/entities/EmotionVocabulary';
 import type { IAudioRecorder } from '../domain/ports/IAudioRecorder';
 import type { IClock } from '../domain/ports/IClock';
@@ -43,10 +42,8 @@ import { ShareSheetFileSharer } from '../infrastructure/files/ShareSheetFileShar
 import { JournalCodec } from '../infrastructure/persistence/JournalCodec';
 import { CachedNarrativeGenerator } from '../infrastructure/analysis/CachedNarrativeGenerator';
 import { ClaudeNarrativeGenerator } from '../infrastructure/analysis/ClaudeNarrativeGenerator';
-import { ClaudeObservationWriter } from '../infrastructure/analysis/ClaudeObservationWriter';
 import { ClaudeReflectionAnalyzer } from '../infrastructure/analysis/ClaudeReflectionAnalyzer';
 import { FakeNarrativeGenerator } from '../infrastructure/analysis/FakeNarrativeGenerator';
-import { FakeObservationWriter } from '../infrastructure/analysis/FakeObservationWriter';
 import { FakeReflectionAnalyzer } from '../infrastructure/analysis/FakeReflectionAnalyzer';
 import { createEmotionVocabulary } from '../infrastructure/analysis/emotionVocabularyData';
 import { ExpoAudioRecorder, type NativeRecorder } from '../infrastructure/audio/ExpoAudioRecorder';
@@ -112,10 +109,9 @@ export interface Container {
   /** Keeps a person's note to support and mails it through the proxy when it can. */
   readonly feedback: FeedbackOutbox;
   readonly forgetAllRecordings: () => Promise<void>;
-  readonly writeObservation: WriteObservation;
-  readonly attachObservation: AttachObservation;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
+  readonly getWeekNeighbours: GetWeekNeighbours;
   readonly getMonthSummary: GetMonthSummary;
   readonly getPastMonths: GetPastMonths;
   readonly getWeekThemes: GetWeekThemes;
@@ -158,8 +154,8 @@ export interface ContainerDependencies {
  * Vidlun never plays audio back, so the silent switch has nothing to suppress
  * here. This only widens the audio session, it does not make the app noisy.
  */
-const enableRecordingMode = (): Promise<void> =>
-  setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+const setRecordingMode = (allowed: boolean): Promise<void> =>
+  setAudioModeAsync({ allowsRecording: allowed, playsInSilentMode: true });
 
 /**
  * Without a key there is no store, and the screens say that plainly instead of
@@ -235,10 +231,6 @@ export function createContainer(dependencies: ContainerDependencies): Container 
    * Printing both is the only way to tell whose word a wrong word is.
    */
   const analyzer = __DEV__ ? new TimedReflectionAnalyzer(reflection) : reflection;
-  const observationWriter =
-    __DEV__ && readFakeAnalysis()
-      ? new FakeObservationWriter()
-      : new ClaudeObservationWriter(messages);
   const transcription = __DEV__
     ? new TimedTranscriptionService(dependencies.transcription)
     : dependencies.transcription;
@@ -285,13 +277,12 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     // Everything up to now, which is everything: turning the setting off is a
     // request to be rid of the voice, not only to stop adding to it.
     forgetAllRecordings: () => recordings.discardBefore(clock.now()),
-    writeObservation: new WriteObservation(observationWriter),
-    attachObservation: new AttachObservation(repository),
     getHomeView: new GetHomeView(repository, clock, recordings),
     getMilestones: new GetMilestones(milestones),
     markMilestone: new MarkMilestone(milestones, clock, idGenerator),
     forgetMilestone: new ForgetMilestone(milestones),
     getWeekSummary: new GetWeekSummary(repository, clock),
+    getWeekNeighbours: new GetWeekNeighbours(repository, clock),
     getMonthSummary: new GetMonthSummary(
       repository,
       __DEV__ && readFakeAnalysis()
@@ -314,6 +305,6 @@ export function createContainer(dependencies: ContainerDependencies): Container 
       requestRecordingPermissionsAsync,
     }),
     createAudioRecorder: (native) =>
-      new ExpoAudioRecorder(native, enableRecordingMode, scheduler),
+      new ExpoAudioRecorder(native, setRecordingMode, scheduler),
   };
 }

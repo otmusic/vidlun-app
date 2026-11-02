@@ -11,6 +11,7 @@ export interface NativeRecorder {
    */
   prepareToRecordAsync(): Promise<void>;
   record(): void;
+  pause(): void;
   stop(): Promise<void>;
   getStatus(): {
     readonly durationMillis: number;
@@ -24,7 +25,7 @@ export interface NativeRecorder {
  * permits it, and expo-audio leaves `allowsRecording` false by default. Passed
  * in rather than imported so this adapter stays testable without a device.
  */
-export type EnableRecordingMode = () => Promise<void>;
+export type SetRecordingMode = (allowed: boolean) => Promise<void>;
 
 /**
  * The take ends when the person ends it. Silence used to end it after a second
@@ -63,7 +64,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
 
   constructor(
     private readonly recorder: NativeRecorder,
-    private readonly enableRecordingMode: EnableRecordingMode,
+    private readonly setRecordingMode: SetRecordingMode,
     private readonly scheduler: IScheduler,
     private readonly options: RecordingLimits = DEFAULT_RECORDING_LIMITS,
   ) {}
@@ -71,7 +72,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
   async start(): Promise<AudioRecording> {
     // Before preparing, not after: on iOS both `prepareToRecordAsync` and
     // `record` throw while the session still forbids recording.
-    await this.enableRecordingMode();
+    await this.setRecordingMode(true);
     await this.recorder.prepareToRecordAsync();
 
     this.recorder.record();
@@ -87,6 +88,30 @@ export class ExpoAudioRecorder implements IAudioRecorder {
 
   stop(): void {
     void this.finish();
+  }
+
+  /*
+   * The recording mode goes off with the pause. expo-audio restarts every
+   * paused recorder by itself when the app comes back to the front, and a
+   * take that is waiting for the person's answer must not start listening
+   * before they give it.
+   */
+  async pause(): Promise<void> {
+    if (this.take === null) {
+      return;
+    }
+
+    this.recorder.pause();
+    await this.setRecordingMode(false);
+  }
+
+  async resume(): Promise<void> {
+    if (this.take === null) {
+      return;
+    }
+
+    await this.setRecordingMode(true);
+    this.recorder.record();
   }
 
   cancel(): void {

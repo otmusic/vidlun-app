@@ -164,7 +164,7 @@ describe('CreateVoiceEntry', () => {
     const entry = await run();
 
     expect(entry.safetyFlag).toBe('crisis');
-    // Vidlun's sentence is written by WriteObservation once the card is showing.
+    // Vidlun writes no sentence about an entry since 2026-10-30.
     expect(entry.observation).toBeNull();
   });
 

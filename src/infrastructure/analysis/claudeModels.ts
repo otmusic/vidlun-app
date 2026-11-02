@@ -19,7 +19,7 @@ export interface RequestPatience {
 /**
  * The capture path answers in two seconds when the network is there, so the
  * client gives an attempt twenty seconds and one more try — see the
- * container. The two slower writers get more: Sonnet composing a paragraph
+ * container. The month's writer gets more: Sonnet composing a paragraph
  * takes four seconds on a good day, and nobody is waiting on a card for it.
  */
 export const PATIENT_TIMEOUT_MS = 45_000;
@@ -34,14 +34,6 @@ export const PATIENT_TIMEOUT_MS = 45_000;
  * left to rewrite the rule Haiku kept breaking no longer exists. See BACKLOG §1f.
  */
 export const REFLECTION_MODEL = 'claude-haiku-4-5';
-
-/**
- * The observation, split out from the rest of the entry. It is the only field
- * a user reads as prose, and the small model wrote ungrammatical Ukrainian in
- * it — see BACKLOG. Sent in parallel with the classification, so this buys
- * quality without adding to the wait.
- */
-export const OBSERVATION_MODEL = 'claude-sonnet-5';
 
 /** The monthly narrative. Runs once a month, so it can afford the better model. */
 export const NARRATIVE_MODEL = 'claude-sonnet-5';

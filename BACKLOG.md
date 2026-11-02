@@ -1517,6 +1517,93 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++. A take that waits for an answer, week arrows over empty weeks, no echo — 2026-10-30
+
+- **Leaving a take is asked** (owner's word). The recording screen's Cancel
+  is an X in the panel's top right corner, level with the label. Tapping it
+  pauses the take and asks "Leave this recording?" in a system alert: Keep
+  recording goes on into the same file, Leave throws it away.
+- **Leaving the app pauses the take** instead of ending it (the 2026-10-29
+  rule below is replaced). On coming back, the same alert asks, titled
+  "Recording paused". The clock and the bars stop while the take is held.
+  - `IAudioRecorder` gained `pause` and `resume`. A pause also turns the
+    recording mode off: expo-audio restarts every paused recorder by itself
+    when the app returns to the front (`resumeAllRecorders`), and only
+    `allowsRecording: false` stops it. Checked on the simulator: the file
+    stays at the same size while the alert is up and grows again after Keep
+    recording.
+  - The listener lives in `RecordingScreen`, not `App.tsx`, since it needs
+    the alert. One alert at a time, so coming back while the X's question is
+    up does not stack a second one.
+- **Topics lock only when there are topics.** A week with no topics shows
+  nothing there, rather than a lock over content that does not exist
+  (`topicsSection`).
+- **Week arrows skip empty weeks** (`GetWeekNeighbours`): back and forward go
+  to the nearest week with entries, and back stops at the journal's first
+  week.
+- **Copy** (owner's word):
+  - The line under the text being fixed ("Speech recognition may have
+    misheard…", `detail.fixHint`) is gone.
+  - Leaving the grounding exercise now reads "Хочеш завершити вправу? /
+    Нічого страшного. Ти зможеш повернутися до неї в розділі «Я», коли
+    захочеш." In English: "…anytime in the Me section."
+- **The period calendar dots the days with entries** (owner's word), on
+  "Your emotions".
+  - Each day with an entry gets a small ink dot under its number, as a
+    phone's own calendar marks a day with events. The dot is white on a
+    selected end.
+  - The days come from the history the screen already reads for the first
+    entry (`entryDays`, keyed by local midnight).
+  - Screen readers hear "є записи" / "has entries" after the date.
+  - Fixed on the way: the grid wrapped after six days, so every date after
+    the first week stood under the wrong weekday (seen 2026-09-27). It is
+    now six rows of seven.
+- **The entry page's date is US English** in English: "October 30 at
+  12:37 PM", as in the journal, not "30 October at 12:37".
+- **Vidlun no longer writes an echo for an entry** (owner's word). Gone with
+  it: `WriteObservation`, `AttachObservation`, `IObservationWriter`, the
+  Claude and fake writers, `OBSERVATION_MODEL`, and the capture hook's
+  echo bookkeeping (the echo folded into a card or written into an entry
+  saved before it landed). It was paid only, so free entries never had one.
+  - Kept: `MoodEntry.observation` and the blocks that show it. Entries saved
+    with an echo still show it on their page.
+  - Still mentioning the echo: the processing title ("Складаю відлуння",
+    "Writing your echo"), the fixed `compare.noneEcho` line under an "Echo"
+    label when nothing was heard, the site (an entry-page section and the
+    plan's list), the terms (observations on entries as part of the
+    subscription) and the privacy policy (writing an observation as a reason
+    to send words to Anthropic). The site, terms and privacy policy were
+    rewritten the same day (below).
+- **Legal texts after a legal review** (owner's word, 2026-10-30). They
+  describe a consent screen and an "Entry analysis" switch the app does not
+  have yet, so they go live with the build that adds them, together with
+  the site and the worker.
+  - Privacy policy:
+    - The text sent to Anthropic is mental-health data, so it leaves the
+      phone on explicit consent (GDPR Art. 9(2)(a); Ukrainian law Art. 7).
+    - It now says what the model does with it, the difficult-state flag
+      included, and how consent is withdrawn.
+    - App Attest is described, with the key record kept 180 days. The worker
+      now sets that TTL in `server/src/attest.ts`; it is not deployed yet.
+    - Added: UK GDPR, the Ukrainian rights and where to complain, transfer
+      bases, age 18+, and a US consumer health data section
+      (`{#consumer-health-data}`, linked from the site footer).
+  - Terms: 18+; the model named as Anthropic's Claude; US, UK and Ireland
+    helplines and findahelpline.com; the paid list without echoes.
+  - Site:
+    - The privacy point now names Anthropic and consent, and a FAQ answers
+      "who analyzes my entries".
+    - The plan has no echo, and the footer links to the US section.
+    - The four entry-page shots were retaken without the echo.
+  - Both legal builders take `## Heading {#anchor}`: an id on the site,
+    dropped in the app.
+  - Still open: the provider's name and address (the owner keeps "the
+    Vidlun developer" for now), the App Store age rating (to 18+), a
+    processor agreement for the feedback inbox (consumer Gmail has none),
+    and the consent screen, the switch and the crisis card in the app.
+
+---
+
 ## 3ψψψ+. US English, the mood when choosing together, a take that ends with the app — 2026-10-27 and 29
 
 - **The English copy, redone from the Ukrainian** (owner's request, 2026-10-27).

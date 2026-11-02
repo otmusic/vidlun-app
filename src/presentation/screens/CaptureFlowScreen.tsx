@@ -187,6 +187,8 @@ function Stage(
           limitSeconds={paid ? 300 : 60}
           showsLimit={!paid}
           onStop={flow.stopRecording}
+          onPause={flow.pauseRecording}
+          onResume={flow.resumeRecording}
           onCancel={flow.cancel}
         />
       );
@@ -344,6 +346,7 @@ function Stage(
           locale={props.locale}
           today={props.today}
           earliest={flow.stage.earliest ?? flow.stage.growth.from}
+          entryDays={flow.stage.entryDays}
           t={t}
           onSeeWeek={flow.openStats}
           onPeriodChange={flow.showPeriod}

@@ -14,8 +14,8 @@ function setup() {
   const scheduler = new ManualScheduler();
   const audioSession: string[] = [];
 
-  const enableRecordingMode = (): Promise<void> => {
-    audioSession.push('enabled');
+  const setRecordingMode = (allowed: boolean): Promise<void> => {
+    audioSession.push(allowed ? 'enabled' : 'disabled');
 
     return Promise.resolve();
   };
@@ -24,7 +24,7 @@ function setup() {
     recorder,
     scheduler,
     audioSession,
-    subject: new ExpoAudioRecorder(recorder, enableRecordingMode, scheduler, OPTIONS),
+    subject: new ExpoAudioRecorder(recorder, setRecordingMode, scheduler, OPTIONS),
   };
 }
 
@@ -152,6 +152,37 @@ describe('ExpoAudioRecorder', () => {
     await expect(take).rejects.toThrow('microphone was taken by a call');
   });
 
+  it('holds a paused take and goes on into the same one', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    play(recorder, scheduler, SPEECH, 2);
+    await subject.pause();
+    play(recorder, scheduler, SPEECH, 3);
+
+    expect(recorder.getStatus().isRecording).toBe(false);
+    expect(recorder.stopCalls).toBe(0);
+
+    await subject.resume();
+    play(recorder, scheduler, SPEECH, 2);
+    subject.stop();
+
+    await expect(take).resolves.toMatchObject({ durationMs: 400 });
+    expect(recorder.prepareCalls).toBe(1);
+  });
+
+  it('throws a paused take away when the person leaves', async () => {
+    const { subject } = setup();
+    const take = subject.start();
+
+    await live();
+    await subject.pause();
+    subject.cancel();
+
+    await expect(take).rejects.toThrow(RecordingCancelledError);
+  });
+
   it('does nothing when stopped before a take was ever started', () => {
     const { recorder, subject } = setup();
 
@@ -178,6 +209,33 @@ describe('the iOS audio session', () => {
 
     subject.cancel();
     await expect(take).rejects.toThrow(RecordingCancelledError);
+  });
+
+  it('closes the session for a pause, so the system cannot restart the take on its own', async () => {
+    const { subject, audioSession } = setup();
+    const take = subject.start();
+
+    await live();
+    await subject.pause();
+
+    expect(audioSession).toEqual(['enabled', 'disabled']);
+
+    await subject.resume();
+
+    expect(audioSession).toEqual(['enabled', 'disabled', 'enabled']);
+
+    subject.cancel();
+    await expect(take).rejects.toThrow(RecordingCancelledError);
+  });
+
+  it('leaves the session alone when there is no take to pause or resume', async () => {
+    const { recorder, subject, audioSession } = setup();
+
+    await subject.pause();
+    await subject.resume();
+
+    expect(audioSession).toEqual([]);
+    expect(recorder.pauseCalls).toBe(0);
   });
 
   it('gives up the take when the session refuses to open', async () => {

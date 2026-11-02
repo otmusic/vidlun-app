@@ -29,6 +29,8 @@ export function VocabularyScreen(props: {
   readonly today: Date;
   /** The first entry ever written. Nothing before it is worth offering. */
   readonly earliest: Date;
+  /** The days with entries, which the calendar dots. */
+  readonly entryDays: ReadonlySet<number>;
   readonly t: Translate;
   readonly onSeeWeek: () => void;
   readonly onPeriodChange: (period: Period) => void;
@@ -90,6 +92,7 @@ export function VocabularyScreen(props: {
         period={{ from: growth.from, to: growth.to }}
         today={props.today}
         earliest={props.earliest}
+        entryDays={props.entryDays}
         locale={props.locale}
         t={t}
         onApply={(period) => {

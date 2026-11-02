@@ -12,6 +12,13 @@ export interface IAudioRecorder {
   start(): Promise<AudioRecording>;
   /** Ends the current take early. The promise from `start` resolves. */
   stop(): void;
+  /**
+   * Holds the current take without ending it: nothing is heard until
+   * `resume`, and `stop` or `cancel` still settle it as usual.
+   */
+  pause(): Promise<void>;
+  /** Goes on with a paused take, into the same recording. */
+  resume(): Promise<void>;
   /** Throws the take away. The promise from `start` rejects. */
   cancel(): void;
 }

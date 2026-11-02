@@ -64,6 +64,7 @@ export class ManualScheduler implements IScheduler {
 export class FakeNativeRecorder implements NativeRecorder {
   uri: string | null = 'file:///take.m4a';
   prepareCalls = 0;
+  pauseCalls = 0;
   stopCalls = 0;
   stopFailure: Error | null = null;
   /** Lets a test observe when preparing happens relative to the audio session. */
@@ -84,6 +85,11 @@ export class FakeNativeRecorder implements NativeRecorder {
     this.isRecording = true;
   }
 
+  pause(): void {
+    this.pauseCalls += 1;
+    this.isRecording = false;
+  }
+
   stop(): Promise<void> {
     this.stopCalls += 1;
     this.isRecording = false;
@@ -99,10 +105,16 @@ export class FakeNativeRecorder implements NativeRecorder {
     };
   }
 
-  /** Moves the take forward by one poll interval at the given loudness. */
+  /**
+   * Moves the take forward by one poll interval at the given loudness. A
+   * paused take does not grow, as expo-audio's own duration does not.
+   */
   emit(metering: number | undefined, elapsedMs: number): void {
     this.metering = metering;
-    this.durationMillis += elapsedMs;
+
+    if (this.isRecording) {
+      this.durationMillis += elapsedMs;
+    }
   }
 }
 

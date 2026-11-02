@@ -57,7 +57,7 @@ export class GetWeekSummary {
 }
 
 /** Weeks run Monday to Sunday, matching how the insights screen reads. */
-function startOfWeek(date: Date): Date {
+export function startOfWeek(date: Date): Date {
   const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const daysSinceMonday = (midnight.getDay() - MONDAY + DAYS_IN_WEEK) % DAYS_IN_WEEK;
 

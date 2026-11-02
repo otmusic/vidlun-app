@@ -202,12 +202,13 @@ function AudioNote(props: { readonly text: string }): React.JSX.Element {
   );
 }
 
-
+/**
+ * US English since 2026-10-30, like the journal's own dates ("October 30 ·
+ * 12:37 PM"): en-GB put the day first and the clock in 24 hours, the one
+ * British date in an American app.
+ */
 function formatWhen(at: Date, locale: Locale): string {
-  return at.toLocaleString(locale === 'uk' ? 'uk-UA' : 'en-GB', {
-    day: 'numeric',
-    month: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return locale === 'uk'
+    ? at.toLocaleString('uk-UA', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+    : at.toLocaleString('en-US', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
 }

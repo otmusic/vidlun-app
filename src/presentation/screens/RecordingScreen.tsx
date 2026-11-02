@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, AppState, Easing, Pressable, View } from 'react-native';
 
 import type { Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
-import { Button } from '../components/Button';
+import { TapTarget } from '../components/Button';
+import { Icon, ICON_SIZE } from '../components/Icon';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
@@ -51,13 +52,80 @@ export function RecordingScreen(props: {
   /** True when the shorter limit applies and is worth saying out loud. */
   readonly showsLimit: boolean;
   readonly onStop: () => void;
+  readonly onPause: () => void;
+  readonly onResume: () => void;
   readonly onCancel: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(56);
   const sides = useDrawnSides(12);
-  const elapsed = useElapsed();
-  const { onStop } = props;
+  const [paused, setPaused] = useState(false);
+  const elapsed = useElapsed(!paused);
+  const asking = useRef(false);
+  const away = useRef(false);
+  const { t, onStop, onPause, onResume, onCancel } = props;
+
+  /*
+   * Leaving is asked, never assumed (owner's word, 2026-10-30): the take is
+   * held while the question is open, and staying goes on into the same
+   * recording. One question at a time, so coming back to the app while the
+   * X's question is still up does not stack a second one on it.
+   */
+  const askToLeave = useCallback(
+    (titleKey: 'recording.leaveTitle' | 'recording.pausedTitle') => {
+      if (asking.current) {
+        return;
+      }
+
+      asking.current = true;
+      Alert.alert(t(titleKey), t('recording.leaveBody'), [
+        {
+          text: t('recording.keep'),
+          style: 'cancel',
+          onPress: () => {
+            asking.current = false;
+            setPaused(false);
+            onResume();
+          },
+        },
+        {
+          text: t('recording.leave'),
+          style: 'destructive',
+          onPress: () => {
+            asking.current = false;
+            onCancel();
+          },
+        },
+      ]);
+    },
+    [onCancel, onResume, t],
+  );
+
+  const pause = useCallback(() => {
+    setPaused(true);
+    onPause();
+  }, [onPause]);
+
+  /*
+   * Leaving the app holds the take, and the question waits for the person to
+   * come back. It used to end the take outright (2026-10-29), which saved
+   * whatever half a sentence had been said by then.
+   */
+  useEffect(() => {
+    const watch = AppState.addEventListener('change', (state) => {
+      if (state === 'background') {
+        away.current = true;
+        pause();
+      } else if (state === 'active' && away.current) {
+        away.current = false;
+        askToLeave('recording.pausedTitle');
+      }
+    });
+
+    return () => {
+      watch.remove();
+    };
+  }, [askToLeave, pause]);
 
   /*
    * Stopped for them, exactly as if they had pressed stop: the take is kept
@@ -92,6 +160,21 @@ export function RecordingScreen(props: {
           justifyContent: 'space-between',
         }}
       >
+        {/*
+          * The way out is an X in the corner (owner's word, 2026-10-30), level
+          * with the label, so the bottom of the panel holds only the stop.
+          */}
+        <View style={{ position: 'absolute', top: 30, right: 14, opacity: 0.7, zIndex: 1 }}>
+          <TapTarget
+            accessibilityLabel={t('common.close')}
+            onPress={() => {
+              pause();
+              askToLeave('recording.leaveTitle');
+            }}
+          >
+            <Icon name="x" size={ICON_SIZE.action} color="onPanel" />
+          </TapTarget>
+        </View>
         <View style={{ alignItems: 'center', gap: theme.spacing.sm }}>
           <AppText variant="caption" color="tileInk">
             {props.t('recording.listening')}
@@ -118,14 +201,13 @@ export function RecordingScreen(props: {
           ) : null}
         </View>
 
-        <Waveform still={theme.reduceMotion} />
+        <Waveform still={theme.reduceMotion || paused} />
 
         <View style={{ alignItems: 'center', gap: 18, width: '100%' }}>
           <AppText variant="body" color="tileInk" align="center" style={{ maxWidth: 260 }}>
             {props.t('recording.hint')}
           </AppText>
           <StopButton label={props.t('recording.stop')} onPress={props.onStop} />
-          <Button label={props.t('common.cancel')} variant="ghost" onPress={props.onCancel} />
         </View>
       </View>
     </View>
@@ -233,10 +315,15 @@ function Bar(props: {
   );
 }
 
-function useElapsed(): number {
+/** Counts only while `running`, so a held take keeps the time it had. */
+function useElapsed(running: boolean): number {
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
+    if (!running) {
+      return undefined;
+    }
+
     const tick = setInterval(() => {
       setSeconds((current) => current + 1);
     }, 1000);
@@ -244,7 +331,7 @@ function useElapsed(): number {
     return () => {
       clearInterval(tick);
     };
-  }, []);
+  }, [running]);
 
   return seconds;
 }

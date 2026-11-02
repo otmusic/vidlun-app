@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import type { Locale, Translate, TranslationKey } from '@/i18n';
 
 import { AppText } from './AppText';
+import { wroteOn } from './entryDays';
 import { ModalSheet, SheetClose } from './ModalSheet';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -63,6 +64,8 @@ export function PeriodSheet(props: {
   readonly today: Date;
   /** Nothing before the first entry is pickable — there is nothing there. */
   readonly earliest: Date;
+  /** The days with entries, each dotted under its number. */
+  readonly entryDays: ReadonlySet<number>;
   readonly locale: Locale;
   readonly t: Translate;
   readonly onApply: (period: Period) => void;
@@ -178,6 +181,8 @@ export function PeriodSheet(props: {
         to={to}
         earliest={props.earliest}
         today={props.today}
+        entryDays={props.entryDays}
+        writtenLabel={t('dict.dayWritten')}
         locale={props.locale}
         onPick={pick}
       />
@@ -217,6 +222,9 @@ function Calendar(props: {
   readonly to: Date | null;
   readonly earliest: Date;
   readonly today: Date;
+  readonly entryDays: ReadonlySet<number>;
+  /** Read out after the date on a day with entries, since the dot is not. */
+  readonly writtenLabel: string;
   readonly locale: Locale;
   readonly onPick: (day: Date) => void;
 }): React.JSX.Element {
@@ -240,62 +248,95 @@ function Calendar(props: {
           </AppText>
         ))}
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-        {Array.from({ length: CELLS }, (_unused, at) => {
-          const dayOfMonth = at - lead + 1;
+      {/*
+        * A row of seven per week. One wrapping row of 42 cells, each a
+        * seventh of the width, wrapped after six on the phone, and every date
+        * after the first week stood under the wrong weekday (found
+        * 2026-09-27, fixed 2026-10-30).
+        */}
+      {Array.from({ length: CELLS / COLUMNS }, (_week, row) => (
+        <View key={row} style={{ flexDirection: 'row' }}>
+          {Array.from({ length: COLUMNS }, (_unused, column) => {
+            const at = row * COLUMNS + column;
+            const dayOfMonth = at - lead + 1;
 
-          if (dayOfMonth < 1 || dayOfMonth > days) {
-            return <View key={at} style={{ width: `${100 / COLUMNS}%`, aspectRatio: 1 }} />;
-          }
+            if (dayOfMonth < 1 || dayOfMonth > days) {
+              // The same padding as a day, or a short row's days come out wider.
+              return <View key={at} style={{ flex: 1, aspectRatio: 1, padding: 1.5 }} />;
+            }
 
-          const day = new Date(first.getFullYear(), first.getMonth(), dayOfMonth);
-          // By day at both ends: `today` arrives with the hour on it, so a
-          // plain comparison put today itself in the future.
-          const outside = day < startOfDay(props.earliest) || day > startOfDay(props.today);
-          const edge = sameDay(day, props.from) || sameDay(day, props.to);
-          const inside =
-            props.from !== null && props.to !== null && day > props.from && day < props.to;
+            const day = new Date(first.getFullYear(), first.getMonth(), dayOfMonth);
+            // By day at both ends: `today` arrives with the hour on it, so a
+            // plain comparison put today itself in the future.
+            const outside = day < startOfDay(props.earliest) || day > startOfDay(props.today);
+            const edge = sameDay(day, props.from) || sameDay(day, props.to);
+            const inside =
+              props.from !== null && props.to !== null && day > props.from && day < props.to;
+            const written = wroteOn(props.entryDays, day);
 
-          return (
-            <View key={at} style={{ width: `${100 / COLUMNS}%`, aspectRatio: 1, padding: 1.5 }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={dayLabel(day, props.locale)}
-                accessibilityState={{ disabled: outside, selected: edge }}
-                disabled={outside}
-                onPress={() => {
-                  props.onPick(day);
-                }}
-                style={{
-                  flex: 1,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: edge ? 999 : 8,
-                  backgroundColor: edge
-                    ? theme.palette.solid
-                    : inside
-                      ? theme.palette.limeSoft
-                      : 'transparent',
-                  opacity: outside ? 0.55 : 1,
-                }}
-              >
-                <AppText
-                  variant="body"
+            return (
+              <View key={at} style={{ flex: 1, aspectRatio: 1, padding: 1.5 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    written
+                      ? `${dayLabel(day, props.locale)}, ${props.writtenLabel}`
+                      : dayLabel(day, props.locale)
+                  }
+                  accessibilityState={{ disabled: outside, selected: edge }}
+                  disabled={outside}
+                  onPress={() => {
+                    props.onPick(day);
+                  }}
                   style={{
-                    color: edge
-                      ? theme.palette.onSolid
-                      : outside
-                        ? theme.palette.inkFaint
-                        : theme.palette.ink,
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: edge ? 999 : 8,
+                    backgroundColor: edge
+                      ? theme.palette.solid
+                      : inside
+                        ? theme.palette.limeSoft
+                        : 'transparent',
+                    opacity: outside ? 0.55 : 1,
                   }}
                 >
-                  {String(dayOfMonth)}
-                </AppText>
-              </Pressable>
-            </View>
-          );
-        })}
-      </View>
+                  <AppText
+                    variant="body"
+                    style={{
+                      color: edge
+                        ? theme.palette.onSolid
+                        : outside
+                          ? theme.palette.inkFaint
+                          : theme.palette.ink,
+                    }}
+                  >
+                    {String(dayOfMonth)}
+                  </AppText>
+                  {written ? (
+                    /*
+                     * A dot under the number, as a phone's own calendar marks a
+                     * day with events. Ink rather than a mood colour: it says
+                     * only that something was written, and colour on this
+                     * screen already means an emotion.
+                     */
+                    <View
+                      style={{
+                        position: 'absolute',
+                        bottom: 5,
+                        width: 4,
+                        height: 4,
+                        borderRadius: 2,
+                        backgroundColor: edge ? theme.palette.onSolid : theme.palette.inkSoft,
+                      }}
+                    />
+                  ) : null}
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+      ))}
     </>
   );
 }

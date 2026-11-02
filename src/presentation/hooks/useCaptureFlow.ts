@@ -11,6 +11,7 @@ import type {
   VocabularyGrowth,
 } from '@/application/use-cases/GetVocabularyGrowth';
 import type { GetWeekSummary } from '@/application/use-cases/GetWeekSummary';
+import type { GetWeekNeighbours } from '@/application/use-cases/GetWeekNeighbours';
 import type { FindMoodPatterns } from '@/application/use-cases/FindMoodPatterns';
 import type { GetWeekThemes } from '@/application/use-cases/GetWeekThemes';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
@@ -18,14 +19,13 @@ import type { FindRecordedEntries } from '@/application/use-cases/FindRecordedEn
 import type { FindRecording } from '@/application/use-cases/FindRecording';
 import type { ForgetOldRecordings } from '@/application/use-cases/ForgetOldRecordings';
 import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory';
-import type { WriteObservation } from '@/application/use-cases/WriteObservation';
-import type { AttachObservation } from '@/application/use-cases/AttachObservation';
 import { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { LegalDocumentKind } from '@/i18n/legal';
 import type { GetMonthSummary, MonthSummary } from '@/application/use-cases/GetMonthSummary';
 import type { GetPastMonths, PastMonth } from '@/application/use-cases/GetPastMonths';
 import type { StatsView } from '@/presentation/screens/StatsScreen';
 import type { JournalFocus } from '@/presentation/screens/journalFilter';
+import { entryDays } from '@/presentation/components/entryDays';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
@@ -173,6 +173,8 @@ export type CaptureStage =
       readonly growth: VocabularyGrowth | null;
       /** The oldest entry there is, so the calendar offers nothing emptier. */
       readonly earliest: Date | null;
+      /** Local midnights of the days with entries, dotted on the calendar. */
+      readonly entryDays: ReadonlySet<number>;
     }
   | {
       readonly kind: 'detail';
@@ -209,9 +211,6 @@ export interface CaptureDependencies {
   readonly createVoiceEntry: CreateVoiceEntry;
   readonly createTextEntry: CreateTextEntry;
   readonly confirmEntry: ConfirmEntry;
-  readonly writeObservation: WriteObservation;
-  /** Writes an echo into an entry saved before the echo arrived. */
-  readonly attachObservation: AttachObservation;
   readonly deleteEntry: DeleteEntry;
   readonly getHistory: GetHistory;
   readonly forgetOldRecordings: ForgetOldRecordings;
@@ -228,6 +227,7 @@ export interface CaptureDependencies {
   readonly microphonePermission: IMicrophonePermission;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
+  readonly getWeekNeighbours: GetWeekNeighbours;
   readonly getMonthSummary: GetMonthSummary;
   readonly getPastMonths: GetPastMonths;
   readonly getWeekThemes: GetWeekThemes;
@@ -259,6 +259,10 @@ export interface CaptureFlow {
   readonly monthCard: Date | null;
   readonly startRecording: () => void;
   readonly stopRecording: () => void;
+  /** Holds the take while the person is asked whether to leave it. */
+  readonly pauseRecording: () => void;
+  /** Goes on with the held take: their answer was to stay. */
+  readonly resumeRecording: () => void;
   /** The take waiting for the model, if any — shown on home until it is read. */
   readonly parked: ParkedTake | null;
   /**
@@ -391,37 +395,6 @@ function describe(error: unknown): string {
   }
 
   return String(error);
-}
-
-/**
- * Only touches the draft that was waiting for it. By the time the sentence
- * lands the user may have edited the entry, confirmed it, or started another —
- * in every one of those cases the observation is stale and dropping it is
- * correct.
- */
-function addObservation(current: CaptureStage, spoken: MoodEntry): CaptureStage {
-  if (current.kind === 'turn' && current.draft !== null && current.draft.id === spoken.id) {
-    return { ...current, draft: spoken };
-  }
-
-  if (current.kind !== 'reflecting' && current.kind !== 'comparing') {
-    return current;
-  }
-
-  if (current.draft.id !== spoken.id || current.draft.wasRevisedByUser) {
-    return current;
-  }
-
-  /*
-   * The sentence arrives after the card, so it is folded into whatever the
-   * card is holding rather than replacing it: the person may already have
-   * adopted a word, and overwriting the draft would take it back.
-   */
-  return {
-    ...current,
-    proposed: spoken,
-    draft: current.draft.withObservation(spoken.observation),
-  };
 }
 
 /**
@@ -609,14 +582,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * path on disk is not that.
    */
   const takeUri = useRef<string | null>(null);
-  /*
-   * Echoes by entry id, and the entries saved while theirs was still being
-   * written. A named answer is saved at once and the echo comes from a slower
-   * model seconds later: it goes into the save when it is already here, and
-   * into the stored entry when it lands after.
-   */
-  const echoes = useRef(new Map<string, string>());
-  const awaitingEcho = useRef(new Set<string>());
   const [parked, setParked] = useState<ParkedTake | null>(null);
   const [micStatus, setMicStatus] = useState<PermissionStatus>('undetermined');
   const [milestones, setMilestones] = useState<readonly Milestone[]>([]);
@@ -741,62 +706,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     [notify],
   );
 
-  /*
-   * The card is already on screen. Vidlun's sentence comes from a slower model
-   * and the entry needs it neither to render nor to save, so it is written in
-   * afterwards rather than waited for — the difference between two seconds of
-   * waiting and four.
-   */
-  const withObservation = useCallback(
-    async (draft: MoodEntry) => {
-      // Vidlun's remark is the model writing, and the model's writing is the
-      // paid half. Not asked for rather than hidden: a sentence nobody may
-      // read is a sentence not worth paying Sonnet for.
-      if (!dependencies.hasNarrativeAccess) {
-        return;
-      }
-
-      // A re-read keeps the entry's id; an echo about the old words is not it.
-      echoes.current.delete(draft.id);
-
-      try {
-        const spoken = await dependencies.writeObservation.execute(draft);
-
-        setStage((current) => addObservation(current, spoken));
-
-        if (spoken.observation !== null) {
-          echoes.current.set(spoken.id, spoken.observation);
-
-          if (awaitingEcho.current.delete(spoken.id)) {
-            const echoed = await dependencies.attachObservation.execute(
-              spoken.id,
-              spoken.observation,
-            );
-
-            // Home and an open page still hold the entry as it was saved.
-            if (echoed !== null) {
-              setStage((current) =>
-                current.kind === 'detail' && current.entry.id === echoed.id
-                  ? { ...current, entry: echoed }
-                  : current,
-              );
-              reloadHome();
-            }
-          }
-        }
-      } catch {
-        // The entry is complete without it. Failing here must not take down a
-        // card the user is already reading.
-      }
-    },
-    [
-      dependencies.attachObservation,
-      dependencies.hasNarrativeAccess,
-      dependencies.writeObservation,
-      reloadHome,
-    ],
-  );
-
   /**
    * The question goes up as soon as there are words, and the analysis runs
    * behind it. Whoever finishes second decides what happens next: the person
@@ -907,8 +816,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           setStage((current) =>
             whenAnalysisLands(current, reading.draft, spoken.text, reading.nearbyEmotionIds),
           );
-
-          void withObservation(reading.draft);
         })
         .catch(() => {
           /*
@@ -923,7 +830,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           setStage((current) => whenAnalysisFails(current, draft, spoken));
         });
     },
-    [notify, saveUnheard, withObservation],
+    [notify, saveUnheard],
   );
 
   /*
@@ -1074,7 +981,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       void dependencies.getWeekSummary
         .execute({ containing })
         .then(async (week) => {
-          const [themes, patterns, earlier] = await Promise.all([
+          const [themes, patterns, neighbours] = await Promise.all([
             dependencies.getWeekThemes.execute({
               weekStart: week.weekStart,
               weekEnd: week.weekEnd,
@@ -1083,13 +990,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             // enough of anything for a comparison worth printing.
             dependencies.findMoodPatterns.execute({ containing: week.weekStart }),
             /*
-             * Whether the step back leads anywhere. Asked rather than assumed,
-             * because a live arrow into a week that never existed reads as a
-             * week the person failed to fill.
+             * Where the arrows lead: over the empty weeks to the nearest one
+             * with entries (owner's word, 2026-10-30), and nowhere before the
+             * journal began.
              */
-            dependencies.getWeekSummary.execute({
-              containing: weeksAgo(dependencies.clock.now(), weeksBack + 1),
-            }),
+            dependencies.getWeekNeighbours.execute({ weeksBack }),
           ]);
 
           setStage((current) =>
@@ -1103,7 +1008,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
                     themes,
                     patterns,
                     weeksBack,
-                    hasEarlierWeek: earlier.entryCount > 0,
+                    earlierWeeksBack: neighbours.earlierWeeksBack,
+                    laterWeeksBack: neighbours.laterWeeksBack,
                     hasNarrativeAccess: dependencies.hasNarrativeAccess,
                   },
                 }
@@ -1182,7 +1088,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       setStage((current) =>
         current.kind === 'vocabulary'
           ? { ...current, growth: null }
-          : { kind: 'vocabulary', growth: null, earliest: null },
+          : { kind: 'vocabulary', growth: null, earliest: null, entryDays: new Set<number>() },
       );
 
       void Promise.all([
@@ -1201,7 +1107,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           const oldest = new Date(first.getFullYear(), first.getMonth(), first.getDate());
 
           setStage((current) =>
-            current.kind === 'vocabulary' ? { ...current, growth, earliest: oldest } : current,
+            current.kind === 'vocabulary'
+              ? { ...current, growth, earliest: oldest, entryDays: entryDays(history) }
+              : current,
           );
         })
         .catch(fail);
@@ -1213,17 +1121,10 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     (proposed: MoodEntry, draft: MoodEntry, backTo: CaptureStage, declined = false) => {
       setStage({ kind: 'processing' });
 
-      // An echo that came in while the card was up goes in with the entry.
-      const echo = echoes.current.get(draft.id);
-      const confirmed =
-        draft.observation === null && echo !== undefined && !draft.wasRevisedByUser
-          ? draft.withObservation(echo)
-          : draft;
-
       dependencies.confirmEntry
         .execute({
           proposed,
-          confirmed,
+          confirmed: draft,
           recordingUri: dependencies.keepRecordings ? (takeUri.current ?? undefined) : undefined,
           keptOwnWords: declined,
         })
@@ -1232,24 +1133,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
           takeUri.current = null;
 
-          // Still on its way: written into the stored entry when it lands.
-          if (confirmed.observation === null && dependencies.hasNarrativeAccess) {
-            const landed = echoes.current.get(confirmed.id);
-
-            if (landed === undefined) {
-              awaitingEcho.current.add(confirmed.id);
-            } else {
-              await dependencies.attachObservation.execute(confirmed.id, landed).catch(() => undefined);
-            }
-          }
-
           const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
 
           setHome(refreshed);
           setStage({
             kind: 'saved',
             streakDays: refreshed.streakDays,
-            offersGrounding: confirmed.safetyFlag === 'distress',
+            offersGrounding: draft.safetyFlag === 'distress',
             unheard: false,
           });
         })
@@ -1301,6 +1191,18 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     startRecording,
     stopRecording: useCallback(() => {
       dependencies.recorder.stop();
+    }, [dependencies.recorder]),
+    pauseRecording: useCallback(() => {
+      void dependencies.recorder.pause();
+    }, [dependencies.recorder]),
+    resumeRecording: useCallback(() => {
+      /*
+       * A microphone that will not come back still leaves what was said, and
+       * that is kept the way the stop button keeps it rather than lost.
+       */
+      dependencies.recorder.resume().catch(() => {
+        dependencies.recorder.stop();
+      });
     }, [dependencies.recorder]),
     cancel: useCallback(() => {
       dependencies.recorder.cancel();
@@ -1543,8 +1445,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             setStage((current) =>
               whenAnalysisLands(current, reading.draft, corrected, reading.nearbyEmotionIds),
             );
-
-            void withObservation(reading.draft);
           })
           .catch(() => {
             /*
@@ -1558,7 +1458,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             setStage((current) => whenAnalysisFails(current, draft, spoken));
           });
       },
-      [notify, stage, withObservation],
+      [notify, stage],
     ),
     toggleKept: useCallback((id: string) => {
       setStage((current) => {
@@ -1687,15 +1587,19 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
      * did nothing on the phone (found 2026-09-22).
      */
     showEarlierWeek: useCallback(() => {
-      if (stage.kind === 'stats') {
-        loadStats(stage.weeksBack + 1);
+      const earlier = stage.kind === 'stats' ? stage.view?.earlierWeeksBack : null;
+
+      if (earlier !== null && earlier !== undefined) {
+        loadStats(earlier);
       }
     }, [loadStats, stage]),
     showLaterWeek: useCallback(() => {
       // Never forward past this week: there is nothing there yet, and an
       // empty week you navigated into reads as one you failed to fill.
-      if (stage.kind === 'stats' && stage.weeksBack > 0) {
-        loadStats(stage.weeksBack - 1);
+      const later = stage.kind === 'stats' ? stage.view?.laterWeeksBack : null;
+
+      if (later !== null && later !== undefined) {
+        loadStats(later);
       }
     }, [loadStats, stage]),
     openHistory: useCallback(() => {

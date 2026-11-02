@@ -12,9 +12,9 @@ import { Button } from './Button';
  * kept: the quote with a button under it — a whole-width one with a pencil,
  * since the drawing's small pencil pill read as one more tag beside the
  * emotion chips (owner's word, 2026-10-01) — and, once tapped, the text in a
- * ring of ink with a solid "done" and the reason the control exists.
- * Recognition is the one thing on either card the person can check and the
- * model cannot.
+ * ring of ink with a solid "done". The line explaining why went on 2026-10-30
+ * (owner's word). Recognition is the one thing on either card the person can
+ * check and the model cannot.
  */
 export function FixWording(props: {
   /** The sentence as it stands; what the editor opens with. */
@@ -66,7 +66,7 @@ export function FixWording(props: {
           textAlignVertical: 'top',
         }}
       />
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+      <View style={{ flexDirection: 'row' }}>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -87,13 +87,6 @@ export function FixWording(props: {
             {t('detail.fixDone')}
           </AppText>
         </Pressable>
-        <AppText
-          variant="caption"
-          color="inkFaint"
-          style={{ flex: 1, textTransform: 'none', letterSpacing: 0, fontSize: 12.5 }}
-        >
-          {t('detail.fixHint')}
-        </AppText>
       </View>
     </View>
   );

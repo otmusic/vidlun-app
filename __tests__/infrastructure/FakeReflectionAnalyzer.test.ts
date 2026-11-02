@@ -1,5 +1,4 @@
 import { FakeNarrativeGenerator } from '@/infrastructure/analysis/FakeNarrativeGenerator';
-import { FakeObservationWriter } from '@/infrastructure/analysis/FakeObservationWriter';
 import { FakeReflectionAnalyzer } from '@/infrastructure/analysis/FakeReflectionAnalyzer';
 import TOPICS from '@/infrastructure/analysis/fakeTopics.json';
 import { createEmotionVocabulary } from '@/infrastructure/analysis/emotionVocabularyData';
@@ -109,15 +108,6 @@ describe('the pretend analysis for walking the card in development', () => {
     }
 
     expect((await analyzer.analyze('Cooked dinner.')).emotionIds).toEqual([]);
-  });
-});
-
-describe('the pretend echo for walking the paid card in development', () => {
-  it('answers with a sentence marked as pretend, quoting the entry', async () => {
-    const echo = await new FakeObservationWriter(0).observe('Cooked dinner.');
-
-    expect(echo).toContain('Pretend echo');
-    expect(echo).toContain('Cooked dinner.');
   });
 });
 
