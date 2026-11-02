@@ -1,20 +1,17 @@
 # Vidlun Terms of Use
 
-**Effective:** 30 October 2026
+**Effective:** 2 November 2026
 
 **Provider:** the Vidlun developer, support@vidlun.app
 
 By installing Vidlun you agree to these terms. If you do not agree, do not use
 the app.
 
-Vidlun is for people aged 18 and over.
-
 ## 1. What Vidlun is
 
 A voice journal for feelings. You speak, the app transcribes on the phone
-itself, and Anthropic's Claude language model — if you agree to it — proposes
-names for what was said and once a month writes a piece about your month. What
-leaves the phone for that is described in the Privacy Policy.
+itself, and a language model proposes names for what was said and once a month
+writes a piece about your month.
 
 ## 2. This is not a medical service
 
@@ -29,14 +26,9 @@ suggestion yours to change.
 do not face it alone and do not rely on an app.**
 
 - Ukraine, Lifeline Ukraine: **7333** (24/7, free)
-- US, 988 Suicide & Crisis Lifeline: **988** (call or text, 24/7)
-- UK and Ireland, Samaritans: **116 123** (24/7, free)
-- Many EU countries, emotional support line: **116 123**
-- Other countries: <https://findahelpline.com>
-
-If your life is in immediate danger, call emergency services: **112** in
-Ukraine and the EU (ambulance in Ukraine — **103**), **911** in the US, **999**
-in the UK.
+- Emergency services in Ukraine: **103**
+- EU-wide emotional support line: **116 123**
+- Emergency services in the EU: **112**
 
 ## 3. No account
 
@@ -51,8 +43,8 @@ somewhere safe is yours to do; we never see or hold it.
 ## 4. Subscription
 
 **Free forever:** recording up to one minute, transcription, the emotion names
-the app heard in a recording (with your consent to analysis), the journal with
-its emotion filter, the mood chart and the emotion vocabulary.
+the app heard in a recording, the journal with its emotion filter, the mood
+chart and the emotion vocabulary.
 
 **Paid:** the monthly piece the language model writes after reading your whole
 month, the week's topics and "What stands out" — patterns in your mood — and

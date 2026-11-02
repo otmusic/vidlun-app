@@ -1,6 +1,6 @@
 # Vidlun Privacy Policy
 
-**Effective:** 30 October 2026
+**Effective:** 2 November 2026
 
 **Data controller:** the Vidlun developer, support@vidlun.app
 
@@ -10,126 +10,70 @@
 
 - **Audio never leaves your phone.** Speech recognition runs entirely on the
   device, with a model built into the app.
-- Only the **text** of a transcript leaves — to Anthropic's Claude language
-  model (USA), to name the emotions, mood and topics of an entry and once a
-  month to write a piece about your month. **Only if you agree to it.**
-  Without your consent, Vidlun works as a plain journal.
-- Also what you write to us in the feedback form — but only when you tap
-  "Send".
-- **No accounts, no sign-up, no analytics, no trackers, no advertising.** We
-  do not sell any data.
-- Your entries are not stored on our servers. The text for analysis only
-  passes through our proxy: we neither store it nor read it.
+- Only the **text** of a transcript leaves — so a language model can name the
+  feelings and write the monthly piece. And what you write to us yourself in
+  the feedback form — but only when you tap "Send".
+- **No accounts, no sign-up, no analytics, no trackers, no advertising.**
+- We have no server that stores your entries. We physically cannot read them.
 
 ## 1. What is kept on your phone
 
 | Data | Where | How long |
 |---|---|---|
 | Voice recordings | the app's documents folder | thirteen months, then deleted automatically; immediately if "Keep recordings" is off |
-| Transcript, emotions, mood, topics, the difficult-state flag, time | the app's local storage | until you delete it |
-| Revision log: what the app proposed and what was changed | local storage | until you delete it |
-| The saved monthly piece (and weekly ones from earlier versions) | local storage | until you delete it |
-| Your consent to analysis: when it was given or withdrawn | local storage | while the app is installed |
+| Transcript, emotions, mood, topics, time | the app's local storage | until you delete it |
+| Revision log: what the app proposed and what you changed | local storage | until you delete it |
 | Settings | local storage | while the app is installed |
+| The saved monthly piece (and weekly ones from earlier versions) | local storage | until you delete it |
 
 None of this is sent to us. Deleting the app destroys all of it.
 
 ## 2. What leaves the phone
 
-### 2.1 The text of an entry, for analysis by a language model
+### 2.1 The text of an entry, for analysis
 
 **What exactly.** The cleaned transcript of one entry. For the monthly piece: the
 date, the mood number, emotion codes, topics and the transcripts of a month's
 entries together.
 
 **Where to.** Through our Cloudflare Workers proxy to Anthropic PBC (USA), to
-the API of the Claude language model.
+the Claude API.
 
-**Why.**
+**Why.** To propose names for feelings and write the monthly piece. This is what the app is installed for.
 
-- To propose names for the emotions, the mood and the topics of an entry.
-- To notice whether an entry sounds like a very difficult state or thoughts of
-  self-harm. The flag stays on the phone: after a very difficult entry, Vidlun
-  offers a one-minute grounding exercise. It is not a diagnosis or a
-  professional risk assessment.
-- To write a piece about your month once a month (with a subscription).
+**Lawful basis** (GDPR Art. 6(1)(b)): performance of our contract with you.
 
-**This is sensitive data.** What you say about your feelings and how you are
-is data about mental health. The GDPR and Ukraine's Law on Personal Data
-Protection treat it as a special category, so it leaves the phone only with
-your explicit consent.
+**The proxy stores nothing.** It has no database and keeps no log of request
+content. It exists for one reason: to hold the API key outside the app, because
+a key shipped inside an app can be read by anyone.
 
-**Lawful basis.** Your explicit consent: GDPR (and UK GDPR) Art. 6(1)(a) and
-Art. 9(2)(a); Articles 7 and 11 of Ukraine's Law on Personal Data Protection.
-You give it on a separate screen before your first entry, or once after the
-update if Vidlun is already on your phone.
-
-**How to withdraw it.** Turn off "Entry analysis" in Me. From then on no text
-leaves the phone, and entries already saved stay as they are. Withdrawing does
-not make the processing before it unlawful.
-
-**Without consent** you can record, see the transcript, name emotions and the
-mood yourself, keep the journal and do the grounding exercise. The emotion
-names Vidlun heard in an entry, the topics and the monthly piece will not be
-there.
-
-**The proxy stores no content.** It has no database of entries and keeps no
-log of request content. It exists for one reason: to hold the language model's
-API key outside the app, because a key shipped inside an app can be read by
-anyone.
-
-**Anthropic** processes the text as our processor, under our contract with
-it: it is not used to train models, and is retained for a limited period for
-abuse prevention. See <https://www.anthropic.com/legal/commercial-terms> and
+**Anthropic** handles this as an ordinary API request: it is not used to train
+models, and is retained for a limited period for abuse prevention. See
+<https://www.anthropic.com/legal/commercial-terms> and
 <https://www.anthropic.com/legal/privacy>.
 
-**What Anthropic never receives:** audio, your name, email, contacts,
-location, advertising identifiers, device or install identifiers.
+**What is never sent:** audio, your name, email, contacts, location,
+advertising identifiers, device identifiers.
 
-### 2.2 Checking that a request comes from Vidlun
-
-**What exactly.** So that our proxy does not become free access to the
-language model for anyone, the app proves it is genuine with Apple App
-Attest. A key is created in the phone's secure chip, and Apple confirms it
-belongs to Vidlun on a real iPhone. The proxy keeps a random identifier for
-that key, its public part and a usage counter.
-
-**What is not there:** your name, Apple ID, email or anything from your
-entries. We cannot tell who you are from the key's identifier.
-
-**Why.** To let only the genuine app reach the proxy, and to limit how often
-one phone can call it.
-
-**Where to.** The key's identifier and public part are kept in Cloudflare's
-storage; the confirmation comes from Apple.
-
-**How long.** The record of a key deletes itself after 180 days without any
-request from that phone; every request extends it.
-
-**Lawful basis** (GDPR Art. 6(1)(f), Article 11 of Ukraine's Law on Personal
-Data Protection): our legitimate interest in protecting the service from
-abuse.
-
-### 2.3 Purchases
+### 2.2 Purchases
 
 Handled by Apple and RevenueCat, Inc. (USA). They receive an anonymous install
 identifier, the Apple receipt, purchase and renewal events, the store country
 and the device type. **No entry content reaches them.**
 
-Lawful basis: performance of our contract with you. See
-<https://www.revenuecat.com/privacy>.
+Lawful basis: performance of contract. See <https://www.revenuecat.com/privacy>.
 
-### 2.4 Network data
+### 2.3 Network data
 
 Cloudflare, as the network intermediary, sees the address a request came from.
 It is used only to rate-limit requests and is not stored alongside anything of
 yours.
 
-### 2.5 Feedback
+### 2.4 Feedback
 
-**What exactly.** Only what you type into the "Write to us" form in your
-profile, plus the app version and the iOS version — the first thing support
-asks.
+**What exactly.** Only what you type yourself into the "Write to us" form in
+your profile, plus the app version and the iOS version — the first thing
+support asks.
 
 **Where to.** Through the same Cloudflare Workers proxy, as an email to our
 support mailbox. Cloudflare delivers the email; the mailbox is hosted by
@@ -138,9 +82,8 @@ Google (Gmail).
 **Why.** So we can read it and, where needed, reply. It happens only when you
 tap "Send"; the app never writes on its own.
 
-**Lawful basis** (GDPR Art. 6(1)(f), Article 11 of Ukraine's Law on Personal
-Data Protection): our legitimate interest in answering the messages we are
-sent.
+**Lawful basis** (GDPR Art. 6(1)(f)): our legitimate interest in answering the
+messages we are sent.
 
 **How long.** On the phone, only until the email has gone (with no connection
 the note waits in the app and goes at the next launch). The proxy stores
@@ -155,88 +98,49 @@ the text, we use it only to reply.
 ## 3. Permissions the app asks for
 
 - **Microphone** — to record. Without it, Vidlun is a text journal.
-- **Notifications** — only for the reminder you switch on and set in your
-  profile. The phone schedules it itself; there is no push server, and nobody
-  outside can send you a notification through Vidlun.
+- **Notifications** — only for the reminder you switch on yourself, at the time
+  you choose. The phone schedules it itself; there is no push server, and
+  nobody outside can send you a notification through Vidlun.
 
-## 4. Backups
+## 4. Apple backups
 
 If you have iCloud Backup on, the app's data — entries and audio — is included
 in your device backup. That happens on Apple's side under Apple's policy, not
 ours. You can turn it off for this app in iOS settings.
 
-The Backup and Readable export files from your profile are not encrypted:
-they hold your whole journal. Keep them where nobody else can read them.
-
 ## 5. Your rights
 
-Under the GDPR and the UK GDPR you have the right of access, rectification,
-erasure, restriction, objection, portability, to withdraw consent, and to
-complain to a supervisory authority. Ukraine's Law on Personal Data Protection
-(Article 8) gives you the right to know who processes your data, why and to
-whom it was passed, to access it, to object to processing, to have it changed
-or destroyed, and to withdraw consent.
+Under the GDPR you have the right of access, rectification, erasure,
+restriction, objection, portability, and to complain to a supervisory
+authority.
 
 What is unusual about Vidlun: **almost all of this data is only ever yours to
 control.** It is on your phone, not with us:
 
-- withdraw consent to analysis — turn off "Entry analysis" in Me;
 - delete one entry — swipe it in the journal;
 - delete all audio — turn off "Keep recordings" in your profile;
 - delete everything — delete the app;
 - take everything with you — Backup and Readable export in your profile hand
   you every entry as a file (data portability, right in the app).
 
-For the data held off the phone — purchases and the app check key — write to
-support@vidlun.app. We answer within 30 days.
+For purchase data, which is the only thing held off the phone, write to
+support@vidlun.app; we answer within 30 days.
 
-**Where to complain.** In the EU, to the data protection authority of your
-country; in the UK, to the ICO (<https://ico.org.uk>); in Ukraine, to the
-Ukrainian Parliament Commissioner for Human Rights
-(<https://ombudsman.gov.ua>).
+## 6. Transfers outside the EEA
 
-## 6. Transfers outside Ukraine and the EEA
+Anthropic, RevenueCat and Cloudflare are in the United States. Transfers rely
+on the European Commission's Standard Contractual Clauses.
 
-Anthropic, RevenueCat, Cloudflare and Google are in the United States.
-Transfers from the EU and the UK rely on the European Commission's Standard
-Contractual Clauses (for the UK, with the UK Addendum to them). Transfers from
-Ukraine rely on your consent and on performing our contract with you (Article
-29 of Ukraine's Law on Personal Data Protection).
+## 7. Children
 
-## 7. Age
+Vidlun is not intended for children under 13, and we do not knowingly collect
+their data.
 
-Vidlun is meant for people aged 18 and over. If you are under 18, please do
-not use the app. We do not knowingly process the data of minors.
-
-## 8. For US residents: consumer health data {#consumer-health-data}
-
-Washington's My Health My Data Act and similar laws in Nevada and Connecticut
-require a separate account of how consumer health data is handled. For
-Vidlun, that is what you say about your feelings and how you are.
-
-- **What data:** the text of your entries, emotion names, mood, topics, the
-  difficult-state flag and the monthly piece.
-- **Where it comes from:** only from you — what you say or type, and what the
-  language model proposes from it.
-- **Why:** to provide the service you ask for: naming the emotions and topics
-  and writing the monthly piece (section 2.1).
-- **Who receives it:** only processors acting under our contract and only for
-  that purpose — Anthropic (analysis) and Cloudflare (transport). We do not
-  sell this data and do not pass it to anyone for advertising or any other
-  purpose.
-- **Your rights:** to know what data there is and who received it, to
-  withdraw consent and to delete the data — as described in section 5. Write
-  to support@vidlun.app; we answer within 45 days.
-- **Appeals.** If we decline, write to us with the subject "Appeal". We will
-  decide within 45 days and, if we decline again, tell you how to contact
-  your state's Attorney General.
-
-## 9. Changes
+## 8. Changes
 
 If what leaves the phone changes, we will update this page and say so inside
-the app before the change takes effect. If a change touches what you consented
-to, we will ask for your consent again.
+the app before the change takes effect.
 
-## 10. Contact
+## 9. Contact
 
 support@vidlun.app
