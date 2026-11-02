@@ -96,7 +96,7 @@ export class MoodEntry {
      */
     const selfEmotionIds = withinLimit(unique(props.selfEmotionIds ?? []));
 
-    const contextTags = unique((props.contextTags ?? []).map((tag) => tag.trim()).filter((tag) => tag.length > 0));
+    const contextTags = unique((props.contextTags ?? []).map(asTopic).filter((tag) => tag.length > 0));
     const safetyFlag = props.safetyFlag ?? 'none';
 
     // A cheerful reflection on a crisis entry does harm. What the app shows
@@ -184,6 +184,16 @@ export class MoodEntry {
 
 function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
+}
+
+/**
+ * A topic is shown as it is stored, and the model sometimes writes a
+ * two-word one as an identifier, with an underscore for the space (found
+ * 2026-11-02). Tidied here rather than on screen, so entries already saved
+ * that way read right too, and the two spellings count as one topic.
+ */
+function asTopic(tag: string): string {
+  return tag.replace(/_+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function withinLimit(emotionIds: readonly string[]): readonly string[] {

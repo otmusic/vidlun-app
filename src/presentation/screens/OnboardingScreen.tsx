@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Pressable, ScrollView, View, type LayoutChangeEvent } from 'react-native';
 
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import type { Locale, Translate, TranslationKey } from '@/i18n';
@@ -7,7 +7,7 @@ import { legalDocument, type LegalDocumentKind } from '@/i18n/legal';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
-import { WaveMark } from '../components/WaveMark';
+import { WaveMark, waveMarkHeight } from '../components/WaveMark';
 import { useTheme } from '../theme/ThemeProvider';
 import { LegalScreen } from './LegalScreen';
 import { Screen } from './Screen';
@@ -34,6 +34,28 @@ const HEADLINE: Record<Step, TranslationKey> = {
 
 /** The drawing's side margin on these screens. */
 const SIDE_INSET = 28;
+
+const MARK_WIDTH = 214;
+
+/** See Headline: the most the onboarding headlines grow with larger text. */
+const HEADLINE_SCALE_CAP = 1.1;
+
+/** The middle's spacing, kept apart so the room the mark needs can be counted. */
+const WELCOME_GAP = 34;
+const STEP_GAP = 26;
+const MIDDLE_PAD_TOP = 20;
+const MIDDLE_PAD_BOTTOM = 16;
+
+/** The footer's pair, side by side with a dot between when they fit. */
+const LINK_GAP = 12;
+const LINK_DOT = 3;
+
+/*
+ * How far the pair may run past the footer's own padding. On an SE at the
+ * default size the Ukrainian pair is a few points wider than the text above
+ * it and always reached into the margin; this keeps it in one row there.
+ */
+const LINK_OVERHANG = 12;
 
 const ACTION: Record<Step, TranslationKey> = {
   welcome: 'onboarding.welcomeAction',
@@ -70,6 +92,18 @@ export function OnboardingScreen(props: {
    * flow exists, and what someone reads before agreeing stays their business.
    */
   const [reading, setReading] = useState<LegalDocumentKind | null>(null);
+  /*
+   * The scroller's height and the words' height, without the mark. Large
+   * text on an SE-sized window — and on an iPad, which shows an iPhone app in
+   * one — left no room for the mark and the words, and it was the words that
+   * went under the button (owner's iPad, 2026-11-02). The mark is the only
+   * decoration here, so it is what gives way. The words are kept without the
+   * mark and without the gap between them, which changes with it, so taking
+   * the mark away cannot make it fit again.
+   */
+  const [room, setRoom] = useState<number | null>(null);
+  const [words, setWords] = useState<number | null>(null);
+  const scroller = useRef<ScrollView>(null);
   const { t } = props;
   const isLast = index === STEPS.length - 1;
 
@@ -111,6 +145,14 @@ export function OnboardingScreen(props: {
     props.onDone();
   };
 
+  const markFits =
+    room === null ||
+    words === null ||
+    waveMarkHeight(MARK_WIDTH) + 2 * WELCOME_GAP + words + MIDDLE_PAD_TOP + MIDDLE_PAD_BOTTOM <= room;
+  const showMark = step === 'welcome' && markFits;
+  // Without the mark the welcome is a headline over a lede, as the other two are.
+  const gap = showMark ? WELCOME_GAP : STEP_GAP;
+
   return (
     <Screen inset={{ top: 74, sides: SIDE_INSET, bottom: 40 }} style={{ gap: 0 }}>
       <ProgressRail reached={index} of={STEPS.length} />
@@ -123,26 +165,43 @@ export function OnboardingScreen(props: {
           not hold the privacy screen in one view, and a headline hidden under
           the button was how the third review saw it. */}
       <ScrollView
+        ref={scroller}
         /* The scroller reaches into the side margins so the headline's blob,
            drawn past the text's left edge, is not clipped at the margin. */
         style={{ flex: 1, marginHorizontal: -SIDE_INSET }}
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: 'center',
-          gap: step === 'welcome' ? 34 : 26,
-          paddingTop: 20,
-          paddingBottom: 16,
+          gap,
+          paddingTop: MIDDLE_PAD_TOP,
+          paddingBottom: MIDDLE_PAD_BOTTOM,
           paddingHorizontal: SIDE_INSET,
         }}
-        showsVerticalScrollIndicator={false}
+        onLayout={(event: LayoutChangeEvent) => {
+          setRoom(event.nativeEvent.layout.height);
+        }}
+        onContentSizeChange={(_width, height) => {
+          // Words that still do not fit, at the largest sizes, say there is more.
+          if (room !== null && height > room) {
+            scroller.current?.flashScrollIndicators();
+          }
+        }}
       >
-        {step === 'welcome' ? (
-          <WaveMark width={214} color={theme.palette.ink} echoColor={theme.palette.accent} />
+        {showMark ? (
+          <WaveMark width={MARK_WIDTH} color={theme.palette.ink} echoColor={theme.palette.accent} />
         ) : null}
-        <Headline>{t(HEADLINE[step])}</Headline>
-        {step === 'welcome' ? <Lede>{t('onboarding.welcomeBody')}</Lede> : null}
-        {step === 'privacy' ? <Lede>{t('onboarding.privacyOnDevice')}</Lede> : null}
-        {step === 'microphone' ? <Lede>{t('onboarding.micBody')}</Lede> : null}
+        <View
+          style={{ gap }}
+          onLayout={(event: LayoutChangeEvent) => {
+            // A headline and a lede on every step: one gap between them.
+            setWords(event.nativeEvent.layout.height - gap);
+          }}
+        >
+          <Headline>{t(HEADLINE[step])}</Headline>
+          {step === 'welcome' ? <Lede>{t('onboarding.welcomeBody')}</Lede> : null}
+          {step === 'privacy' ? <Lede>{t('onboarding.privacyOnDevice')}</Lede> : null}
+          {step === 'microphone' ? <Lede>{t('onboarding.micBody')}</Lede> : null}
+        </View>
       </ScrollView>
 
       <View style={{ gap: 4 }}>
@@ -156,43 +215,94 @@ export function OnboardingScreen(props: {
           <AppText variant="caption" color="inkFaint" align="center" style={{ textTransform: 'none', letterSpacing: 0 }}>
             {t('onboarding.legalNote')}
           </AppText>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <FooterLink
-              label={t('onboarding.legalTerms')}
-              onPress={() => {
-                setReading('terms');
-              }}
-            />
-            <View
-              style={{
-                width: 3,
-                height: 3,
-                borderRadius: 999,
-                backgroundColor: theme.palette.line,
-              }}
-            />
-            <FooterLink
-              label={t('onboarding.legalPrivacy')}
-              onPress={() => {
-                setReading('privacy');
-              }}
-            />
-          </View>
+          <FooterLinks
+            terms={t('onboarding.legalTerms')}
+            privacy={t('onboarding.legalPrivacy')}
+            onRead={setReading}
+          />
         </View>
       ) : null}
     </Screen>
   );
 }
 
+/**
+ * The terms and the policy side by side, or one under the other when larger
+ * text makes the pair wider than the screen: in a row they ran off both edges
+ * (owner's iPad, 2026-11-02). Measured rather than wrapped, so the dot never
+ * ends a line, and the links' own widths decide, so the choice cannot undo
+ * itself.
+ */
+function FooterLinks(props: {
+  readonly terms: string;
+  readonly privacy: string;
+  readonly onRead: (kind: LegalDocumentKind) => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const [room, setRoom] = useState(0);
+  const [terms, setTerms] = useState(0);
+  const [privacy, setPrivacy] = useState(0);
+  const together = room === 0 || terms + privacy + 2 * LINK_GAP + LINK_DOT <= room;
+
+  return (
+    <View
+      onLayout={(event: LayoutChangeEvent) => {
+        setRoom(event.nativeEvent.layout.width);
+      }}
+      style={{
+        alignSelf: 'stretch',
+        marginHorizontal: -LINK_OVERHANG,
+        flexDirection: together ? 'row' : 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: together ? LINK_GAP : 8,
+      }}
+    >
+      <FooterLink
+        label={props.terms}
+        onWidth={setTerms}
+        onPress={() => {
+          props.onRead('terms');
+        }}
+      />
+      {together ? (
+        <View
+          style={{
+            width: LINK_DOT,
+            height: LINK_DOT,
+            borderRadius: 999,
+            backgroundColor: theme.palette.line,
+          }}
+        />
+      ) : null}
+      <FooterLink
+        label={props.privacy}
+        onWidth={setPrivacy}
+        onPress={() => {
+          props.onRead('privacy');
+        }}
+      />
+    </View>
+  );
+}
+
 /** A quiet underlined link, as the drawing sets the footer's pair. */
 function FooterLink(props: {
   readonly label: string;
+  readonly onWidth: (width: number) => void;
   readonly onPress: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
 
   return (
-    <Pressable accessibilityRole="link" onPress={props.onPress} hitSlop={10}>
+    <Pressable
+      accessibilityRole="link"
+      onPress={props.onPress}
+      hitSlop={10}
+      onLayout={(event: LayoutChangeEvent) => {
+        props.onWidth(event.nativeEvent.layout.width);
+      }}
+    >
       <View style={{ borderBottomWidth: 1, borderBottomColor: theme.palette.line, paddingBottom: 1 }}>
         <AppText variant="caption" color="inkSoft" style={{ textTransform: 'none', letterSpacing: 0 }}>
           {props.label}
@@ -231,11 +341,19 @@ function ProgressRail(props: { readonly reached: number; readonly of: number }):
  * highlighter runs past the edge of what it marks. It is decoration and is
  * hidden from screen readers; the headline itself carries the meaning.
  */
-/** The headline alone: the lime blob the drawing put behind it went at the owner's request. */
+/**
+ * The headline alone: the lime blob the drawing put behind it went at the
+ * owner's request. It grows less with large text than a hero elsewhere:
+ * the privacy headline's longest Ukrainian word, at the hero's own cap, no
+ * longer fit an SE-wide window and broke one letter before its end
+ * (2026-11-02).
+ */
 function Headline(props: { readonly children: React.ReactNode }): React.JSX.Element {
   return (
     <View style={{ alignSelf: 'flex-start' }}>
-      <AppText variant="hero">{props.children}</AppText>
+      <AppText variant="hero" maxScale={HEADLINE_SCALE_CAP}>
+        {props.children}
+      </AppText>
     </View>
   );
 }

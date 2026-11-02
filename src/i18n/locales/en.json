@@ -34,6 +34,8 @@
   "failure.title": "Something went wrong",
   "notice.offlineTitle": "No connection",
   "notice.offlineBody": "Your entry is safe. Vidlun will reply once you’re back online.",
+  "notice.silentTitle": "No words in the recording",
+  "notice.silentBody": "Vidlun couldn’t make out any speech. Try recording again.",
   "notice.dismiss": "Close",
   "common.cancel": "Cancel",
   "delete.title": "Delete this entry?",

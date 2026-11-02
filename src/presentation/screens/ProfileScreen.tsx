@@ -44,6 +44,8 @@ export function ProfileScreen(props: {
   readonly t: Translate;
   readonly onChange: (settings: Settings) => void;
   readonly entitlement: Entitlement;
+  /** False while nothing is sold: the subscription section is not shown at all. */
+  readonly selling: boolean;
   readonly onOpenSubscription: () => void;
   /** Hands one export file to the share sheet; null label means nothing yet. */
   readonly onExport: (shape: 'backup' | 'markdown') => void;
@@ -248,17 +250,20 @@ export function ProfileScreen(props: {
         * is the paywall's own for taking a plan: not buy, since the tap only
         * opens the plans, and not activate, which promises something already
         * there to switch on. Once there is a plan, the same button manages it.
+        * Hidden while nothing is sold (owner's word, 2026-11-02).
         */}
-      <Section>
-        <View style={{ paddingVertical: 17, gap: 14 }}>
-          <Heading title={t('subs.name')} hint={t(subscriptionHint(props.entitlement))} />
-          <Button
-            label={t(props.entitlement === 'none' ? 'profile.subscribe' : 'profile.manage')}
-            variant="secondary"
-            onPress={props.onOpenSubscription}
-          />
-        </View>
-      </Section>
+      {props.selling ? (
+        <Section>
+          <View style={{ paddingVertical: 17, gap: 14 }}>
+            <Heading title={t('subs.name')} hint={t(subscriptionHint(props.entitlement))} />
+            <Button
+              label={t(props.entitlement === 'none' ? 'profile.subscribe' : 'profile.manage')}
+              variant="secondary"
+              onPress={props.onOpenSubscription}
+            />
+          </View>
+        </Section>
+      ) : null}
 
       <TimeSheet
         open={pickingTime}

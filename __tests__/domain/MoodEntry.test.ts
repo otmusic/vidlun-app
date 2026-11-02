@@ -66,6 +66,13 @@ describe('MoodEntry invariants', () => {
     expect(bare.wasRevisedByUser).toBe(false);
   });
 
+  it('writes a topic of two words with a space, as the model sometimes joins them with an underscore', () => {
+    expect(entry({ contextTags: ['day_off', 'day off', 'the__app'] }).contextTags).toEqual([
+      'day off',
+      'the app',
+    ]);
+  });
+
   it('tidies context tags and drops the empty ones', () => {
     expect(entry({ contextTags: [' work ', 'work', '', '   ', 'late'] }).contextTags).toEqual([
       'work',

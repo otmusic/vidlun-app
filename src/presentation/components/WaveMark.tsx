@@ -46,9 +46,14 @@ export interface WaveMarkProps {
   readonly echoColor?: string;
 }
 
+/** How tall the mark is drawn at a width, for a layout that has to know before drawing it. */
+export function waveMarkHeight(width: number): number {
+  return (width / VIEW_WIDTH) * VIEW_HEIGHT;
+}
+
 export function WaveMark(props: WaveMarkProps): React.JSX.Element {
   const echo = props.echoColor ?? props.color;
-  const height = (props.width / VIEW_WIDTH) * VIEW_HEIGHT;
+  const height = waveMarkHeight(props.width);
 
   return (
     <Svg width={props.width} height={height} viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}>

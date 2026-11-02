@@ -26,6 +26,7 @@ import type { GetPastMonths, PastMonth } from '@/application/use-cases/GetPastMo
 import type { StatsView } from '@/presentation/screens/StatsScreen';
 import type { JournalFocus } from '@/presentation/screens/journalFilter';
 import { entryDays } from '@/presentation/components/entryDays';
+import { NothingWasSaidError } from '@/domain/errors/MoodEntryErrors';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
@@ -198,11 +199,13 @@ export type CaptureStage =
  */
 export type Notice = NoticeBody & { readonly id: number };
 
-type NoticeBody =
+export type NoticeBody =
   /** Something did not go through; `message` is the layer below's own words. */
   | { readonly kind: 'failed'; readonly message: string }
   /** Vidlun could not listen: the entry stays the person's, the answer comes later. */
-  | { readonly kind: 'unheard' };
+  | { readonly kind: 'unheard' }
+  /** The take held no words: nothing to read, and saying so plainly beats an error. */
+  | { readonly kind: 'silent' };
 
 export interface CaptureDependencies {
   readonly recorder: IAudioRecorder;
@@ -369,6 +372,18 @@ const RECENT_LIMIT = 3;
  * The capture path as one state machine. Every transition here is on the ten
  * second budget, so nothing in it asks the user a question it could answer.
  */
+/**
+ * What a failure says on screen. A take with no words in it is not something
+ * that broke — the person needs to hear it in the app's words and try again,
+ * not read the error's English line under a Ukrainian title (owner's word,
+ * 2026-11-02). Everything else keeps the layer below's own message.
+ */
+export function noticeFor(error: unknown): NoticeBody {
+  return error instanceof NothingWasSaidError
+    ? { kind: 'silent' }
+    : { kind: 'failed', message: describe(error) };
+}
+
 /**
  * Native modules reject with plain objects as often as with Errors, and
  * `String({})` turns those into "[object Object]" — the one message that says
@@ -701,7 +716,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         setStage(backTo);
       }
 
-      notify({ kind: 'failed', message: describe(error) });
+      notify(noticeFor(error));
     },
     [notify],
   );

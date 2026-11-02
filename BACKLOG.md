@@ -1517,6 +1517,54 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++. A take with no words says so, topics with a space, onboarding at large text, everything free — 2026-11-02
+
+- **An empty take has its own notice** (owner's word and copy). It used to
+  show «Не вийшло» over the domain error's English message, "The recording
+  produced no words to work with." `noticeFor` turns `NothingWasSaidError`
+  into a `silent` notice: «У записі немає слів» / «Не вийшло розпізнати
+  мовлення. Спробуй записати ще раз.», en "No words in the recording" /
+  "Vidlun couldn’t make out any speech. Try recording again." Only a take
+  reaches it: the text screen's button is off while the field is blank.
+  Every other failure keeps the layer below's message.
+- **Topics are written with a space.** The model filed a birthday as
+  «день_народження». `MoodEntry.create` turns underscores into spaces, so
+  entries already saved that way read right and both spellings count as one
+  topic in the week's themes and the patterns. The prompt now says a two-word
+  topic is two words with a space.
+- **Onboarding at large text** (owner's iPad screenshot). The app is
+  iPhone-only, so an iPad shows it in a 375×667 window, and that iPad had the
+  largest non-accessibility text size: the welcome's lede went under the
+  button and the terms/policy pair ran off both edges. Reproduced on the SE
+  simulator with `xcrun simctl ui <udid> content_size
+  extra-extra-extra-large`. Now the wave mark gives way when the headline and
+  lede would not fit with it (measured without it, so it cannot flicker
+  back), the pair stacks when it is wider than the footer (it may still run
+  12pt into the margin, as it always did on an SE at the default size), the
+  onboarding headlines grow at most 1.1× («залишаються» broke one letter
+  before its end at the hero's 1.2), and a scroller that still overflows
+  flashes its indicator. At the default size the screens are unchanged.
+- **The agreement line named a button that is not there.** It said
+  «Натискаючи «Почати», ви погоджуєтесь… Політикою приватності» under a
+  button reading «Далі», in «ви» where the app says «ти», and naming the
+  policy differently from its link. Now «Натискаючи «Далі», ти погоджуєшся
+  з Умовами використання та Політикою конфіденційності.»
+- **Everything free for now** (owner's word: "збери поки білд де весь
+  функціонал безкоштовний і поки сховай в секції Я секцію про підписку").
+  `SELLING = false` in `container.ts` wires `EverythingFree`, a store that
+  reports an active subscription and sells nothing, so every gate opens
+  through the one entitlement it always went through: the month page, the
+  week's topics and pattern, five-minute takes without the free minute's
+  note. RevenueCat is not configured at all. The profile's subscription
+  section is hidden behind `selling`. Selling again is that one line.
+- **Build 53 carries the old legal texts**, as 52 did: the consent-release
+  texts of c402a0a describe a consent screen and an "Entry analysis" switch
+  the app does not have yet. They are held back in a commit of their own;
+  `git checkout c402a0a -- legal/PRIVACY.uk.md legal/PRIVACY.en.md
+  legal/TERMS.uk.md legal/TERMS.en.md` and `npm run legal` bring them back.
+
+---
+
 ## 3ψψψ++. A take that waits for an answer, week arrows over empty weeks, no echo — 2026-10-30
 
 - **Leaving a take is asked** (owner's word). The recording screen's Cancel

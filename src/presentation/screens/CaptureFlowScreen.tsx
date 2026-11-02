@@ -43,6 +43,8 @@ export interface CaptureFlowScreenProps {
   readonly today: Date;
   readonly t: Translate;
   readonly entitlement: Entitlement;
+  /** Whether anything is on sale, which decides if the profile shows the subscription. */
+  readonly selling: boolean;
   readonly onExport: (shape: 'backup' | 'markdown') => void;
   readonly onRestore: () => void;
   /** Mails a note to support; rejects when it could not be delivered. */
@@ -128,17 +130,23 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
 /**
  * The notice in the app's words. A failure keeps the layer below's own
  * message under the title — it is the one line the owner gets to read when
- * someone writes in — and the network's failure gets the two lines that say
- * where the entry is going instead.
+ * someone writes in — while the network's failure gets the two lines that say
+ * where the entry is going, and a take without words the two that say to
+ * record again.
  */
 function lineFor(notice: Notice | null, t: Translate): ToastLine | null {
   if (notice === null) {
     return null;
   }
 
-  return notice.kind === 'unheard'
-    ? { id: notice.id, title: t('notice.offlineTitle'), detail: t('notice.offlineBody') }
-    : { id: notice.id, title: t('failure.title'), detail: notice.message };
+  switch (notice.kind) {
+    case 'unheard':
+      return { id: notice.id, title: t('notice.offlineTitle'), detail: t('notice.offlineBody') };
+    case 'silent':
+      return { id: notice.id, title: t('notice.silentTitle'), detail: t('notice.silentBody') };
+    case 'failed':
+      return { id: notice.id, title: t('failure.title'), detail: notice.message };
+  }
 }
 
 /** A month as "YYYY-MM", the way a closed month card is remembered. */
@@ -291,6 +299,7 @@ function Stage(
           t={t}
           onChange={props.onSettingsChange}
           entitlement={props.entitlement}
+          selling={props.selling}
           onOpenSubscription={flow.openSubscription}
           onGround={flow.openGrounding}
         />

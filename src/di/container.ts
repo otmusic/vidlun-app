@@ -68,6 +68,7 @@ import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { ExpoReminders } from '../infrastructure/system/ExpoReminders';
 import { expoNotificationCenter } from '../infrastructure/system/expoNotificationCenter';
 import { SystemClock } from '../infrastructure/system/SystemClock';
+import { EverythingFree } from '../infrastructure/purchases/EverythingFree';
 import { FakePurchases } from '../infrastructure/purchases/FakePurchases';
 import { RevenueCatPurchases } from '../infrastructure/purchases/RevenueCatPurchases';
 import { UnavailablePurchases } from '../infrastructure/purchases/UnavailablePurchases';
@@ -117,6 +118,8 @@ export interface Container {
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
   readonly purchases: IPurchases;
+  /** Whether anything is on sale; while it is not, the profile has no subscription section. */
+  readonly selling: boolean;
   readonly reminders: IReminders;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
   readonly getMilestones: GetMilestones;
@@ -156,6 +159,13 @@ export interface ContainerDependencies {
  */
 const setRecordingMode = (allowed: boolean): Promise<void> =>
   setAudioModeAsync({ allowsRecording: allowed, playsInSilentMode: true });
+
+/*
+ * Nothing is sold for now (owner's word, 2026-11-02): every feature is open
+ * to everyone, the store is not asked, and the profile has no subscription
+ * section. Selling again is this one line.
+ */
+const SELLING = false;
 
 /**
  * Without a key there is no store, and the screens say that plainly instead of
@@ -294,7 +304,8 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     getWeekThemes: new GetWeekThemes(repository),
     findMoodPatterns: new FindMoodPatterns(repository, clock),
     reminders: new ExpoReminders(expoNotificationCenter()),
-    purchases: purchasesFor(readRevenueCatKey()),
+    purchases: SELLING ? purchasesFor(readRevenueCatKey()) : new EverythingFree(),
+    selling: SELLING,
     getVocabularyGrowth: new GetVocabularyGrowth(repository, clock),
     exportJournal: new ExportJournal(repository, new JournalCodec(), clock),
     importJournal: new ImportJournal(repository, new JournalCodec()),

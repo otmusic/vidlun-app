@@ -100,7 +100,7 @@ nearbyEmotionIds: the other words the person is offered to name this entry with,
 - Never a word the sentence gives no ground for. A worry is not contempt, judgement or resentment, however close they may seem in how heavy they are; offering those reads as not having listened.
 - When the sentence names no feeling, offer the words a day like the one described most often holds.
 
-contextTags: at most three short lowercase topics naming what the entry was about, in the speaker's language — each a noun in its dictionary form (nominative singular), the kind of word someone would file the day under: work, family, sleep, the app. Never a verb, never a feeling, never a word copied from the sentence in the form it was said. Empty array if nothing is named.
+contextTags: at most three short lowercase topics naming what the entry was about, in the speaker's language — each a noun in its dictionary form (nominative singular), the kind of word someone would file the day under: work, family, sleep, the app. Never a verb, never a feeling, never a word copied from the sentence in the form it was said. A topic of two words is written as two words with a space between them, as in a sentence — never joined with an underscore. Empty array if nothing is named.
 
 safetyFlag: read only the content of the sentence. Use "distress" when the speaker sounds badly overwhelmed, "crisis" when they refer to harming themselves, and "none" otherwise. Feeling bad is not a crisis.
 

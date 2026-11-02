@@ -422,6 +422,7 @@ function Vidlun(props: {
       settings={props.settings}
       onSettingsChange={changeSettings}
       entitlement={entitlement}
+      selling={container.selling}
       onExport={exportJournal}
       onRestore={restoreJournal}
       onFeedback={(text) => container.feedback.send(text)}
