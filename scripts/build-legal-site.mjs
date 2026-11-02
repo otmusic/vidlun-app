@@ -41,6 +41,15 @@ function inline(text) {
     .replace(/\[([^\]]+)\]\(((?:https?:\/\/|\.\/)[^)]+)\)/g, '<a href="$2">$1</a>');
 }
 
+/** `## Heading {#anchor}` becomes `<h2 id="anchor">`, so the home page can link to a section. */
+function heading2(text) {
+  const anchored = /^(.*?)\s*\{#([a-z0-9-]+)\}$/.exec(text);
+
+  return anchored === null
+    ? `<h2>${inline(text)}</h2>`
+    : `<h2 id="${anchored[2]}">${inline(anchored[1])}</h2>`;
+}
+
 function convert(markdown) {
   const lines = markdown.split('\n');
   const out = [];
@@ -55,7 +64,7 @@ function convert(markdown) {
       out.push(`<h1>${inline(title)}</h1>`);
       index += 1;
     } else if (line.startsWith('## ')) {
-      out.push(`<h2>${inline(line.slice(3))}</h2>`);
+      out.push(heading2(line.slice(3)));
       index += 1;
     } else if (line.startsWith('### ')) {
       out.push(`<h3>${inline(line.slice(4))}</h3>`);

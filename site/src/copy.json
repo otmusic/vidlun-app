@@ -48,9 +48,9 @@
         {
           "n": "3",
           "title": "Повертайся до записів",
-          "body": "У кожного запису своя сторінка: твої слова, голос, настрій, емоції й теми. З підпискою Vidlun додає одне коротке речення — відлуння. Воно описує сказане й не дає порад чи оцінок.",
+          "body": "У кожного запису своя сторінка: твої слова, голос, настрій, емоції й теми. Запис можна переслухати або видалити.",
           "shot": "detail",
-          "alt": "Сторінка запису: слова, голос, настрій, емоції, теми й відлуння"
+          "alt": "Сторінка запису: слова, голос, настрій, емоції й теми"
         },
         {
           "n": "4",
@@ -91,7 +91,7 @@
       "points": [
         "Без акаунта, без реєстрації, без аналітики.",
         "Аудіо лишається на телефоні.",
-        "На сервер іде лише текст запису, щоб назвати емоцію, і ніколи твоє ім’я."
+        "Лише текст запису йде до мовної моделі Anthropic, щоб назвати емоції, — за твоєю згодою і ніколи з твоїм ім’ям."
       ]
     },
     "price": {
@@ -111,7 +111,6 @@
         "title": "Підписка",
         "items": [
           "Місячний наратив: раз на місяць Vidlun пише, що помітив у твоїх записах",
-          "Відлуння до кожного запису",
           "Теми й патерни тижня",
           "Записи до п’яти хвилин"
         ],
@@ -131,12 +130,16 @@
           "a": "Для запису і розпізнавання ні. Щоб Vidlun назвав емоцію, потрібен зв’язок. Без нього запис збережеться з твоїм словом, а відповідь прийде пізніше."
         },
         {
+          "q": "Хто аналізує мої записи?",
+          "a": "Мовна модель Claude компанії Anthropic — лише текст запису і лише за твоєю згодою. Аудіо лишається на телефоні, а згоду можна відкликати в застосунку."
+        },
+        {
           "q": "Це терапія?",
-          "a": "Ні. Vidlun — щоденник. Він описує сказане й не дає порад, оцінок чи медичних висновків."
+          "a": "Ні. Vidlun — щоденник. Він допомагає назвати емоції й не дає порад, оцінок чи медичних висновків."
         },
         {
           "q": "Де мої записи?",
-          "a": "На твоєму телефоні. Резервна копія — це файл, який ти зберігаєш сам. Аудіо в копію не входить."
+          "a": "На твоєму телефоні. Резервна копія — це файл, який зберігаєш ти. Аудіо в копію не входить."
         },
         {
           "q": "Є версія для Android?",
@@ -147,6 +150,7 @@
     "footer": {
       "terms": "Умови",
       "privacy": "Приватність",
+      "health": "Медичні дані (США)",
       "support": "Підтримка",
       "made": "Vidlun, 2026"
     },
@@ -292,9 +296,9 @@
         {
           "n": "3",
           "title": "Come back to any entry",
-          "body": "Every entry has its own page: your words, your voice, the mood, the emotions and the topics. With a subscription, Vidlun adds one short sentence, the echo. It describes what was said and gives no advice or grades.",
+          "body": "Every entry has its own page: your words, your voice, the mood, the emotions and the topics. You can play it back or delete it.",
           "shot": "detail",
-          "alt": "An entry page: the words, the recording, mood, emotions, topics and the echo"
+          "alt": "An entry page: the words, the recording, mood, emotions and topics"
         },
         {
           "n": "4",
@@ -335,7 +339,7 @@
       "points": [
         "No account, no sign-up, no analytics.",
         "Audio stays on your phone.",
-        "Only the text of an entry goes to the server, to name the emotion, and never your name."
+        "Only the text of an entry goes to Anthropic’s language model, to name the emotions — with your consent and never with your name."
       ]
     },
     "price": {
@@ -355,7 +359,6 @@
         "title": "Subscription",
         "items": [
           "The monthly narrative: once a month Vidlun writes what it noticed in your entries",
-          "An echo on every entry",
           "The week’s topics and patterns",
           "Recordings up to five minutes"
         ],
@@ -375,8 +378,12 @@
           "a": "Not for recording and recognition. To have Vidlun name the emotion, yes. Without it the entry is saved with your word and the answer comes later."
         },
         {
+          "q": "Who analyzes my entries?",
+          "a": "Anthropic’s Claude language model — only the text of an entry and only with your consent. Audio stays on your phone, and you can withdraw consent in the app."
+        },
+        {
           "q": "Is this therapy?",
-          "a": "No. Vidlun is a journal. It describes what was said and gives no advice, grades or medical conclusions."
+          "a": "No. Vidlun is a journal. It helps you name your emotions and gives no advice, grades or medical conclusions."
         },
         {
           "q": "Where are my entries?",
@@ -391,6 +398,7 @@
     "footer": {
       "terms": "Terms",
       "privacy": "Privacy",
+      "health": "Consumer health data",
       "support": "Support",
       "made": "Vidlun, 2026"
     },

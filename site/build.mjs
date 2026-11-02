@@ -376,6 +376,7 @@ function page(lang) {
 <footer>
   <a href="${legal('terms')}">${escape(c.footer.terms)}</a>
   <a href="${legal('privacy')}">${escape(c.footer.privacy)}</a>
+  <a href="${legal('privacy')}#consumer-health-data">${escape(c.footer.health)}</a>
   <a href="${legal('support')}">${escape(c.footer.support)}</a>
   <a href="mailto:support@vidlun.app">support@vidlun.app</a>
   <span class="made">${escape(c.footer.made)}</span>
@@ -450,7 +451,7 @@ ${body}
   const previewFile = `<title>${escape(lang === 'en' ? 'Vidlun landing (EN)' : 'Лендінг Vidlun')}</title>
 <link rel="stylesheet" href="${fonts}">
 <style>${CSS}</style>
-${body.replace(/href="\/(en|privacy|terms|support)(-en)?"/g, (m) => m.replace('href="/', `href="${SITE}/`)).replace('href="/"', `href="${SITE}/"`)}`;
+${body.replace(/href="\/(en|privacy|terms|support)(-en)?(#[a-z0-9-]+)?"/g, (m) => m.replace('href="/', `href="${SITE}/`)).replace('href="/"', `href="${SITE}/"`)}`;
   return { full, previewFile };
 }
 

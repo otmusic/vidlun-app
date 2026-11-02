@@ -33,6 +33,15 @@ const CHALLENGE_TTL_SECONDS = 300;
 /** How long a proof of device is trusted before a fresh assertion is asked. */
 const TOKEN_TTL_SECONDS = 24 * 60 * 60;
 
+/*
+ * A registered key is forgotten after half a year without a single request
+ * from its phone; every assertion starts the half year again. The privacy
+ * policy promises this (2026-10-30), and the app re-registers on its own when
+ * the proxy no longer knows its key, so an expired record costs one
+ * attestation and nothing else.
+ */
+const KEY_TTL_SECONDS = 180 * 24 * 60 * 60;
+
 export interface AttestStore {
   get(key: string): Promise<string | null>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
@@ -91,7 +100,9 @@ export async function register(
 
   const record: KeyRecord = { publicKey, signCount: 0 };
 
-  await store.put(`key:${input.keyId}`, JSON.stringify(record));
+  await store.put(`key:${input.keyId}`, JSON.stringify(record), {
+    expirationTtl: KEY_TTL_SECONDS,
+  });
 
   return true;
 }
@@ -126,7 +137,9 @@ export async function assertKey(
     signCount: record.signCount,
   });
 
-  await store.put(`key:${input.keyId}`, JSON.stringify({ ...record, signCount }));
+  await store.put(`key:${input.keyId}`, JSON.stringify({ ...record, signCount }), {
+    expirationTtl: KEY_TTL_SECONDS,
+  });
 
   return true;
 }

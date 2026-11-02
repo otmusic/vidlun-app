@@ -37,6 +37,15 @@ function inline(text) {
     .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '$2');
 }
 
+/**
+ * A heading may end in `{#anchor}` so the website can link straight to it
+ * (the US consumer health data section is linked from the home page). A phone
+ * has nothing to link to, so the app drops it.
+ */
+function withoutAnchor(heading) {
+  return heading.replace(/\s*\{#[a-z0-9-]+\}$/, '');
+}
+
 function convert(markdown) {
   const lines = markdown.split('\n');
   const blocks = [];
@@ -50,7 +59,7 @@ function convert(markdown) {
       title = line.slice(2);
       index += 1;
     } else if (line.startsWith('## ')) {
-      blocks.push({ heading: inline(line.slice(3)) });
+      blocks.push({ heading: inline(withoutAnchor(line.slice(3))) });
       index += 1;
     } else if (line.startsWith('### ')) {
       blocks.push({ sub: inline(line.slice(4)) });
