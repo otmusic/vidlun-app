@@ -1,6 +1,6 @@
 # Vidlun Privacy Policy
 
-**Effective:** 1 October 2026
+**Effective:** 2 November 2026
 
 **Data controller:** the Vidlun developer, support@vidlun.app
 
@@ -39,8 +39,7 @@ entries together.
 **Where to.** Through our Cloudflare Workers proxy to Anthropic PBC (USA), to
 the Claude API.
 
-**Why.** To propose names for feelings, write an observation, and write the
-monthly piece. This is what the app is installed for.
+**Why.** To propose names for feelings and write the monthly piece. This is what the app is installed for.
 
 **Lawful basis** (GDPR Art. 6(1)(b)): performance of our contract with you.
 

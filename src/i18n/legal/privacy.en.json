@@ -2,7 +2,7 @@
   "title": "Vidlun Privacy Policy",
   "blocks": [
     {
-      "text": "*Effective:* 1 October 2026"
+      "text": "*Effective:* 2 November 2026"
     },
     {
       "text": "*Data controller:* the Vidlun developer, support@vidlun.app"
@@ -69,7 +69,7 @@
       "text": "*Where to.* Through our Cloudflare Workers proxy to Anthropic PBC (USA), to the Claude API."
     },
     {
-      "text": "*Why.* To propose names for feelings, write an observation, and write the monthly piece. This is what the app is installed for."
+      "text": "*Why.* To propose names for feelings and write the monthly piece. This is what the app is installed for."
     },
     {
       "text": "*Lawful basis* (GDPR Art. 6(1)(b)): performance of our contract with you."

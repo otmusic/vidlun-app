@@ -1,6 +1,6 @@
 # Vidlun Terms of Use
 
-**Effective:** 23 October 2026
+**Effective:** 2 November 2026
 
 **Provider:** the Vidlun developer, support@vidlun.app
 
@@ -46,9 +46,9 @@ somewhere safe is yours to do; we never see or hold it.
 the app heard in a recording, the journal with its emotion filter, the mood
 chart and the emotion vocabulary.
 
-**Paid:** everything the language model writes about your entries — the monthly
-piece that reads your whole month, the observations on individual entries and
-the week's themes — and recording up to five minutes.
+**Paid:** the monthly piece the language model writes after reading your whole
+month, the week's topics and "What stands out" — patterns in your mood — and
+recording up to five minutes.
 
 **Plan.** One: a monthly subscription, with no trial. The App Store shows the
 current price in your currency before you buy; we do not repeat it here, so
