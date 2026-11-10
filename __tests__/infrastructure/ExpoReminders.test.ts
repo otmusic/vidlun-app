@@ -1,30 +1,6 @@
 import type { ReminderPlan } from '@/domain/ports/IReminders';
-import { ExpoReminders, type NotificationCenter } from '@/infrastructure/system/ExpoReminders';
-
-/**
- * The phone's notifications as a list, with every call taking a tick the way
- * the native bridge does — which is what lets two plans interleave.
- */
-class FakeCenter implements NotificationCenter {
-  pending: Date[] = [];
-  allows = true;
-
-  async granted(): Promise<boolean> {
-    await Promise.resolve();
-
-    return this.allows;
-  }
-
-  async cancelAll(): Promise<void> {
-    await Promise.resolve();
-    this.pending = [];
-  }
-
-  async scheduleAt(date: Date): Promise<void> {
-    await Promise.resolve();
-    this.pending.push(date);
-  }
-}
+import { ExpoReminders } from '@/infrastructure/system/ExpoReminders';
+import { FakeNotificationCenter as FakeCenter } from './fakes';
 
 const MORNING = new Date(2026, 8, 17, 10, 0);
 
@@ -97,5 +73,16 @@ describe('the evening reminder', () => {
 
     await expect(reminders.schedule(plan())).resolves.toBe(false);
     expect(center.pending).toHaveLength(0);
+  });
+
+  it('leaves the affirmation alone when the reminders are rebuilt', async () => {
+    const center = new FakeCenter();
+    const reminders = new ExpoReminders(center);
+
+    await center.scheduleRepeating({ hour: 10, minute: 0, weekday: 2 }, { title: 't', body: 'b' });
+    await reminders.schedule(plan());
+    await reminders.cancel();
+
+    expect(center.repeating).toHaveLength(1);
   });
 });

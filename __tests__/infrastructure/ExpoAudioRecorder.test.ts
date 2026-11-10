@@ -1,5 +1,9 @@
 import { NoRecordingProducedError, RecordingCancelledError } from '@/domain/errors/RecordingErrors';
-import { ExpoAudioRecorder, type RecordingLimits } from '@/infrastructure/audio/ExpoAudioRecorder';
+import {
+  ExpoAudioRecorder,
+  type RecordingLimits,
+  type ScreenAwake,
+} from '@/infrastructure/audio/ExpoAudioRecorder';
 import { FakeNativeRecorder, ManualScheduler } from './fakes';
 
 const OPTIONS: RecordingLimits = {
@@ -9,10 +13,28 @@ const OPTIONS: RecordingLimits = {
 
 const SPEECH = -20;
 
+/** What the recorder asked of the screen, in order. */
+class FakeScreen implements ScreenAwake {
+  readonly asked: string[] = [];
+
+  keepOn(): void {
+    this.asked.push('on');
+  }
+
+  letSleep(): void {
+    this.asked.push('sleep');
+  }
+
+  get awake(): boolean {
+    return this.asked.at(-1) === 'on';
+  }
+}
+
 function setup() {
   const recorder = new FakeNativeRecorder();
   const scheduler = new ManualScheduler();
   const audioSession: string[] = [];
+  const screen = new FakeScreen();
 
   const setRecordingMode = (allowed: boolean): Promise<void> => {
     audioSession.push(allowed ? 'enabled' : 'disabled');
@@ -24,7 +46,8 @@ function setup() {
     recorder,
     scheduler,
     audioSession,
-    subject: new ExpoAudioRecorder(recorder, setRecordingMode, scheduler, OPTIONS),
+    screen,
+    subject: new ExpoAudioRecorder(recorder, setRecordingMode, scheduler, screen, OPTIONS),
   };
 }
 
@@ -242,9 +265,64 @@ describe('the iOS audio session', () => {
     const recorder = new FakeNativeRecorder();
     const scheduler = new ManualScheduler();
     const refused = new Error('Recording not allowed on iOS');
-    const subject = new ExpoAudioRecorder(recorder, () => Promise.reject(refused), scheduler, OPTIONS);
+    const screen = new FakeScreen();
+    const subject = new ExpoAudioRecorder(recorder, () => Promise.reject(refused), scheduler, screen, OPTIONS);
 
     await expect(subject.start()).rejects.toThrow(refused);
     expect(recorder.prepareCalls).toBe(0);
+    expect(screen.asked).toEqual([]);
+  });
+});
+
+/*
+ * Owner's report, 2026-11-10: the phone dimmed and locked itself while they
+ * were talking, and the take stopped hearing them.
+ */
+describe('ExpoAudioRecorder and the screen', () => {
+  it('keeps the screen on while the take is listening, and lets it sleep after stop', async () => {
+    const { screen, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    expect(screen.awake).toBe(true);
+
+    subject.stop();
+    await take;
+    expect(screen.awake).toBe(false);
+  });
+
+  it('lets the screen sleep while a paused take waits, and keeps it on again on resuming', async () => {
+    const { screen, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    await subject.pause();
+    expect(screen.awake).toBe(false);
+
+    await subject.resume();
+    expect(screen.awake).toBe(true);
+
+    subject.stop();
+    await take;
+  });
+
+  it('lets the screen sleep when the take is thrown away', async () => {
+    const { screen, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    subject.cancel();
+    await expect(take).rejects.toThrow(RecordingCancelledError);
+    expect(screen.awake).toBe(false);
+  });
+
+  it('lets the screen sleep when the ceiling ends the take', async () => {
+    const { recorder, scheduler, screen, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    play(recorder, scheduler, SPEECH, 10);
+    await take;
+    expect(screen.awake).toBe(false);
   });
 });

@@ -28,6 +28,18 @@ export interface NativeRecorder {
 export type SetRecordingMode = (allowed: boolean) => Promise<void>;
 
 /**
+ * The screen held on while the microphone is open (owner's report,
+ * 2026-11-10: the phone dimmed and locked itself mid-entry, and the take
+ * stopped hearing them). Locking sends the app to the background, where the
+ * take is paused on purpose, so the fix is that a phone left alone while
+ * someone talks to it does not lock. A lock by hand still pauses and asks.
+ */
+export interface ScreenAwake {
+  keepOn(): void;
+  letSleep(): void;
+}
+
+/**
  * The take ends when the person ends it. Silence used to end it after a second
  * and a half, which read as attentive and was not: someone gathering their
  * words mid-sentence is the most ordinary thing on a screen that asks how the
@@ -66,6 +78,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     private readonly recorder: NativeRecorder,
     private readonly setRecordingMode: SetRecordingMode,
     private readonly scheduler: IScheduler,
+    private readonly screen: ScreenAwake,
     private readonly options: RecordingLimits = DEFAULT_RECORDING_LIMITS,
   ) {}
 
@@ -76,6 +89,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     await this.recorder.prepareToRecordAsync();
 
     this.recorder.record();
+    this.screen.keepOn();
 
     return new Promise<AudioRecording>((resolve, reject) => {
       const stopWatching = this.scheduler.every(this.options.pollIntervalMs, () => {
@@ -102,6 +116,8 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     }
 
     this.recorder.pause();
+    // A paused take may wait a long while for its answer; the phone may sleep meanwhile.
+    this.screen.letSleep();
     await this.setRecordingMode(false);
   }
 
@@ -112,6 +128,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
 
     await this.setRecordingMode(true);
     this.recorder.record();
+    this.screen.keepOn();
   }
 
   cancel(): void {
@@ -168,6 +185,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
 
     this.take = null;
     take.stopWatching();
+    this.screen.letSleep();
 
     return take;
   }

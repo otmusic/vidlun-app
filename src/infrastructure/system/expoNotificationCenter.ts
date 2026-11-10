@@ -1,8 +1,40 @@
 import * as Notifications from 'expo-notifications';
 
-import type { NotificationCenter } from './ExpoReminders';
+import type { NotificationCenter, NotificationKind, RepeatRule } from './NotificationCenter';
 
-/** The phone's own notifications, as the reminders need them. */
+/**
+ * Every affirmation notification carries this identifier and this data; the
+ * identifier is how it is told apart from the reminders when either kind is
+ * cancelled, the data how a tap on it is told apart.
+ */
+export const AFFIRMATION_ID = 'affirmation';
+export const OPENS_AFFIRMATION = { opens: 'affirmation' } as const;
+
+/*
+ * Reminders scheduled before the affirmation existed carry the phone's own
+ * random identifiers, so anything that is not the affirmation counts as a
+ * reminder: cancelling the reminders must still clear those.
+ */
+function kindOf(identifier: string): NotificationKind {
+  return identifier === AFFIRMATION_ID ? 'affirmation' : 'reminder';
+}
+
+function triggerFor(rule: RepeatRule): Notifications.NotificationTriggerInput {
+  const { hour, minute, weekday, day } = rule;
+
+  if (day !== undefined) {
+    // A day of the month is a calendar rule; the daily and weekly ones are not.
+    return { type: Notifications.SchedulableTriggerInputTypes.CALENDAR, repeats: true, day, hour, minute };
+  }
+
+  if (weekday !== undefined) {
+    return { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday, hour, minute };
+  }
+
+  return { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute };
+}
+
+/** The phone's own notifications, as the reminders and the affirmation need them. */
 export function expoNotificationCenter(): NotificationCenter {
   /*
    * Without a handler iOS shows nothing while the app is on screen, and the
@@ -39,13 +71,26 @@ export function expoNotificationCenter(): NotificationCenter {
 
       return (await Notifications.requestPermissionsAsync()).granted;
     },
-    async cancelAll() {
-      await Notifications.cancelAllScheduledNotificationsAsync();
+    async cancel(kind) {
+      const pending = await Notifications.getAllScheduledNotificationsAsync();
+
+      for (const request of pending) {
+        if (kindOf(request.identifier) === kind) {
+          await Notifications.cancelScheduledNotificationAsync(request.identifier);
+        }
+      }
     },
     async scheduleAt(date, text) {
       await Notifications.scheduleNotificationAsync({
         content: { title: text.title, body: text.body },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
+      });
+    },
+    async scheduleRepeating(rule, text) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: AFFIRMATION_ID,
+        content: { title: text.title, body: text.body, data: OPENS_AFFIRMATION },
+        trigger: triggerFor(rule),
       });
     },
   };

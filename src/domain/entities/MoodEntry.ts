@@ -50,10 +50,15 @@ export interface EntryEdits {
   readonly contextTags?: readonly string[];
 }
 
-const MAX_EMOTIONS = 4;
+const MAX_EMOTIONS = 6;
 
 export class MoodEntry {
-  /** Four chips is the most a reflection card can show without becoming a form. */
+  /**
+   * The most words one entry holds, whoever named them. Six since 2026-11-10
+   * (owner's word): four was too few for a day that held more than one
+   * thing, and the card offers eight to choose from. Vidlun's own answer
+   * still stops at four; see `draftFromProposal`.
+   */
   static readonly MAX_EMOTIONS = MAX_EMOTIONS;
 
   private constructor(

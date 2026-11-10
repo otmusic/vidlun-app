@@ -12,20 +12,30 @@ const MAX_TOKENS = 1024;
  * 2026-10-01; the owner folded the week into the month, which says the same
  * things with room to see them repeat.
  */
-const PROMPT = `You write the monthly summary in a voice journal.
+const PROMPT = `You tell someone, in a few sentences, how their month looked, from what they said in their voice journal below.
 
-Three or four sentences, in the language the entries are written in. Say what the month looked like from the outside: how it moved from its start to its end, what kept returning, which weeks stood apart and how.
+Sound like a close friend who has read everything and is telling them, kindly and simply, what their month was like. A person talking about a life, not a report about data. Write in the language the entries are written in, with short sentences and everyday words, nothing a person has to read twice.
 
-Notice, do not interpret. You may say "the first half sounded heavier, and work came up in most of the tired entries". You may not tell the person what it means about them, what they should do about it, or how well they handled it. No diagnosis, no advice, no praise, no encouragement.
+- Three or four sentences, under 70 words in all.
+- Say how the month went from its start to its end and what came up again and again. Pick two or three things that mattered, in the person's own everyday words where you can, not everything that happened.
+- Talk about the life, never about the journal: never mention entries, records, moods, scores, emotions as a category, numbers of days, trends or patterns.
+- Plain words only, no metaphors and no literary turns. Nothing "runs through" the month, there are no "waves", "threads" or "storylines", nothing "flows into" something else and no stretch of days "holds its balance". Say what happened: "the tooth hurt for about two weeks", "work was tiring towards the end of the month".
+- A health problem is said as gently, plainly and briefly as the person said it, never as a theme of the month and never in clinical words they did not use.
+- You may speak to the person ("your month"), but never with a past-tense verb whose subject is them: in Ukrainian and Russian it says whether they are a man or a woman. Let the month, the days or the things be the subject instead: "the month started with the wedding", "work was hard at the end".
+
+Notice, do not interpret. You may say "the first half was heavier, and work came up on most of the tired days". You may not tell the person what it means about them, what they should do about it, or how well they handled it. No diagnosis, no advice, no praise, no encouragement.
 
 If the month is too thin to say anything true about, say so through the days themselves rather than by counting entries — open with what was said, never with how much of it there is or how hard it is to judge.`;
 
 /**
- * Bumped whenever the prompt above changes meaningfully. The cache folds this
+ * Bumped whenever the prompt above changes meaningfully. 3 is the plain,
+ * human month (owner's word, 2026-11-06: the tooth was "a storyline running
+ * through the month", which nobody says about their own toothache, and the
+ * text has to sound like a person, not a summary of data). The cache folds this
  * into its fingerprint, so a new voice rewrites old rows instead of being
  * hidden behind them.
  */
-export const NARRATIVE_PROMPT_VERSION = 2;
+export const NARRATIVE_PROMPT_VERSION = 3;
 
 export class ClaudeNarrativeGenerator implements INarrativeGenerator {
   constructor(private readonly messages: MessagesClient) {}
@@ -46,7 +56,7 @@ export class ClaudeNarrativeGenerator implements INarrativeGenerator {
       throw new AnalysisRefusedError(message.stop_details?.explanation ?? 'no reason given');
     }
 
-    const narrative = readText(message);
+    const narrative = joinApostrophes(readText(message));
 
     if (narrative.length === 0) {
       throw new UnreadableAnalysisError('the response carried no text');
@@ -54,6 +64,18 @@ export class ClaudeNarrativeGenerator implements INarrativeGenerator {
 
     return narrative;
   }
+}
+
+/*
+ * The Ukrainian apostrophe as the model sometimes hands it back: split off
+ * its word by a space on one side or both, as in the owner's September
+ * (2026-11-06). Only the apostrophe characters that never open a quotation
+ * are joined, so a quoted word after a space is left alone.
+ */
+const SPLIT_APOSTROPHE = /([\u0400-\u04FF])\s*([\u02BC\u2019])\s*(?=[\u0400-\u04FF])/g;
+
+function joinApostrophes(text: string): string {
+  return text.replace(SPLIT_APOSTROPHE, '$1$2');
 }
 
 function describeEntries(entries: readonly MoodEntry[]): string {

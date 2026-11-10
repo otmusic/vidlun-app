@@ -1517,6 +1517,261 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++. The screen stays on while recording, six words an entry — 2026-11-10
+
+- **The bug** (owner's report): mid-entry the phone dimmed and locked itself,
+  and the take stopped hearing them. Locking sends the app to the
+  background, where the take is paused on purpose since 1.8 (it asks on the
+  way back), so the take was not broken: the phone was. Of the three fixes
+  offered the owner chose the screen staying on; recording under a locked
+  screen would need `UIBackgroundModes` audio, an explanation and a video
+  for App Review, and would keep recording through a switch to another app.
+- **How**: `ExpoAudioRecorder` takes a `ScreenAwake` and holds the screen on
+  from `record()` until the take ends, is paused or thrown away; a paused
+  take lets it sleep again, since its question may wait a long while. The
+  container drives it with `expo-keep-awake` under its own tag
+  (`vidlun.recording`), failures swallowed: a screen that sleeps after all
+  is the old behaviour, not a broken take. **New dependency**, with the
+  owner's word: `expo-keep-awake ~57.0.2`. The native module was already in
+  the build through `expo` (nested, 57.0.1); the next archive's `pod install`
+  links the top-level copy. A lock by hand still pauses and asks, as before.
+  Not verifiable on the simulator (it never auto-locks, and a dev build keeps
+  the screen on anyway): to be seen on the phone with Auto-Lock at 30 s.
+- **Six words** (owner's word): `MoodEntry.MAX_EMOTIONS` 4 → 6 for what the
+  person names and keeps; choosing together fills up to six too. Vidlun's
+  own answer stays at four (`MAX_PROPOSED` in `draftFromProposal`, and the
+  analyzer is still told "at most four"): the room is for the person's
+  words, and every extra word the model adds is one more chance to name
+  something they did not feel. The card offers eight, so six of eight can be
+  picked; at six the "add a word" field goes away, as it did at four. Seen
+  on the simulator: six chosen, a seventh refused, and the journal card
+  listing all six over two lines. An entry with five or six words in a
+  backup will not import into a build older than this one.
+
+## 3ψψψ+++++++. Affirmation cards — 2026-11-06
+
+Owner's feature, owner's choices: their own list of affirmations (not sent
+yet), daily / every Monday / the 1st of every month at 10:00, the app's
+own style (no design in the file), free for everyone. Monthly was the first
+Monday of the month at first; the owner moved it to the 1st the same day,
+so a new month's five are there the morning the kept one runs out
+(`RepeatRule.day`, a repeating calendar trigger; seen on the simulator as
+`UNCalendarNotificationTrigger` day 1, 10:00, repeats). Someone already on
+monthly gets the new rule the next time the app opens, since the
+affirmation is rescheduled on every opening.
+
+- **"Me" → Affirmations**: a switch, and once it is on a three-way choice
+  (Daily / Weekly / Monthly) in the theme picker's track (`Segment`, now
+  shared). The line under the name says when it comes («Щопонеділка о
+  10:00»); off, what it is. Turning it on asks for notification permission
+  then and not before; refused, the switch goes back off, as the reminder's
+  does. Settings `affirmationsOn` (off) and `affirmationFrequency` (weekly).
+- **The notification** repeats on the phone's own calendar rule
+  (`ExpoAffirmationReminders`): DAILY 10:00, WEEKLY Monday 10:00, or a
+  CALENDAR trigger with `weekday: 2, weekdayOrdinal: 1`. One rule, fixed
+  identifier `affirmation`, replaced on every change.
+- **The two kinds of notification no longer cancel each other.** The
+  reminder used to `cancelAllScheduledNotificationsAsync` on every open,
+  which would have wiped the affirmation. `NotificationCenter.cancel(kind)`
+  now cancels by identifier: `affirmation` is the affirmation, anything else
+  (the reminders' own and every older random id) a reminder.
+- **A tap opens the cards** (`ExpoNotificationTaps`): the live tap through
+  the response listener, the tap that launched the app through the last
+  response, each once. From the middle of an entry (recording, the card,
+  saving, grounding) it waits until home instead of throwing the take away.
+- **The page** (`AffirmationScreen`), second version the same day (owner's
+  word: the cards were too plain, a small card turning before the words
+  was a step too many, and the screen should not always be grey). Five
+  circles, clouds and flowers mixed in every set (drawn from two of each,
+  so all three kinds always show; the cloud is drawn as wide as the
+  others so it does not read as the small one), each a
+  different soft colour with a glad Feather glyph (sun, star, feather,
+  coffee, moon, sunrise since 2026-11-10; heart, gift, droplet, smile, music
+  and umbrella were dropped by the owner's word),
+  popping in one after another and scattered a little off a grid. A tap
+  grows a circle of the picked colour out of it until it covers the whole
+  screen (560 ms), the others fade, and the glyph and the words come up on
+  that colour (34 pt, the glyph at 48), with «Готово». Six pastels of the page's own, deeper and
+  quieter in the dark theme; they mean nothing, which is why this page may
+  have many (§7.1). Reduce Motion skips the growing. Nothing is kept. Dealt
+  fresh on every visit from `AFFIRMATION_KEYS`, the keys of
+  `affirmations.*.json`. The first version (five dark cards turning about
+  their axis) went the same day.
+- **Faces, thrown, bigger** (owner's word, 2026-11-10): the icons came off
+  the shapes and eight drawn happy faces took their place (smile, grin,
+  closed happy eyes, wink, blushing, heart eyes, star eyes, a cat's mouth),
+  five different ones a set. And five kinds of shape for the five, so a set
+  never holds two of one (owner's word, the same evening: no two circles or
+  clouds): circle, cloud, flower, heart and a chubby star with its points
+  rounded, each in a new place and order every time. The five are no
+  longer a row of three over a
+  row of two: `affirmationScatter` lays them across the rest of the page.
+  Thrown wholly at random they gathered on one side (owner's word, the same
+  evening), so each set now takes one of five balanced layouts (a zigzag
+  from either side, two-one-two, one-two-two, two-two-one) spanning the
+  room top to bottom, fitted as big as the room allows it, and then each
+  shape wanders up to a sixth of its size from its place, a little smaller
+  or larger than the next and leaning up to 14 degrees, never touching
+  (about 133-148 pt on an iPhone 17, where the row drew 110 at most). Tests
+  hold the five's middle near the room's middle both ways. Thrown once the room is measured and kept, so a relayout
+  never reshuffles them. The flower lost its white centre, which was a
+  backdrop for an icon. The picked face sits over the words on the reveal
+  (72 pt) and in the journal's circle (30 pt); a pick stored with an icon
+  from before comes back with the plain smile.
+- **The pick is kept for its period** (owner's word, 2026-11-06): a day
+  when they come daily, Monday to Sunday when weekly, the calendar month
+  when monthly. The period is fixed at the pick (`KeptAffirmation.until`),
+  so changing the frequency neither stretches nor cuts one short. While it
+  is kept, the notification opens it again (the colour grows from the
+  middle) instead of five new ones. One record in AsyncStorage
+  (`vidlun.keptAffirmation`): the words as shown, not only their key, so
+  the owner's real list cannot change a pick already made; and how it
+  looked, so it comes back in its own shape, colour and glyph. Not in the
+  backup: it lasts a month at most.
+- **In the journal**: the owner picked a button in the header (option A of
+  three: a button in the header, a strip above the entries, a row in the
+  feed by date). The kept shape in miniature, 44 pt like the filter beside
+  it, there only while the pick is kept and the affirmations are on in
+  "Me". A tap grows its colour out of the button over the journal and the
+  tab bar, and closing fades it away onto the journal as it was. With the
+  third control the header no longer fits one line at default size, so the
+  count, the shape and the filter wrap under the title, as they already did
+  at large text.
+- **In the journal only, in both states** (owner's word, 2026-11-10). Option
+  A of three put a shape beside the date on home the same afternoon; the
+  owner took it back off home on seeing it, the icon looking cut (the
+  sparkles spilled over a flower's white centre, and a cloud at 44 pt reads
+  as a circle cut off). The journal's button is now a plain 44 pt circle:
+  before this period's is picked, always the same mark, a drawn head in
+  profile with sparks of light inside, on a pastel orchid, a colour none of
+  the six picks use (owner's word, after three tries the same day: sparkles
+  on lavender, which a pick can also be; a gold wand on a night indigo, too
+  dark beside the pastels; the wand on orchid). Feather
+  has no such head, and a second icon font for one glyph was not worth it.
+  It opens the five; once picked, the picked one's colour and
+  glyph, which grow to the whole screen again. A pick made from the journal
+  closes back to the journal (`fromJournal` on the stage), its filter and
+  place as they were. `AffirmationButton` draws it. The flow reads the kept
+  one on every way home (`reloadHome`) and into the journal, and holds it as
+  undefined until the store answers, so the waiting mark never flashes up
+  before the picked one.
+- **The owner's own lists** (2026-11-10), in place of the ten placeholders:
+  nineteen in Ukrainian and thirty-three in English, written apart, so
+  `affirmations.*.json` are now plain lists per language (`affirmationsFor`)
+  rather than translation keys, and a pick is keyed "uk.3". Tidied only in
+  typography: a spaced en dash became the em dash the app's copy uses, the
+  straight apostrophe in «здоров'я» the typographic one, and a closing full
+  stop was added where a line had none. The words are as sent. Every line is
+  first person and present tense, so none carries a gender (§7.9). Tests
+  hold each list to at least the five dealt, no repeats, every line in its
+  language and ending as a sentence.
+- Seen on the simulator: the section, the permission prompt, the
+  notification in the app («На тебе чекає афірмація»), the tap opening the
+  page, flowers and circles in both themes, and the colour growing into the
+  words (frames from a screen recording). Not seen: a tap from a
+  killed app, and a real Monday.
+
+---
+
+## 3ψψψ++++++. The week's own pattern, a month in plain words — 2026-11-06
+
+- **"What stands out" reads the week, not its month** (owner's choice,
+  2026-11-06, from their backup). Read over the month, every October week
+  said "with «здоров'я», «Стрес» comes up most often: 5 of 7 entries" — true
+  of October, but the owner read it as the same sentence about different
+  weeks, and the week of 5 October counted entries written after it.
+  `FindMoodPatterns.execute({ weekStart, weekEnd })` now, with the same
+  rules; the clock went with the default month. On the owner's journal:
+  2–8 Nov «робота» + «Виснаження» 3 of 3, 26 Oct–1 Nov «здоров'я» + «Стрес»
+  3 of 3, 19–25 Oct «робота» + «Виснаження» 2 of 3, and 5–18 Oct the "no
+  common trend" line. The days sentence lost its month name and says "of
+  the week" («2 з 3 найважчих днів тижня — з темою…»).
+- **The month in plain words** (owner's word: the tooth as "a storyline
+  running through the month" is not how a person talks). The prompt asks for
+  three or four short sentences under 70 words, two or three concrete
+  things, no metaphors (it names the ones the model used: running through,
+  waves, threads, flowing into, holding balance), health said as plainly as
+  the person said it, and no past tense addressed to the person. Then
+  (owner's word: "текст має бути людським") a close friend telling the
+  person how their month looked, a life and not a report: it never mentions
+  entries, moods, scores, numbers of days or patterns, uses the person's own
+  everyday words, says health gently and without clinical words they did not
+  use, and may say "your month" as long as no past-tense verb has the person
+  as its subject. `NARRATIVE_PROMPT_VERSION` 3, so cached months are written again the next
+  time they are opened. Not tried against the model from the Mac: the proxy
+  answers only an attested app, so the first new text will be on the phone.
+- **The week's pattern in human words** (owner's word, the same day). The
+  topic and the emotion stay in quotes in the nominative, since the app
+  cannot decline them, and no verb has the person as its subject:
+  «Найважчі дні тижня здебільшого були про тему «робота»: 2 з 3.»,
+  «Коли йдеться про тему «робота», найчастіше поруч «Виснаження» — так було
+  в 2 з 3 записів.», and when every entry had it, «…поруч завжди
+  «Виснаження» — в усіх 3 записах.» (`patternCompanionAll`, `…SameAll`).
+  The empty week: «Дні цього тижня були різні — нічого не повторювалося
+  настільки, щоб про це сказати.» English follows.
+- **The update line can be closed** (owner's word). An X after «Оновити»
+  stores that App Store version as `updateLineClosed` in the settings; the
+  line stays away until a newer version is out. Seen on the simulator: the
+  old dev build shows the line, the X closes it, and it stays closed after
+  a relaunch.
+- **A split apostrophe is joined.** September came back with "з ʼявилась",
+  "здоров ʼя"; the narrative's text has a space around U+02BC or U+2019
+  between Cyrillic letters removed. A quote mark after a space is left alone.
+
+---
+
+## 3ψψψ+++++. A rating request after three good entries, an update line on home — 2026-11-05
+
+- **The rating request** (owner's word; the moment was settled on
+  2026-10-30: after a save, on home, never inside an entry). Apple's own
+  sheet through `expo-store-review` (new dependency, ~57.0.3), because App
+  Review 5.6.1 allows no other. `AskForReview` is due when the three latest
+  entries all have a mood of 4 or 5 and none is flagged difficult; the
+  hook works that out while the saved screen shows and asks 0.7 s after
+  home is back (`leaveSaved`). Once per app version (`vidlun.reviewAskedIn`).
+  "Not to someone who already rated" is Apple's: the app is never told
+  whether anyone rated, and StoreKit shows the sheet to someone who has only
+  for a new version and a year after their review, and to anyone at most
+  three times a year. The module is imported when first needed, since it
+  throws on import in a build without it.
+- **The update line on home** (owner's choice of place: home, on top).
+  `CheckForUpdate` asks Apple's public lookup
+  (`itunes.apple.com/lookup?id=6806530807`) and offers the release when it is
+  newer than `Constants.expoConfig.version`, part by part as numbers; a
+  build ahead of the store (in review) or an unreachable store shows
+  nothing. Checked on open and on coming to the front, at most every six
+  hours. «Вийшла нова версія Vidlun» with an ink-ring «Оновити» that opens
+  the store page. The request carries the app's id and nothing of the
+  person's; the privacy policy does not mention it yet.
+- **1.8 was released 2026-11-03 with build 53** (everything free). The next
+  version, with the store open again, is 1.9.
+
+---
+
+## 3ψψψ++++. Emotions in the entry's language, no slow-connection line, the store open again — 2026-11-04
+
+- **An entry's emotions are named in the language it was said in**
+  (owner's word: Ukrainian speech gets Ukrainian emotion words whatever the
+  app's language). `localeOfText` reads the script most of the letters are
+  in: Cyrillic is Ukrainian (a Russian entry too, the nearest the app has),
+  Latin is English, nothing to go by keeps the app's language.
+  `emotionWordsIn(text, t)` gives the translator, and every surface that
+  shows one entry's words uses it: the question card's chips and offered
+  words, the compare card, the entry page, the journal row, the home cards
+  and the year echo. Screens that count across entries (statistics,
+  vocabulary, the journal's emotion filter) keep the app's language, since
+  their entries can be in both. Topics were already in the speaker's
+  language. Old entries follow too: it is read from the transcript, nothing
+  is stored.
+- **No slow-connection line while the entry is read.** After five seconds
+  the processing screen said «Ще працюємо. Зв’язок повільний.», a guess that
+  was often wrong; it keeps its hint for the whole wait now. `useAfter` had
+  no other user and is gone.
+- **The store is open again**: `SELLING = true`. The paywall, the free
+  minute and the profile's subscription section are back as in 1.8 (52).
+
+---
+
 ## 3ψψψ+++. A take with no words says so, topics with a space, onboarding at large text, everything free — 2026-11-02
 
 - **An empty take has its own notice** (owner's word and copy). It used to

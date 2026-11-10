@@ -3,9 +3,8 @@ import { MoodEntry, type MoodEntryProps } from '@/domain/entities/MoodEntry';
 import { InMemoryMoodEntryRepository } from '@/infrastructure/persistence/InMemoryMoodEntryRepository';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
-import { FixedClock } from './fakes';
-
-const TODAY = new Date(2026, 7, 28, 21, 0);
+/** The stretch most tests read: all of August, long enough for every rule to show. */
+const AUGUST = { weekStart: new Date(2026, 7, 1), weekEnd: new Date(2026, 8, 1) };
 
 let nextId = 0;
 
@@ -38,7 +37,7 @@ async function patternsOf(entries: readonly MoodEntry[]) {
     await repository.save(each);
   }
 
-  return new FindMoodPatterns(repository, new FixedClock(TODAY)).execute();
+  return new FindMoodPatterns(repository).execute(AUGUST);
 }
 
 describe('what the month’s best and hardest days had in common', () => {
@@ -175,5 +174,30 @@ describe('the emotion that keeps company with a topic', () => {
 describe('a month too thin to say anything about', () => {
   it('holds its tongue', async () => {
     expect(await patternsOf([entry(1, 5, ['walk']), entry(2, 1, [])])).toEqual([]);
+  });
+});
+
+describe('the stretch a pattern is read over', () => {
+  /*
+   * From the owner's journal (2026-11-06): the week screen read the whole
+   * month, so every October week said the same October sentence, and the
+   * week of 5 October counted entries written weeks after it.
+   */
+  it('reads only the week asked about, not the rest of its month', async () => {
+    const repository = new InMemoryMoodEntryRepository();
+    const hardWithWork = [entry(3, 1, ['work']), entry(4, 2, ['work']), entry(5, 1, ['work'])];
+    const easyWithout = [entry(6, 4, ['sleep']), entry(7, 5, ['sleep']), entry(8, 4, ['sleep'])];
+    const laterWeek = [entry(17, 4, ['walk']), entry(18, 3, ['walk']), entry(19, 4, ['walk'])];
+
+    for (const each of [...hardWithWork, ...easyWithout, ...laterWeek]) {
+      await repository.save(each);
+    }
+
+    const subject = new FindMoodPatterns(repository);
+
+    expect(await subject.execute(AUGUST)).not.toEqual([]);
+    expect(
+      await subject.execute({ weekStart: new Date(2026, 7, 17), weekEnd: new Date(2026, 7, 24) }),
+    ).toEqual([]);
   });
 });

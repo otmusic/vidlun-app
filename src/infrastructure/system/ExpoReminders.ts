@@ -1,16 +1,5 @@
 import type { IReminders, ReminderPlan } from '../../domain/ports/IReminders';
-
-/**
- * The slice of the phone's notifications the reminders use. Injected, like
- * the recorder's native half, so the queue below can be tested in plain Node;
- * `expoNotificationCenter` is the real one.
- */
-export interface NotificationCenter {
-  /** Asks only when it may still ask; false when the person has said no. */
-  granted(): Promise<boolean>;
-  cancelAll(): Promise<void>;
-  scheduleAt(date: Date, text: { readonly title: string; readonly body: string }): Promise<void>;
-}
+import type { NotificationCenter } from './NotificationCenter';
 
 /**
  * A week of one-off notifications, replaced rather than added to.
@@ -47,7 +36,7 @@ export class ExpoReminders implements IReminders {
         return true;
       }
 
-      await this.center.cancelAll();
+      await this.center.cancel('reminder');
 
       if (!(await this.center.granted())) {
         return false;
@@ -64,7 +53,7 @@ export class ExpoReminders implements IReminders {
   cancel(): Promise<void> {
     this.ask();
 
-    return this.inTurn(() => this.center.cancelAll());
+    return this.inTurn(() => this.center.cancel('reminder'));
   }
 
   private ask(): number {

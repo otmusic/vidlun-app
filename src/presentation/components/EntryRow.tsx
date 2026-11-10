@@ -9,7 +9,7 @@ import { type Locale, type Translate } from '@/i18n';
 import { AppText } from './AppText';
 import { Icon, ICON_SIZE } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
-import { emotionLabel, moodTint } from './emotionDisplay';
+import { emotionLabel, emotionWordsIn, moodTint } from './emotionDisplay';
 
 /** §7.3: a list row is never shorter than this, whatever it holds. */
 const ROW_HEIGHT = 52;
@@ -119,7 +119,7 @@ export function EntryRow(props: {
               numberOfLines={1}
               style={{ fontSize: 13, color: theme.palette.tag, marginLeft: 'auto', flexShrink: 1 }}
             >
-              {emotionLabel(first, t)}
+              {emotionLabel(first, emotionWordsIn(entry.cleanTranscript, t))}
             </AppText>
           )}
         </View>

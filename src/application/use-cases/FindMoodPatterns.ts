@@ -1,12 +1,11 @@
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
-import type { IClock } from '../../domain/ports/IClock';
 import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryRepository';
 
-/** The two ends of the month: its good or high days, and its low or very low ones. */
+/** The two ends of the week: its good or high days, and its low or very low ones. */
 export type PatternSide = 'best' | 'hardest';
 
 /**
- * What the month's best or hardest days had in common: one topic, on most of
+ * What the week's best or hardest days had in common: one topic, on most of
  * them, and on far fewer of the other days.
  */
 export interface DaysPattern {
@@ -40,8 +39,9 @@ export interface CompanionPattern {
 export type MoodPattern = DaysPattern | CompanionPattern;
 
 export interface FindMoodPatternsInput {
-  /** Any day inside the month of interest. Defaults to today. */
-  readonly containing?: Date;
+  readonly weekStart: Date;
+  /** Exclusive, as the week summary hands it over. */
+  readonly weekEnd: Date;
 }
 
 /**
@@ -59,18 +59,22 @@ const GOOD_FROM = 4;
 const LOW_UP_TO = 2;
 
 /**
- * A third between the two groups. In a month of ten or so days, anything
- * smaller turns over when one day lands the other way.
+ * A third between the two groups. In a handful of days, anything smaller
+ * turns over when one day lands the other way.
  */
 const LEAST_GAP = 1 / 3;
 
 /**
- * What went together in someone's month, in two sentences at most (owner's
- * word, 2026-10-14):
+ * What went together in someone's week, in two sentences at most (owner's
+ * word, 2026-10-14). The week, not the month, since 2026-11-06: the card sits
+ * on the week screen, and read over the month it told every week of October
+ * the same October sentence, the first week counting entries written weeks
+ * after it. A week often holds too little to compare, and then the card says
+ * so; that is truer than a month's answer under a week's title.
  *
- * 1. **From the days to the topic.** The month's hardest days, or its best,
+ * 1. **From the days to the topic.** The week's hardest days, or its best,
  *    and the topic most of them carried: "all three hardest days had work".
- *    This answers the question a person actually brings to their month —
+ *    This answers the question a person actually brings to their week —
  *    what was going on on the bad days — rather than asking them to read a
  *    comparison of two groups of entries.
  * 2. **From the topic to the emotion.** The emotion named next to a topic on
@@ -87,15 +91,11 @@ const LEAST_GAP = 1 / 3;
  * together and never that one caused the other.
  */
 export class FindMoodPatterns {
-  constructor(
-    private readonly repository: IMoodEntryRepository,
-    private readonly clock: IClock,
-  ) {}
+  constructor(private readonly repository: IMoodEntryRepository) {}
 
-  async execute(input: FindMoodPatternsInput = {}): Promise<readonly MoodPattern[]> {
-    const monthStart = startOfMonth(input.containing ?? this.clock.now());
+  async execute(input: FindMoodPatternsInput): Promise<readonly MoodPattern[]> {
     // Oldest first, so the days and the ids for "see these days" come in calendar order.
-    const entries = [...(await this.repository.findBetween(monthStart, addMonths(monthStart, 1)))].sort(
+    const entries = [...(await this.repository.findBetween(input.weekStart, input.weekEnd))].sort(
       (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
     );
     const days = daysPatternOf(entries);
@@ -207,7 +207,7 @@ function companionOf(entries: readonly MoodEntry[], preferred: string | null): C
 }
 
 /**
- * Widest gap first, then the larger count, then the word, so the same month
+ * Widest gap first, then the larger count, then the word, so the same week
  * always tells the same story.
  */
 function isBetter(
@@ -248,10 +248,3 @@ function daysOf(entries: readonly MoodEntry[]): readonly Day[] {
   }));
 }
 
-function startOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function addMonths(date: Date, months: number): Date {
-  return new Date(date.getFullYear(), date.getMonth() + months, 1);
-}

@@ -5,7 +5,12 @@ import {
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
 } from 'expo-audio';
+import Constants from 'expo-constants';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 
+import { AskForReview } from '../application/use-cases/AskForReview';
+import { KeepAffirmation } from '../application/use-cases/KeepAffirmation';
+import { CheckForUpdate } from '../application/use-cases/CheckForUpdate';
 import { ConfirmEntry } from '../application/use-cases/ConfirmEntry';
 import { CreateTextEntry } from '../application/use-cases/CreateTextEntry';
 import { CreateVoiceEntry } from '../application/use-cases/CreateVoiceEntry';
@@ -28,6 +33,8 @@ import type { IClock } from '../domain/ports/IClock';
 import type { IHaptics } from '../domain/ports/IHaptics';
 import type { IMicrophonePermission } from '../domain/ports/IMicrophonePermission';
 import type { IPurchases, PurchaseOutcome } from '../domain/ports/IPurchases';
+import type { IAffirmationReminders } from '../domain/ports/IAffirmationReminders';
+import type { INotificationTaps } from '../domain/ports/INotificationTaps';
 import type { IReminders } from '../domain/ports/IReminders';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
 import type { IFilePicker } from '../domain/ports/IFilePicker';
@@ -46,7 +53,11 @@ import { ClaudeReflectionAnalyzer } from '../infrastructure/analysis/ClaudeRefle
 import { FakeNarrativeGenerator } from '../infrastructure/analysis/FakeNarrativeGenerator';
 import { FakeReflectionAnalyzer } from '../infrastructure/analysis/FakeReflectionAnalyzer';
 import { createEmotionVocabulary } from '../infrastructure/analysis/emotionVocabularyData';
-import { ExpoAudioRecorder, type NativeRecorder } from '../infrastructure/audio/ExpoAudioRecorder';
+import {
+  ExpoAudioRecorder,
+  type NativeRecorder,
+  type ScreenAwake,
+} from '../infrastructure/audio/ExpoAudioRecorder';
 import { ExpoMicrophonePermission } from '../infrastructure/audio/ExpoMicrophonePermission';
 import { AsyncStorageMoodEntryRepository } from '../infrastructure/persistence/AsyncStorageMoodEntryRepository';
 import { AsyncStorageRevisionLog } from '../infrastructure/persistence/AsyncStorageRevisionLog';
@@ -61,12 +72,18 @@ import { ForgetMilestone } from '../application/use-cases/ForgetMilestone';
 import { GetMilestones } from '../application/use-cases/GetMilestones';
 import { MarkMilestone } from '../application/use-cases/MarkMilestone';
 import { AsyncStorageMilestones } from '../infrastructure/persistence/AsyncStorageMilestones';
+import { AsyncStorageReviewAsks } from '../infrastructure/review/AsyncStorageReviewAsks';
+import { AsyncStorageKeptAffirmations } from '../infrastructure/affirmations/AsyncStorageKeptAffirmations';
+import { ExpoReviewPrompt } from '../infrastructure/review/ExpoReviewPrompt';
+import { AppleStoreListing } from '../infrastructure/store/AppleStoreListing';
 import { FeedbackOutbox } from '../infrastructure/feedback/FeedbackOutbox';
 import { ProxyFeedbackSender } from '../infrastructure/feedback/ProxyFeedbackSender';
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { ExpoReminders } from '../infrastructure/system/ExpoReminders';
 import { expoNotificationCenter } from '../infrastructure/system/expoNotificationCenter';
+import { ExpoAffirmationReminders } from '../infrastructure/system/ExpoAffirmationReminders';
+import { ExpoNotificationTaps } from '../infrastructure/system/ExpoNotificationTaps';
 import { SystemClock } from '../infrastructure/system/SystemClock';
 import { EverythingFree } from '../infrastructure/purchases/EverythingFree';
 import { FakePurchases } from '../infrastructure/purchases/FakePurchases';
@@ -117,10 +134,20 @@ export interface Container {
   readonly getPastMonths: GetPastMonths;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
+  /** The rating request after three good entries running. */
+  readonly askForReview: AskForReview;
+  /** Whether the App Store sells a newer version than this one. */
+  readonly checkForUpdate: CheckForUpdate;
   readonly purchases: IPurchases;
   /** Whether anything is on sale; while it is not, the profile has no subscription section. */
   readonly selling: boolean;
   readonly reminders: IReminders;
+  /** The morning affirmation's notification. */
+  readonly affirmationReminders: IAffirmationReminders;
+  /** Taps on the affirmation's notification, which open the cards. */
+  readonly notificationTaps: INotificationTaps;
+  /** The affirmation picked for this day, week or month. */
+  readonly keepAffirmation: KeepAffirmation;
   readonly getVocabularyGrowth: GetVocabularyGrowth;
   readonly getMilestones: GetMilestones;
   readonly markMilestone: MarkMilestone;
@@ -160,12 +187,31 @@ export interface ContainerDependencies {
 const setRecordingMode = (allowed: boolean): Promise<void> =>
   setAudioModeAsync({ allowsRecording: allowed, playsInSilentMode: true });
 
+/** A tag of its own, so the recorder lets go of only its own hold on the screen. */
+const RECORDING_KEEPS_AWAKE = 'vidlun.recording';
+
 /*
- * Nothing is sold for now (owner's word, 2026-11-02): every feature is open
- * to everyone, the store is not asked, and the profile has no subscription
- * section. Selling again is this one line.
+ * Neither call can fail the take: a screen that sleeps after all is the
+ * behaviour before this existed, not a broken recording.
  */
-const SELLING = false;
+const screenAwake: ScreenAwake = {
+  keepOn: () => {
+    void activateKeepAwakeAsync(RECORDING_KEEPS_AWAKE).catch(() => undefined);
+  },
+  letSleep: () => {
+    void deactivateKeepAwake(RECORDING_KEEPS_AWAKE).catch(() => undefined);
+  },
+};
+
+/** Vidlun's id in the App Store, for the lookup that says which version is on sale. */
+const APP_STORE_ID = '6806530807';
+
+/*
+ * Whether the store is open. Off for build 53 (owner's word, 2026-11-02):
+ * every feature open to everyone, the store not asked, no subscription
+ * section in the profile. On again since 2026-11-04, by the owner's word.
+ */
+const SELLING = true;
 
 /**
  * Without a key there is no store, and the screens say that plainly instead of
@@ -245,6 +291,10 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     ? new TimedTranscriptionService(dependencies.transcription)
     : dependencies.transcription;
   const repository = new AsyncStorageMoodEntryRepository(AsyncStorage);
+  // One for both kinds of notification, so each cancels only its own.
+  const notificationCenter = expoNotificationCenter();
+  // The version this build says it is, from app.json; the build number is not part of it.
+  const installedVersion = Constants.expoConfig?.version ?? null;
   const revisionLog = new AsyncStorageRevisionLog(AsyncStorage);
   const recordings = new FileRecordingStore();
   const milestones = new AsyncStorageMilestones(AsyncStorage);
@@ -302,8 +352,18 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     ),
     getPastMonths: new GetPastMonths(repository, clock),
     getWeekThemes: new GetWeekThemes(repository),
-    findMoodPatterns: new FindMoodPatterns(repository, clock),
-    reminders: new ExpoReminders(expoNotificationCenter()),
+    findMoodPatterns: new FindMoodPatterns(repository),
+    askForReview: new AskForReview(
+      repository,
+      new AsyncStorageReviewAsks(AsyncStorage),
+      new ExpoReviewPrompt(),
+      installedVersion ?? 'unknown',
+    ),
+    checkForUpdate: new CheckForUpdate(new AppleStoreListing(APP_STORE_ID), installedVersion),
+    reminders: new ExpoReminders(notificationCenter),
+    affirmationReminders: new ExpoAffirmationReminders(notificationCenter),
+    notificationTaps: new ExpoNotificationTaps(),
+    keepAffirmation: new KeepAffirmation(new AsyncStorageKeptAffirmations(AsyncStorage), clock),
     purchases: SELLING ? purchasesFor(readRevenueCatKey()) : new EverythingFree(),
     selling: SELLING,
     getVocabularyGrowth: new GetVocabularyGrowth(repository, clock),
@@ -316,6 +376,6 @@ export function createContainer(dependencies: ContainerDependencies): Container 
       requestRecordingPermissionsAsync,
     }),
     createAudioRecorder: (native) =>
-      new ExpoAudioRecorder(native, setRecordingMode, scheduler),
+      new ExpoAudioRecorder(native, setRecordingMode, scheduler, screenAwake),
   };
 }

@@ -17,7 +17,7 @@ import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts } from '../theme/tokens';
 import { audioNoteKey } from './audioNote';
-import { emotionLabel, emotionTint } from '../components/emotionDisplay';
+import { emotionLabel, emotionTint, emotionWordsIn } from '../components/emotionDisplay';
 
 
 /**
@@ -42,6 +42,7 @@ export function EntryDetailScreen(props: {
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
   const { entry, t } = props;
+  const words = emotionWordsIn(entry.cleanTranscript, t);
 
   const confirmDelete = (): void => {
     Alert.alert(t('delete.title'), t('delete.body'), [
@@ -122,7 +123,7 @@ export function EntryDetailScreen(props: {
           </AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {entry.emotionIds.map((id) => (
-              <Chip key={id} label={emotionLabel(id, t)} color={emotionTint(id, props.vocabulary, theme)} />
+              <Chip key={id} label={emotionLabel(id, words)} color={emotionTint(id, props.vocabulary, theme)} />
             ))}
           </View>
         </View>

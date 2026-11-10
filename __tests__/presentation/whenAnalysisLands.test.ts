@@ -146,9 +146,14 @@ describe('what happens when the analysis lands', () => {
     expect(after.kind === 'comparing' ? after.draft.selfEmotionIds : null).toEqual(['bad.tired']);
   });
 
-  it('starts with no more than the four words an entry can hold', () => {
+  it('starts with no more than the six words an entry can hold', () => {
     const after = whenAnalysisLands(
-      { ...asking, chosen: ['angry', 'sad', 'fearful'], holding: true, together: true },
+      {
+        ...asking,
+        chosen: ['angry', 'sad', 'fearful', 'surprised', 'disgusted'],
+        holding: true,
+        together: true,
+      },
       analysis(),
     );
 
@@ -156,6 +161,8 @@ describe('what happens when the analysis lands', () => {
       'angry',
       'sad',
       'fearful',
+      'surprised',
+      'disgusted',
       'happy.proud',
     ]);
   });
@@ -270,10 +277,10 @@ describe("what counts as declining Vidlun's words", () => {
     expect(declinedVidlunsWords(heard, chosenTogether([], ['bad.tired']))).toBe(true);
   });
 
-  it('is not a word the four-word ceiling kept out to begin with', () => {
+  it('is not a word the six-word ceiling kept out to begin with', () => {
     const draft = chosenTogether(
-      ['angry', 'sad', 'fearful'],
-      ['angry', 'sad', 'fearful', 'happy.proud'],
+      ['angry', 'sad', 'fearful', 'surprised', 'disgusted'],
+      ['angry', 'sad', 'fearful', 'surprised', 'disgusted', 'happy.proud'],
     );
 
     // bad.tired never made it into the list as chosen; nobody took it off.

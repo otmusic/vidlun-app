@@ -18,11 +18,12 @@ import { RecordButton } from '../components/RecordButton';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 
 import { WeekStrip } from '../components/WeekStrip';
+import { UpdateLine } from '../components/UpdateLine';
 import { YearEchoCard } from '../components/YearEchoCard';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
-import { emotionLabel, moodTint } from '../components/emotionDisplay';
+import { emotionLabel, emotionWordsIn, moodTint } from '../components/emotionDisplay';
 
 export interface HomeScreenProps {
   readonly home: HomeView | null;
@@ -50,6 +51,10 @@ export interface HomeScreenProps {
   readonly mic: PermissionStatus;
   /** Every milestone; the strip marks the days in its week. */
   readonly milestones: readonly Milestone[];
+  /** Opens the App Store page of a newer version; null while this one is the newest. */
+  readonly onUpdate: (() => void) | null;
+  /** The update line's X: that version's line stays closed. */
+  readonly onCloseUpdate: () => void;
 }
 
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
@@ -81,6 +86,9 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
       contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: 118 }}
     >
+      {props.onUpdate === null ? null : (
+        <UpdateLine t={props.t} onUpdate={props.onUpdate} onClose={props.onCloseUpdate} />
+      )}
       <View
         style={{
           flexDirection: 'row',
@@ -363,7 +371,7 @@ function EchoFromPast(props: {
             numberOfLines={1}
             style={{ fontSize: 13, color: theme.palette.tag, marginLeft: 'auto', flexShrink: 1 }}
           >
-            {emotionLabel(first, props.t)}
+            {emotionLabel(first, emotionWordsIn(props.entry.cleanTranscript, props.t))}
           </AppText>
         )}
       </View>

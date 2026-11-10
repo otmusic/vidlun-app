@@ -30,6 +30,14 @@ export interface Reading {
 const MAX_NEARBY = 8;
 
 /**
+ * Vidlun's own answer stays at four when the person may now keep six
+ * (2026-11-10): the room was made for what they name, and every extra word
+ * the model adds is one more chance to tell someone what they did not feel.
+ * The model is asked for no more than this.
+ */
+export const MAX_PROPOSED = 4;
+
+/**
  * A draft and the words beside it, both through the same gate: the card
  * offers only what Vidlun may propose — known, current, never sensitive —
  * each word once, and none it already heard.
@@ -64,7 +72,7 @@ export function draftFromProposal(input: DraftInput): MoodEntry {
      */
     mood: input.proposal.mood === null ? null : MoodScore.clamped(input.proposal.mood),
     emotionIds: input.vocabulary.normalizeAiProposal(input.proposal.emotionIds, {
-      limit: MoodEntry.MAX_EMOTIONS,
+      limit: MAX_PROPOSED,
     }),
     contextTags: input.proposal.contextTags,
     // Written by a different model and arriving after the card is already on

@@ -395,7 +395,6 @@ function Pattern(props: {
       ) : props.view.hasNarrativeAccess ? (
         <PatternWords
           patterns={props.view.patterns}
-          monthStart={props.view.week.weekStart}
           locale={props.locale}
           t={props.t}
           onOpenEntries={props.onOpenEntries}
@@ -448,17 +447,16 @@ function Pattern(props: {
 }
 
 /**
- * The month's pattern in two sentences at most (owner's word, 2026-10-14):
+ * The week's pattern in two sentences at most (owner's word, 2026-10-14):
  * what its best or hardest days had in common, then the emotion that kept a
  * topic company — the first sentence's topic when it has one, so the second
  * reads as its continuation. Under them, the way to those days in the journal.
  *
- * The month is named in the sentence because the week on screen may belong to
- * an earlier one, and "this month" would then be wrong.
+ * The sentence says "of the week" rather than naming a month, which it did
+ * while the pattern was the month's (until 2026-11-06).
  */
 function PatternWords(props: {
   readonly patterns: readonly MoodPattern[];
-  readonly monthStart: Date;
   readonly locale: Locale;
   readonly t: Translate;
   readonly onOpenEntries: (focus: JournalFocus) => void;
@@ -468,8 +466,6 @@ function PatternWords(props: {
   const companion = props.patterns.find(
     (each): each is CompanionPattern => each.kind === 'companion',
   );
-  const name = props.monthStart.toLocaleDateString(props.locale, { month: 'long' });
-  const month = `${name.charAt(0).toLocaleUpperCase(props.locale)}${name.slice(1)}`;
   const sentences: string[] = [];
 
   if (days !== undefined) {
@@ -483,19 +479,32 @@ function PatternWords(props: {
           : hardest
             ? 'stats.patternHardestSome'
             : 'stats.patternBestSome',
-        { month, n: days.total, k: days.matching, tag: days.tag },
+        { n: days.total, k: days.matching, tag: days.tag },
       ),
     );
   }
 
   if (companion !== undefined) {
+    const same = companion.tag === days?.tag;
+    // "Always, in all three" rather than "3 of 3": how a person says it.
+    const always = companion.matching === companion.total;
+
     sentences.push(
-      t(companion.tag === days?.tag ? 'stats.patternCompanionSame' : 'stats.patternCompanion', {
-        tag: companion.tag,
-        emotion: emotionLabel(companion.emotionId, t),
-        k: companion.matching,
-        n: companion.total,
-      }),
+      t(
+        same
+          ? always
+            ? 'stats.patternCompanionSameAll'
+            : 'stats.patternCompanionSame'
+          : always
+            ? 'stats.patternCompanionAll'
+            : 'stats.patternCompanion',
+        {
+          tag: companion.tag,
+          emotion: emotionLabel(companion.emotionId, t),
+          k: companion.matching,
+          n: companion.total,
+        },
+      ),
     );
   }
 

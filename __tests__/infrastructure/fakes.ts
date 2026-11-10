@@ -3,6 +3,12 @@ import type { NativeRecorder } from '@/infrastructure/audio/ExpoAudioRecorder';
 import type { MessagesClient } from '@/infrastructure/analysis/claudeModels';
 import type { IKeyValueStore } from '@/infrastructure/persistence/IKeyValueStore';
 import type { IScheduler } from '@/infrastructure/system/IScheduler';
+import type {
+  NotificationCenter,
+  NotificationKind,
+  NotificationText,
+  RepeatRule,
+} from '@/infrastructure/system/NotificationCenter';
 
 export class InMemoryKeyValueStore implements IKeyValueStore {
   private readonly entries = new Map<string, string>();
@@ -156,3 +162,44 @@ export class FakeMessagesClient implements MessagesClient {
 export function textReply(text: string): Partial<Anthropic.Message> {
   return { content: [{ type: 'text', text, citations: null }] as Anthropic.ContentBlock[] };
 }
+
+/**
+ * The phone's notifications as two lists, with every call taking a tick the
+ * way the native bridge does — which is what lets two plans interleave.
+ */
+export class FakeNotificationCenter implements NotificationCenter {
+  pending: Date[] = [];
+  repeating: RepeatRule[] = [];
+  /** What each scheduled notification said, in the order they were scheduled. */
+  texts: NotificationText[] = [];
+  allows = true;
+
+  async granted(): Promise<boolean> {
+    await Promise.resolve();
+
+    return this.allows;
+  }
+
+  async cancel(kind: NotificationKind): Promise<void> {
+    await Promise.resolve();
+
+    if (kind === 'reminder') {
+      this.pending = [];
+    } else {
+      this.repeating = [];
+    }
+  }
+
+  async scheduleAt(date: Date, text: NotificationText): Promise<void> {
+    await Promise.resolve();
+    this.pending.push(date);
+    this.texts.push(text);
+  }
+
+  async scheduleRepeating(rule: RepeatRule, text: NotificationText): Promise<void> {
+    await Promise.resolve();
+    this.repeating.push(rule);
+    this.texts.push(text);
+  }
+}
+

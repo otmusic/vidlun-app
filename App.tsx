@@ -206,6 +206,9 @@ function Vidlun(props: {
     clock: container.clock,
     purchases: container.purchases,
     onEntitlementChanged: readStatus,
+    askForReview: container.askForReview,
+    checkForUpdate: container.checkForUpdate,
+    keepAffirmation: container.keepAffirmation,
   });
 
   /*
@@ -263,6 +266,39 @@ function Vidlun(props: {
     t,
     wroteToday,
   ]);
+
+  /*
+   * The morning affirmation, scheduled the same way as the reminder: when the
+   * switch or the frequency moves, when the language does (the notification
+   * speaks it), and once on opening. A refused permission turns the switch
+   * back off, for the reason the reminder's does.
+   */
+  const { affirmationsOn, affirmationFrequency } = props.settings;
+
+  useEffect(() => {
+    if (!affirmationsOn) {
+      void container.affirmationReminders.cancel();
+
+      return;
+    }
+
+    void container.affirmationReminders
+      .schedule({
+        frequency: affirmationFrequency,
+        text: { title: t('affirmation.notifyTitle'), body: t('affirmation.notifyBody') },
+      })
+      .then((scheduled) => {
+        if (!scheduled) {
+          onSettingsChange({ ...settingsRef.current, affirmationsOn: false });
+        }
+      });
+  }, [affirmationFrequency, affirmationsOn, container.affirmationReminders, onSettingsChange, t]);
+
+  // A tap on the affirmation opens the cards, the tap that launched the app included.
+  useEffect(
+    () => container.notificationTaps.listen(flow.openAffirmation),
+    [container.notificationTaps, flow.openAffirmation],
+  );
 
   /*
    * The whole journal as a file in the person's hand. Built here because it
@@ -339,20 +375,22 @@ function Vidlun(props: {
    * comes back to the front; the hook does the first pass on open. Home is
    * read again then too: a phone left with Vidlun open overnight comes back
    * on a new day, and the link to tell about yesterday, the streak and the
-   * week strip were worked out for the old one.
+   * week strip were worked out for the old one. The App Store is asked again
+   * whether a newer version is out, no more than every few hours.
    */
   useEffect(() => {
     const watch = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         flow.hearUnheard();
         flow.reloadHome();
+        flow.checkForUpdate();
       }
     });
 
     return () => {
       watch.remove();
     };
-  }, [flow.hearUnheard, flow.reloadHome]);
+  }, [flow.hearUnheard, flow.reloadHome, flow.checkForUpdate]);
   /*
    * The splash lifts when the journal is open — settings read, entries read —
    * but never before MIN_SPLASH_MS, so a fast phone gets a beat rather than a

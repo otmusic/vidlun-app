@@ -1,3 +1,5 @@
+import type { AffirmationFrequency } from './IAffirmationReminders';
+
 /**
  * `system` follows the phone and keeps following it, so a journal opened at
  * night is dark without anyone having chosen anything. The other two are a
@@ -28,6 +30,15 @@ export interface Settings {
    * comes on its own first.
    */
   readonly monthCardClosed: string | null;
+  /**
+   * The App Store version whose update line on home was closed with its X
+   * (owner's word, 2026-11-06). Only that version's line stays away: a newer
+   * one brings it back.
+   */
+  readonly updateLineClosed: string | null;
+  /** The morning affirmation, off until the person turns it on in "Me". */
+  readonly affirmationsOn: boolean;
+  readonly affirmationFrequency: AffirmationFrequency;
 }
 
 /**
@@ -49,6 +60,10 @@ export const DEFAULT_SETTINGS: Settings = {
   reminderHour: 21,
   reminderMinute: 0,
   monthCardClosed: null,
+  updateLineClosed: null,
+  affirmationsOn: false,
+  // Weekly by default: the owner's first word for it was "every Monday".
+  affirmationFrequency: 'weekly',
 };
 
 /**

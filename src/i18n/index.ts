@@ -1,3 +1,5 @@
+import enAffirmations from './locales/affirmations.en.json';
+import ukAffirmations from './locales/affirmations.uk.json';
 import enEmotions from './locales/emotions.en.json';
 import ukEmotions from './locales/emotions.uk.json';
 import enInterface from './locales/en.json';
@@ -34,6 +36,42 @@ const PLACEHOLDER = /\{\{(\w+)\}\}/g;
 
 export function isLocale(candidate: string): candidate is Locale {
   return (LOCALES as readonly string[]).includes(candidate);
+}
+
+const CYRILLIC = /[\u0400-\u04FF]/g;
+const LATIN = /[A-Za-z\u00C0-\u024F]/g;
+
+/**
+ * The language a piece of writing is in, as far as its letters tell: the
+ * script most of them are in. Cyrillic reads as Ukrainian — the one Cyrillic
+ * language the app has, and the nearest for an entry said in Russian — and
+ * Latin as English. Null when there are no letters to go by.
+ */
+export function localeOfText(text: string): Locale | null {
+  const cyrillic = text.match(CYRILLIC)?.length ?? 0;
+  const latin = text.match(LATIN)?.length ?? 0;
+
+  if (cyrillic === latin) {
+    return null;
+  }
+
+  return cyrillic > latin ? 'uk' : 'en';
+}
+
+const AFFIRMATIONS: Readonly<Record<Locale, readonly string[]>> = {
+  en: enAffirmations,
+  uk: ukAffirmations,
+};
+
+/**
+ * The affirmations the cards are dealt from, in the app's language. A list
+ * per language rather than one list translated: the owner wrote the two
+ * apart (2026-11-10), nineteen in Ukrainian and thirty-three in English, so
+ * neither is the other's translation and they need not be the same length.
+ * Adding one is a line in that language's affirmations.*.json.
+ */
+export function affirmationsFor(locale: Locale): readonly string[] {
+  return AFFIRMATIONS[locale];
 }
 
 export function createTranslator(locale: Locale): Translate {

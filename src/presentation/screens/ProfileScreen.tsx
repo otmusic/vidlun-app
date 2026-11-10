@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, Switch, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import type { Entitlement } from '@/domain/entities/Entitlement';
+import type { AffirmationFrequency } from '@/domain/ports/IAffirmationReminders';
 import type { Settings, ThemeChoice } from '@/domain/ports/ISettings';
 import type { Translate, TranslationKey } from '@/i18n';
 
@@ -26,6 +27,21 @@ const THEME_LABELS: Readonly<Record<ThemeChoice, TranslationKey>> = {
 };
 
 /** One value per row, and three rows visible: the chosen one and its neighbours. */
+const FREQUENCIES: readonly AffirmationFrequency[] = ['daily', 'weekly', 'monthly'];
+
+const FREQUENCY_LABELS: Readonly<Record<AffirmationFrequency, TranslationKey>> = {
+  daily: 'profile.affirmationsDaily',
+  weekly: 'profile.affirmationsWeekly',
+  monthly: 'profile.affirmationsMonthly',
+};
+
+/** When it comes, under the name once it is on: the frequency picked says only how often. */
+const FREQUENCY_HINTS: Readonly<Record<AffirmationFrequency, TranslationKey>> = {
+  daily: 'profile.affirmationsHintDaily',
+  weekly: 'profile.affirmationsHintWeekly',
+  monthly: 'profile.affirmationsHintMonthly',
+};
+
 const ROW_HEIGHT = 46;
 const WHEEL_HEIGHT = ROW_HEIGHT * 3;
 
@@ -109,6 +125,8 @@ export function ProfileScreen(props: {
           </AppText>
         </Row>
       </Section>
+
+      <Affirmations settings={settings} t={t} onChange={props.onChange} />
 
       <Theme settings={settings} t={t} onChange={props.onChange} />
 
@@ -353,6 +371,79 @@ function ThemeChoiceButton(props: {
   readonly t: Translate;
   readonly onPress: () => void;
 }): React.JSX.Element {
+  return (
+    <Segment
+      label={props.t(THEME_LABELS[props.choice])}
+      chosen={props.chosen}
+      onPress={props.onPress}
+      glyph={(colour) => <ThemeGlyph choice={props.choice} colour={colour} />}
+    />
+  );
+}
+
+/**
+ * The morning affirmation (owner's word, 2026-11-06): a switch, and once it
+ * is on, how often. The name's line says when it comes; off, it says what
+ * it is.
+ */
+function Affirmations(props: {
+  readonly settings: Settings;
+  readonly t: Translate;
+  readonly onChange: (settings: Settings) => void;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const { settings, t } = props;
+  const on = settings.affirmationsOn;
+
+  return (
+    <Section>
+      <Row
+        title={t('profile.affirmations')}
+        hint={t(on ? FREQUENCY_HINTS[settings.affirmationFrequency] : 'profile.affirmationsOffHint')}
+      >
+        <Switch
+          value={on}
+          onValueChange={(next) => {
+            props.onChange({ ...settings, affirmationsOn: next });
+          }}
+          trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
+          accessibilityLabel={t('profile.affirmations')}
+        />
+      </Row>
+      {on ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 4,
+            padding: 4,
+            borderRadius: 999,
+            backgroundColor: theme.palette.lineSoft,
+            marginBottom: 18,
+          }}
+        >
+          {FREQUENCIES.map((frequency) => (
+            <Segment
+              key={frequency}
+              label={t(FREQUENCY_LABELS[frequency])}
+              chosen={settings.affirmationFrequency === frequency}
+              onPress={() => {
+                props.onChange({ ...settings, affirmationFrequency: frequency });
+              }}
+            />
+          ))}
+        </View>
+      ) : null}
+    </Section>
+  );
+}
+
+/** One choice in a track of them: the theme's three, the affirmation's three. */
+function Segment(props: {
+  readonly label: string;
+  readonly chosen: boolean;
+  readonly onPress: () => void;
+  readonly glyph?: (colour: string) => React.ReactNode;
+}): React.JSX.Element {
   const theme = useTheme();
   const colour = props.chosen ? theme.palette.ink : theme.palette.inkSoft;
 
@@ -379,9 +470,9 @@ function ThemeChoiceButton(props: {
         shadowOffset: { width: 0, height: 1 },
       }}
     >
-      <ThemeGlyph choice={props.choice} colour={colour} />
+      {props.glyph?.(colour)}
       <AppText variant="secondary" style={{ color: colour }}>
-        {props.t(THEME_LABELS[props.choice])}
+        {props.label}
       </AppText>
     </Pressable>
   );

@@ -9,6 +9,8 @@ import type { Locale, Translate } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
+import { AffirmationButton } from '../components/AffirmationButton';
+import type { BloomOrigin, Charm } from '../components/AffirmationCharm';
 import { CountPill } from '../components/CountPill';
 import { EmotionFilterSheet } from '../components/EmotionFilterSheet';
 import { EntryCard } from '../components/EntryCard';
@@ -51,6 +53,13 @@ export function HistoryScreen(props: {
   /** Every milestone; each sits as a rule between the days before and after it. */
   readonly milestones: readonly Milestone[];
   readonly onEditMilestone: (milestone: Milestone) => void;
+  /**
+   * The affirmation button: the picked one's look, null while this period's
+   * waits to be picked, or absent while affirmations are off.
+   */
+  readonly affirmation: { readonly picked: Charm | null } | null;
+  /** The press, with where the button sits in window coordinates. */
+  readonly onAffirmation: (origin: BloomOrigin) => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
@@ -169,6 +178,19 @@ export function HistoryScreen(props: {
                 <CountPill
                   value={shown.length}
                   label={t(countedKey('feed.entry', shown.length, props.locale))}
+                />
+              )}
+              {/*
+                The affirmation (owner's word, 2026-11-06 and 11-10): the one
+                picked for this day, week or month, which a tap grows to the
+                whole screen again, or before it is picked the same mark every
+                time, which opens the five. Only here, not on home.
+              */}
+              {props.affirmation === null ? null : (
+                <AffirmationButton
+                  picked={props.affirmation.picked}
+                  label={t(props.affirmation.picked === null ? 'affirmation.pick' : 'feed.affirmation')}
+                  onPress={props.onAffirmation}
                 />
               )}
               {/*

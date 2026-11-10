@@ -32,9 +32,10 @@ describe('MoodEntry invariants', () => {
     expect(() => entry({ cleanTranscript: '  \n ' })).toThrow(EmptyTranscriptError);
   });
 
-  it('refuses a fifth emotion, which would turn the card into a form', () => {
-    expect(() => entry({ emotionIds: ['a', 'b', 'c', 'd', 'e'] })).toThrow(TooManyEmotionsError);
-    expect(MoodEntry.MAX_EMOTIONS).toBe(4);
+  it('holds six emotions and refuses a seventh, which would turn the card into a form', () => {
+    expect(entry({ emotionIds: ['a', 'b', 'c', 'd', 'e', 'f'] }).emotionIds).toHaveLength(6);
+    expect(() => entry({ emotionIds: ['a', 'b', 'c', 'd', 'e', 'f', 'g'] })).toThrow(TooManyEmotionsError);
+    expect(MoodEntry.MAX_EMOTIONS).toBe(6);
   });
 
   it('counts a repeated emotion once', () => {
@@ -192,7 +193,7 @@ describe('user revisions', () => {
   });
 
   it('still enforces the emotion limit on a revision', () => {
-    expect(() => entry().reviseWith({ emotionIds: ['a', 'b', 'c', 'd', 'e'] })).toThrow(
+    expect(() => entry().reviseWith({ emotionIds: ['a', 'b', 'c', 'd', 'e', 'f', 'g'] })).toThrow(
       TooManyEmotionsError,
     );
   });
@@ -241,8 +242,8 @@ describe('the AI proposal, kept apart from the user\'s own labels', () => {
     expect(entry({ proposedEmotionIds: ['a', 'b', 'a'] }).proposedEmotionIds).toEqual(['a', 'b']);
   });
 
-  it('refuses a fifth proposed emotion, the same as it refuses a fifth kept one', () => {
-    expect(() => entry({ proposedEmotionIds: ['a', 'b', 'c', 'd', 'e'] })).toThrow(
+  it('refuses a seventh proposed emotion, the same as it refuses a seventh kept one', () => {
+    expect(() => entry({ proposedEmotionIds: ['a', 'b', 'c', 'd', 'e', 'f', 'g'] })).toThrow(
       TooManyEmotionsError,
     );
   });
@@ -293,7 +294,7 @@ describe('the unaided answer', () => {
   });
 
   it('holds no more than the card can show', () => {
-    expect(() => entry({ selfEmotionIds: ['a', 'b', 'c', 'd', 'e'] })).toThrow(TooManyEmotionsError);
+    expect(() => entry({ selfEmotionIds: ['a', 'b', 'c', 'd', 'e', 'f', 'g'] })).toThrow(TooManyEmotionsError);
   });
 });
 

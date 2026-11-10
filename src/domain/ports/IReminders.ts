@@ -21,9 +21,9 @@ export interface ReminderPlan {
  * The evening nudge, and nothing else.
  *
  * One reminder exists, so this has no ids and no list: setting it replaces
- * whatever was there and clearing it removes the lot. A second kind of
- * notification would be a decision in the brief before it is a method here —
- * §8 is explicit that this must not become an app that pesters.
+ * whatever was there and clearing it removes the lot. The affirmation is the
+ * one other kind of notification (owner's word, 2026-11-06) and has a port of
+ * its own; §8 is explicit that this must not become an app that pesters.
  *
  * **Days ahead rather than a repeating rule.** A daily trigger cannot skip an
  * occurrence, and skipping is the whole point: the queue is refilled whenever

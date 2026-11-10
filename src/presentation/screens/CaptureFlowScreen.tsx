@@ -2,11 +2,12 @@ import type { Emotion } from '@/domain/entities/Emotion';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings } from '@/domain/ports/ISettings';
+import type { StoreRelease } from '@/domain/ports/IStoreListing';
 import type { Locale, Translate } from '@/i18n';
 import { legalDocument } from '@/i18n/legal';
 
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Linking, View } from 'react-native';
 
 import { wordsOffered, wordsWithoutReading } from '../components/emotionTone';
 import { FeedbackSheet } from '../components/FeedbackSheet';
@@ -23,6 +24,10 @@ import { CompareScreen } from './CompareScreen';
 import { RecordingScreen } from './RecordingScreen';
 import { TurnScreen } from './TurnScreen';
 import { ReflectionScreen } from './ReflectionScreen';
+import { AffirmationScreen, affirmationCaption } from './AffirmationScreen';
+import { AffirmationBloom, type BloomOrigin } from './AffirmationBloom';
+import { charmOf, type Charm } from '../components/AffirmationCharm';
+import type { KeptAffirmation } from '@/domain/entities/KeptAffirmation';
 import { GroundingScreen } from './GroundingScreen';
 import { SavedScreen } from './SavedScreen';
 import { ProfileScreen } from './ProfileScreen';
@@ -72,6 +77,19 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
    * first tap while the keyboard is up.
    */
   const [writingFeedback, setWritingFeedback] = useState(false);
+  /*
+   * The kept affirmation opened from the journal's button: drawn over the
+   * journal rather than in place of it, so its colour grows out of the button
+   * and closing it leaves the journal exactly where it was.
+   */
+  const [affirmationFrom, setAffirmationFrom] = useState<BloomOrigin | null>(null);
+  const kept = props.flow.keptAffirmation;
+  const stageKind = props.flow.stage.kind;
+
+  // Anything that takes the journal away takes the page over it too.
+  useEffect(() => {
+    setAffirmationFrom(null);
+  }, [stageKind]);
 
   /*
    * The bar floats over the screen rather than beside it, so the content keeps
@@ -85,6 +103,7 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
         onWriteFeedback={() => {
           setWritingFeedback(true);
         }}
+        onOpenAffirmation={setAffirmationFrom}
       />
       {tab === undefined ? null : (
         <TabBar
@@ -98,6 +117,19 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
             } else if (next === 'me') {
               props.flow.openSettings();
             }
+          }}
+        />
+      )}
+      {affirmationFrom === null || kept === null || kept === undefined ? null : (
+        <AffirmationBloom
+          charm={charmOf(kept.look)}
+          text={kept.text}
+          caption={affirmationCaption(kept.frequency, props.t)}
+          origin={affirmationFrom}
+          t={props.t}
+          fadeOnClose
+          onClose={() => {
+            setAffirmationFrom(null);
           }}
         />
       )}
@@ -128,6 +160,21 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
 }
 
 /**
+ * The journal's affirmation button: nothing while affirmations are off or
+ * before the store has answered, the picked one's look, or the waiting mark.
+ */
+function affirmationButton(
+  on: boolean,
+  kept: KeptAffirmation | null | undefined,
+): { readonly picked: Charm | null } | null {
+  if (!on || kept === undefined) {
+    return null;
+  }
+
+  return { picked: kept === null ? null : charmOf(kept.look) };
+}
+
+/**
  * The notice in the app's words. A failure keeps the layer below's own
  * message under the title — it is the one line the owner gets to read when
  * someone writes in — while the network's failure gets the two lines that say
@@ -147,6 +194,15 @@ function lineFor(notice: Notice | null, t: Translate): ToastLine | null {
     case 'failed':
       return { id: notice.id, title: t('failure.title'), detail: notice.message };
   }
+}
+
+/** Opens the App Store page of the newer version; nothing while this one is the newest. */
+function updateOpener(update: StoreRelease | null): (() => void) | null {
+  return update === null
+    ? null
+    : () => {
+        void Linking.openURL(update.url);
+      };
 }
 
 /** A month as "YYYY-MM", the way a closed month card is remembered. */
@@ -180,7 +236,10 @@ function wordsFor(
 }
 
 function Stage(
-  props: CaptureFlowScreenProps & { readonly onWriteFeedback: () => void },
+  props: CaptureFlowScreenProps & {
+    readonly onWriteFeedback: () => void;
+    readonly onOpenAffirmation: (origin: BloomOrigin) => void;
+  },
 ): React.JSX.Element {
   const { flow, t } = props;
 
@@ -273,7 +332,22 @@ function Stage(
         <SavedScreen
           t={t}
           // After a hard entry the grounding offer follows on a page of its own.
-          onDone={flow.stage.offersGrounding ? flow.startGrounding : flow.backHome}
+          onDone={flow.stage.offersGrounding ? flow.startGrounding : flow.leaveSaved}
+        />
+      );
+
+    case 'affirmation':
+      return (
+        <AffirmationScreen
+          t={t}
+          locale={props.locale}
+          frequency={props.settings.affirmationFrequency}
+          kept={flow.stage.kept}
+          onKeep={(choice) => {
+            flow.keepAffirmation(choice, props.settings.affirmationFrequency);
+          }}
+          onFlip={flow.noticed}
+          onClose={flow.closeAffirmation}
         />
       );
 
@@ -406,6 +480,15 @@ function Stage(
           onRecord={flow.startRecording}
           milestones={flow.milestones}
           onEditMilestone={flow.openMilestone}
+          affirmation={affirmationButton(props.settings.affirmationsOn, flow.keptAffirmation)}
+          onAffirmation={(origin) => {
+            // The picked one grows out of the button over the journal; a waiting one opens the five.
+            if (flow.keptAffirmation === null || flow.keptAffirmation === undefined) {
+              flow.pickAffirmation();
+            } else {
+              props.onOpenAffirmation(origin);
+            }
+          }}
         />
       );
 
@@ -452,6 +535,16 @@ function Stage(
           onOpenMonth={flow.openMonth}
           onOpen={flow.openEntry}
           onDelete={flow.deleteEntry}
+          onUpdate={updateOpener(
+            flow.update !== null && flow.update.version !== props.settings.updateLineClosed
+              ? flow.update
+              : null,
+          )}
+          onCloseUpdate={() => {
+            if (flow.update !== null) {
+              props.onSettingsChange({ ...props.settings, updateLineClosed: flow.update.version });
+            }
+          }}
         />
       );
   }

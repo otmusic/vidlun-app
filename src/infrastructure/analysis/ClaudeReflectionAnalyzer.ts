@@ -93,7 +93,7 @@ emotionIds: choose only from the list below, exact strings.
 - An empty array is a correct and common answer. Ordinary days exist. Never invent an emotion to fill the field: one fabricated insight destroys trust in every later one.
 - If the sentence holds two opposite feelings, return both. Never average them into one neutral emotion; averaging erases what the entry meant.
 - Prefer an emotion you are sure of over one you are guessing at.
-- At most four.
+- At most four. (The person may keep up to six; the extra room is for what they name, not for you.)
 
 nearbyEmotionIds: the other words the person is offered to name this entry with, before they see your emotionIds. From the same list, exact strings, none already in emotionIds, the most fitting first, enough that the two lists together make eight.
 - These are choices put in front of the person, not claims about them, so the rules above about inventing do not stop you offering them — but every one must be a word someone who said exactly this might reach for. Look for the same feeling said more precisely or more loosely, and for each side of a mixed sentence.

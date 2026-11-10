@@ -11,7 +11,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Chip } from '../components/Chip';
 import { EmotionShelf } from '../components/EmotionPicker';
-import { emotionLabel, emotionTint, idForTypedWord } from '../components/emotionDisplay';
+import { emotionLabel, emotionTint, emotionWordsIn, idForTypedWord } from '../components/emotionDisplay';
 import { FixWording } from '../components/FixWording';
 import { moodKey } from '../components/MoodLine';
 import { MoodScale } from '../components/MoodScale';
@@ -59,6 +59,8 @@ export function TurnScreen(props: {
   readonly onToggleTopic: (tag: string) => void;
 }): React.JSX.Element {
   const theme = useTheme();
+  // The words beside the sentence are in the language it was said in.
+  const words = emotionWordsIn(props.transcript, props.t);
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
   /** Null while the own-word field is closed; the word so far while open. */
@@ -216,7 +218,7 @@ export function TurnScreen(props: {
             {chosen.map((id) => (
               <Chip
                 key={id}
-                label={emotionLabel(id, props.t)}
+                label={emotionLabel(id, words)}
                 color={emotionTint(id, props.vocabulary, theme)}
                 action="remove"
                 onPress={() => {
@@ -231,7 +233,7 @@ export function TurnScreen(props: {
       <EmotionShelf
         emotions={props.offered}
         selected={chosen}
-        t={props.t}
+        t={words}
         onToggle={props.onToggle}
       />
 

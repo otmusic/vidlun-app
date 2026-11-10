@@ -43,6 +43,9 @@ describe('SettingsStore', () => {
       reminderHour: 22,
       reminderMinute: 30,
       monthCardClosed: '2026-09',
+      updateLineClosed: '1.9',
+      affirmationsOn: true,
+      affirmationFrequency: 'monthly',
     });
 
     expect(await subject.read()).toEqual({
@@ -54,6 +57,9 @@ describe('SettingsStore', () => {
       reminderHour: 22,
       reminderMinute: 30,
       monthCardClosed: '2026-09',
+      updateLineClosed: '1.9',
+      affirmationsOn: true,
+      affirmationFrequency: 'monthly',
     });
   });
 
@@ -101,6 +107,9 @@ describe('SettingsStore', () => {
       reminderMinute: 0,
       hasOnboarded: false,
       monthCardClosed: null,
+      updateLineClosed: null,
+      affirmationsOn: false,
+      affirmationFrequency: 'weekly',
     });
   });
 
@@ -158,5 +167,20 @@ describe('SettingsStore', () => {
 
     // A closed card is one named month; anything else must not hide a card.
     expect((await subject.read()).monthCardClosed).toBeNull();
+  });
+
+  it('keeps the update line closed only for a version it can read', async () => {
+    const { store, subject } = setup();
+    await store.setItem('vidlun.settings', JSON.stringify({ updateLineClosed: 'latest' }));
+
+    // A closed line belongs to one store version; anything else must not hide it.
+    expect((await subject.read()).updateLineClosed).toBeNull();
+  });
+
+  it('reads an affirmation frequency it does not know as weekly', async () => {
+    const { store, subject } = setup();
+    await store.setItem('vidlun.settings', JSON.stringify({ affirmationFrequency: 'hourly' }));
+
+    expect((await subject.read()).affirmationFrequency).toBe('weekly');
   });
 });

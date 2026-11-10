@@ -9,7 +9,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 import { Playback } from './Playback';
-import { emotionLabel, moodTint } from './emotionDisplay';
+import { emotionLabel, emotionWordsIn, moodTint } from './emotionDisplay';
 
 /**
  * The drawing's card for a year ago today: the entry's own colour in the
@@ -61,7 +61,7 @@ export function YearEchoCard(props: {
             numberOfLines={1}
             style={{ fontSize: 13, color: theme.palette.tag, marginLeft: 'auto', flexShrink: 1 }}
           >
-            {emotionLabel(first, props.t)}
+            {emotionLabel(first, emotionWordsIn(entry.cleanTranscript, props.t))}
           </AppText>
         )}
       </View>

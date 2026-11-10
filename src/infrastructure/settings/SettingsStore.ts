@@ -1,3 +1,4 @@
+import type { AffirmationFrequency } from '../../domain/ports/IAffirmationReminders';
 import {
   DEFAULT_SETTINGS,
   type ISettingsStore,
@@ -74,6 +75,12 @@ function merge(parsed: unknown): Settings {
     reminderHour: hourOr(record['reminderHour'], DEFAULT_SETTINGS.reminderHour),
     reminderMinute: minuteOr(record['reminderMinute'], DEFAULT_SETTINGS.reminderMinute),
     monthCardClosed: monthOr(record['monthCardClosed']),
+    updateLineClosed: versionOr(record['updateLineClosed']),
+    affirmationsOn:
+      typeof record['affirmationsOn'] === 'boolean'
+        ? record['affirmationsOn']
+        : DEFAULT_SETTINGS.affirmationsOn,
+    affirmationFrequency: frequencyOr(record['affirmationFrequency']),
   };
 }
 
@@ -87,6 +94,17 @@ function hourOr(value: unknown, fallback: number): number {
 /** A closed month is a "YYYY-MM" or nothing; anything else hides no card. */
 function monthOr(value: unknown): string | null {
   return typeof value === 'string' && /^\d{4}-\d{2}$/.test(value) ? value : null;
+}
+
+function frequencyOr(value: unknown): AffirmationFrequency {
+  return value === 'daily' || value === 'weekly' || value === 'monthly'
+    ? value
+    : DEFAULT_SETTINGS.affirmationFrequency;
+}
+
+/** A closed update line is a dotted version or nothing; anything else hides no line. */
+function versionOr(value: unknown): string | null {
+  return typeof value === 'string' && /^\d+(\.\d+)*$/.test(value) ? value : null;
 }
 
 function minuteOr(value: unknown, fallback: number): number {

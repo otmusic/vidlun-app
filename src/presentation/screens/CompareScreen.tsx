@@ -10,7 +10,7 @@ import { AppText } from '../components/AppText';
 import { BackButton } from '../components/BackButton';
 import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
-import { emotionLabel, emotionTint, idForTypedWord } from '../components/emotionDisplay';
+import { emotionLabel, emotionTint, emotionWordsIn, idForTypedWord } from '../components/emotionDisplay';
 import { toneFor } from '../components/emotionTone';
 import { moodKey } from '../components/MoodLine';
 import { MoodScale } from '../components/MoodScale';
@@ -66,7 +66,9 @@ export function CompareScreen(props: {
   const [saveAfter, setSaveAfter] = useState<string | null>(null);
 
   const colorOf = (id: string): string | undefined => emotionTint(id, props.vocabulary, theme);
-  const label = (id: string): string => emotionLabel(id, props.t);
+  // In the language the entry was said in, as on the question card.
+  const words = emotionWordsIn(props.draft.cleanTranscript, props.t);
+  const label = (id: string): string => emotionLabel(id, words);
 
   /** Adds the word being typed, if any; returns its id when it is new. */
   const commit = (): string | null => {

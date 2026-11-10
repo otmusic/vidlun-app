@@ -8,7 +8,7 @@ import { AppText } from './AppText';
 import { dayWordOf } from './EntryRow';
 import { Icon } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
-import { emotionLabel, moodTint } from './emotionDisplay';
+import { emotionLabel, emotionWordsIn, moodTint } from './emotionDisplay';
 
 /**
  * A dot in the entry's own colour, the day and time, the first emotion's own
@@ -28,6 +28,7 @@ export function EntryCard(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const first = props.entry.emotionIds[0];
+  const words = emotionWordsIn(props.entry.cleanTranscript, props.t);
   // The mood marks the entry; the emotion's name wears the one blue.
   const marker = moodTint(props.entry.mood?.value ?? null, theme);
 
@@ -65,7 +66,7 @@ export function EntryCard(props: {
             numberOfLines={1}
             style={{ fontSize: 13, color: theme.palette.tag, marginLeft: 'auto', flexShrink: 1 }}
           >
-            {emotionLabel(first, props.t)}
+            {emotionLabel(first, words)}
           </AppText>
         )}
       </View>
@@ -75,7 +76,7 @@ export function EntryCard(props: {
         </AppText>
         {props.entry.emotionIds.length === 0 ? null : (
           <AppText variant="secondary" color="inkFaint">
-            {props.entry.emotionIds.map((id) => emotionLabel(id, props.t)).join(' · ')}
+            {props.entry.emotionIds.map((id) => emotionLabel(id, words)).join(' · ')}
           </AppText>
         )}
       </View>

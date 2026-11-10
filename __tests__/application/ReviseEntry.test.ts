@@ -66,10 +66,10 @@ describe('ReviseEntry', () => {
     expect(revised.emotionIds).toEqual(['happy.proud', 'bad.tired']);
   });
 
-  it('still refuses a fifth emotion', () => {
+  it('still refuses a seventh emotion', () => {
     expect(() =>
       useCase.execute(draft(), {
-        emotionIds: ['happy', 'sad', 'bad', 'angry', 'fearful'],
+        emotionIds: ['happy', 'sad', 'bad', 'angry', 'fearful', 'surprised', 'disgusted'],
       }),
     ).toThrow(TooManyEmotionsError);
   });

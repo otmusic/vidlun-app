@@ -39,6 +39,12 @@ import type { IParkedTake, ParkedTake } from '@/domain/ports/IParkedTake';
 import type { IUnheardEntries } from '@/domain/ports/IUnheardEntries';
 import type { CreateUnheardEntry } from '@/application/use-cases/CreateUnheardEntry';
 import type { HearUnheardEntries } from '@/application/use-cases/HearUnheardEntries';
+import type { AskForReview } from '@/application/use-cases/AskForReview';
+import type { CheckForUpdate } from '@/application/use-cases/CheckForUpdate';
+import type { KeepAffirmation } from '@/application/use-cases/KeepAffirmation';
+import type { AffirmationChoice, KeptAffirmation } from '@/domain/entities/KeptAffirmation';
+import type { AffirmationFrequency } from '@/domain/ports/IAffirmationReminders';
+import type { StoreRelease } from '@/domain/ports/IStoreListing';
 import type { ForgetMilestone } from '@/application/use-cases/ForgetMilestone';
 import type { GetMilestones } from '@/application/use-cases/GetMilestones';
 import type { MarkMilestone } from '@/application/use-cases/MarkMilestone';
@@ -141,6 +147,16 @@ export type CaptureStage =
     }
   | { readonly kind: 'history' }
   | { readonly kind: 'settings' }
+  /**
+   * The five affirmation cards, opened from their morning notification; or,
+   * when one was already picked for this period, that one again.
+   */
+  | {
+      readonly kind: 'affirmation';
+      readonly kept: KeptAffirmation | null;
+      /** The journal's button opened it, so closing goes back there. */
+      readonly fromJournal: boolean;
+    }
   /** The one thing sold, and what the store said about buying it. */
   | {
       readonly kind: 'subscription';
@@ -246,6 +262,10 @@ export interface CaptureDependencies {
   readonly purchases: IPurchases;
   /** Told when the store says something that changes what may be read. */
   readonly onEntitlementChanged: () => void;
+  /** The rating request, put to the person on home after three good entries running. */
+  readonly askForReview: AskForReview;
+  readonly checkForUpdate: CheckForUpdate;
+  readonly keepAffirmation: KeepAffirmation;
 }
 
 export interface CaptureFlow {
@@ -260,6 +280,10 @@ export interface CaptureFlow {
   readonly hearUnheard: () => void;
   /** The month being offered on home's first-days card, or null off-season. */
   readonly monthCard: Date | null;
+  /** A newer version on sale in the App Store, for the line on top of home; null otherwise. */
+  readonly update: StoreRelease | null;
+  /** Asks the store again, at most every few hours. App calls it on coming to the front. */
+  readonly checkForUpdate: () => void;
   readonly startRecording: () => void;
   readonly stopRecording: () => void;
   /** Holds the take while the person is asked whether to leave it. */
@@ -313,6 +337,24 @@ export interface CaptureFlow {
   readonly backToCard: () => void;
   readonly confirm: () => void;
   readonly backHome: () => void;
+  /** The saved screen's way out: home, and the rating request when it is due. */
+  readonly leaveSaved: () => void;
+  /**
+   * The affirmation notification was tapped. Opens the cards at once from
+   * somewhere quiet, and on the way home from the middle of an entry.
+   */
+  readonly openAffirmation: () => void;
+  /** The journal's button, before this period's is picked: the five, and back to the journal after. */
+  readonly pickAffirmation: () => void;
+  /** The page's X and "Done": back to the journal when it was opened there, home otherwise. */
+  readonly closeAffirmation: () => void;
+  /** Keeps the one just picked for the period it was picked in. */
+  readonly keepAffirmation: (choice: AffirmationChoice, frequency: AffirmationFrequency) => void;
+  /**
+   * The affirmation kept for this period, for the buttons on home and in the
+   * journal; null when none is, undefined until the store has answered.
+   */
+  readonly keptAffirmation: KeptAffirmation | null | undefined;
   readonly deleteEntry: (id: string) => void;
   readonly history: readonly HistoryDay[] | null;
   /** The entries that still have their audio; null until looked up. */
@@ -368,6 +410,29 @@ export interface CaptureFlow {
 
 const RECENT_LIMIT = 3;
 
+/** How long one look at the App Store answers for; coming back sooner does not ask again. */
+const UPDATE_CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
+
+/** A beat after home is back, so the rating sheet lands on home and not on the way to it. */
+const REVIEW_AFTER_HOME_MS = 700;
+
+/**
+ * The stages an entry is being made in. A tap on the affirmation's
+ * notification must not throw a take or an answered card away, so from
+ * these it waits for home instead.
+ */
+const MAKING_AN_ENTRY: ReadonlySet<CaptureStage['kind']> = new Set([
+  'recording',
+  'writing',
+  'processing',
+  'turn',
+  'comparing',
+  'reflecting',
+  'saving',
+  'saved',
+  'grounding',
+]);
+
 /**
  * The capture path as one state machine. Every transition here is on the ten
  * second budget, so nothing in it asks the user a question it could answer.
@@ -414,7 +479,7 @@ function describe(error: unknown): string {
 
 /**
  * The words choosing together starts with: the person's own first, then
- * Vidlun's, all of them already chosen (owner's word, 2026-10-01) — four at
+ * Vidlun's, all of them already chosen (owner's word, 2026-10-01) — six at
  * most, the entry's ceiling.
  */
 function wordsChosenTogether(
@@ -636,7 +701,24 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
   useEffect(reloadParked, [reloadParked]);
 
+  /*
+   * Undefined until the store has answered, so home does not show the waiting
+   * shape for a moment and then swap it for the one already picked.
+   */
+  const [keptAffirmation, setKeptAffirmation] = useState<KeptAffirmation | null | undefined>(undefined);
+
+  // Read again whenever it might have run out: on every way home and into the journal.
+  const reloadKeptAffirmation = useCallback(() => {
+    void dependencies.keepAffirmation
+      .current()
+      .then(setKeptAffirmation)
+      .catch(() => {
+        setKeptAffirmation(null);
+      });
+  }, [dependencies.keepAffirmation]);
+
   const reloadHome = useCallback(() => {
+    reloadKeptAffirmation();
     void getHomeView
       .execute(RECENT_LIMIT)
       .then(setHome)
@@ -662,7 +744,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     } else {
       setMonthCard(null);
     }
-  }, [dependencies.getMonthSummary, getHomeView]);
+  }, [dependencies.getMonthSummary, getHomeView, reloadKeptAffirmation]);
 
   useEffect(reloadHome, [reloadHome]);
 
@@ -720,6 +802,80 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     },
     [notify],
   );
+
+  const [update, setUpdate] = useState<StoreRelease | null>(null);
+  const updateCheckedAt = useRef<number | null>(null);
+
+  const checkForUpdate = useCallback(() => {
+    const now = dependencies.clock.now().getTime();
+
+    if (updateCheckedAt.current !== null && now - updateCheckedAt.current < UPDATE_CHECK_EVERY_MS) {
+      return;
+    }
+
+    updateCheckedAt.current = now;
+    void dependencies.checkForUpdate
+      .execute()
+      .then(setUpdate)
+      .catch(() => undefined);
+  }, [dependencies.checkForUpdate, dependencies.clock]);
+
+  useEffect(checkForUpdate, [checkForUpdate]);
+
+  /*
+   * Worked out as the saved screen shows and spent on the way home: the
+   * rating request is never put inside an entry (2026-10-30), and the saved
+   * screen is still the entry's.
+   */
+  const reviewDue = useRef(false);
+
+  useEffect(() => {
+    if (stage.kind === 'history') {
+      reloadKeptAffirmation();
+    }
+  }, [reloadKeptAffirmation, stage.kind]);
+
+  /*
+   * The page opens on what is kept, if anything is, so it is read first: the
+   * five must not flash up and then be swapped for the one already picked.
+   */
+  const showAffirmation = useCallback(
+    (fromJournal: boolean) => {
+      void dependencies.keepAffirmation
+        .current()
+        .catch(() => null)
+        .then((kept) => {
+          setKeptAffirmation(kept);
+          setStage({ kind: 'affirmation', kept, fromJournal });
+        });
+    },
+    [dependencies.keepAffirmation],
+  );
+
+  /** A tap on the affirmation that came while an entry was being made. */
+  const [affirmationWaiting, setAffirmationWaiting] = useState(false);
+  // Read by the tap's opener, which stays the same function so the listener is not re-made.
+  const stageKind = useRef(stage.kind);
+
+  stageKind.current = stage.kind;
+
+  useEffect(() => {
+    if (affirmationWaiting && stage.kind === 'idle') {
+      setAffirmationWaiting(false);
+      showAffirmation(false);
+    }
+  }, [affirmationWaiting, showAffirmation, stage.kind]);
+
+  const noteReviewMoment = useCallback(() => {
+    void dependencies.askForReview
+      .isDue()
+      .then((due) => {
+        reviewDue.current = due;
+      })
+      .catch(() => {
+        reviewDue.current = false;
+      });
+  }, [dependencies.askForReview]);
 
   /**
    * The question goes up as soon as there are words, and the analysis runs
@@ -779,6 +935,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             offersGrounding: false,
             unheard: true,
           });
+          noteReviewMoment();
         })
         .catch((error: unknown) => {
           // The words and the answer are still in hand: the card comes back
@@ -797,7 +954,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           });
         });
     },
-    [dependencies, fail],
+    [dependencies, fail, noteReviewMoment],
   );
 
   const ask = useCallback(
@@ -1001,9 +1158,12 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
               weekStart: week.weekStart,
               weekEnd: week.weekEnd,
             }),
-            // Over the month, as the drawing has it: a week rarely holds
-            // enough of anything for a comparison worth printing.
-            dependencies.findMoodPatterns.execute({ containing: week.weekStart }),
+            // The week on screen and nothing around it (owner's word,
+            // 2026-11-06); the month read every October week the same.
+            dependencies.findMoodPatterns.execute({
+              weekStart: week.weekStart,
+              weekEnd: week.weekEnd,
+            }),
             /*
              * Where the arrows lead: over the empty weeks to the nearest one
              * with entries (owner's word, 2026-10-30), and nowhere before the
@@ -1157,13 +1317,14 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             offersGrounding: draft.safetyFlag === 'distress',
             unheard: false,
           });
+          noteReviewMoment();
         })
         .catch((error: unknown) => {
           // Nothing was written; the card comes back with the draft as it stood.
           fail(error, backTo);
         });
     },
-    [dependencies, fail],
+    [dependencies, fail, noteReviewMoment],
   );
 
   const confirm = useCallback(() => {
@@ -1200,6 +1361,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       setNotice(null);
     }, []),
     monthCard,
+    update,
+    checkForUpdate,
     home,
     reloadHome,
     hearUnheard,
@@ -1292,6 +1455,52 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       setStage({ kind: 'idle' });
       reloadHome();
     }, [reloadHome]),
+    openAffirmation: useCallback(() => {
+      if (MAKING_AN_ENTRY.has(stageKind.current)) {
+        setAffirmationWaiting(true);
+
+        return;
+      }
+
+      showAffirmation(false);
+    }, [showAffirmation]),
+    pickAffirmation: useCallback(() => {
+      showAffirmation(true);
+    }, [showAffirmation]),
+    closeAffirmation: useCallback(() => {
+      if (stage.kind === 'affirmation' && stage.fromJournal) {
+        // Straight back, the journal's filter and place kept as they were.
+        setStage({ kind: 'history' });
+
+        return;
+      }
+
+      setStage({ kind: 'idle' });
+      reloadHome();
+    }, [reloadHome, stage]),
+    keepAffirmation: useCallback(
+      (choice: AffirmationChoice, frequency: AffirmationFrequency) => {
+        void dependencies.keepAffirmation
+          .keep(choice, frequency)
+          .then(setKeptAffirmation)
+          .catch(() => undefined);
+      },
+      [dependencies.keepAffirmation],
+    ),
+    keptAffirmation,
+    leaveSaved: useCallback(() => {
+      setStage({ kind: 'idle' });
+      reloadHome();
+
+      if (!reviewDue.current) {
+        return;
+      }
+
+      reviewDue.current = false;
+      setTimeout(() => {
+        void dependencies.askForReview.ask().catch(() => undefined);
+      }, REVIEW_AFTER_HOME_MS);
+    }, [reloadHome, dependencies.askForReview]),
     history,
     recorded,
     journalFilter,

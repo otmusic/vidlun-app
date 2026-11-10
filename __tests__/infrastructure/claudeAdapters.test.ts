@@ -155,6 +155,49 @@ describe('ClaudeNarrativeGenerator', () => {
     expect(narrative).toBe('Calmer mornings, tense evenings.');
   });
 
+  /*
+   * From the owner's September (2026-11-06): the model handed back words
+   * like "appeared" and "health" with a space before the Ukrainian
+   * apostrophe, which reads as a typo in a paragraph about someone's month.
+   */
+  it('joins an apostrophe the model split off its word', async () => {
+    const split = '\u0437 \u02bc\u044f\u0432\u0438\u043b\u0430\u0441\u044c, \u0437\u0434\u043e\u0440\u043e\u0432 \u02bc\u044f';
+    const joined = '\u0437\u02bc\u044f\u0432\u0438\u043b\u0430\u0441\u044c, \u0437\u0434\u043e\u0440\u043e\u0432\u02bc\u044f';
+    const client = new FakeMessagesClient(textReply(split));
+
+    expect(await new ClaudeNarrativeGenerator(client).generate([entry('a', 27, 5)])).toBe(joined);
+  });
+
+  it('leaves a quotation mark after a space where it is', async () => {
+    const client = new FakeMessagesClient(textReply("A word in 'quotes' stays."));
+
+    expect(await new ClaudeNarrativeGenerator(client).generate([entry('a', 27, 5)])).toBe(
+      "A word in 'quotes' stays.",
+    );
+  });
+
+  it('asks for a short month in plain words, not a story', async () => {
+    const client = new FakeMessagesClient(textReply('A month.'));
+
+    await new ClaudeNarrativeGenerator(client).generate([entry('a', 27, 5)]);
+
+    const system = JSON.stringify(client.requests[0]?.system);
+
+    expect(system).toMatch(/plain/i);
+    expect(system).toMatch(/no metaphors/i);
+  });
+
+  it('asks for a person talking about a life, not a report about data', async () => {
+    const client = new FakeMessagesClient(textReply('A month.'));
+
+    await new ClaudeNarrativeGenerator(client).generate([entry('a', 27, 5)]);
+
+    const system = JSON.stringify(client.requests[0]?.system);
+
+    expect(system).toMatch(/not a report/i);
+    expect(system).toMatch(/never mention entries/i);
+  });
+
   it('uses the stronger model without paying it to deliberate', async () => {
     const client = new FakeMessagesClient(textReply('A month.'));
 

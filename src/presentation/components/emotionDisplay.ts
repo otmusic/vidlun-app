@@ -1,6 +1,6 @@
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { isOwnWord, ownWordId, ownWordText } from '@/domain/entities/OwnWord';
-import { emotionIdForLabel, emotionKey, type Translate } from '@/i18n';
+import { createTranslator, emotionIdForLabel, emotionKey, localeOfText, type Translate } from '@/i18n';
 
 import type { Theme } from '../theme/ThemeProvider';
 import { toneFor } from './emotionTone';
@@ -13,6 +13,20 @@ import { toneFor } from './emotionTone';
  */
 export function emotionLabel(id: string, t: Translate): string {
   return isOwnWord(id) ? ownWordText(id) : t(emotionKey(id));
+}
+
+/**
+ * The translator an entry's emotions are named with: the language the entry
+ * was said or typed in, whatever language the app is in (owner's word,
+ * 2026-11-04). Someone who speaks Ukrainian into a phone set to English
+ * names their feelings in Ukrainian, and the words beside their sentence
+ * should be the ones they would have used. Only for one entry's own words: a
+ * screen that counts across entries mixes languages, so it keeps the app's.
+ */
+export function emotionWordsIn(text: string, t: Translate): Translate {
+  const spoken = localeOfText(text);
+
+  return spoken === null ? t : createTranslator(spoken);
 }
 
 /**

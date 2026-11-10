@@ -264,9 +264,9 @@ always pass:**
 id, createdAt, source: 'voice' | 'text',
 rawTranscript, cleanTranscript,
 mood: MoodScore,
-emotionIds: readonly string[],           // max 4, what the user kept
-selfEmotionIds: readonly string[],       // max 4, named before Vidlun answered
-proposedEmotionIds: readonly string[],   // max 4, what Vidlun proposed
+emotionIds: readonly string[],           // max 6, what the user kept
+selfEmotionIds: readonly string[],       // max 6, named before Vidlun answered
+proposedEmotionIds: readonly string[],   // max 4, what Vidlun proposed (6 stored at most)
 contextTags: readonly string[],
 observation: string | null,
 confidence: Confidence,
@@ -539,7 +539,7 @@ provider.
 `MoodScore`, `Confidence`, `Emotion`, `EmotionVocabulary`, `MoodEntry`, domain
 errors, all port interfaces. Vocabulary seed data (ids and metadata only).
 **Done when:** domain tests cover invariants, hierarchy traversal, depth
-lifting, immutability, and the 4-emotion limit at ≥95% lines.
+lifting, immutability, and the emotion limit (4 until 2026-11-10, 6 since) at ≥95% lines.
 
 ### M2 — Use cases
 `CreateVoiceEntry`, `ConfirmEntry`, `ReviseEntry`, `GetWeekSummary`.

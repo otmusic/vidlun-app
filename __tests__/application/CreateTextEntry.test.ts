@@ -48,6 +48,24 @@ describe('CreateTextEntry', () => {
     expect(entry.rawTranscript).toBe('Cooked dinner.');
   });
 
+  /*
+   * The entry holds six since 2026-11-10, but the room is for what the
+   * person names: Vidlun's own answer still stops at four.
+   */
+  it('keeps no more than four of the words the model proposes', async () => {
+    const six = vocabulary
+      .all()
+      .filter((emotion) => emotion.isProposableByAi)
+      .slice(0, 6)
+      .map((emotion) => emotion.id);
+    const { subject } = useCase(proposal({ emotionIds: six }));
+
+    const { draft: entry } = await subject.execute('A long day with a lot in it.');
+
+    expect(six).toHaveLength(6);
+    expect(entry.emotionIds).toEqual(six.slice(0, 4));
+  });
+
   it('refuses an empty note', async () => {
     const { subject } = useCase(proposal());
 

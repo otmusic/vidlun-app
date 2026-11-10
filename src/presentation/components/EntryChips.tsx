@@ -7,7 +7,7 @@ import { type Translate } from '@/i18n';
 import { AppText } from './AppText';
 import { Chip } from './Chip';
 import { useTheme } from '../theme/ThemeProvider';
-import { emotionLabel, emotionTint } from './emotionDisplay';
+import { emotionLabel, emotionTint, emotionWordsIn } from './emotionDisplay';
 
 /**
  * What Vidlun heard, as chips. Shared by the card and the entry it becomes, so
@@ -36,7 +36,7 @@ export function EntryChips(props: {
           {props.entry.emotionIds.map((id) => (
             <Chip
               key={id}
-              label={emotionLabel(id, props.t)}
+              label={emotionLabel(id, emotionWordsIn(props.entry.cleanTranscript, props.t))}
               color={emotionTint(id, props.vocabulary, theme)}
             />
           ))}
