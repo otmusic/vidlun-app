@@ -13,6 +13,12 @@ A voice journal for feelings. You speak, the app transcribes on the phone
 itself, and a language model proposes names for what was said and once a month
 writes a piece about your month.
 
+Speech is recognised by Parakeet Ultra from Moondream, a further-trained
+version of NVIDIA's Parakeet TDT 0.6B v3. Both are released under the Creative
+Commons Attribution 4.0 licence (<https://creativecommons.org/licenses/by/4.0/>);
+the app carries Parakeet Ultra converted to another file format and compressed
+to 4 bits.
+
 ## 2. This is not a medical service
 
 **Vidlun does not diagnose, does not treat, and does not replace a doctor,
