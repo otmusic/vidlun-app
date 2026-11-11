@@ -75,6 +75,7 @@ import { AsyncStorageMilestones } from '../infrastructure/persistence/AsyncStora
 import { AsyncStorageReviewAsks } from '../infrastructure/review/AsyncStorageReviewAsks';
 import { AsyncStorageKeptAffirmations } from '../infrastructure/affirmations/AsyncStorageKeptAffirmations';
 import { ExpoReviewPrompt } from '../infrastructure/review/ExpoReviewPrompt';
+import { requireOptionalNativeModule } from 'expo';
 import { AppleStoreListing } from '../infrastructure/store/AppleStoreListing';
 import { FeedbackOutbox } from '../infrastructure/feedback/FeedbackOutbox';
 import { ProxyFeedbackSender } from '../infrastructure/feedback/ProxyFeedbackSender';
@@ -356,7 +357,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     askForReview: new AskForReview(
       repository,
       new AsyncStorageReviewAsks(AsyncStorage),
-      new ExpoReviewPrompt(),
+      new ExpoReviewPrompt((name) => requireOptionalNativeModule(name) !== null),
       installedVersion ?? 'unknown',
     ),
     checkForUpdate: new CheckForUpdate(new AppleStoreListing(APP_STORE_ID), installedVersion),
