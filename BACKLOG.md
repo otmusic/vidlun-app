@@ -631,12 +631,23 @@ that app is a Debug native build from 2026-09-27 (pods compiled without
 optimisation), so only a Release build on a phone can say what the wait
 will be.
 
-Not done yet: no build carries it. Switching means `SPEECH_MODEL`, the
-file app.json hands the plugin, the Xcode resource reference (four
-places), and a way to make the file again — `scripts/fetch-model.sh`
-can no longer download it, since nobody hosts our conversion. CC-BY-4.0
-asks for credit to Moondream and NVIDIA; the app credits neither today,
-and v3 already needed NVIDIA's.
+**In the build since 1.10 (55), by the owner's word the same evening.**
+`SPEECH_MODEL` is `PARAKEET_ULTRA_Q4_0`; app.json hands the plugin
+`ggml-parakeet-ultra-0.6b-q4_0.bin`; the Xcode resource reference was
+renamed in place (seven mentions on four lines). Nobody hosts our
+conversion, so `scripts/fetch-model.sh` now makes the file from pinned
+inputs — v3 q8_0 at ggml-org rev 35156454 as the template, Ultra's
+safetensors and tokenizer at rev 73175eb7 — with
+`scripts/convert-parakeet-ultra.py` (numpy, safetensors) and whisper.cpp
+v1.9.1's `parakeet-quantize` (PARAKEET_QUANTIZE), and refuses a result
+that is not the shipped file (sha256 e7d2561b…d49f, 355,615,679 bytes);
+run end to end once and it reproduced it. The terms (§1) now credit
+Moondream and NVIDIA under CC BY 4.0, which v3 already called for. The
+archive carries only the Ultra file and the app is 382 MB on disk, down
+from 681.
+Uploaded 2026-11-11 18:30 ("Upload succeeded", app and widget 1.10 (55)),
+for the owner to try on the phone from TestFlight: the wait after the
+stop and the words, before anything is submitted.
 
 ---
 
