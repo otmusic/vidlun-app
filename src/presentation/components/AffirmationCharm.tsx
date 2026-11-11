@@ -1,7 +1,10 @@
+import { useId } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, Ellipse, G, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import type { AffirmationLook } from '@/domain/entities/KeptAffirmation';
+
+import { mix } from './colourMix';
 
 export type CharmShape = 'circle' | 'cloud' | 'flower' | 'heart' | 'star';
 
@@ -114,14 +117,50 @@ export function CharmMark(props: {
   readonly charm: Charm;
   readonly tint: CharmTint;
   readonly size: number;
+  /**
+   * A little roundness (owner's ask, 2026-11-11, to look at): lit from the
+   * upper left, a soft gloss there, and the colour deepening toward the
+   * lower right, so the shape reads as a soft object rather than a sticker.
+   */
+  readonly depth?: boolean;
 }): React.JSX.Element {
   const { shape, glyph } = props.charm;
   const lower = props.size * FACE_SHIFT[shape];
+  // SVG references are by id, and five charms share one screen.
+  const id = useId().replace(/[^a-zA-Z0-9]/g, '');
 
   return (
     <View style={{ width: props.size, height: props.size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={props.size} height={props.size} viewBox="0 0 100 100" style={StyleSheet.absoluteFill}>
-        <ShapeOf shape={shape} fill={props.tint.fill} />
+        {props.depth ? (
+          <>
+            <Defs>
+              {/* In the shape's own box, so a flower or a cloud is lit as one body, not as balls. */}
+              <RadialGradient
+                id={`body${id}`}
+                gradientUnits="userSpaceOnUse"
+                cx={38}
+                cy={32}
+                r={74}
+                fx={34}
+                fy={26}
+              >
+                <Stop offset="0" stopColor={mix(props.tint.fill, '#FFFFFF', 0.55)} />
+                <Stop offset="0.55" stopColor={props.tint.fill} />
+                <Stop offset="1" stopColor={mix(props.tint.fill, props.tint.deep, 0.38)} />
+              </RadialGradient>
+              <ClipPath id={`clip${id}`}>
+                <ShapeOf shape={shape} fill="#000000" />
+              </ClipPath>
+            </Defs>
+            <ShapeOf shape={shape} fill={`url(#body${id})`} />
+            <G clipPath={`url(#clip${id})`}>
+              <Ellipse cx={33} cy={26} rx={17} ry={9} fill="#FFFFFF" opacity={0.42} rotation={-28} originX={33} originY={26} />
+            </G>
+          </>
+        ) : (
+          <ShapeOf shape={shape} fill={props.tint.fill} />
+        )}
       </Svg>
       <View style={{ marginTop: lower }}>
         <Face face={glyph} color={props.tint.deep} size={props.size * 0.5} />
@@ -290,4 +329,27 @@ function ShapeOf(props: { readonly shape: CharmShape; readonly fill: string }): 
   }
 
   return <Circle cx={50} cy={50} r={48} fill={props.fill} />;
+}
+
+/**
+ * The soft shadow a floating charm casts on the page under it: its own deep
+ * colour, fading out from the middle. Drawn rather than left to the layer's
+ * shadow, whose blur is cut off at the layer's edge and leaves a faint ring.
+ */
+export function CharmShadow(props: { readonly color: string; readonly width: number }): React.JSX.Element {
+  const id = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const height = props.width * 0.24;
+
+  return (
+    <Svg width={props.width} height={height} viewBox="0 0 100 24">
+      <Defs>
+        <RadialGradient id={`ground${id}`} cx={50} cy={12} r={50} gradientUnits="userSpaceOnUse">
+          <Stop offset="0" stopColor={props.color} stopOpacity={0.34} />
+          <Stop offset="0.6" stopColor={props.color} stopOpacity={0.12} />
+          <Stop offset="1" stopColor={props.color} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Ellipse cx={50} cy={12} rx={50} ry={12} fill={`url(#ground${id})`} />
+    </Svg>
+  );
 }

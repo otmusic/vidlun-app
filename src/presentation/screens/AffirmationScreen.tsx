@@ -11,6 +11,7 @@ import {
   CHARM_SHAPES,
   CHARM_TINT_COUNT,
   CharmMark,
+  CharmShadow,
   charmOf,
   charmTint,
   type Charm,
@@ -31,6 +32,18 @@ const POP_STAGGER_MS = 80;
 const BLOOM_START = 0.55;
 /** The kept one has no shape on screen to grow out of, so it grows from the middle. */
 const KEPT_BLOOM_SIZE = 120;
+/** How long one rise and fall takes; each of the five gets its own, so they never move as one. */
+const FLOAT_MS = 3_600;
+/** How far a shape drifts, as a share of its size: enough to be alive, too little to chase. */
+const FLOAT_LIFT = 0.045;
+/** A slow sway either way, in degrees. */
+const FLOAT_SWAY = 2.5;
+/**
+ * The shapes lit and glossed, with a soft shadow under them: "a little 3D",
+ * chosen by the owner over the flat ones after seeing both float
+ * (2026-11-11).
+ */
+const CHARMS_IN_DEPTH = true;
 
 
 const CAPTIONS: Readonly<Record<AffirmationFrequency, TranslationKey>> = {
@@ -215,6 +228,7 @@ function FivePicks(props: {
                     label={t('affirmation.card', { n: at + 1 })}
                     hidden={picked !== null}
                     isDark={theme.isDark}
+                    depth={CHARMS_IN_DEPTH}
                     onPick={(target) => {
                       pick(at, target);
                     }}
@@ -243,6 +257,12 @@ function FivePicks(props: {
  * was thrown and leaning a little, popping in a little after the one before.
  * Picked or not, all five fade once a choice is made, and the colour that
  * grows takes over from there.
+ *
+ * Once in, each one floats (owner's word, 2026-11-11): a slow rise and fall,
+ * a smaller drift sideways on a period of its own and a sway, so the five
+ * never move together. It is the one other continuous motion in the app
+ * besides the record button's rings (§7.5), by the owner's ask, and it
+ * stands still under Reduce Motion.
  */
 function Choice(props: {
   readonly index: number;
@@ -251,13 +271,54 @@ function Choice(props: {
   readonly label: string;
   readonly hidden: boolean;
   readonly isDark: boolean;
+  readonly depth: boolean;
   readonly onPick: (target: View | null) => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const target = useRef<View>(null);
   const pop = useRef(new Animated.Value(theme.reduceMotion ? 1 : 0)).current;
   const fade = useRef(new Animated.Value(1)).current;
+  // Each starts at a different point of its swing, so none of them sets off from rest together.
+  const rise = useRef(new Animated.Value(props.index % 2 === 0 ? -1 : 1)).current;
+  const drift = useRef(new Animated.Value(props.index % 3 === 0 ? 1 : -1)).current;
   const { index, hidden } = props;
+  const tint = charmTint(props.charm.tint, props.isDark);
+  const lift = props.spot.size * FLOAT_LIFT;
+
+  useEffect(() => {
+    if (theme.reduceMotion) {
+      return;
+    }
+
+    const swing = (value: Animated.Value, ms: number, from: number): Animated.CompositeAnimation =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(value, {
+            toValue: -from,
+            duration: ms / 2,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(value, {
+            toValue: from,
+            duration: ms / 2,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      );
+    const period = FLOAT_MS + index * 430;
+    const floating = Animated.parallel([
+      swing(rise, period, index % 2 === 0 ? -1 : 1),
+      swing(drift, period * 1.6, index % 3 === 0 ? 1 : -1),
+    ]);
+
+    floating.start();
+
+    return () => {
+      floating.stop();
+    };
+  }, [drift, index, rise, theme.reduceMotion]);
 
   useEffect(() => {
     if (theme.reduceMotion) {
@@ -302,16 +363,46 @@ function Choice(props: {
         height: props.spot.size,
       }}
     >
+      {props.depth ? (
+        /*
+         * On the page under it, following it sideways: smaller and fainter
+         * as it rises, fuller as it sinks, which is most of what makes it
+         * read as floating rather than sliding.
+         */
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: props.spot.size * 0.15,
+            top: props.spot.size * 0.9,
+            opacity: Animated.multiply(Animated.multiply(pop, fade), rise.interpolate({ inputRange: [-1, 1], outputRange: [0.55, 1] })),
+            transform: [
+              { translateX: drift.interpolate({ inputRange: [-1, 1], outputRange: [-lift / 2, lift / 2] }) },
+              { scale: rise.interpolate({ inputRange: [-1, 1], outputRange: [0.8, 1] }) },
+            ],
+          }}
+        >
+          <CharmShadow color={tint.deep} width={props.spot.size * 0.7} />
+        </Animated.View>
+      ) : null}
       <Animated.View
         style={{
           opacity: Animated.multiply(pop, fade),
           transform: [
+            { translateY: rise.interpolate({ inputRange: [-1, 1], outputRange: [-lift, lift] }) },
+            { translateX: drift.interpolate({ inputRange: [-1, 1], outputRange: [-lift / 2, lift / 2] }) },
             { scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) },
             { rotate: `${props.spot.turn}deg` },
+            {
+              rotate: drift.interpolate({
+                inputRange: [-1, 1],
+                outputRange: [`${-FLOAT_SWAY}deg`, `${FLOAT_SWAY}deg`],
+              }),
+            },
           ],
         }}
       >
-        <CharmMark charm={props.charm} tint={charmTint(props.charm.tint, props.isDark)} size={props.spot.size} />
+        <CharmMark charm={props.charm} tint={tint} size={props.spot.size} depth={props.depth} />
       </Animated.View>
     </Pressable>
   );
