@@ -2,7 +2,7 @@
   "expo": {
     "name": "Vidlun",
     "slug": "vidlun",
-    "version": "1.9",
+    "version": "1.10",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -15,7 +15,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "54",
+      "buildNumber": "55",
       "appleTeamId": "M3K99W5FFQ"
     },
     "android": {
@@ -57,7 +57,7 @@
       [
         "./plugins/withBundledModel",
         {
-          "file": "assets/model/ggml-parakeet-tdt-0.6b-v3-q8_0.bin"
+          "file": "assets/model/ggml-parakeet-ultra-0.6b-q4_0.bin"
         }
       ]
     ],
