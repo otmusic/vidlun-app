@@ -498,6 +498,274 @@ to drop below what whisper.rn gives.
 
 ---
 
+## 1d″. A better or smaller model? — surveyed a third time 2026-11-10
+
+Asked by the owner after 1.9 (54): is there a better recogniser for
+Ukrainian and Russian, and could the app get smaller? The app ships
+Parakeet TDT 0.6B v3 q8_0 (669 MB) inside the bundle, about 700 MB
+installed.
+
+**The size is already ours to cut.** §1c measured the 4-bit files on the
+16 labelled takes: q4_0 (356 MB) and q4_k (416 MB) came out level with
+q8_0 (mean WER 0.155 / 0.154 / 0.212; Ukrainian mean 0.150 / 0.118 /
+0.260). q8_0 went back in for 1.2 (39) only so the phone would read with
+exactly what 1.0 and 1.1 had read with. q4_k would take the app to about
+440 MB, q4_0 to about 390, with no new code.
+
+**The one real candidate: Parakeet Ultra** (Moondream, 22 Sept 2026,
+CC-BY-4.0, `moondream/parakeet-ultra`). A post-trained v3: same
+architecture, tokenizer and 0.6 B parameters, plus a small voice-activity
+head on the encoder's subsampler; punctuation and casing as the parent's.
+FLEURS, Moondream's card (v3 → Ultra): Ukrainian 5.94 → 4.75, Russian
+5.91 → 5.21; Whisper Notes' own run: 6.59 → 5.11 and 6.99 → 5.72. Not the
+same pipeline as our takes, but both agree. Published as safetensors for
+Moondream's Photon runtime; no GGUF for whisper.cpp/whisper.rn is named.
+Worth a try because whisper.rn's loader maps tensors by name for exactly
+this architecture: convert to GGUF the way `ggml-org/parakeet-GGUF` was,
+drop or ignore the VAD head, quantise to q4, measure. If it loads and
+holds, a 4-bit Ultra would be smaller than today's model and more
+accurate.
+
+**Looked at and not for us:**
+- **QVAC TranscribePsy-250M-EU** (Tether, 14 Oct 2026, Apache-2.0): a
+  254 M FastConformer-TDT pruned and distilled from Parakeet v3, 25
+  languages with uk and ru. Common Voice WER Ukrainian 41.70, Russian
+  14.62 (Whisper-small 46.62 / 16.42); quantised phone builds exist only
+  for the 8-language EU-sub, through its own engine. Too weak on
+  Ukrainian, and no runtime we have.
+- **Meta Omnilingual ASR CTC-300M**: community CoreML/MLX ports at
+  193-342 MB, but Common Voice Ukrainian 52.84 and Russian 32.45 in the
+  same table. CTC, no whisper.rn path.
+- **GigaAM Multilingual** (Sber, InterSpeech 2026, MIT, 220 M / 600 M):
+  Russian, English, Kazakh, Kyrgyz, Uzbek. No Ukrainian.
+- **Phonon 2 / 2.5** (Fermion): Parakeet v3 derivatives; Phonon 2 is
+  English only, 2.5 lists Ukrainian and Russian but publishes no size or
+  GGUF we could find.
+- **Parakeet Redux** (Moondream's ternary sibling, 178 MB): the size is
+  tempting, but per-language results are mixed against v3 and ternary
+  weights have no whisper.rn path. Watch, do not chase.
+- **Apple SpeechAnalyzer**: still no Ukrainian or Russian on any list
+  found for iOS 27; `supportedLocales` on the phone is the only proof.
+- **whisper.rn 0.8.0-rc.0 to rc.3** (to 9 Nov 2026): vendoring, VAD,
+  realtime fixes; no new architectures, nothing for Parakeet.
+
+**The measuring kit is gone.** `scripts/transcription-benchmark.mjs`
+remains, but `~/vidlun-whisper` (the labelled takes, `transcripts.tsv`,
+`parakeet-cli` and the model files) is no longer on this Mac. Any of the
+above is decided on numbers only once the takes come back from a backup,
+or 15-20 new ones are recorded and written out.
+
+---
+
+## 1d⁗. A smaller model on the phone: Ultra converted, 4-bit measured — 2026-11-11
+
+After server recognition was taken back out (§1d‴), the owner asked to
+try a smaller on-device model instead.
+
+**Parakeet Ultra in whisper.rn's format, made here.** whisper.rn 0.7.3
+carries whisper.cpp 1.9.1's `parakeet.cpp`, which reads the ggml layout of
+`ggml-org/parakeet-GGUF`. Ultra (moondream/parakeet-ultra at
+73175eb7aeb0d82f1e2a6b53b3aabc10a90bcd0b, safetensors sha256
+c9608f36…17dc) was converted with a script of our own that takes the
+header (hparams, mel filterbank, STFT window, TDT durations, vocabulary)
+and the tensor list from the v3 q8_0 file and fills in Ultra's weights,
+renaming the HF transformers layout to NeMo's and applying the official
+converter's two transforms (LSTM bias_ih folded into bias_hh, gates
+[i,f,g,o] → [i,f,o,g]). Checks: Ultra's 8192 tokens equal v3's in order;
+only the six `vad_head` tensors are left out; each of the 721 tensors is
+close to v3's (cosine median 1.0000, lowest 0.954 on the last layer's
+norm bias), which a wrong name or gate order would break. Quantised with
+whisper.cpp v1.9.1's `parakeet-quantize` (built by the owner; building it
+from here was refused by the harness as external code): from f32 the
+files come out byte-for-byte the size of ggml-org's (q8_0 668,757,119;
+q4_k 415,611,879); from f16 the K-quants do not load ("embed.weight has
+wrong size"), because the tensors whose 640-wide rows K-quants cannot take
+stay in the source type and the loader wants f32.
+
+**Measured with `parakeet-cli` (v1.9.1, Mac) on 27 synthetic takes** —
+macOS voices Lesya and Milena, 12 journal-style sentences clean and with
+room noise at 12 dB SNR, plus the three from §1d‴. The labelled real takes
+are still gone, so this shows whether anything breaks, not which is best:
+
+| model | MB | WER all | clean | noisy | uk | ru | mixed |
+|---|---|---|---|---|---|---|---|
+| v3 q8_0 (ships) | 669 | 0.131 | 0.114 | 0.152 | 0.089 | 0.080 | 0.327 |
+| v3 q4_k | 416 | 0.120 | 0.113 | 0.129 | 0.099 | 0.042 | 0.294 |
+| v3 q4_0 | 356 | 0.122 | 0.097 | 0.152 | 0.065 | 0.132 | 0.277 |
+| Ultra q8_0 | 669 | 0.149 | 0.136 | 0.165 | 0.094 | 0.132 | 0.338 |
+| Ultra q6_k | 573 | 0.137 | 0.126 | 0.152 | 0.084 | 0.121 | 0.321 |
+| Ultra q5_k | 492 | 0.136 | 0.128 | 0.145 | 0.079 | 0.121 | 0.327 |
+| Ultra q5_0 | 434 | 0.147 | 0.134 | 0.162 | 0.091 | 0.137 | 0.327 |
+| Ultra q4_k | 416 | 0.149 | 0.133 | 0.169 | 0.090 | 0.137 | 0.344 |
+| Ultra q4_0 | 356 | 0.110 | 0.101 | 0.121 | 0.014 | 0.164 | 0.321 |
+
+Everything is within a word or two per take, and the models mostly make
+the same mistakes ("Поругалась братом из ерунды" from all of them). No
+cliff at four bits, again (§1c). Ultra shows none of its FLEURS gain here:
+its Russian loses one word every time ("экзаменно" for "экзамен на"),
+and its Ukrainian is level. Synthetic speech cannot settle Ultra against
+v3; real voices have to, read by every model from the same audio.
+
+The files, the converter (`tools/convert_ultra.py`), the takes and the
+whisper.cpp build are in the session scratchpad `shrink/`, which is
+temporary.
+
+**The owner's own voice, 2026-11-11 evening** — seven takes recorded in
+the simulator (6.7-23 s, Ukrainian, Russian, mixed), every model reading
+the same audio with `parakeet-cli`. The current v3 q8_0 lost the second
+half of a fast Russian take, dropped a closing "Довольна" and wrote
+"Отак" for "А так" and "на читалася" for "начиталася"; every Ultra file
+heard all of those, Ultra q4_0 with the most sensible punctuation. v3
+q4_0 dropped whole phrases three times ("пасаж. Пасаж", the first half of
+the Russian take, "Якось страшно за майбутнє"); v3 q4_k sat level with
+q8_0, misses included. Ultra's quirks: numbers as digits ("10, 11" for
+"десятий, одинадцятий") and sentences joined with commas. **Ultra q4_0
+(356 MB) was the best reader of the six on real speech**, and the owner
+put it into the simulator app to live with (copied over the bundled
+q8_0 file, same name).
+
+Speed: Ultra and v3 run alike; on the Mac's CPU (`-ng -t 4`, three takes,
+52 s of audio) q4_0 took 1.96 s against 2.79 s for q8_0. In the simulator
+Ultra q4_0 read at ~0.19 s per second of audio against ~0.10 for q8_0, but
+that app is a Debug native build from 2026-09-27 (pods compiled without
+optimisation), so only a Release build on a phone can say what the wait
+will be.
+
+Not done yet: no build carries it. Switching means `SPEECH_MODEL`, the
+file app.json hands the plugin, the Xcode resource reference (four
+places), and a way to make the file again — `scripts/fetch-model.sh`
+can no longer download it, since nobody hosts our conversion. CC-BY-4.0
+asks for credit to Moondream and NVIDIA; the app credits neither today,
+and v3 already needed NVIDIA's.
+
+---
+
+## 1d‴. Our own transcriber on the proxy — begun 2026-11-11
+
+The owner's word after §1d″ (2026-11-10): send the take to a server of our
+own that keeps nothing and transcribes it there, and bring that server up on
+Cloudflare Containers with Parakeet Ultra. What it buys: the 669 MB model
+leaves the app (about 45 MB installed) and the full model runs. What it
+costs is in the answer given before building it: the onboarding promise
+that the voice never leaves the phone, offline transcription, and a wait
+that depends on the connection. **The app does not use it yet.** Moving the
+app is a separate step, with the privacy copy rewritten first.
+
+**Built (server/):** `transcriber/` is a linux/amd64 image with the int8
+ONNX files of Masterx/parakeet-tdt-0.6b-ultra-onnx (istupakov's onnx-asr
+graphs of Parakeet v3 carrying Ultra's weights, mapping validated to 1.3e-7;
+CC-BY-4.0) at a pinned commit and sha256, `onnx-asr` 0.12.0, onnxruntime
+1.31.1 with telemetry off, and a standard-library HTTP server that reads
+WAV in memory and logs nothing. The worker gained `POST /v1/transcribe`
+behind the same App Attest token and rate limit as `/v1/messages`, a
+`Transcriber` Container class (`standard-3`, ten minutes' sleep, no
+internet) and a probe header that works only while the
+`TRANSCRIBE_PROBE_KEY` secret exists. `@cloudflare/containers` 0.3.7 and
+`@cloudflare/workers-types` (dev) were added to server/package.json;
+Colima, the Docker CLI and buildx to the owner's Mac (owner's choice).
+
+**Measured locally** on synthetic speech (macOS voices Lesya and Milena),
+under Rosetta on two cores: Ukrainian, Russian and a mixed sentence came
+back almost word for word ("бог завал" for "був завал" the one slip, and
+"честно говоря" spelled in Ukrainian letters). 1.6 GiB of memory. Speed is
+not representative there (no AVX): 13.5 s of speech in 7.9 s, 54 s in 51 s.
+
+**Deployed 2026-11-11.** The first deploy put worker 877f4cce live with
+the route and the binding (old routes checked) but no container: Containers
+need **Workers Paid**, which the owner took the same day. The image then
+failed to upload three times (broken pipe on the big layers, after 21 to
+137 s), so the encoder now ships in six ~110 MB layers joined at start, and
+Colima pushes two layers at a time; the next deploy went through first try:
+worker 72c57766, container application `vidlun-proxy-transcriber`
+(a036ec28). Setting the probe secret from this session was refused by the
+harness (secrets are the owner's), so `server/scripts/probe-transcriber.sh`
+does the whole check in the owner's terminal: a throwaway key, each take
+cold then warm, the secret deleted on exit, the printout also saved to
+`$TMPDIR/vidlun-probe-results.txt`.
+
+**Measured on Cloudflare** (owner's run, 2026-11-11 16:19, instance in
+cph01, standard-3, already warm from a run six minutes before — so no cold
+start in these numbers):
+
+| take | speech | in the model | end to end |
+|---|---|---|---|
+| Ukrainian | 13.5 s | 1.13-1.26 s | 1.9-2.2 s |
+| Russian | 6.6 s | 0.57 s | 0.9-1.0 s |
+| mixed | 8.6 s | 0.69 s | 1.1-1.3 s |
+| Ukrainian ×4 | 54.1 s | 4.7-4.8 s | 5.7-5.8 s |
+
+About 0.09 s of model time per second of speech, plus 0.3-0.9 s of
+upload and network from Ukraine. Words as on the Mac ("бог" for "був"
+again, a synthetic voice's "був"). So a typical 20 s take would wait about
+2.5 s after the stop, inside M4's budget, but the wait grows with the take,
+which §2's "transcribe while the person is still speaking" was written to
+stop: to keep it flat, send the take in pieces while it is being spoken.
+Not measured yet: a true cold start (after more than ten minutes idle), and
+real voices.
+
+**Taken out again the same evening (owner's word, 2026-11-11): recognition
+stays on the phone, the texts are as they were, and the next step is a
+smaller on-device model instead.** Everything below — the client, the
+notice, the copy — was removed from the app before any commit; the server
+side stays deployed and uncommitted until the owner decides about it. What
+was built and measured is kept here as the record.
+
+**The app sends its takes there, in pieces — built 2026-11-11, not shipped.**
+The owner's word the same evening: send the take in pieces while it is
+being recorded, and switch the app's transcription to the server.
+`ServerTranscriptionService` is told by the recorder where the take's file
+is the moment recording starts (`LiveTakeListener`), and looks at the
+growing WAV every second (expo-file-system's `FileHandle`, which asks the
+disk for the size each time). Once 12 s are waiting it cuts them at the
+quietest 120 ms between 6 s and the newest 0.3 s (never past 20 s), wraps
+the slice in a WAV header and sends it to `/v1/transcribe`; pieces go one
+at a time, in order. At the stop it reads the true size from the header
+and sends what is left, so the wait after the stop is one piece's, at most
+about 13 s of speech (~1.5-2 s warm), however long the take. A take
+nobody followed live (one parked across a relaunch) goes whole, in one
+request. A piece that failed is tried once more at the stop; if it fails
+again, `FallbackTranscriptionService` hands the whole take to the model on
+the phone, which is still bundled for exactly that. When a take starts,
+half a second of silence is sent to wake a sleeping container while the
+person talks. A cancelled take aborts its request in flight.
+
+`SPEECH_ON_SERVER` in src/di/container.ts switches it; it is on, and **no
+build goes to the store with it on until the onboarding and privacy copy
+stop saying the voice never leaves the phone** (CLAUDE.md §2). In the
+simulator, where App Attest does not run, the app reaches the transcriber
+with the probe key: `server/scripts/simulator-transcriber.sh open` (the
+owner's to run) sets a throwaway secret and writes it to
+.env.development.local, which only a development bundle reads, and
+`close` deletes both. Android records m4a, which this does not read, so
+there it falls back to the phone.
+
+**First real take through it — 2026-11-11 16:5x, simulator, owner's voice.**
+41.2 s of speech. Wake-up answered in 572 ms (the container was already
+warm, so still no cold start measured). Four pieces went while the owner
+was talking — 9.8, 9.6, 6.2 and 6.5 s, each read in 0.8-1.1 s — and the
+9.1 s tail after the stop took 1.28 s. **Stop to transcript: 1.28 s** for a
+41 s take, against about 4.5 s for the same take sent whole (the 54 s
+measurement above) and 3.3 s for a 32 s take on the phone's model in the
+simulator. The wait is now the last piece's, as §2 asks.
+
+**The copy says so — 2026-11-11, by the owner's word.** The onboarding's
+privacy line now says the audio goes to Vidlun's server, which only turns it
+into text and keeps nothing (checked on the SE at the largest
+non-accessibility text: it fits). The privacy policy gained §2.1 (the audio,
+for speech recognition: in pieces, Cloudflare-hosted, nothing written,
+on-device fallback) and lost "we physically cannot read them"; the old
+§2.1-2.4 are §2.2-2.5. The support page's "Where does my voice go?" was
+rewritten (and its "a year" is now thirteen months). In-app legal JSON and
+legal/site rebuilt; **nothing deployed**. Still to do before a build ships
+with `SPEECH_ON_SERVER` on: the policy's §8 promises to say so inside the app
+before such a change takes effect, and the onboarding reaches only new
+people, so existing ones need a notice; the policy's effective date; the
+landing page (site/src/copy.json still says the audio never leaves the
+phone, and its store keywords say on-device recognition); the design file's
+privacy line.
+
+---
+
 ## 1e. Gemini in front of Parakeet — built 2026-08-28
 
 The owner decided what §1d left open, and decided it both ways: **Gemini 3.5

@@ -130,6 +130,12 @@ speech pipeline must handle that. The codebase must not.
   record of what anyone wrote. Anything shipped in a bundle can be read out of
   it, and a key read out of it spends the owner's money — that is the whole of
   why it exists. Nothing else may move there without reopening this line.
+  **Reopened by the owner on 2026-11-10** for one thing: a transcriber
+  (Parakeet Ultra in a Cloudflare Container behind `/v1/transcribe`) that
+  keeps nothing and has no internet. The app does not send audio to it:
+  sending takes in pieces was built and tried on 2026-11-11 and taken out
+  the same evening by the owner's word — recognition stays on the phone.
+  BACKLOG §1d‴.
 - No state management library until a milestone actually needs one
 
 ---
@@ -694,7 +700,8 @@ end-to-end with speech recognition disabled.
 
 - Do not put any Cyrillic text in code files.
 - Do not use `localStorage` or `sessionStorage`.
-- Do not add cloud speech-to-text. Tried and removed on 2026-08-28, so this is
+- Do not add third-party cloud speech-to-text (our own keep-nothing
+  transcriber on the proxy is the owner's 2026-11-10 exception; §2). Tried and removed on 2026-08-28, so this is
   now a measured rule rather than an assumed one: the cost objection turned out
   to be out of date, and the rule survives on the other two grounds. Gemini was
   twice as slow as Parakeet on the phone, and where it was wrong it was wrong

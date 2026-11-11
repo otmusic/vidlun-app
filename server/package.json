@@ -3,9 +3,11 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@cloudflare/containers": "0.3.7",
     "node-app-attest": "^1.0.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20261110.1",
     "@types/node": "^26.4.0"
   }
 }

@@ -8,7 +8,12 @@
  * device keys: not identities, just proof that a caller is a genuine build
  * of this app on real Apple hardware.
  */
+import { getContainer } from '@cloudflare/containers';
+
 import { assertKey, issueChallenge, mintToken, readToken, register, type AttestStore } from './attest';
+import type { Transcriber } from './transcriber';
+
+export { Transcriber } from './transcriber';
 
 
 export interface Env {
@@ -24,6 +29,14 @@ export interface Env {
   readonly EMAIL: { send(message: FeedbackMail): Promise<unknown> };
   /** Where a person's note lands: the inbox behind support@vidlun.app, as a verified destination address. */
   readonly FEEDBACK_TO: string;
+  /** Parakeet Ultra in a container; see transcriber.ts. */
+  readonly TRANSCRIBER: DurableObjectNamespace<Transcriber>;
+  /**
+   * Lets the owner check the transcriber from a terminal, where there is no
+   * App Attest. Absent unless set with `wrangler secret put`, and deleted
+   * again after a check: with no secret, the door does not exist.
+   */
+  readonly TRANSCRIBE_PROBE_KEY?: string;
 }
 
 interface FeedbackMail {
@@ -53,6 +66,12 @@ const MAX_TOKENS_CEILING = 4096;
  * fits in a tenth of this. Anything larger is not this app talking.
  */
 const MAX_BODY_BYTES = 64 * 1024;
+
+/**
+ * The recorder's own ceiling: five minutes of 16 kHz, 16-bit mono WAV, and
+ * a little for the header. Anything longer is not a take from this app.
+ */
+const MAX_AUDIO_BYTES = 16_000 * 2 * 300 + 4_096;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -85,8 +104,12 @@ export default {
       return attest(path, request, env);
     }
 
-    if (path !== '/v1/messages' && path !== '/feedback') {
+    if (path !== '/v1/messages' && path !== '/feedback' && path !== '/v1/transcribe') {
       return problem(404, 'No such path.');
+    }
+
+    if (path === '/v1/transcribe' && (await isProbe(request, env))) {
+      return transcribe(request, env);
     }
 
     /*
@@ -104,6 +127,10 @@ export default {
 
     if (!limited.success) {
       return problem(429, 'Too many requests from this device.');
+    }
+
+    if (path === '/v1/transcribe') {
+      return transcribe(request, env);
     }
 
     const rawBody = await request.text();
@@ -151,6 +178,59 @@ export default {
     });
   },
 };
+
+/**
+ * A take in, its words out (owner's word, 2026-11-10). The audio is held in
+ * memory only for as long as the container needs to read it, and neither
+ * this worker nor the container writes it, or the words, anywhere.
+ *
+ * One named instance for now: a few people's entries a day keep one warm
+ * container busy for seconds, and a second would mostly mean a second cold
+ * start.
+ */
+async function transcribe(request: Request, env: Env): Promise<Response> {
+  const audio = await request.arrayBuffer();
+
+  if (audio.byteLength === 0 || audio.byteLength > MAX_AUDIO_BYTES) {
+    return problem(413, 'The body is empty or longer than a take.');
+  }
+
+  const container = getContainer(env.TRANSCRIBER, 'parakeet-ultra');
+
+  try {
+    const heard = await container.fetch(
+      new Request('http://transcriber/transcribe', {
+        method: 'POST',
+        headers: { 'content-type': 'audio/wav' },
+        body: audio,
+      }),
+    );
+
+    return new Response(heard.body, {
+      status: heard.status,
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+    });
+  } catch {
+    return problem(503, 'The transcriber is not ready; try again shortly.');
+  }
+}
+
+/** True only for the owner's terminal check, and only while its secret exists. */
+async function isProbe(request: Request, env: Env): Promise<boolean> {
+  const key = env.TRANSCRIBE_PROBE_KEY;
+  const given = request.headers.get('x-probe-key');
+
+  if (!key || !given) {
+    return false;
+  }
+
+  // Compared as digests, so the comparison takes the same time however close a guess is.
+  const [expected, actual] = await Promise.all(
+    [key, given].map(async (text) => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))),
+  );
+
+  return expected !== undefined && actual !== undefined && expected.every((byte, at) => byte === actual[at]);
+}
 
 /** What the caller may ask for, checked before any of it costs anything. */
 /**
