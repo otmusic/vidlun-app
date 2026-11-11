@@ -715,11 +715,16 @@ Not measured yet: a true cold start (after more than ten minutes idle), and
 real voices.
 
 **Taken out again the same evening (owner's word, 2026-11-11): recognition
-stays on the phone, the texts are as they were, and the next step is a
-smaller on-device model instead.** Everything below — the client, the
-notice, the copy — was removed from the app before any commit; the server
-side stays deployed and uncommitted until the owner decides about it. What
-was built and measured is kept here as the record.
+stays on the phone, the texts are as they were, and the next step was a
+smaller on-device model instead (§1d⁗).** Everything below — the client,
+the notice, the copy — was removed from the app before any commit. The
+server side was committed (e039768) and then **removed the same night, by
+the owner's word**: the proxy redeployed without the route or the binding
+(version ed99cc05, with a v2 migration deleting the `Transcriber` class),
+the container application `vidlun-proxy-transcriber` and its image
+deleted, `/v1/transcribe` answering 404. Workers Paid, taken only for
+Containers, is the owner's to keep or drop in the dashboard. What was
+built and measured is kept here as the record, and in git.
 
 **The app sends its takes there, in pieces — built 2026-11-11, not shipped.**
 The owner's word the same evening: send the take in pieces while it is

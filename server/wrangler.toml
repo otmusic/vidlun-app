@@ -35,22 +35,13 @@ destination_address = "alexanderkharchenko02@gmail.com"
 [vars]
 FEEDBACK_TO = "alexanderkharchenko02@gmail.com"
 
-# Parakeet Ultra on CPU behind /v1/transcribe (owner's word, 2026-11-10).
-# The image is built from transcriber/Dockerfile by `wrangler deploy`, which
-# needs a local Docker (Colima on the owner's Mac; see README.md).
-[[containers]]
-class_name = "Transcriber"
-image = "./transcriber/Dockerfile"
-# 2 vCPU and 8 GiB: the int8 model needs about 2 GiB, a five-minute take
-# more while it is read, and the second core halves the wait.
-instance_type = "standard-3"
-max_instances = 2
-
-[[durable_objects.bindings]]
-name = "TRANSCRIBER"
-class_name = "Transcriber"
-
+# A Parakeet transcriber ran here as a Container on 2026-11-11 and was taken
+# out the same evening (BACKLOG §1d‴). Its Durable Object class was created
+# by migration v1, so removing it takes a migration of its own.
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Transcriber"]
 
+[[migrations]]
+tag = "v2"
+deleted_classes = ["Transcriber"]
