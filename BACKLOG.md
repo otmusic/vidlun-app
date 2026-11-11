@@ -1803,8 +1803,10 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ## 3ψψψ+++++++++. Mood dots on the calendar, floating charms, a little volume — 2026-11-11
 
-All by the owner's word, seen in the simulator in both themes, not yet in a
-build.
+All by the owner's word, seen in the simulator in both themes. In **1.9
+(56)**, uploaded 2026-11-11 19:24 ("Upload succeeded") with Parakeet Ultra
+q4_0: the store version stays 1.9 (owner's word), since 1.9 was never put
+up for review; 1.10 (55) is superseded.
 
 - **The period calendar's dots are the day's mood** (`entryDays` now maps a
   local midnight to the day's average mood, as the week strip takes it;
