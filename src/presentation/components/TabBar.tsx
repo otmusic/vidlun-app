@@ -5,6 +5,7 @@ import { Circle, Path, Svg } from 'react-native-svg';
 import type { Translate, TranslationKey } from '@/i18n';
 
 import { useTheme } from '../theme/ThemeProvider';
+import { Volume } from './Volume';
 
 /** No search tab since 2026-10-13: the journal filters by emotion instead (owner's word). */
 export type Tab = 'home' | 'journal' | 'me';
@@ -76,6 +77,7 @@ export function TabBar(props: {
                 justifyContent: 'center',
               }}
             >
+              {selected ? <Volume radius="round" strength={theme.isDark ? 0.45 : 0.36} gloss={0.3} /> : null}
               <TabGlyph
                 tab={tab}
                 color={selected ? theme.palette.onSolid : theme.palette.inkSoft}

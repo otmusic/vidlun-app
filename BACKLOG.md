@@ -1801,6 +1801,42 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++. Mood dots on the calendar, floating charms, a little volume — 2026-11-11
+
+All by the owner's word, seen in the simulator in both themes, not yet in a
+build.
+
+- **The period calendar's dots are the day's mood** (`entryDays` now maps a
+  local midnight to the day's average mood, as the week strip takes it;
+  `toneFor` colours it; a day whose entries gave no mood keeps a grey dot).
+  The days between a period's ends are sand (`palette.range`) instead of
+  lime, which read as one more good mood and was the record button's colour
+  (§7.1). On a picked end the dot carries a ring of `onSolid`.
+- **The five affirmation shapes float**: a slow rise and fall, a sideways
+  drift on a longer period and a sway, each on its own timing, standing
+  still under Reduce Motion. The second continuous motion in the app after
+  the record button's rings (§7.5), by the owner's ask.
+- **They have a little depth** (owner's choice over the flat ones, after
+  both were filmed): one radial light per shape in the shape's own box (per
+  element it lit a flower's petals as separate balls), a clipped gloss, and
+  a drawn shadow on the page that shrinks and fades as the shape rises. The
+  layer shadow was dropped: its blur is cut off at the layer's edge and left
+  a faint ring.
+- **A soft volume across the app, not loudly** ("не плоским, а під 3d,
+  не нав'язливо"): `Volume` lays light from the upper left, a gloss, a rim
+  and a shaded far edge over a rounded shape, a quarter softer than the
+  first try (`SOFTNESS`). On things one touches or that stand for the
+  person's doing — the record button (a dark pebble, faint gloss), the
+  week's days with entries (lifted, a shadow in the mood's colour; empty
+  days stay flat outlines), the streak and entry counts, the journal's
+  affirmation button, the chosen mood on the scale, the primary button and
+  the active tab. Cards, text, chips and secondary buttons stay flat (§7.7's
+  spirit). At night no shadows, less light, nothing glows (§7.6). A long
+  pill keeps its gloss level; `rotation`/`originX` pivot it, as a
+  `rotate(a x y)` transform did not.
+
+---
+
 ## 3ψψψ++++++++. The screen stays on while recording, six words an entry — 2026-11-10
 
 - **The bug** (owner's report): mid-entry the phone dimmed and locked itself,

@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { useTheme } from '../theme/ThemeProvider';
 import { AppText } from './AppText';
+import { Volume } from './Volume';
 
 /**
  * A count of what the person has done: the run of days on home, the entries
@@ -26,6 +27,7 @@ export function CountPill(props: { readonly value: number; readonly label: strin
         paddingRight: 12,
       }}
     >
+      <Volume radius="round" strength={theme.isDark ? 0.35 : 0.9} />
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.palette.accent }} />
       {/* The pill shares a row with a heading; past 1.2 the two no longer fit side by side. */}
       <AppText variant="numeric" maxScale={1.2} style={{ fontSize: 14 }}>

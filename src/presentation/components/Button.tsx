@@ -4,6 +4,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { MIN_TAP_TARGET } from '../theme/tokens';
 import { AppText } from './AppText';
 import { Icon, ICON_SIZE, type IconName } from './Icon';
+import { Volume } from './Volume';
 
 export interface ButtonProps {
   readonly label: string;
@@ -57,11 +58,27 @@ export function Button(props: ButtonProps): React.JSX.Element {
           paddingHorizontal: 20,
           paddingVertical: variant === 'ghost' ? 14 : 18,
           opacity: disabled ? 0.4 : pressed ? 0.9 : 1,
+          ...(variant === 'primary' && !disabled && !theme.isDark
+            ? {
+                shadowColor: theme.palette.solid,
+                shadowOpacity: 0.16,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 4 },
+              }
+            : {}),
           transform: [{ scale: pressed && !theme.reduceMotion ? 0.98 : 1 }],
         },
         props.style,
       ]}
     >
+      {/*
+        * The one primary button on a screen gets the record button's light
+        * (owner's word, 2026-11-11): a lit pill, a soft shadow by day. The
+        * secondary and ghost ones stay flat, so the primary still reads first.
+        */}
+      {variant === 'primary' && !disabled ? (
+        <Volume radius="round" strength={theme.isDark ? 0.45 : 0.36} gloss={0.3} />
+      ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {props.icon === undefined ? null : (
           <Icon name={props.icon} size={ICON_SIZE.inline} color={color} />

@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import type { Palette } from '../theme/tokens';
 import { MIN_TAP_TARGET } from '../theme/tokens';
+import { Volume } from './Volume';
 import { AppText } from './AppText';
 import { toneFor } from './emotionTone';
 
@@ -57,8 +58,23 @@ export function MoodScale(props: MoodScaleProps): React.JSX.Element {
                   opacity: selected ? 1 : 0.4,
                   borderWidth: selected ? 3 : 0,
                   borderColor: theme.palette[`${toneFor(point)}Soft` as keyof Palette],
+                  /*
+                   * The chosen mood stands up off the scale (owner's word,
+                   * 2026-11-11); the others stay flat and faint. A shadow by
+                   * day only, as everywhere (§7.6).
+                   */
+                  ...(selected && !theme.isDark
+                    ? {
+                        shadowColor: theme.palette[toneFor(point)],
+                        shadowOpacity: 0.35,
+                        shadowRadius: 4,
+                        shadowOffset: { width: 0, height: 2 },
+                      }
+                    : {}),
                 }}
-              />
+              >
+                {selected ? <Volume radius="round" strength={theme.isDark ? 0.4 : 1} /> : null}
+              </View>
             </Pressable>
           );
         })}

@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { Volume } from './Volume';
 import { charmTint, Face, type BloomOrigin, type Charm, type CharmTint } from './AffirmationCharm';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -61,6 +62,8 @@ export function AffirmationButton(props: {
         justifyContent: 'center',
       }}
     >
+      {/* A small sphere, kin to the charms it opens. */}
+      <Volume radius="round" strength={theme.isDark ? 0.35 : 0.9} />
       {props.picked === null ? (
         <BrightHead color={tint.deep} size={HEAD} />
       ) : (

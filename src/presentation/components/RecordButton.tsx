@@ -3,6 +3,7 @@ import { Animated, Easing, Pressable, View } from 'react-native';
 import { Path, Rect, Svg } from 'react-native-svg';
 
 import { useTheme } from '../theme/ThemeProvider';
+import { Volume } from './Volume';
 import { WaveMark } from './WaveMark';
 
 const BUTTON = 152;
@@ -50,6 +51,8 @@ export function RecordButton(props: {
           transform: [{ scale: pressed && !theme.reduceMotion ? 0.97 : 1 }],
         })}
       >
+        {/* A dark pebble rather than a printed disc; the light stays low, and nothing glows at night (§7.6). */}
+        <Volume radius="round" strength={theme.isDark ? 0.28 : 0.36} gloss={0.35} />
         <MicGlyph color={theme.palette.onRecord} />
         {/*
           * The mark sits under the microphone rather than beside it: the glyph

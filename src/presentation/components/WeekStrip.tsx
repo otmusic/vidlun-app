@@ -5,7 +5,9 @@ import type { Milestone } from '@/domain/entities/Milestone';
 import type { Locale } from '@/i18n';
 
 import { AppText } from './AppText';
+import { mix } from './colourMix';
 import { toneFor } from './emotionTone';
+import { Volume } from './Volume';
 import { useTheme } from '../theme/ThemeProvider';
 
 /**
@@ -54,11 +56,26 @@ export function WeekStrip(props: {
                 /* The drawing's own arithmetic: a third of the colour for the
                    ring, an eighth for the fill. */
                 borderColor: colour === null ? theme.palette.ink : `${colour}55`,
-                backgroundColor: colour === null ? 'transparent' : `${colour}1F`,
+                // Opaque, so the lift below has a shape to fall from.
+                backgroundColor: colour === null ? 'transparent' : mix(theme.palette.canvas, colour, 0.12),
                 alignItems: 'center',
                 justifyContent: 'center',
+                /*
+                 * A day with something in it stands up off the page a little
+                 * (owner's word, 2026-11-11); an empty day stays a flat outline.
+                 * No shadow at night, where depth is the lighter surface (§7.6).
+                 */
+                ...(colour === null || theme.isDark
+                  ? {}
+                  : {
+                      shadowColor: colour,
+                      shadowOpacity: 0.2,
+                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 3 },
+                    }),
               }}
             >
+              {colour === null ? null : <Volume radius={12} strength={theme.isDark ? 0.35 : 0.9} />}
               <View
                 style={{
                   width: 7,
