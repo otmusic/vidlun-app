@@ -25,7 +25,7 @@ import type { GetMonthSummary, MonthSummary } from '@/application/use-cases/GetM
 import type { GetPastMonths, PastMonth } from '@/application/use-cases/GetPastMonths';
 import type { StatsView } from '@/presentation/screens/StatsScreen';
 import type { JournalFocus } from '@/presentation/screens/journalFilter';
-import { entryDays } from '@/presentation/components/entryDays';
+import { entryDays, type EntryDays } from '@/presentation/components/entryDays';
 import { NothingWasSaidError } from '@/domain/errors/MoodEntryErrors';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import { Confidence } from '@/domain/value-objects/Confidence';
@@ -191,7 +191,7 @@ export type CaptureStage =
       /** The oldest entry there is, so the calendar offers nothing emptier. */
       readonly earliest: Date | null;
       /** Local midnights of the days with entries, dotted on the calendar. */
-      readonly entryDays: ReadonlySet<number>;
+      readonly entryDays: EntryDays;
     }
   | {
       readonly kind: 'detail';
@@ -1263,7 +1263,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       setStage((current) =>
         current.kind === 'vocabulary'
           ? { ...current, growth: null }
-          : { kind: 'vocabulary', growth: null, earliest: null, entryDays: new Set<number>() },
+          : { kind: 'vocabulary', growth: null, earliest: null, entryDays: new Map<number, number | null>() },
       );
 
       void Promise.all([

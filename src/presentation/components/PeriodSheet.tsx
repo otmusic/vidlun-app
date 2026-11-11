@@ -4,7 +4,8 @@ import { Pressable, View } from 'react-native';
 import type { Locale, Translate, TranslationKey } from '@/i18n';
 
 import { AppText } from './AppText';
-import { wroteOn } from './entryDays';
+import { moodOn, wroteOn, type EntryDays } from './entryDays';
+import { toneFor } from './emotionTone';
 import { ModalSheet, SheetClose } from './ModalSheet';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -65,7 +66,7 @@ export function PeriodSheet(props: {
   /** Nothing before the first entry is pickable — there is nothing there. */
   readonly earliest: Date;
   /** The days with entries, each dotted under its number. */
-  readonly entryDays: ReadonlySet<number>;
+  readonly entryDays: EntryDays;
   readonly locale: Locale;
   readonly t: Translate;
   readonly onApply: (period: Period) => void;
@@ -222,7 +223,7 @@ function Calendar(props: {
   readonly to: Date | null;
   readonly earliest: Date;
   readonly today: Date;
-  readonly entryDays: ReadonlySet<number>;
+  readonly entryDays: EntryDays;
   /** Read out after the date on a day with entries, since the dot is not. */
   readonly writtenLabel: string;
   readonly locale: Locale;
@@ -273,6 +274,8 @@ function Calendar(props: {
             const inside =
               props.from !== null && props.to !== null && day > props.from && day < props.to;
             const written = wroteOn(props.entryDays, day);
+            const mood = moodOn(props.entryDays, day);
+            const moodColour = mood === null ? theme.palette.inkSoft : theme.palette[toneFor(mood)];
 
             return (
               <View key={at} style={{ flex: 1, aspectRatio: 1, padding: 1.5 }}>
@@ -296,7 +299,7 @@ function Calendar(props: {
                     backgroundColor: edge
                       ? theme.palette.solid
                       : inside
-                        ? theme.palette.limeSoft
+                        ? theme.palette.range
                         : 'transparent',
                     opacity: outside ? 0.55 : 1,
                   }}
@@ -316,18 +319,22 @@ function Calendar(props: {
                   {written ? (
                     /*
                      * A dot under the number, as a phone's own calendar marks a
-                     * day with events. Ink rather than a mood colour: it says
-                     * only that something was written, and colour on this
-                     * screen already means an emotion.
+                     * day with events, in the day's mood (owner's word,
+                     * 2026-11-11), the week strip's colours. A day whose
+                     * entries gave no mood keeps a grey one. On a picked end
+                     * the dot carries a ring of the end's own ink, so it
+                     * reads on the dark circle in either theme.
                      */
                     <View
                       style={{
                         position: 'absolute',
-                        bottom: 5,
-                        width: 4,
-                        height: 4,
-                        borderRadius: 2,
-                        backgroundColor: edge ? theme.palette.onSolid : theme.palette.inkSoft,
+                        bottom: 4,
+                        width: edge ? 8 : 6,
+                        height: edge ? 8 : 6,
+                        borderRadius: 4,
+                        borderWidth: edge ? 1.5 : 0,
+                        borderColor: theme.palette.onSolid,
+                        backgroundColor: moodColour,
                       }}
                     />
                   ) : null}

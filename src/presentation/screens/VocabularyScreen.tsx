@@ -6,6 +6,7 @@ import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { type Locale, type Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
+import type { EntryDays } from '../components/entryDays';
 import { PeriodSheet, type Period } from '../components/PeriodSheet';
 import { RoundBack } from '../components/RoundBack';
 import { useDrawnSides } from '../hooks/useDrawnSides';
@@ -30,7 +31,7 @@ export function VocabularyScreen(props: {
   /** The first entry ever written. Nothing before it is worth offering. */
   readonly earliest: Date;
   /** The days with entries, which the calendar dots. */
-  readonly entryDays: ReadonlySet<number>;
+  readonly entryDays: EntryDays;
   readonly t: Translate;
   readonly onSeeWeek: () => void;
   readonly onPeriodChange: (period: Period) => void;

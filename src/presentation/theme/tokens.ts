@@ -25,6 +25,13 @@ export interface Palette {
   readonly lime: string;
   /** The same lime at fill strength, for a pill that must not shout. */
   readonly limeSoft: string;
+  /**
+   * The days between a period's two ends on the calendar: a sand rather than
+   * lime (owner's word, 2026-11-11), because the days carry their moods as
+   * dots now, and a green band read as one more good mood. Lime is the
+   * record button's (§7.1).
+   */
+  readonly range: string;
   /** A filled square that is not a card: home-screen tiles, icon previews. */
   readonly tile: string;
   readonly tileInk: string;
@@ -94,6 +101,7 @@ export const lightPalette: Palette = {
   onPanel: '#FBF7F0',
   lime: '#D7F26B',
   limeSoft: '#EEF6D2',
+  range: '#EFE8DC',
   tile: '#DFD9CB',
   tileInk: '#6C6F78',
   skeleton: '#EFE8DC',
@@ -149,6 +157,7 @@ export const darkPalette: Palette = {
   onPanel: '#F2EEE6',
   lime: '#AFD64A',
   limeSoft: '#27311C',
+  range: '#262B34',
   tile: '#2A2F38',
   tileInk: '#A9AEB8',
   skeleton: '#232830',
