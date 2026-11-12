@@ -49,6 +49,8 @@ export function TurnScreen(props: {
   readonly onNext: () => void;
   /** Goes on to Vidlun's words, already chosen, to choose from together. */
   readonly onTogether: () => void;
+  /** True once choosing together brought its words back to the card. */
+  readonly choseTogether: boolean;
   /** The mood on the scale: the person's if they set one, Vidlun's reading if not. */
   readonly mood: number | null;
   readonly onMood: (value: number) => void;
@@ -74,9 +76,10 @@ export function TurnScreen(props: {
   /*
    * "Next" needs a word (owner's word, 2026-09-30): one picked, or one being
    * typed, which the tap commits. Someone with no word goes on through
-   * "choose together" instead.
+   * "choose together" instead — and coming back from it with none is an
+   * answer, given with Vidlun's words in sight.
    */
-  const answered = chosen.length > 0 || (typing ?? '').trim().length > 0;
+  const answered = chosen.length > 0 || (typing ?? '').trim().length > 0 || props.choseTogether;
 
   /** Adds the word being typed, if any; returns its id when it is new. */
   const commit = (): string | null => {

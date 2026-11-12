@@ -1801,6 +1801,35 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++. The period pill names the days, choosing together goes back to the card — 2026-11-12
+
+Both by the owner's word, seen in the simulator, going out in 1.9 (57).
+
+- **"Your emotions" names the period picked.** Picking the 10th and 11th
+  read as too many emotions; the counts were right (checked against the
+  journal's dates: only entries from the 10th 00:00 to the 12th 00:00
+  count), but the pill said only "лист.", so the list looked like the whole
+  month's. `periodLabel` now says the days ("10–11 лист.", "Oct 28 – Nov
+  3"), a whole month or run of months by name, and the year only for a
+  period that ended in another year. All time starts at the journal's first
+  month rather than at 2000. The calendar's summary line uses the same
+  wording (`daysLabel`). `GetVocabularyGrowth` lost its unused `wide`.
+- **"Save" on choosing together goes back to the card** with the words
+  chosen there on it; the card's own "next" writes the entry. Choosing
+  together again starts from those words, not from all of Vidlun's. Coming
+  back with no words is an answer, so "next" works then too (§6: zero
+  emotions is a whole entry).
+- **The mood scale is gone from choosing together**; it lives on the card
+  alone, where it already was.
+- **The unaided answer stays apart.** The card remembers what was named
+  before Vidlun's words were seen (`namedAlone`), and that, not the mixed
+  list, is written as `selfEmotionIds`; a word of Vidlun's taken off while
+  choosing together is still logged as a disagreement (`keptOwnWords`).
+- Open: the button on choosing together still says "Зберегти" though it no
+  longer saves; the owner may rename it ("Готово").
+
+---
+
 ## 3ψψψ+++++++++. Mood dots on the calendar, floating charms, a little volume — 2026-11-11
 
 All by the owner's word, seen in the simulator in both themes. In **1.9

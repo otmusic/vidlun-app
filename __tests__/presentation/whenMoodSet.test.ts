@@ -30,6 +30,7 @@ const card: TurnStage = {
   together: false,
   mood: null,
   droppedTopics: [],
+  namedAlone: null,
 };
 
 describe('setting the mood', () => {
@@ -38,18 +39,13 @@ describe('setting the mood', () => {
   });
 
   /*
-   * From the phone (2026-10-29): after "choose together" the scale was not on
-   * the screen at all, so the mood the reading guessed was the one saved.
+   * Owner's word, 2026-11-12: choosing together has no scale any more. Its
+   * "save" goes back to the card, and the card's scale is the one saved.
    */
-  it('sets it on the entry being chosen together, and on the card behind it', () => {
+  it('leaves choosing together alone, since the mood is set on the card', () => {
     const choosing: CaptureStage = { kind: 'comparing', proposed: reading, draft: reading, card };
 
-    const after = whenMoodSet(choosing, 2);
-
-    expect(after.kind === 'comparing' ? after.draft.mood?.value : null).toBe(2);
-    expect(after.kind === 'comparing' ? after.card.mood : null).toBe(2);
-    // What Vidlun read stays as it read it, for the revision log.
-    expect(after.kind === 'comparing' ? after.proposed.mood?.value : null).toBe(4);
+    expect(whenMoodSet(choosing, 2)).toBe(choosing);
   });
 
   it('leaves every other screen as it was', () => {

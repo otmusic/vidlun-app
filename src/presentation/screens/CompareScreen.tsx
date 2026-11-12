@@ -11,9 +11,6 @@ import { BackButton } from '../components/BackButton';
 import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { emotionLabel, emotionTint, emotionWordsIn, idForTypedWord } from '../components/emotionDisplay';
-import { toneFor } from '../components/emotionTone';
-import { moodKey } from '../components/MoodLine';
-import { MoodScale } from '../components/MoodScale';
 import { OwnWordField } from '../components/OwnWordField';
 import { WaveMark } from '../components/WaveMark';
 import { useDrawnSides } from '../hooks/useDrawnSides';
@@ -28,6 +25,10 @@ import { useTheme } from '../theme/ThemeProvider';
  *
  * Vidlun's block is a place rather than a colour: its own violet surface, so
  * the accent does not have to mean a second thing.
+ *
+ * "Save" goes back to the entry's card with the words chosen here, and the
+ * card's own "next" writes the entry (owner's word, 2026-11-12). The mood is
+ * the card's, so this screen has no scale of its own any more.
  */
 export function CompareScreen(props: {
   readonly proposed: MoodEntry;
@@ -38,9 +39,8 @@ export function CompareScreen(props: {
   readonly onToggle: (id: string) => void;
   /** Adds a word typed here; a word already in stays in. */
   readonly onAddWord: (id: string) => void;
-  /** Sets the entry's mood, the same scale the question card carries. */
-  readonly onMood: (value: number) => void;
-  readonly onConfirm: () => void;
+  /** Back to the card with the words chosen here on it. */
+  readonly onKeep: () => void;
   /** Back to the question card, as it was. */
   readonly onBack: () => void;
 }): React.JSX.Element {
@@ -48,8 +48,7 @@ export function CompareScreen(props: {
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
   const kept = props.draft.emotionIds;
-  const mood = props.draft.mood?.value ?? null;
-  const { onConfirm } = props;
+  const { onKeep } = props;
   /** §6 calls an empty proposal correct and common; the drawing gives it a state. */
   const heardNothing = props.proposed.emotionIds.length === 0;
   /*
@@ -62,7 +61,7 @@ export function CompareScreen(props: {
   const full = kept.length >= MoodEntry.MAX_EMOTIONS;
   /** Null while the own-word field is closed; the word so far while open. */
   const [typing, setTyping] = useState<string | null>(null);
-  /** A typed word committed by "save", waited for before the entry is written. */
+  /** A typed word committed by "save", waited for before going back to the card. */
   const [saveAfter, setSaveAfter] = useState<string | null>(null);
 
   const colorOf = (id: string): string | undefined => emotionTint(id, props.vocabulary, theme);
@@ -85,13 +84,13 @@ export function CompareScreen(props: {
     return id;
   };
 
-  // Saved from the render that has the word: the handler reads its own stage.
+  // Kept from the render that has the word: the handler reads its own stage.
   useEffect(() => {
     if (saveAfter !== null && kept.includes(saveAfter)) {
       setSaveAfter(null);
-      onConfirm();
+      onKeep();
     }
-  }, [kept, onConfirm, saveAfter]);
+  }, [kept, onKeep, saveAfter]);
 
   return (
     <ScrollView
@@ -229,25 +228,6 @@ export function CompareScreen(props: {
         </View>
       ) : null}
 
-      {/*
-        * The scale from the question card, so choosing together can still
-        * change the mood (owner's word, 2026-10-29); it starts where the card
-        * left it, or at the reading's mood.
-        */}
-      <View style={{ gap: 2, marginTop: 8 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <AppText variant="caption" color="inkFaint">
-            {props.t('compare.mood')}
-          </AppText>
-          {mood === null ? null : (
-            <AppText variant="secondary" color={toneFor(mood)}>
-              {props.t(moodKey(mood))}
-            </AppText>
-          )}
-        </View>
-        <MoodScale value={mood} onChange={props.onMood} accessibilityLabel={props.t('compare.mood')} />
-      </View>
-
       <View style={{ marginTop: 12 }}>
         {/* A word still being typed is part of the entry, so it goes in first. */}
         <Button
@@ -257,7 +237,7 @@ export function CompareScreen(props: {
             const added = commit();
 
             if (added === null) {
-              onConfirm();
+              onKeep();
             } else {
               setSaveAfter(added);
             }

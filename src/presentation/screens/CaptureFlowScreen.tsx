@@ -293,6 +293,7 @@ function Stage(
           onCorrect={flow.correctWording}
           onNext={flow.answer}
           onTogether={flow.chooseTogether}
+          choseTogether={flow.stage.namedAlone !== null}
           mood={flow.stage.mood ?? flow.stage.draft?.mood?.value ?? null}
           onMood={flow.setMood}
           topics={flow.stage.draft?.contextTags ?? []}
@@ -311,8 +312,7 @@ function Stage(
           t={t}
           onToggle={flow.toggleKept}
           onAddWord={flow.addKept}
-          onMood={flow.setMood}
-          onConfirm={flow.confirm}
+          onKeep={flow.keepChosenTogether}
           onBack={flow.backToCard}
         />
       );
