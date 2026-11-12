@@ -7,13 +7,8 @@ import { AppText } from './AppText';
 import { moodOn, wroteOn, type EntryDays } from './entryDays';
 import { toneFor } from './emotionTone';
 import { ModalSheet, SheetClose } from './ModalSheet';
+import { daysLabel, type Period } from './periodLabel';
 import { useTheme } from '../theme/ThemeProvider';
-
-/** A period, `from` inclusive and `to` exclusive, matching the use case. */
-export interface Period {
-  readonly from: Date;
-  readonly to: Date;
-}
 
 const COLUMNS = 7;
 
@@ -192,7 +187,9 @@ export function PeriodSheet(props: {
         <AppText variant="secondary" color="inkSoft" style={{ flex: 1 }}>
           {from === null
             ? t('dict.pickStart')
-            : `${dayLabel(from, props.locale)} – ${to === null ? '…' : dayLabel(to, props.locale)}`}
+            : to === null
+              ? `${dayLabel(from, props.locale)} – …`
+              : daysLabel(from, to, props.locale, props.today)}
         </AppText>
         {from !== null && to !== null ? (
           <Pressable

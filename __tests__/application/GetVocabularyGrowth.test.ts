@@ -78,7 +78,6 @@ describe('which emotions the period held, and how often', () => {
     expect(growth.from).toEqual(new Date(2026, 7, 1));
     // Exclusive and tomorrow, so an entry made minutes ago still counts.
     expect(growth.to).toEqual(new Date(2026, 7, 29));
-    expect(growth.wide).toBe(false);
   });
 
   it('counts a wider period as one stretch', async () => {
@@ -96,10 +95,33 @@ describe('which emotions the period held, and how often', () => {
       to: new Date(2026, 7, 29),
     });
 
-    expect(growth.wide).toBe(true);
     expect(growth.counts).toEqual([
       { id: 'sad', count: 2 },
       { id: 'happy', count: 1 },
+    ]);
+  });
+
+  it('counts only the days picked, not the rest of their month', async () => {
+    const repository = new InMemoryMoodEntryRepository();
+
+    for (const each of [
+      entry(new Date(2026, 7, 9, 23, 50), { emotionIds: ['sad'] }),
+      entry(new Date(2026, 7, 10, 0, 5), { emotionIds: ['happy', 'bad.tired'] }),
+      entry(new Date(2026, 7, 11, 23, 55), { emotionIds: ['happy'] }),
+      entry(new Date(2026, 7, 12, 0, 1), { emotionIds: ['fearful'] }),
+    ]) {
+      await repository.save(each);
+    }
+
+    // The 10th and the 11th, as the calendar hands them over: `to` the day after.
+    const growth = await new GetVocabularyGrowth(repository, new FixedClock(TODAY)).execute({
+      from: new Date(2026, 7, 10),
+      to: new Date(2026, 7, 12),
+    });
+
+    expect(growth.counts).toEqual([
+      { id: 'happy', count: 2 },
+      { id: 'bad.tired', count: 1 },
     ]);
   });
 });

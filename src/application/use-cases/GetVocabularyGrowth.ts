@@ -14,11 +14,6 @@ export interface VocabularyGrowth {
   readonly from: Date;
   readonly to: Date;
   /**
-   * True when the period covers more than one month, so the period pill names
-   * its first and last months rather than one.
-   */
-  readonly wide: boolean;
-  /**
    * Every emotion on the period's entries, the most frequent first; at the
    * same count, the one named most recently first. Read from `emotionIds`:
    * what the journal holds, the words on its cards. A word that has since left
@@ -58,7 +53,6 @@ export class GetVocabularyGrowth {
     return {
       from,
       to,
-      wide: monthsBetween(from, to) > 1,
       counts: countsIn(entries.filter((entry) => entry.createdAt >= from && entry.createdAt < to)),
     };
   }
@@ -94,15 +88,4 @@ function addDays(date: Date, days: number): Date {
   shifted.setDate(shifted.getDate() + days);
 
   return shifted;
-}
-
-/** How many months the period touches, a partial one included. */
-function monthsBetween(from: Date, to: Date): number {
-  let months = 0;
-
-  for (let month = startOfMonth(from); month < to; month = new Date(month.getFullYear(), month.getMonth() + 1, 1)) {
-    months += 1;
-  }
-
-  return months;
 }

@@ -7,7 +7,8 @@ import { type Locale, type Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import type { EntryDays } from '../components/entryDays';
-import { PeriodSheet, type Period } from '../components/PeriodSheet';
+import { PeriodSheet } from '../components/PeriodSheet';
+import { periodLabel, type Period } from '../components/periodLabel';
 import { RoundBack } from '../components/RoundBack';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
@@ -83,7 +84,9 @@ export function VocabularyScreen(props: {
             justifyContent: 'center',
           }}
         >
-          <AppText variant="secondary">{periodLabel(growth, props.locale)}</AppText>
+          <AppText variant="secondary">
+            {periodLabel(growth, props.locale, { earliest: props.earliest, today: props.today })}
+          </AppText>
         </Pressable>
       </View>
       <Frequencies counts={growth.counts} label={label} colourOf={colourOf} t={t} />
@@ -170,16 +173,4 @@ function Frequencies(props: {
       ))}
     </View>
   );
-}
-
-function periodLabel(growth: VocabularyGrowth, locale: Locale): string {
-  const last = new Date(growth.to.getTime());
-
-  last.setDate(last.getDate() - 1);
-
-  // Short in both shapes: the pill shares its row with the title, and a full
-  // month name is what used to push it past the screen's own margin.
-  return growth.wide
-    ? `${growth.from.toLocaleDateString(locale, { month: 'short' })} – ${last.toLocaleDateString(locale, { month: 'short' })}`
-    : growth.from.toLocaleDateString(locale, { month: 'short' });
 }
