@@ -11,8 +11,8 @@ plex = base64.b64encode((ROOT / 'assets/fonts/IBMPlexSans-Regular.ttf').read_byt
 OUT = ROOT / 'site/og'; OUT.mkdir(exist_ok=True)
 TMP = pathlib.Path('/tmp/vidlun-og'); TMP.mkdir(exist_ok=True)
 for lang, lines, sub, mark_w in (
-    ('uk', ['Скажи, як минув день.', 'Vidlun назве,', 'що ти відчуваєш.'], 'Голосовий щоденник емоцій для iPhone', 520),
-    ('en', ['Say how the day went.', 'Vidlun names', 'what you feel.'], 'A voice emotion journal for iPhone', 500),
+    ('uk', ['Розкажи, як минув день.', 'Vidlun підкаже,', 'що ти відчуваєш.'], 'Голосовий щоденник емоцій для iPhone', 580),
+    ('en', ['Say how your day went.', 'Vidlun helps you', 'name the feeling.'], 'A voice emotion journal for iPhone', 530),
 ):
     shot = base64.b64encode((ROOT / f'site/shots/{lang}-home-light-640.jpg').read_bytes()).decode()
     text = ''.join(f'<text x="72" y="{236 + i * 62}" font-family="Unbounded" font-size="48" fill="#16181D" letter-spacing="-1.8">{l}</text>' for i, l in enumerate(lines))

@@ -6,13 +6,13 @@
     "otherHref": "/en",
     "otherLabel": "English",
     "title": "Vidlun — голосовий щоденник емоцій для iPhone",
-    "description": "Скажи одне речення про свій день. Vidlun запише його, розпізнає мову на телефоні й назве, що ти відчуваєш. Без акаунта, українська та англійська.",
+    "description": "Розкажи вголос, як минув день. Vidlun перетворить голос на текст просто на телефоні й підкаже, що ти відчуваєш. Без акаунта. Українська та англійська.",
     "nav": {
       "how": "Як це працює",
       "features": "Що вміє",
       "privacy": "Приватність",
       "price": "Ціна",
-      "faq": "FAQ"
+      "faq": "Питання"
     },
     "theme": {
       "label": "Тема",
@@ -21,7 +21,7 @@
       "dark": "Темна"
     },
     "hero": {
-      "title": "Скажи, як минув день. Vidlun назве, що ти відчуваєш.",
+      "title": "Розкажи, як минув день. Vidlun підкаже, що ти відчуваєш.",
       "cta": "Завантажити в App Store",
       "secondary": "Як це працює",
       "mark": "як минув день",
@@ -29,33 +29,33 @@
     },
     "how": {
       "title": "Як це працює",
-      "lead": "Чотири кроки, і запис у щоденнику.",
+      "lead": "Чотири простих кроки.",
       "steps": [
         {
           "n": "1",
-          "title": "Натисни і говори",
-          "body": "Говори як зручно, з паузами. Текст з’являється одразу, а аудіо лишається на телефоні.",
+          "title": "Натисни й говори",
+          "body": "Говори як зазвичай, з паузами — Vidlun не перебиває. Текст з’являється одразу, а голос лишається на телефоні.",
           "shot": "recording",
           "alt": "Екран запису: таймер і хвиля голосу"
         },
         {
           "n": "2",
           "title": "Назви, що відчуваєш",
-          "body": "Vidlun пропонує емоції, найближчі до сказаного. Обери одну чи кілька або додай свою. На тій самій картці — настрій і теми запису.",
+          "body": "Vidlun покаже кілька емоцій, схожих на сказане. Обери свої або впиши власне слово. Тут же — настрій і теми.",
           "shot": "turn-picker",
           "alt": "Картка запису: найближчі емоції, вибрана емоція і настрій"
         },
         {
           "n": "3",
           "title": "Повертайся до записів",
-          "body": "У кожного запису своя сторінка: твої слова, голос, настрій, емоції й теми. Запис можна переслухати або видалити.",
+          "body": "Кожен запис можна відкрити: твої слова, твій голос, настрій і емоції. Переслухай або видали, коли захочеш.",
           "shot": "detail",
           "alt": "Сторінка запису: слова, голос, настрій, емоції й теми"
         },
         {
           "n": "4",
-          "title": "Записи складаються в картину",
-          "body": "Настрій по днях, теми, які повертаються, і твій власний словник емоцій. З підпискою Vidlun раз на місяць пише, що помітив у твоїх записах.",
+          "title": "Дивись, як змінюються дні",
+          "body": "Настрій по днях, теми, що повторюються, і емоції, які ти називаєш найчастіше. З підпискою Vidlun раз на місяць пише, що помітив у твоїх записах.",
           "shot": "week",
           "alt": "Тиждень: настрій по днях, помічений патерн і теми"
         }
@@ -65,23 +65,23 @@
       "title": "Що вміє Vidlun",
       "items": [
         {
-          "title": "Аудіо не покидає телефон",
-          "body": "Запис зберігається на пристрої тринадцять місяців, потім видаляється. Текст лишається назавжди.",
+          "title": "Голос лишається на телефоні",
+          "body": "Аудіо зберігається лише на пристрої 13 місяців, потім видаляється саме. Текст запису лишається, доки ти його не видалиш.",
           "art": "wave"
         },
         {
-          "title": "Словник зі 125 емоцій",
-          "body": "Від «радість» до «приємна втома». Слова, а не смайлики, щоб точніше називати свої стани.",
+          "title": "76 слів для емоцій",
+          "body": "Від «радість» до «вигорання». Слова, а не смайлики, — щоб краще розуміти себе.",
           "art": "chips"
         },
         {
           "title": "Тиждень і події",
-          "body": "Настрій по днях і події, які позначають, що було до і після: переїзд, нова робота.",
+          "body": "Настрій по днях і важливі події — переїзд, нова робота, — щоб бачити, що змінилося до і після.",
           "art": "bars"
         },
         {
           "title": "Хвилина для себе",
-          "body": "Коротка вправа на заземлення: озирнутися, прислухатися, відчути. Нічого не записується.",
+          "body": "Коротка вправа, щоб заспокоїтися: озирнись, прислухайся, відчуй. Нічого не записується.",
           "art": "ring"
         }
       ]
@@ -89,9 +89,9 @@
     "privacy": {
       "title": "Приватність",
       "points": [
-        "Без акаунта, без реєстрації, без аналітики.",
-        "Аудіо лишається на телефоні.",
-        "Лише текст запису йде до мовної моделі Anthropic, щоб назвати емоції, — за твоєю згодою і ніколи з твоїм ім’ям."
+        "Без акаунта й реєстрації. Без реклами й аналітики.",
+        "Голос і записи — тільки на твоєму телефоні. На наших серверах їх немає.",
+        "Для підказки емоцій штучний інтелект Claude від Anthropic отримує лише текст запису — без голосу й імені. Ми його не зберігаємо."
       ]
     },
     "price": {
@@ -99,58 +99,57 @@
       "free": {
         "title": "Безкоштовно назавжди",
         "items": [
-          "Запис до хвилини і розпізнавання мови",
-          "Найближчі емоції, настрій і теми запису",
+          "Записи до хвилини",
+          "Підказки емоцій, настрій і теми",
           "Щоденник із фільтром за емоціями, події",
-          "Настрій по днях і словник емоцій",
-          "Вправа на заземлення",
+          "Настрій по днях і твої емоції",
+          "Вправа, щоб заспокоїтися",
           "Резервна копія"
         ]
       },
       "paid": {
         "title": "Підписка",
         "items": [
-          "Місячний наратив: раз на місяць Vidlun пише, що помітив у твоїх записах",
-          "Теми й патерни тижня",
+          "Раз на місяць Vidlun пише, що помітив у твоїх записах",
+          "Теми й закономірності тижня",
           "Записи до п’яти хвилин"
         ],
         "plan": {
-          "name": "Місячна підписка",
+          "name": "Підписка на місяць",
           "price": "$4.99",
           "period": "на місяць"
         },
-        "note": "Ціна для App Store в Україні. Оформлення, керування і скасування в App Store; підписка поновлюється сама, поки її не скасувати."
+        "note": "Ціна в українському App Store. Підписка продовжується щомісяця сама; скасувати можна будь-коли в налаштуваннях App Store."
       }
     },
     "faq": {
-      "title": "FAQ",
+      "title": "Питання",
       "items": [
         {
-          "q": "Потрібен інтернет?",
-          "a": "Для запису і розпізнавання ні. Щоб Vidlun назвав емоцію, потрібен зв’язок. Без нього запис збережеться з твоїм словом, а відповідь прийде пізніше."
+          "q": "Чи потрібен інтернет?",
+          "a": "Щоб записати голос — ні. Щоб Vidlun підказав емоції — так. Без інтернету запис збережеться, а підказка з’явиться пізніше."
         },
         {
-          "q": "Хто аналізує мої записи?",
-          "a": "Мовна модель Claude компанії Anthropic — лише текст запису і лише за твоєю згодою. Аудіо лишається на телефоні, а згоду можна відкликати в застосунку."
+          "q": "Хто бачить мої записи?",
+          "a": "Записи лежать тільки на твоєму телефоні. Щоб підказати емоції, текст запису обробляє штучний інтелект Claude від Anthropic — без голосу й без імені. Ми цей текст не зберігаємо, і моделі на ньому не вчаться."
         },
         {
           "q": "Це терапія?",
-          "a": "Ні. Vidlun — щоденник. Він допомагає назвати емоції й не дає порад, оцінок чи медичних висновків."
+          "a": "Ні. Vidlun — це щоденник. Він допомагає назвати свої емоції, але не дає порад і не ставить діагнозів."
         },
         {
-          "q": "Де мої записи?",
-          "a": "На твоєму телефоні. Резервна копія — це файл, який зберігаєш ти. Аудіо в копію не входить."
+          "q": "Де зберігаються записи?",
+          "a": "На твоєму телефоні. Резервна копія — це файл, який ти зберігаєш де зручно. Голос у неї не входить."
         },
         {
           "q": "Є версія для Android?",
-          "a": "Поки що лише iPhone."
+          "a": "Поки що тільки iPhone."
         }
       ]
     },
     "footer": {
       "terms": "Умови",
       "privacy": "Приватність",
-      "health": "Медичні дані (США)",
       "support": "Підтримка",
       "made": "Vidlun, 2026"
     },
@@ -160,7 +159,7 @@
         "calm"
       ],
       [
-        "Приємна втома",
+        "Вдячність",
         "calm"
       ],
       [
@@ -176,7 +175,7 @@
         "warm"
       ],
       [
-        "Полегшення після зусиль",
+        "Натхнення",
         "calm"
       ],
       [
@@ -216,11 +215,11 @@
         "low"
       ],
       [
-        "Прийняття",
+        "Надія",
         "violet"
       ],
       [
-        "Очікування новин",
+        "Хвилювання",
         "cool"
       ],
       [
@@ -232,7 +231,7 @@
         "calm"
       ],
       [
-        "Туга за домом",
+        "Перевантаження",
         "cool"
       ],
       [
@@ -245,7 +244,7 @@
       ]
     ],
     "keywords": "голосовий щоденник, щоденник емоцій, щоденник настрою, трекер настрою, аудіощоденник, застосунок для iPhone, розпізнавання української мови, емоції, самопізнання, ментальне здоров’я, Vidlun",
-    "ogAlt": "Vidlun: скажи, як минув день, і Vidlun назве, що ти відчуваєш"
+    "ogAlt": "Vidlun: розкажи, як минув день, і Vidlun підкаже, що ти відчуваєш"
   },
   "en": {
     "lang": "en",
@@ -254,7 +253,7 @@
     "otherHref": "/",
     "otherLabel": "Українська",
     "title": "Vidlun — a voice emotion journal for iPhone",
-    "description": "Say one sentence about your day. Vidlun records it, recognises speech on your phone and names what you feel. No account, Ukrainian and English.",
+    "description": "Say out loud how your day went. Vidlun turns your voice into text right on your phone and suggests what you might be feeling. No account. Ukrainian and English.",
     "nav": {
       "how": "How it works",
       "features": "Features",
@@ -269,41 +268,41 @@
       "dark": "Dark"
     },
     "hero": {
-      "title": "Say how the day went. Vidlun names what you feel.",
+      "title": "Say how your day went. Vidlun helps you name the feeling.",
       "cta": "Download on the App Store",
       "secondary": "How it works",
-      "mark": "how the day went",
+      "mark": "how your day went",
       "alt": "Vidlun’s home screen: the week, the record button and an entry from a month ago"
     },
     "how": {
       "title": "How it works",
-      "lead": "Four steps and the entry is in your journal.",
+      "lead": "Four simple steps.",
       "steps": [
         {
           "n": "1",
           "title": "Tap and talk",
-          "body": "Talk the way you like, pauses included. The text appears right away and the audio stays on your phone.",
+          "body": "Talk the way you normally would, pauses and all — Vidlun won’t cut you off. The text shows up right away, and your voice stays on your phone.",
           "shot": "recording",
           "alt": "Recording screen with the timer and the voice wave"
         },
         {
           "n": "2",
           "title": "Name what you feel",
-          "body": "Vidlun offers the emotions closest to what you said. Pick one or several, or add your own. The mood and the topics sit on the same card.",
+          "body": "Vidlun shows a few emotions close to what you said. Pick yours or type your own word. Your mood and topics are right there too.",
           "shot": "turn-picker",
           "alt": "The entry card: the closest emotions, the one chosen and the mood"
         },
         {
           "n": "3",
-          "title": "Come back to any entry",
-          "body": "Every entry has its own page: your words, your voice, the mood, the emotions and the topics. You can play it back or delete it.",
+          "title": "Come back anytime",
+          "body": "Open any entry to see your words, hear your voice, and check the mood and emotions. Replay it or delete it whenever you like.",
           "shot": "detail",
           "alt": "An entry page: the words, the recording, mood, emotions and topics"
         },
         {
           "n": "4",
-          "title": "Entries add up to a picture",
-          "body": "Mood by day, the topics that keep coming back, and your own vocabulary of emotions. With a subscription, Vidlun writes once a month about what it noticed in your entries.",
+          "title": "See how your days add up",
+          "body": "Mood by day, topics that keep coming up, and the emotions you name most. With a subscription, Vidlun writes once a month about what it noticed in your entries.",
           "shot": "week",
           "alt": "The week: mood by day, a noticed pattern and topics"
         }
@@ -313,23 +312,23 @@
       "title": "What Vidlun does",
       "items": [
         {
-          "title": "Audio never leaves your phone",
-          "body": "A recording is kept on the device for thirteen months, then deleted. The text stays for good.",
+          "title": "Your voice stays on your phone",
+          "body": "Audio is kept only on your device for 13 months, then deleted automatically. The text stays until you delete it.",
           "art": "wave"
         },
         {
-          "title": "A vocabulary of 125 emotions",
-          "body": "From “joy” to “the good kind of tired”. Words, not emoji, so you can name your states more precisely.",
+          "title": "76 words for feelings",
+          "body": "From “happy” to “burned out.” Words, not emoji, so you can understand yourself better.",
           "art": "chips"
         },
         {
-          "title": "Week and events",
-          "body": "Mood by day, and events that mark what came before and after: a move, a new job.",
+          "title": "Your week and events",
+          "body": "Mood by day, plus the events that matter — a move, a new job — so you can see what changed before and after.",
           "art": "bars"
         },
         {
           "title": "A minute for yourself",
-          "body": "A short grounding exercise: look around, listen, feel. Nothing is recorded.",
+          "body": "A short exercise to help you calm down: look around, listen, notice. Nothing is recorded.",
           "art": "ring"
         }
       ]
@@ -337,78 +336,77 @@
     "privacy": {
       "title": "Privacy",
       "points": [
-        "No account, no sign-up, no analytics.",
-        "Audio stays on your phone.",
-        "Only the text of an entry goes to Anthropic’s language model, to name the emotions — with your consent and never with your name."
+        "No account, no sign-up. No ads, no analytics.",
+        "Your voice and entries live only on your phone, not on our servers.",
+        "To suggest emotions, Claude, an AI by Anthropic, gets only the text of an entry — no voice, no name. We don’t keep it."
       ]
     },
     "price": {
-      "title": "What is free and what is not",
+      "title": "What’s free and what’s not",
       "free": {
         "title": "Free forever",
         "items": [
-          "Recording up to a minute and speech recognition",
-          "The closest emotions, mood and topics of each entry",
+          "Recordings up to a minute",
+          "Emotion suggestions, mood and topics",
           "Journal with an emotion filter, events",
-          "Mood by day and your emotion vocabulary",
-          "A grounding exercise",
+          "Mood by day and your emotions",
+          "A calming exercise",
           "Backup"
         ]
       },
       "paid": {
         "title": "Subscription",
         "items": [
-          "The monthly narrative: once a month Vidlun writes what it noticed in your entries",
+          "Once a month, Vidlun writes about what it noticed in your entries",
           "The week’s topics and patterns",
           "Recordings up to five minutes"
         ],
         "plan": {
-          "name": "Monthly subscription",
+          "name": "Monthly",
           "price": "$3.99",
           "period": "per month"
         },
-        "note": "US App Store price; the App Store shows the price for your country. Buy, manage and cancel in the App Store; the subscription renews until cancelled."
+        "note": "US price; the App Store shows the price for your country. Renews every month until you cancel — cancel anytime in your App Store settings."
       }
     },
     "faq": {
       "title": "FAQ",
       "items": [
         {
-          "q": "Do I need internet?",
-          "a": "Not for recording and recognition. To have Vidlun name the emotion, yes. Without it the entry is saved with your word and the answer comes later."
+          "q": "Do I need the internet?",
+          "a": "Not to record. Yes, for Vidlun to suggest emotions. Offline, your entry is saved and the suggestions show up later."
         },
         {
-          "q": "Who analyzes my entries?",
-          "a": "Anthropic’s Claude language model — only the text of an entry and only with your consent. Audio stays on your phone, and you can withdraw consent in the app."
+          "q": "Who sees my entries?",
+          "a": "Your entries live only on your phone. To suggest emotions, the text of an entry is processed by Claude, an AI by Anthropic — without your voice or your name. We don’t keep that text, and it isn’t used to train AI models."
         },
         {
           "q": "Is this therapy?",
-          "a": "No. Vidlun is a journal. It helps you name your emotions and gives no advice, grades or medical conclusions."
+          "a": "No. Vidlun is a journal. It helps you name your emotions, but it doesn’t give advice or diagnoses."
         },
         {
-          "q": "Where are my entries?",
-          "a": "On your phone. A backup is a file you keep yourself. Audio is not part of it."
+          "q": "Where are my entries stored?",
+          "a": "On your phone. A backup is a file you keep wherever you like. Your voice recordings aren’t included."
         },
         {
           "q": "Is there an Android version?",
-          "a": "iPhone only for now."
+          "a": "Not yet — iPhone only for now."
         }
       ]
     },
     "footer": {
       "terms": "Terms",
       "privacy": "Privacy",
-      "health": "Consumer health data",
       "support": "Support",
       "made": "Vidlun, 2026"
     },
     "words": [
       [
-        "Peaceful",
+        "Calm",
         "calm"
       ],
       [
-        "The good kind of tired",
+        "Grateful",
         "calm"
       ],
       [
@@ -424,7 +422,7 @@
         "warm"
       ],
       [
-        "Relief after effort",
+        "Inspired",
         "calm"
       ],
       [
@@ -460,15 +458,15 @@
         "calm"
       ],
       [
-        "Burnout",
+        "Burned out",
         "low"
       ],
       [
-        "Accepted",
+        "Hopeful",
         "violet"
       ],
       [
-        "Waiting for news",
+        "Worried",
         "cool"
       ],
       [
@@ -480,7 +478,7 @@
         "calm"
       ],
       [
-        "Homesick",
+        "Overwhelmed",
         "cool"
       ],
       [
@@ -493,6 +491,6 @@
       ]
     ],
     "keywords": "voice journal, emotion journal, mood journal, mood tracker, audio diary, iPhone app, on-device speech recognition, Ukrainian, feelings, mental wellbeing, Vidlun",
-    "ogAlt": "Vidlun: say how the day went and Vidlun names what you feel"
+    "ogAlt": "Vidlun: say how your day went, and Vidlun helps you name the feeling"
   }
 }

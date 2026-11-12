@@ -1809,11 +1809,16 @@ Ultra q4_0 inside, 382 MB); 56 is superseded.
 
 **vidlun.app's terms and privacy were redeployed the same day** (owner's
 word) with the Parakeet Ultra / NVIDIA credit (CC BY 4.0), the 2 November
-texts and no echo — what the app itself carries. The landing went out
-unchanged, built from dd1813a: `site/src/copy.json` holds the consent
-release's copy (Anthropic named, "with your consent", a footer link to a
-consumer-health section the held-back privacy policy does not have), which
-waits for the consent screen like the texts e514f0c held back.
+texts and no echo — what the app itself carries. The landing first went
+out unchanged, built from dd1813a, because `site/src/copy.json` held the
+consent release's copy. Later the same day the owner dropped the consent
+idea and asked for the landing in plain words: it was rewritten in both
+languages and deployed. What leaves the phone is said as it is — only an
+entry's text, to Claude by Anthropic, to suggest emotions, no voice, no
+name, not kept by us. "125 emotions" became 76, the decorative words are
+ones the app still offers (in its own labels), the footer's link to a
+consumer-health section that does not exist went, and the share images
+carry the new headline (`site/tools/og.py`).
 
 - **"Your emotions" names the period picked.** Picking the 10th and 11th
   read as too many emotions; the counts were right (checked against the

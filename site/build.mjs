@@ -376,7 +376,6 @@ function page(lang) {
 <footer>
   <a href="${legal('terms')}">${escape(c.footer.terms)}</a>
   <a href="${legal('privacy')}">${escape(c.footer.privacy)}</a>
-  <a href="${legal('privacy')}#consumer-health-data">${escape(c.footer.health)}</a>
   <a href="${legal('support')}">${escape(c.footer.support)}</a>
   <a href="mailto:support@vidlun.app">support@vidlun.app</a>
   <span class="made">${escape(c.footer.made)}</span>
