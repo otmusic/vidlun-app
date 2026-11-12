@@ -1,6 +1,7 @@
 import { NoRecordingProducedError, RecordingCancelledError } from '@/domain/errors/RecordingErrors';
 import {
   ExpoAudioRecorder,
+  levelFromDecibels,
   type RecordingLimits,
   type ScreenAwake,
 } from '@/infrastructure/audio/ExpoAudioRecorder';
@@ -213,6 +214,54 @@ describe('ExpoAudioRecorder', () => {
     subject.cancel();
 
     expect(recorder.stopCalls).toBe(0);
+  });
+});
+
+describe('how loud the voice is, for the bars', () => {
+  it('spreads the speaking range over the bars, so a soft voice still moves them', () => {
+    expect(levelFromDecibels(-50)).toBe(0);
+    expect(levelFromDecibels(-31)).toBeCloseTo(0.5);
+    expect(levelFromDecibels(-12)).toBe(1);
+  });
+
+  it('keeps a shout and a silent room inside the range', () => {
+    expect(levelFromDecibels(-3)).toBe(1);
+    expect(levelFromDecibels(-160)).toBe(0);
+  });
+
+  it('reads no meter as nothing heard', () => {
+    expect(levelFromDecibels(undefined)).toBe(0);
+    expect(levelFromDecibels(Number.NEGATIVE_INFINITY)).toBe(0);
+  });
+
+  it('follows the voice while the take listens', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    play(recorder, scheduler, SPEECH, 1);
+    expect(subject.level()).toBeCloseTo(levelFromDecibels(SPEECH));
+
+    subject.stop();
+    await take;
+  });
+
+  it('is silent before a take, while one is held, and after it ends', async () => {
+    const { recorder, scheduler, subject } = setup();
+
+    expect(subject.level()).toBe(0);
+
+    const take = subject.start();
+
+    await live();
+    play(recorder, scheduler, SPEECH, 1);
+    await subject.pause();
+    expect(subject.level()).toBe(0);
+
+    await subject.resume();
+    subject.stop();
+    await take;
+    expect(subject.level()).toBe(0);
   });
 });
 

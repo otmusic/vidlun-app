@@ -21,4 +21,10 @@ export interface IAudioRecorder {
   resume(): Promise<void>;
   /** Throws the take away. The promise from `start` rejects. */
   cancel(): void;
+  /**
+   * How loud the voice is right now, from 0 (silence) to 1 (as loud as speech
+   * gets); 0 whenever nothing is being heard. The recording screen's bars move
+   * with it.
+   */
+  level(): number;
 }

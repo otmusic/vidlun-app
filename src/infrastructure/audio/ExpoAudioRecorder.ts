@@ -67,6 +67,24 @@ interface Take {
 }
 
 /**
+ * Where speech sits on the meter, in decibels below full scale: a quiet room
+ * reads around -50, a voice close to the phone between -30 and -10. The
+ * range in between is spread over 0 to 1 so a soft voice still moves the
+ * bars and a loud one does not pin them.
+ */
+const QUIET_DB = -50;
+const LOUD_DB = -12;
+
+/** The meter's reading as a share of the speaking range; nothing heard is 0. */
+export function levelFromDecibels(decibels: number | undefined): number {
+  if (decibels === undefined || !Number.isFinite(decibels)) {
+    return 0;
+  }
+
+  return Math.min(1, Math.max(0, (decibels - QUIET_DB) / (LOUD_DB - QUIET_DB)));
+}
+
+/**
  * expo-audio exposes recording through a React hook, so the recorder instance
  * is created by the screen and handed in here. That keeps this adapter out of
  * the component tree and off any one platform.
@@ -141,6 +159,16 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     void this.recorder.stop().finally(() => {
       take.reject(new RecordingCancelledError());
     });
+  }
+
+  level(): number {
+    if (this.take === null) {
+      return 0;
+    }
+
+    const status = this.recorder.getStatus();
+
+    return status.isRecording ? levelFromDecibels(status.metering) : 0;
   }
 
   private onTick(): void {

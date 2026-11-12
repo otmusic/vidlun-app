@@ -257,6 +257,7 @@ function Stage(
           onPause={flow.pauseRecording}
           onResume={flow.resumeRecording}
           onCancel={flow.cancel}
+          level={flow.voiceLevel}
         />
       );
     }

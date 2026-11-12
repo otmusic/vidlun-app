@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, AppState, Easing, Pressable, View } from 'react-native';
 
 import type { Translate } from '@/i18n';
@@ -55,6 +55,8 @@ export function RecordingScreen(props: {
   readonly onPause: () => void;
   readonly onResume: () => void;
   readonly onCancel: () => void;
+  /** How loud the voice is right now, 0 to 1; read many times a second. */
+  readonly level: () => number;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(56);
@@ -201,7 +203,7 @@ export function RecordingScreen(props: {
           ) : null}
         </View>
 
-        <Waveform still={theme.reduceMotion || paused} />
+        <Waveform still={theme.reduceMotion} paused={paused} level={props.level} />
 
         <View style={{ alignItems: 'center', gap: 18, width: '100%' }}>
           <AppText variant="body" color="tileInk" align="center" style={{ maxWidth: 260 }}>
@@ -244,7 +246,28 @@ function StopButton(props: {
   );
 }
 
-function Waveform(props: { readonly still: boolean }): React.JSX.Element {
+/**
+ * How often the voice is read, and how quickly the bars follow it: up at once
+ * when a word starts, down more slowly when it ends, so the row moves like a
+ * voice rather than flickering like a meter.
+ */
+const LISTEN_MS = 70;
+const RISE = 0.7;
+const FALL = 0.22;
+
+/*
+ * The bars move with the voice (owner's word, 2026-11-12): each keeps its own
+ * rhythm, and how far it reaches is how loud the voice is. In a pause the row
+ * settles into a low line that still breathes, so it reads as listening
+ * rather than stopped. Under Reduce Motion the row stands still, as before.
+ */
+function Waveform(props: {
+  readonly still: boolean;
+  readonly paused: boolean;
+  readonly level: () => number;
+}): React.JSX.Element {
+  const voice = useVoice(props.level, props.still || props.paused);
+
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, height: 108 }}>
       {BARS.map((bar, at) => (
@@ -254,11 +277,49 @@ function Waveform(props: { readonly still: boolean }): React.JSX.Element {
           color={bar.color}
           cycleMs={bar.cycleMs}
           delay={bar.delayMs}
-          still={props.still}
+          still={props.still || props.paused}
+          voice={props.still ? null : voice}
         />
       ))}
     </View>
   );
+}
+
+/** The voice's loudness as an animated value, eased the way the bars should follow it. */
+function useVoice(level: () => number, deaf: boolean): Animated.Value {
+  const voice = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (deaf) {
+      Animated.timing(voice, {
+        toValue: 0,
+        duration: 240,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+
+      return undefined;
+    }
+
+    let heard = 0;
+    const listen = setInterval(() => {
+      const now = level();
+
+      heard += (now - heard) * (now > heard ? RISE : FALL);
+      Animated.timing(voice, {
+        toValue: heard,
+        duration: LISTEN_MS,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start();
+    }, LISTEN_MS);
+
+    return () => {
+      clearInterval(listen);
+    };
+  }, [deaf, level, voice]);
+
+  return voice;
 }
 
 function Bar(props: {
@@ -267,8 +328,24 @@ function Bar(props: {
   readonly cycleMs: number;
   readonly still: boolean;
   readonly color: string;
+  /** The voice's loudness; null draws the bar at its own height, unmoved by it. */
+  readonly voice: Animated.Value | null;
 }): React.JSX.Element {
   const scale = useRef(new Animated.Value(BAR_MIN)).current;
+  /*
+   * The bar's own rhythm times how loud the voice is: silent, a low breathing
+   * line; loud, the whole tent.
+   */
+  const reach = useMemo(
+    () =>
+      props.voice === null
+        ? scale
+        : Animated.multiply(
+            props.voice.interpolate({ inputRange: [0, 1], outputRange: [0.08, 0.88] }),
+            scale,
+          ).interpolate({ inputRange: [0, 1], outputRange: [0.12, 1.12] }),
+    [props.voice, scale],
+  );
 
   useEffect(() => {
     if (props.still) {
@@ -309,7 +386,7 @@ function Bar(props: {
         height: props.height,
         borderRadius: 4,
         backgroundColor: props.color,
-        transform: [{ scaleY: scale }],
+        transform: [{ scaleY: reach }],
       }}
     />
   );
