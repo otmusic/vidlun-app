@@ -1803,7 +1803,17 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ## 3ψψψ++++++++++. The period pill names the days, choosing together goes back to the card — 2026-11-12
 
-Both by the owner's word, seen in the simulator, going out in 1.9 (57).
+Both by the owner's word, seen in the simulator. In **1.9 (57)**, uploaded
+2026-11-12 15:56 ("Upload succeeded"; app and widget 1.9 (57), Parakeet
+Ultra q4_0 inside, 382 MB); 56 is superseded.
+
+**vidlun.app's terms and privacy were redeployed the same day** (owner's
+word) with the Parakeet Ultra / NVIDIA credit (CC BY 4.0), the 2 November
+texts and no echo — what the app itself carries. The landing went out
+unchanged, built from dd1813a: `site/src/copy.json` holds the consent
+release's copy (Anthropic named, "with your consent", a footer link to a
+consumer-health section the held-back privacy policy does not have), which
+waits for the consent screen like the texts e514f0c held back.
 
 - **"Your emotions" names the period picked.** Picking the 10th and 11th
   read as too many emotions; the counts were right (checked against the
