@@ -20,6 +20,44 @@ const PROPOSAL = {
 };
 
 describe('ClaudeReflectionAnalyzer', () => {
+  it('sends the words alone when the voice is not known', async () => {
+    const client = new FakeMessagesClient(textReply(JSON.stringify(PROPOSAL)));
+
+    await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words', null);
+
+    expect(client.requests[0]?.messages[0]?.content).toBe('raw words');
+  });
+
+  it('adds the voice as a block of its own, never as words said', async () => {
+    const client = new FakeMessagesClient(textReply(JSON.stringify(PROPOSAL)));
+
+    await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words', {
+      marks: ['quieter', 'slower'],
+    });
+    await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words', { marks: [] });
+
+    expect(client.requests[0]?.messages[0]?.content).toEqual([
+      { type: 'text', text: 'raw words' },
+      { type: 'text', text: 'Voice: quieter, slower.' },
+    ]);
+    expect(client.requests[1]?.messages[0]?.content).toEqual([
+      { type: 'text', text: 'raw words' },
+      { type: 'text', text: 'Voice: as usual.' },
+    ]);
+  });
+
+  it('tells the model the voice is a hint that never adds an emotion on its own', async () => {
+    const client = new FakeMessagesClient(textReply(JSON.stringify(PROPOSAL)));
+
+    await new ClaudeReflectionAnalyzer(client, vocabulary).analyze('raw words');
+
+    const block = client.requests[0]?.system?.[0];
+    const prompt = typeof block === 'object' ? block.text : '';
+
+    expect(prompt).toContain('never put any of it in cleanTranscript');
+    expect(prompt).toContain('Never let the voice put an emotion in emotionIds');
+  });
+
   it('returns the model proposal as a typed draft', async () => {
     const client = new FakeMessagesClient(textReply(JSON.stringify(PROPOSAL)));
 

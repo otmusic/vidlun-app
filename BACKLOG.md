@@ -1801,6 +1801,53 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++. The voice in the suggestions, and the echo back — 2026-11-12
+
+By the owner's word, for 1.9 (58): suggest the emotions more precisely with
+the voice, and bring the echo back as a short note on the voice against the
+words. Tone, the owner's: warm, calm, human, unobtrusive; not grand,
+poetic, psychological, medical or formal; natural for a native speaker.
+
+- **How a voice sounded is said against the person's own usual voice**
+  (`compareVoice`, `VoiceCue`): the median and spread of their last thirty
+  heard takes, and a mark where a take sits a spread or more away — quieter
+  or louder (one and a half, since it moves with how the phone was held),
+  lower or higher, flatter or livelier, slower or faster, more or fewer
+  pauses. Nothing until five takes were heard; brightness left out.
+- **The suggestions hear it.** The take is measured while it is recognised
+  (`DescribeVoice.ofTake`, given 1.5 s and never waited on past that) and
+  the analysis gets one line after the words, in a block of its own:
+  "Voice: quieter, flatter." The prompt keeps it a weak hint: it may tip
+  between words the sentence supports and add one or two offered words,
+  never an emotion the words give no ground for, never the mood, never the
+  safety flag. A typed entry, or too few takes, sends the words alone, as
+  before.
+- **The echo is written after saving** (`WriteEcho`, `ClaudeEchoWriter` on
+  Sonnet 5), not on the card: the card waits no longer, the observation
+  still comes only after the person has answered (§9), and it reads their
+  answer — the mood and the emotions they kept — beside the words and the
+  voice. Its own prompt carries the owner's tone, present tense only in
+  Ukrainian (no past tense or adjective that shows a gender), one sentence
+  of fifteen words or so, null when there is nothing to say. Never for a
+  distress or crisis entry. It appears on the entry page's existing echo
+  block; home is read again when it lands. The Ukrainian examples live in
+  `echoRegister.json`, since no Cyrillic may sit in a .ts file.
+- **Free**, for now: one more call per entry, after saving.
+- **Not checked against the real model**: no key here, and App Attest keeps
+  the simulator from the proxy. The plumbing was seen in the simulator with
+  the fake writer (a typed entry, saved, its echo on the entry page), and
+  the request, the parsing and the prompt are under test. The owner sees
+  real echoes in 58.
+- **Privacy policy and terms** (in the app, 12 November) now say a spoken
+  entry also sends a few words on how the voice sounded — never the
+  recording or the measurements — and that the echo sends the mood and
+  emotions chosen. The landing's privacy point and FAQ say the same in
+  `site/src/copy.json`, **not deployed**: they go out with 58.
+- Not done: an echo for an entry heard late (saved offline), the saved
+  screen staying long enough to show the echo, and the voice in the backup.
+
+---
+
 ## 3ψψψ+++++++++++. The bars hear the voice, and the phone measures it — 2026-11-12
 
 Both by the owner's word, for 1.9 (58). The goal the owner named: to show

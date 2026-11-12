@@ -2,6 +2,7 @@ import type { EmotionVocabulary } from '../../domain/entities/EmotionVocabulary'
 import type { IClock } from '../../domain/ports/IClock';
 import type { IIdGenerator } from '../../domain/ports/IIdGenerator';
 import type { IReflectionAnalyzer } from '../../domain/ports/IReflectionAnalyzer';
+import type { VoiceCue } from '../../domain/value-objects/VoiceCue';
 import { readingFromProposal, type Reading } from './draftFromProposal';
 import type { Spoken } from './TranscribeTake';
 
@@ -22,7 +23,8 @@ export class CreateVoiceEntry {
     private readonly idGenerator: IIdGenerator,
   ) {}
 
-  async execute(spoken: Spoken, at?: Date): Promise<Reading> {
+  /** `voice` is how the take sounded against the person's usual voice, when that is known. */
+  async execute(spoken: Spoken, at?: Date, voice: VoiceCue | null = null): Promise<Reading> {
     return readingFromProposal({
       id: this.idGenerator.next(),
       /*
@@ -33,7 +35,7 @@ export class CreateVoiceEntry {
       source: 'voice',
       rawTranscript: spoken.text,
       confidence: spoken.confidence,
-      proposal: await this.analyzer.analyze(spoken.text),
+      proposal: await this.analyzer.analyze(spoken.text, voice),
       vocabulary: this.vocabulary,
     });
   }

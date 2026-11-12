@@ -115,7 +115,7 @@
       "points": [
         "Без акаунта й реєстрації. Без реклами й аналітики.",
         "Голос і записи — тільки на твоєму телефоні. На наших серверах їх немає.",
-        "Для підказки емоцій штучний інтелект Claude від Anthropic отримує лише текст запису — без голосу й імені. Ми його не зберігаємо."
+        "Для підказки емоцій Claude від Anthropic отримує текст запису й кілька слів про те, як звучав голос, — без самого запису й без імені. Ми їх не зберігаємо."
       ]
     },
     "price": {
@@ -156,7 +156,7 @@
         },
         {
           "q": "Хто бачить мої записи?",
-          "a": "Записи лежать тільки на твоєму телефоні. Щоб підказати емоції, текст запису обробляє штучний інтелект Claude від Anthropic — без голосу й без імені. Ми цей текст не зберігаємо, і моделі на ньому не вчаться."
+          "a": "Записи лежать тільки на твоєму телефоні. Щоб підказати емоції й написати відлуння, Claude від Anthropic отримує текст запису й кілька слів про те, як звучав голос порівняно зі звичним, — без самого запису й без імені. Ми цього не зберігаємо, і моделі на цьому не вчаться."
         },
         {
           "q": "Це терапія?",
@@ -387,7 +387,7 @@
       "points": [
         "No account, no sign-up. No ads, no analytics.",
         "Your voice and entries live only on your phone, not on our servers.",
-        "To suggest emotions, Claude, an AI by Anthropic, gets only the text of an entry — no voice, no name. We don’t keep it."
+        "To suggest emotions, Claude by Anthropic gets the text of an entry and a few words on how your voice sounded — never the recording, never your name. We don’t keep them."
       ]
     },
     "price": {
@@ -428,7 +428,7 @@
         },
         {
           "q": "Who sees my entries?",
-          "a": "Your entries live only on your phone. To suggest emotions, the text of an entry is processed by Claude, an AI by Anthropic — without your voice or your name. We don’t keep that text, and it isn’t used to train AI models."
+          "a": "Your entries live only on your phone. To suggest emotions and write the echo, Claude by Anthropic gets the text of an entry and a few words on how your voice sounded compared with usual — never the recording, never your name. We don’t keep any of it, and it isn’t used to train AI models."
         },
         {
           "q": "Is this therapy?",

@@ -2,6 +2,7 @@ import type { EmotionVocabulary } from '../../domain/entities/EmotionVocabulary'
 import type { SafetyFlag } from '../../domain/entities/MoodEntry';
 import { AnalysisRefusedError, UnreadableAnalysisError } from '../../domain/errors/AnalysisErrors';
 import type { IReflectionAnalyzer, ReflectionProposal } from '../../domain/ports/IReflectionAnalyzer';
+import type { VoiceCue } from '../../domain/value-objects/VoiceCue';
 import { readText, REFLECTION_MODEL, type MessagesClient } from './claudeModels';
 
 /** A reflection is a handful of short fields; a larger ceiling would only hide bugs. */
@@ -37,7 +38,7 @@ export class ClaudeReflectionAnalyzer implements IReflectionAnalyzer {
     this.systemPrompt = buildSystemPrompt(vocabulary);
   }
 
-  async analyze(transcript: string): Promise<ReflectionProposal> {
+  async analyze(transcript: string, voice: VoiceCue | null = null): Promise<ReflectionProposal> {
     const message = await this.messages.create({
       model: this.model,
       max_tokens: MAX_TOKENS,
@@ -52,7 +53,19 @@ export class ClaudeReflectionAnalyzer implements IReflectionAnalyzer {
         },
       ],
       output_config: { format: { type: 'json_schema', schema: RESPONSE_SCHEMA } },
-      messages: [{ role: 'user', content: transcript }],
+      // The voice, when known, follows as a block of its own, so it is never read as words said.
+      messages: [
+        {
+          role: 'user',
+          content:
+            voice === null
+              ? transcript
+              : [
+                  { type: 'text', text: transcript },
+                  { type: 'text', text: voiceNote(voice) },
+                ],
+        },
+      ],
     });
 
     if (message.stop_reason === 'refusal') {
@@ -104,8 +117,18 @@ contextTags: at most three short lowercase topics naming what the entry was abou
 
 safetyFlag: read only the content of the sentence. Use "distress" when the speaker sounds badly overwhelmed, "crisis" when they refer to harming themselves, and "none" otherwise. Feeling bad is not a crisis.
 
+The voice. Sometimes a second part follows what was said, beginning "Voice:". It is not part of what was said — never put any of it in cleanTranscript. It is what the phone measured in the recording against this person's own usual voice: quieter or louder, lower or higher, flatter or livelier (how much the pitch moves), slower or faster, more or fewer pauses; "as usual" when nothing stood out. It is a weak hint, not a fact, and the words always come first.
+- Use it to choose between words the sentence already supports: "fine" said quietly, flatly and slowly leans toward tired rather than calm; good news said fast and lively leans toward excited rather than content.
+- In nearbyEmotionIds you may offer one or two words the voice suggests where the sentence leaves the feeling open.
+- Never let the voice put an emotion in emotionIds the sentence gives no ground for, never let it move the mood, and never let it touch safetyFlag.
+
 Allowed emotion ids:
 ${allowedIds}`;
+}
+
+/** The take's voice against the person's usual one, in the words the prompt explains. */
+export function voiceNote(voice: VoiceCue): string {
+  return `Voice: ${voice.marks.length === 0 ? 'as usual' : voice.marks.join(', ')}.`;
 }
 
 function parseProposal(raw: string): ReflectionProposal {

@@ -1,4 +1,5 @@
 import type { SafetyFlag } from '../entities/MoodEntry';
+import type { VoiceCue } from '../value-objects/VoiceCue';
 
 /**
  * Raw model output. Nothing here is trusted: mood may be out of range and
@@ -25,5 +26,10 @@ export interface ReflectionProposal {
  * different models, different cadences, different reasons to change.
  */
 export interface IReflectionAnalyzer {
-  analyze(transcript: string): Promise<ReflectionProposal>;
+  /**
+   * `voice`, when there is one, is how the take sounded against the person's
+   * usual voice: a hint for choosing between words the sentence supports,
+   * never a reason on its own.
+   */
+  analyze(transcript: string, voice?: VoiceCue | null): Promise<ReflectionProposal>;
 }

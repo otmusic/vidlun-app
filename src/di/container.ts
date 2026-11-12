@@ -98,6 +98,10 @@ import { AsyncStorageUnheardEntries } from '../infrastructure/persistence/AsyncS
 import { MeasureVoices } from '../application/use-cases/MeasureVoices';
 import { AsyncStorageVoiceReadings } from '../infrastructure/persistence/AsyncStorageVoiceReadings';
 import { NativeVoiceAnalyzer } from '../infrastructure/voice/NativeVoiceAnalyzer';
+import { DescribeVoice } from '../application/use-cases/DescribeVoice';
+import { WriteEcho } from '../application/use-cases/WriteEcho';
+import { ClaudeEchoWriter } from '../infrastructure/analysis/ClaudeEchoWriter';
+import { FakeEchoWriter } from '../infrastructure/analysis/FakeEchoWriter';
 import { analyzeVoice } from '../../modules/vidlun-voice';
 import {
   TimedMessagesClient,
@@ -131,6 +135,10 @@ export interface Container {
   readonly hearUnheardEntries: HearUnheardEntries;
   /** Measures the voice in kept recordings, for how an entry sounded. */
   readonly measureVoices: MeasureVoices;
+  /** How a take or an entry sounded against the person's usual voice. */
+  readonly describeVoice: DescribeVoice;
+  /** The echo, written onto an entry after it is saved. */
+  readonly writeEcho: WriteEcho;
   /** Keeps a person's note to support and mails it through the proxy when it can. */
   readonly feedback: FeedbackOutbox;
   readonly forgetAllRecordings: () => Promise<void>;
@@ -307,6 +315,8 @@ export function createContainer(dependencies: ContainerDependencies): Container 
   const milestones = new AsyncStorageMilestones(AsyncStorage);
   const unheard = new AsyncStorageUnheardEntries(AsyncStorage);
   const voiceReadings = new AsyncStorageVoiceReadings(AsyncStorage);
+  const voiceAnalyzer = new NativeVoiceAnalyzer(analyzeVoice);
+  const describeVoice = new DescribeVoice(voiceAnalyzer, voiceReadings, recordings);
 
   return {
     vocabulary,
@@ -328,7 +338,14 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     createUnheardEntry: new CreateUnheardEntry(clock, idGenerator),
     unheardEntries: unheard,
     hearUnheardEntries: new HearUnheardEntries(unheard, repository, analyzer, vocabulary),
-    measureVoices: new MeasureVoices(recordings, voiceReadings, new NativeVoiceAnalyzer(analyzeVoice)),
+    measureVoices: new MeasureVoices(recordings, voiceReadings, voiceAnalyzer),
+    describeVoice,
+    // The pretend echo sits behind the same two gates as the pretend analysis.
+    writeEcho: new WriteEcho(
+      repository,
+      __DEV__ && readFakeAnalysis() ? new FakeEchoWriter() : new ClaudeEchoWriter(messages),
+      describeVoice,
+    ),
     /*
      * Through an outbox, so the sheet closes on the tap and a note the
      * network refused goes at the next chance. Without a proxy there is no

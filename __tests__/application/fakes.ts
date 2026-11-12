@@ -1,4 +1,5 @@
 import type { IRecordingStore } from '@/domain/ports/IRecordingStore';
+import type { VoiceCue } from '@/domain/value-objects/VoiceCue';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { AudioRecording } from '@/domain/ports/IAudioRecorder';
 import type { IClock } from '@/domain/ports/IClock';
@@ -54,11 +55,14 @@ export class StubTranscriptionService implements ITranscriptionService {
 
 export class StubReflectionAnalyzer implements IReflectionAnalyzer {
   readonly received: string[] = [];
+  /** The voice each call was given, in order; null where there was none. */
+  readonly voices: (VoiceCue | null)[] = [];
 
   constructor(private readonly proposal: ReflectionProposal) {}
 
-  analyze(transcript: string): Promise<ReflectionProposal> {
+  analyze(transcript: string, voice: VoiceCue | null = null): Promise<ReflectionProposal> {
     this.received.push(transcript);
+    this.voices.push(voice);
 
     return Promise.resolve(this.proposal);
   }

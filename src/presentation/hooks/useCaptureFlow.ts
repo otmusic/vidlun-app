@@ -40,6 +40,9 @@ import type { IUnheardEntries } from '@/domain/ports/IUnheardEntries';
 import type { CreateUnheardEntry } from '@/application/use-cases/CreateUnheardEntry';
 import type { HearUnheardEntries } from '@/application/use-cases/HearUnheardEntries';
 import type { MeasureVoices } from '@/application/use-cases/MeasureVoices';
+import type { DescribeVoice } from '@/application/use-cases/DescribeVoice';
+import type { WriteEcho } from '@/application/use-cases/WriteEcho';
+import type { VoiceCue } from '@/domain/value-objects/VoiceCue';
 import type { AskForReview } from '@/application/use-cases/AskForReview';
 import type { CheckForUpdate } from '@/application/use-cases/CheckForUpdate';
 import type { KeepAffirmation } from '@/application/use-cases/KeepAffirmation';
@@ -258,6 +261,8 @@ export interface CaptureDependencies {
   readonly unheardEntries: IUnheardEntries;
   readonly hearUnheardEntries: HearUnheardEntries;
   readonly measureVoices: MeasureVoices;
+  readonly describeVoice: DescribeVoice;
+  readonly writeEcho: WriteEcho;
   readonly microphonePermission: IMicrophonePermission;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
@@ -436,6 +441,13 @@ const UPDATE_CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
 
 /** A beat after home is back, so the rating sheet lands on home and not on the way to it. */
 const REVIEW_AFTER_HOME_MS = 700;
+
+/**
+ * How long the analysis waits for the take's voice. Measuring takes a few
+ * hundredths of a second and runs beside the recognition, which takes far
+ * longer, so this is only ever reached when something is wrong.
+ */
+const VOICE_PATIENCE_MS = 1_500;
 
 /**
  * The stages an entry is being made in. A tap on the affirmation's
@@ -840,6 +852,44 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
   useEffect(measureVoices, [measureVoices]);
 
+  /*
+   * How the take sounded against the person's usual voice, measured while
+   * the words are being recognised, for the analysis to weigh beside them.
+   * Never waited on past a moment: a voice that cannot be described in that
+   * time leaves the words to speak alone, and the card does not wait.
+   */
+  const hearVoice = useCallback(
+    (uri: string): Promise<VoiceCue | null> =>
+      Promise.race([
+        dependencies.describeVoice.ofTake(uri).catch(() => null),
+        new Promise<null>((resolve) => {
+          setTimeout(() => {
+            resolve(null);
+          }, VOICE_PATIENCE_MS);
+        }),
+      ]),
+    [dependencies.describeVoice],
+  );
+
+  /*
+   * The echo is written after the entry is saved (owner's word, 2026-11-12),
+   * from what the person kept and how their voice sounded, and the journal
+   * is read again when it lands so the entry page has it.
+   */
+  const writeEcho = useCallback(
+    (entryId: string) => {
+      void dependencies.writeEcho
+        .execute(entryId)
+        .then((written) => {
+          if (written) {
+            reloadHome();
+          }
+        })
+        .catch(() => undefined);
+    },
+    [dependencies.writeEcho, reloadHome],
+  );
+
   const [notice, setNotice] = useState<Notice | null>(null);
   const noticesShown = useRef(0);
 
@@ -993,6 +1043,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           dependencies.haptics.success();
           takeUri.current = null;
           measureVoices();
+          writeEcho(confirmed.id);
 
           const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
 
@@ -1023,7 +1074,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           });
         });
     },
-    [dependencies, fail, measureVoices, noteReviewMoment],
+    [dependencies, fail, measureVoices, noteReviewMoment, writeEcho],
   );
 
   const ask = useCallback(
@@ -1107,11 +1158,16 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         takeUri.current = take.uri;
         setStage({ kind: 'processing' });
 
+        // Alongside the recognition, not after it: both read the same file.
+        const voice = hearVoice(take.uri);
         const spoken = await dependencies.transcribeTake.execute(take);
 
         ask(
           spoken,
-          (words) => dependencies.createVoiceEntry.execute(words, backfillAt.current ?? undefined),
+          (words) =>
+            voice.then((cue) =>
+              dependencies.createVoiceEntry.execute(words, backfillAt.current ?? undefined, cue),
+            ),
           (words) =>
             dependencies.createUnheardEntry.execute(words, 'voice', backfillAt.current ?? undefined),
         );
@@ -1119,7 +1175,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       .catch((error: unknown) => {
         fail(error, { kind: 'idle' });
       });
-  }, [ask, dependencies, fail]);
+  }, [ask, dependencies, fail, hearVoice]);
 
   const startRecording = useCallback(() => {
     backfillAt.current = null;
@@ -1173,6 +1229,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         takeUri.current = waiting.recording.uri;
         setParked(null);
 
+        const voice = hearVoice(waiting.recording.uri);
         const spoken = await dependencies.transcribeTake.execute(waiting.recording);
 
         /*
@@ -1187,7 +1244,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
         ask(
           spoken,
-          (words) => dependencies.createVoiceEntry.execute(words, waiting.recordedAt),
+          (words) =>
+            voice.then((cue) => dependencies.createVoiceEntry.execute(words, waiting.recordedAt, cue)),
           (words) => dependencies.createUnheardEntry.execute(words, 'voice', waiting.recordedAt),
         );
       })
@@ -1195,7 +1253,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         reloadParked();
         fail(error, { kind: 'idle' });
       });
-  }, [ask, dependencies, fail, reloadParked]);
+  }, [ask, dependencies, fail, hearVoice, reloadParked]);
 
   /*
    * A take parked by an earlier version — recorded before the model came
@@ -1378,6 +1436,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
           takeUri.current = null;
           measureVoices();
+          writeEcho(draft.id);
 
           const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
 
@@ -1395,7 +1454,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           fail(error, backTo);
         });
     },
-    [dependencies, fail, measureVoices, noteReviewMoment],
+    [dependencies, fail, measureVoices, noteReviewMoment, writeEcho],
   );
 
   const confirm = useCallback(() => {

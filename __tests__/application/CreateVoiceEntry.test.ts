@@ -249,5 +249,16 @@ describe('getting ready to listen', () => {
 
     expect(transcription.prepared).toBe(2);
   });
+
+  it('hands the analysis how the take sounded, when that is known', async () => {
+    const analyzer = new StubReflectionAnalyzer(proposal());
+    const useCase = new CreateVoiceEntry(analyzer, vocabulary, new FixedClock(NOW), new SequentialIdGenerator());
+    const spoken = { text: 'Fine, I guess.', confidence: Confidence.of(0.9) };
+
+    await useCase.execute(spoken, undefined, { marks: ['quieter', 'flatter'] });
+    await useCase.execute(spoken);
+
+    expect(analyzer.voices).toEqual([{ marks: ['quieter', 'flatter'] }, null]);
+  });
 });
 

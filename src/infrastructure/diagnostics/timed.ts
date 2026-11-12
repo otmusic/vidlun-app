@@ -1,4 +1,5 @@
 import type Anthropic from '@anthropic-ai/sdk';
+import type { VoiceCue } from '../../domain/value-objects/VoiceCue';
 
 import type { IReflectionAnalyzer, ReflectionProposal } from '../../domain/ports/IReflectionAnalyzer';
 import type { AudioRecording } from '../../domain/ports/IAudioRecorder';
@@ -70,8 +71,8 @@ export class TimedReflectionAnalyzer implements IReflectionAnalyzer {
     private readonly report: ReportTiming = logTiming,
   ) {}
 
-  analyze(transcript: string): Promise<ReflectionProposal> {
-    return timed('analyze', this.report, () => this.inner.analyze(transcript));
+  analyze(transcript: string, voice?: VoiceCue | null): Promise<ReflectionProposal> {
+    return timed('analyze', this.report, () => this.inner.analyze(transcript, voice));
   }
 }
 
