@@ -1818,7 +1818,13 @@ entry's text, to Claude by Anthropic, to suggest emotions, no voice, no
 name, not kept by us. "125 emotions" became 76, the decorative words are
 ones the app still offers (in its own labels), the footer's link to a
 consumer-health section that does not exist went, and the share images
-carry the new headline (`site/tools/og.py`).
+carry the new headline (`site/tools/og.py`). Then, by the owner's word, "What Vidlun does" became six cards
+in three columns: emotions suggested with a slot for one's own word, what
+affects you (the week's patterns, marked as subscription), the month in
+review (subscription), affirmations, a minute for yourself, the voice
+staying on the phone. The vocabulary card and its list went, events went
+(the app has none yet), and affirmations joined the free list — deployed
+the same day, ahead of 1.9 reaching the store.
 
 - **"Your emotions" names the period picked.** Picking the 10th and 11th
   read as too many emotions; the counts were right (checked against the

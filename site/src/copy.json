@@ -63,26 +63,50 @@
     },
     "features": {
       "title": "Що вміє Vidlun",
+      "paidLabel": "У підписці",
       "items": [
         {
-          "title": "Голос лишається на телефоні",
-          "body": "Аудіо зберігається лише на пристрої 13 місяців, потім видаляється саме. Текст запису лишається, доки ти його не видалиш.",
-          "art": "wave"
+          "title": "Підказує, що ти відчуваєш",
+          "body": "Vidlun аналізує твою розповідь і пропонує емоції, які найкраще підходять до твого стану. Якщо потрібного слова немає — впиши своє.",
+          "art": "suggest",
+          "chips": [
+            [
+              "Втома",
+              "cool"
+            ],
+            [
+              "Задоволення",
+              "calm"
+            ]
+          ],
+          "own": "+ своє слово"
         },
         {
-          "title": "76 слів для емоцій",
-          "body": "Від «радість» до «вигорання». Слова, а не смайлики, — щоб краще розуміти себе.",
-          "art": "chips"
+          "title": "Показує, що на тебе впливає",
+          "body": "Vidlun помічає, про що були твої найкращі й найважчі дні і які емоції найчастіше з’являються поруч із певними темами. Так легше зрозуміти, що впливає на твій стан.",
+          "art": "bars",
+          "paid": true
         },
         {
-          "title": "Тиждень і події",
-          "body": "Настрій по днях і важливі події — переїзд, нова робота, — щоб бачити, що змінилося до і після.",
-          "art": "bars"
+          "title": "Підсумок місяця",
+          "body": "Раз на місяць Vidlun перечитує твої записи й пише короткий підсумок: яким був місяць, що повторювалось і що змінилось.",
+          "art": "month",
+          "paid": true
+        },
+        {
+          "title": "Афірмації",
+          "body": "Обери одну з п’яти карток — у кожній тепле слово для тебе. Можна отримувати щодня, щотижня або раз на місяць, нагадування приходить зранку.",
+          "art": "cards"
         },
         {
           "title": "Хвилина для себе",
           "body": "Коротка вправа, щоб заспокоїтися: озирнись, прислухайся, відчуй. Нічого не записується.",
           "art": "ring"
+        },
+        {
+          "title": "Голос лишається на телефоні",
+          "body": "Аудіо зберігається лише на пристрої 13 місяців, потім видаляється саме. Текст запису лишається, доки ти його не видалиш.",
+          "art": "wave"
         }
       ]
     },
@@ -101,8 +125,9 @@
         "items": [
           "Записи до хвилини",
           "Підказки емоцій, настрій і теми",
-          "Щоденник із фільтром за емоціями, події",
+          "Щоденник із фільтром за емоціями",
           "Настрій по днях і твої емоції",
+          "Афірмації",
           "Вправа, щоб заспокоїтися",
           "Резервна копія"
         ]
@@ -310,26 +335,50 @@
     },
     "features": {
       "title": "What Vidlun does",
+      "paidLabel": "Subscription",
       "items": [
         {
-          "title": "Your voice stays on your phone",
-          "body": "Audio is kept only on your device for 13 months, then deleted automatically. The text stays until you delete it.",
-          "art": "wave"
+          "title": "Suggests what you feel",
+          "body": "Vidlun looks at what you said and suggests the emotions that fit your state best. Don’t see the right word? Type your own.",
+          "art": "suggest",
+          "chips": [
+            [
+              "Tired",
+              "cool"
+            ],
+            [
+              "Content",
+              "calm"
+            ]
+          ],
+          "own": "+ your own"
         },
         {
-          "title": "76 words for feelings",
-          "body": "From “happy” to “burned out.” Words, not emoji, so you can understand yourself better.",
-          "art": "chips"
+          "title": "Shows what affects you",
+          "body": "Vidlun notices what your best and hardest days were about, and which emotions tend to come up with certain topics. It makes it easier to see what affects how you feel.",
+          "art": "bars",
+          "paid": true
         },
         {
-          "title": "Your week and events",
-          "body": "Mood by day, plus the events that matter — a move, a new job — so you can see what changed before and after.",
-          "art": "bars"
+          "title": "Your month in review",
+          "body": "Once a month, Vidlun reads back through your entries and writes a short recap: how the month went, what kept coming up, and what changed.",
+          "art": "month",
+          "paid": true
+        },
+        {
+          "title": "Affirmations",
+          "body": "Pick one of five cards — each has a kind word for you. Get one daily, weekly, or monthly, with a reminder in the morning.",
+          "art": "cards"
         },
         {
           "title": "A minute for yourself",
           "body": "A short exercise to help you calm down: look around, listen, notice. Nothing is recorded.",
           "art": "ring"
+        },
+        {
+          "title": "Your voice stays on your phone",
+          "body": "Audio is kept only on your device for 13 months, then deleted automatically. The text stays until you delete it.",
+          "art": "wave"
         }
       ]
     },
@@ -348,8 +397,9 @@
         "items": [
           "Recordings up to a minute",
           "Emotion suggestions, mood and topics",
-          "Journal with an emotion filter, events",
+          "Journal with an emotion filter",
           "Mood by day and your emotions",
+          "Affirmations",
           "A calming exercise",
           "Backup"
         ]

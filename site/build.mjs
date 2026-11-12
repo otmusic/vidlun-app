@@ -72,16 +72,30 @@ function words(list, twin = false) {
 }
 
 /**
- * The small drawing a feature card carries: a voice wave, a few chips, the
- * grounding exercise's ring, a week of bars.
+ * The small drawing a feature card carries: a voice wave, the card's
+ * suggested words with a slot for one's own, a week of bars, a month of mood
+ * dots, the five affirmation cards, the grounding exercise's ring.
  */
-function art(kind, list) {
+function art(item) {
+  const kind = item.art;
   if (kind === 'wave') {
     const heights = [18, 34, 52, 26, 60, 40, 22, 48, 30, 56, 36, 20, 44, 28];
     return `<div class="art wave" aria-hidden="true">${heights.map((h) => `<i style="--h:${h}px"></i>`).join('')}</div>`;
   }
-  if (kind === 'chips') {
-    return `<div class="art chips" aria-hidden="true">${list.slice(0, 6).map(([word, tone]) => `<i style="--tone:var(--${tone})">${escape(word)}</i>`).join('')}</div>`;
+  if (kind === 'suggest') {
+    const offered = item.chips.map(([word, tone]) => `<i style="--tone:var(--${tone})">${escape(word)}</i>`).join('');
+    return `<div class="art chips" aria-hidden="true">${offered}<i class="own">${escape(item.own)}</i></div>`;
+  }
+  if (kind === 'month') {
+    // Four weeks of days, each dotted in its mood; a few days without an entry.
+    const days = 'cc-wclcc-cwlc-cwwcc-lccwc-cc'.split('');
+    const tone = { c: 'calm', w: 'warm', l: 'low', '-': 'line' };
+    return `<div class="art month" aria-hidden="true">${days.map((d) => `<i style="--tone:var(--${tone[d]})"></i>`).join('')}</div>`;
+  }
+  if (kind === 'cards') {
+    // The five affirmation cards, one of them picked.
+    const tones = ['lime', 'cool', 'warm', 'calm', 'violet'];
+    return `<div class="art cards" aria-hidden="true">${tones.map((t, i) => `<i${i === 2 ? ' class="on"' : ''} style="--tone:var(--${t})"></i>`).join('')}</div>`;
   }
   if (kind === 'ring') {
     // Five steps round the circle with a gap between each, two of them taken, as the exercise draws it.
@@ -191,13 +205,22 @@ section{padding-block:clamp(40px,7vw,88px)}
 .step h3{font-size:clamp(22px,2.4vw,28px)}
 .step p{margin-top:12px;color:var(--ink-soft);font-size:18px}
 @media (max-width:860px){.step{grid-template-columns:1fr;gap:20px}.step:nth-child(even) .phone{order:0}.step .phone{width:min(260px,72vw);margin-inline:0}}
-.features{list-style:none;margin:32px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.features{list-style:none;margin:32px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .features li{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:22px 22px 24px;display:flex;flex-direction:column;gap:6px}
 .art{height:64px;display:flex;align-items:flex-end;gap:5px;margin-bottom:14px}
 .art.wave{align-items:center}.art.wave i{display:block;width:5px;border-radius:3px;background:var(--accent);height:var(--h)}
 .art.wave i:nth-child(3n){background:var(--lime)}
-.art.chips{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;gap:6px;overflow:hidden}
+.art.chips{flex-wrap:wrap;align-items:flex-end;align-content:flex-end;gap:6px;overflow:hidden}
 .art.chips i{font-style:normal;font-size:12px;border:1.5px solid var(--tone);color:var(--tone);border-radius:999px;padding:4px 10px}
+.art.chips i.own{border-style:dashed;border-color:var(--ink-faint);color:var(--ink-soft)}
+.art.month{display:grid;grid-template-columns:repeat(7,10px);grid-auto-rows:10px;gap:5px;align-content:end}
+.art.month i{display:block;width:10px;height:10px;border-radius:50%;background:var(--tone)}
+.art.cards{align-items:flex-end;gap:8px}
+.art.cards i{display:block;width:30px;height:38px;border-radius:9px;background:var(--tone);transition:transform .3s cubic-bezier(.2,.9,.3,1.2)}
+.art.cards i.on{transform:translateY(-14px) rotate(-6deg)}
+.features li:hover .art.cards i.on{transform:translateY(-18px) rotate(-9deg)}
+@media (prefers-reduced-motion: reduce){.art.cards i{transition:none}}
+.tag{align-self:flex-start;margin-top:auto;font-size:12px;letter-spacing:.04em;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:3px 10px;translate:0 10px}
 .art.bars i{display:block;flex:1;border-radius:6px 6px 3px 3px;height:var(--h);background:var(--tone)}
 .art.ring svg{width:64px;height:64px;fill:none;stroke:var(--line);stroke-width:6;stroke-linecap:round}
 .art.ring .on{stroke:var(--ring)}
@@ -334,7 +357,7 @@ function page(lang) {
   <section id="features">
     <h2>${escape(c.features.title)}</h2>
     <ul class="features">
-      ${c.features.items.map((item) => `<li>${art(item.art, c.words)}<h3>${escape(item.title)}</h3><p>${escape(item.body)}</p></li>`).join('\n      ')}
+      ${c.features.items.map((item) => `<li>${art(item)}<h3>${escape(item.title)}</h3><p>${escape(item.body)}</p>${item.paid ? `<span class="tag">${escape(c.features.paidLabel)}</span>` : ''}</li>`).join('\n      ')}
     </ul>
   </section>
 
