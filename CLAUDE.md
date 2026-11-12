@@ -709,6 +709,13 @@ end-to-end with speech recognition disabled.
   BACKLOG §1g.
 - Do not build v2 features: pattern detection, voice-topic analysis, health
   data integration, personalization, append-to-entry.
+  Reopened in part by the owner on 2026-11-12: the phone measures the voice
+  of each kept recording (pitch and how it moves, loudness, pauses, pace,
+  brightness) in `modules/vidlun-voice`, to show later how heavy or light an
+  entry sounded. Measured on the phone from the saved file, never sent
+  anywhere, compared with the person's own voice rather than a norm, and
+  shown nowhere until it has been checked against their moods. BACKLOG
+  §3ψψψ+++++++++++.
 - Do not gate basic tracking or backups behind the paywall. Only AI narrative
   is paid.
 - Do not add analytics or crash SDKs until M5.

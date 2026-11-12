@@ -1801,6 +1801,63 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++. The bars hear the voice, and the phone measures it — 2026-11-12
+
+Both by the owner's word, for 1.9 (58). The goal the owner named: to show
+later, in the statistics, how heavy or light an entry sounded.
+
+- **The recording screen's bars move with the voice.** They were a loop
+  that never heard anything. The recorder's port gained `level()`, read
+  from expo-audio's metering (already on) and spread from -50 to -12 dBFS
+  over 0..1 (`levelFromDecibels`). The screen reads it every 70 ms, rises
+  at once and falls more slowly, and multiplies each bar's own rhythm by it
+  on the native driver: silent, a low breathing line; loud, the whole tent.
+  Paused, the row settles; Reduce Motion keeps it still, as before. Seen in
+  the simulator with `say` playing into the Mac's microphone.
+- **The voice is measured from the kept recording, not the live
+  microphone** (`modules/vidlun-voice`, Swift with Accelerate). The take is
+  already on disk as 16 kHz PCM, so measuring touches nothing about
+  recording, and a failure costs a reading, never a take. 40 ms frames
+  every 20 ms; speech is what stands 12 dB above the quietest tenth.
+  Measures (`VoiceReading`, version 1): speech length; median pitch and its
+  low-to-high-tenth range in semitones (normalised self-correlation, first
+  peak near the best so a voice does not read an octave low); median
+  loudness and its swing; the share of the speaking stretch in pauses of
+  0.26 s or more; pace as loudness beats per second on a 30 ms / 10 ms grid
+  (it catches about half the syllables, and holds steady across voices);
+  brightness as the power-weighted mean frequency from how fast the signal
+  changes against its size. A minute of speech takes 0.03 s on the Mac.
+- **Checked on the Mac** with a command-line harness around the same
+  Swift: tones of 200 and 120 Hz read 200.0 and 120.0 Hz with brightness
+  199.9 and 120.2; a 120→240 Hz glide 9.4 semitones; one second of silence
+  in three, 32.5 % pauses; silence, nothing. `say` voices: Ralph 77 Hz,
+  Fred 101, Samantha 178, Kathy 207; Samantha's pace 2.2 slow, 2.4 normal,
+  4.5 fast. Then end to end on the iPhone 17 Pro simulator (Release build):
+  a take spoken by `say` was saved and measured on its own — pitch 177.8 Hz,
+  against 177.6 from the file itself — and deleting the entry took the
+  recording and the reading with it. Loudness, pace and brightness came
+  out different through the speaker and the room, which is why the numbers
+  are for comparing a person with themselves.
+- **When**: after a save, on opening and on coming to the front
+  (`MeasureVoices`, 40 a pass, one at a time, single-flight). Recordings
+  kept before this existed are measured the same way, so the history is
+  there from the start; a reading from an older analysis version is
+  measured again. Only kept recordings: with keeping off there is no file.
+- **Kept** in `vidlun.voiceReadings` (AsyncStorage, one JSON object by
+  entry id). The readings outlive the audio's thirteen months; deleting
+  the entry forgets its reading; turning "Keep voice recordings" off
+  forgets them all. Not in the backup file yet.
+- **Privacy policy**: a row for the measurements on the phone (numbers, not
+  sound), effective 12 November 2026; the site's copy goes out when 58 does.
+- **Shown nowhere yet**, on purpose. From a voice, energy (lively or flat)
+  can be heard reliably; heavy against light much less so, since a glad and
+  an angry voice sound alike. The plan: collect on the owner's own entries
+  for two or three weeks, see whether the numbers follow the moods they set,
+  then decide with the design what the statistics say. Android needs its
+  own analyzer behind `IVoiceAnalyzer`.
+
+---
+
 ## 3ψψψ++++++++++. The period pill names the days, choosing together goes back to the card — 2026-11-12
 
 Both by the owner's word, seen in the simulator. In **1.9 (57)**, uploaded

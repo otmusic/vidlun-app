@@ -3,6 +3,9 @@ import { MoodEntry } from '@/domain/entities/MoodEntry';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
 import { InMemoryMoodEntryRepository } from '@/infrastructure/persistence/InMemoryMoodEntryRepository';
+import { AsyncStorageVoiceReadings } from '@/infrastructure/persistence/AsyncStorageVoiceReadings';
+import { VoiceReading } from '@/domain/value-objects/VoiceReading';
+import { InMemoryKeyValueStore } from '../infrastructure/fakes';
 import { InMemoryRecordingStore, RecordingRevisionLog } from './fakes';
 
 const CREATED_AT = new Date('2026-08-25T18:00:00.000Z');
@@ -24,16 +27,35 @@ function setup() {
   const repository = new InMemoryMoodEntryRepository();
   const revisionLog = new RecordingRevisionLog();
   const recordings = new InMemoryRecordingStore();
+  const voiceReadings = new AsyncStorageVoiceReadings(new InMemoryKeyValueStore());
 
   return {
     repository,
     revisionLog,
     recordings,
-    subject: new DeleteEntry(repository, revisionLog, recordings),
+    voiceReadings,
+    subject: new DeleteEntry(repository, revisionLog, recordings, voiceReadings),
   };
 }
 
 describe('DeleteEntry', () => {
+  it('forgets what was measured in the voice along with the voice', async () => {
+    const { repository, voiceReadings, subject } = setup();
+    const reading = VoiceReading.from({ version: 1, speechMs: 4000, loudnessDb: -20 });
+
+    await repository.save(entry('entry-1'));
+    await repository.save(entry('entry-2'));
+    if (reading !== null) {
+      await voiceReadings.save('entry-1', reading);
+      await voiceReadings.save('entry-2', reading);
+    }
+
+    await subject.execute('entry-1');
+
+    expect(await voiceReadings.find('entry-1')).toBeNull();
+    expect(await voiceReadings.find('entry-2')).not.toBeNull();
+  });
+
   it('removes the entry', async () => {
     const { repository, subject } = setup();
     await repository.save(entry('entry-1'));

@@ -1,6 +1,7 @@
 import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryRepository';
 import type { IRecordingStore } from '../../domain/ports/IRecordingStore';
 import type { IRevisionLog } from '../../domain/ports/IRevisionLog';
+import type { IVoiceReadings } from '../../domain/ports/IVoiceReadings';
 
 /**
  * Removes an entry and everything the app kept because of it.
@@ -15,6 +16,7 @@ export class DeleteEntry {
     private readonly repository: IMoodEntryRepository,
     private readonly revisionLog: IRevisionLog,
     private readonly recordings: IRecordingStore,
+    private readonly voiceReadings: IVoiceReadings,
   ) {}
 
   async execute(id: string): Promise<void> {
@@ -23,5 +25,7 @@ export class DeleteEntry {
     await this.repository.delete(id);
     await this.revisionLog.forget(id);
     await this.recordings.discard(id);
+    // What was measured in the voice goes with the voice.
+    await this.voiceReadings.forget(id);
   }
 }

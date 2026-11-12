@@ -39,6 +39,7 @@ import type { IParkedTake, ParkedTake } from '@/domain/ports/IParkedTake';
 import type { IUnheardEntries } from '@/domain/ports/IUnheardEntries';
 import type { CreateUnheardEntry } from '@/application/use-cases/CreateUnheardEntry';
 import type { HearUnheardEntries } from '@/application/use-cases/HearUnheardEntries';
+import type { MeasureVoices } from '@/application/use-cases/MeasureVoices';
 import type { AskForReview } from '@/application/use-cases/AskForReview';
 import type { CheckForUpdate } from '@/application/use-cases/CheckForUpdate';
 import type { KeepAffirmation } from '@/application/use-cases/KeepAffirmation';
@@ -256,6 +257,7 @@ export interface CaptureDependencies {
   /** Where such entries wait to be heard. */
   readonly unheardEntries: IUnheardEntries;
   readonly hearUnheardEntries: HearUnheardEntries;
+  readonly measureVoices: MeasureVoices;
   readonly microphonePermission: IMicrophonePermission;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
@@ -291,6 +293,8 @@ export interface CaptureFlow {
   readonly reloadHome: () => void;
   /** Listens, late, to entries saved without Vidlun's answer. App calls it on coming to the front. */
   readonly hearUnheard: () => void;
+  /** Measures the voice in recordings that have no reading yet. App calls it on coming to the front. */
+  readonly measureVoices: () => void;
   /** The month being offered on home's first-days card, or null off-season. */
   readonly monthCard: Date | null;
   /** A newer version on sale in the App Store, for the line on top of home; null otherwise. */
@@ -303,6 +307,8 @@ export interface CaptureFlow {
   readonly pauseRecording: () => void;
   /** Goes on with the held take: their answer was to stay. */
   readonly resumeRecording: () => void;
+  /** How loud the voice is right now, 0 to 1, for the recording screen's bars. */
+  readonly voiceLevel: () => number;
   /** The take waiting for the model, if any — shown on home until it is read. */
   readonly parked: ParkedTake | null;
   /**
@@ -823,6 +829,17 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
   useEffect(hearUnheard, [hearUnheard]);
 
+  /*
+   * The voice of each kept recording is measured in the background — after a
+   * save, on opening and on coming back to the front — and the recordings kept
+   * before this existed are measured the same way. Nothing waits on it.
+   */
+  const measureVoices = useCallback(() => {
+    void dependencies.measureVoices.execute().catch(() => undefined);
+  }, [dependencies.measureVoices]);
+
+  useEffect(measureVoices, [measureVoices]);
+
   const [notice, setNotice] = useState<Notice | null>(null);
   const noticesShown = useRef(0);
 
@@ -975,6 +992,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           await dependencies.unheardEntries.add(confirmed.id);
           dependencies.haptics.success();
           takeUri.current = null;
+          measureVoices();
 
           const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
 
@@ -1005,7 +1023,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           });
         });
     },
-    [dependencies, fail, noteReviewMoment],
+    [dependencies, fail, measureVoices, noteReviewMoment],
   );
 
   const ask = useCallback(
@@ -1359,6 +1377,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           dependencies.haptics.success();
 
           takeUri.current = null;
+          measureVoices();
 
           const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
 
@@ -1376,7 +1395,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           fail(error, backTo);
         });
     },
-    [dependencies, fail, noteReviewMoment],
+    [dependencies, fail, measureVoices, noteReviewMoment],
   );
 
   const confirm = useCallback(() => {
@@ -1412,6 +1431,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     home,
     reloadHome,
     hearUnheard,
+    measureVoices,
     startRecording,
     stopRecording: useCallback(() => {
       dependencies.recorder.stop();
@@ -1428,6 +1448,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         dependencies.recorder.stop();
       });
     }, [dependencies.recorder]),
+    voiceLevel: useCallback(() => dependencies.recorder.level(), [dependencies.recorder]),
     cancel: useCallback(() => {
       dependencies.recorder.cancel();
       setStage({ kind: 'idle' });

@@ -185,6 +185,7 @@ function Vidlun(props: {
     createUnheardEntry: container.createUnheardEntry,
     unheardEntries: container.unheardEntries,
     hearUnheardEntries: container.hearUnheardEntries,
+    measureVoices: container.measureVoices,
     microphonePermission: container.microphonePermission,
     getHomeView: container.getHomeView,
     getWeekSummary: container.getWeekSummary,
@@ -382,6 +383,7 @@ function Vidlun(props: {
     const watch = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         flow.hearUnheard();
+        flow.measureVoices();
         flow.reloadHome();
         flow.checkForUpdate();
       }
@@ -390,7 +392,7 @@ function Vidlun(props: {
     return () => {
       watch.remove();
     };
-  }, [flow.hearUnheard, flow.reloadHome, flow.checkForUpdate]);
+  }, [flow.hearUnheard, flow.measureVoices, flow.reloadHome, flow.checkForUpdate]);
   /*
    * The splash lifts when the journal is open — settings read, entries read —
    * but never before MIN_SPLASH_MS, so a fast phone gets a beat rather than a

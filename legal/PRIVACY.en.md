@@ -1,6 +1,6 @@
 # Vidlun Privacy Policy
 
-**Effective:** 2 November 2026
+**Effective:** 12 November 2026
 
 **Data controller:** the Vidlun developer, support@vidlun.app
 
@@ -20,7 +20,8 @@
 
 | Data | Where | How long |
 |---|---|---|
-| Voice recordings | the app's documents folder | thirteen months, then deleted automatically; immediately if "Keep recordings" is off |
+| Voice recordings | the app's documents folder | thirteen months, then deleted automatically; immediately if "Keep voice recordings" is off |
+| Measurements of the voice in a recording — pitch, loudness, pauses, pace — taken on the phone; numbers, not sound | local storage | until you delete the entry or turn "Keep voice recordings" off; they stay when the recording's thirteen months end |
 | Transcript, emotions, mood, topics, time | the app's local storage | until you delete it |
 | Revision log: what the app proposed and what you changed | local storage | until you delete it |
 | Settings | local storage | while the app is installed |

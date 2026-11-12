@@ -95,6 +95,10 @@ import { CreateUnheardEntry } from '../application/use-cases/CreateUnheardEntry'
 import { HearUnheardEntries } from '../application/use-cases/HearUnheardEntries';
 import type { IUnheardEntries } from '../domain/ports/IUnheardEntries';
 import { AsyncStorageUnheardEntries } from '../infrastructure/persistence/AsyncStorageUnheardEntries';
+import { MeasureVoices } from '../application/use-cases/MeasureVoices';
+import { AsyncStorageVoiceReadings } from '../infrastructure/persistence/AsyncStorageVoiceReadings';
+import { NativeVoiceAnalyzer } from '../infrastructure/voice/NativeVoiceAnalyzer';
+import { analyzeVoice } from '../../modules/vidlun-voice';
 import {
   TimedMessagesClient,
   TimedReflectionAnalyzer,
@@ -125,6 +129,8 @@ export interface Container {
   readonly createUnheardEntry: CreateUnheardEntry;
   readonly unheardEntries: IUnheardEntries;
   readonly hearUnheardEntries: HearUnheardEntries;
+  /** Measures the voice in kept recordings, for how an entry sounded. */
+  readonly measureVoices: MeasureVoices;
   /** Keeps a person's note to support and mails it through the proxy when it can. */
   readonly feedback: FeedbackOutbox;
   readonly forgetAllRecordings: () => Promise<void>;
@@ -300,6 +306,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
   const recordings = new FileRecordingStore();
   const milestones = new AsyncStorageMilestones(AsyncStorage);
   const unheard = new AsyncStorageUnheardEntries(AsyncStorage);
+  const voiceReadings = new AsyncStorageVoiceReadings(AsyncStorage);
 
   return {
     vocabulary,
@@ -311,7 +318,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     createTextEntry: new CreateTextEntry(analyzer, vocabulary, clock, idGenerator),
     confirmEntry: new ConfirmEntry(repository, revisionLog, clock, recordings),
     reviseEntry: new ReviseEntry(vocabulary),
-    deleteEntry: new DeleteEntry(repository, revisionLog, recordings),
+    deleteEntry: new DeleteEntry(repository, revisionLog, recordings, voiceReadings),
     getHistory: new GetHistory(repository),
     forgetOldRecordings: new ForgetOldRecordings(recordings, clock),
     findRecording: new FindRecording(recordings),
@@ -321,6 +328,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     createUnheardEntry: new CreateUnheardEntry(clock, idGenerator),
     unheardEntries: unheard,
     hearUnheardEntries: new HearUnheardEntries(unheard, repository, analyzer, vocabulary),
+    measureVoices: new MeasureVoices(recordings, voiceReadings, new NativeVoiceAnalyzer(analyzeVoice)),
     /*
      * Through an outbox, so the sheet closes on the tap and a note the
      * network refused goes at the next chance. Without a proxy there is no
@@ -337,7 +345,15 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     ),
     // Everything up to now, which is everything: turning the setting off is a
     // request to be rid of the voice, not only to stop adding to it.
-    forgetAllRecordings: () => recordings.discardBefore(clock.now()),
+    /*
+     * Turning off keeping the voice takes what was measured in it too: the
+     * numbers are not the sound, but someone who asked for their voice to
+     * be gone should not find it described anywhere.
+     */
+    forgetAllRecordings: async () => {
+      await recordings.discardBefore(clock.now());
+      await voiceReadings.clear();
+    },
     getHomeView: new GetHomeView(repository, clock, recordings),
     getMilestones: new GetMilestones(milestones),
     markMilestone: new MarkMilestone(milestones, clock, idGenerator),
