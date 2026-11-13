@@ -59,7 +59,8 @@
         {
           "file": "assets/model/ggml-parakeet-ultra-0.6b-q4_0.bin"
         }
-      ]
+      ],
+      "./plugins/withSceneDelegate"
     ],
     "scheme": "vidlun",
     "locales": {
