@@ -1801,6 +1801,42 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++. 1.9 closed on opening under iOS 27; 1.9.1 — 2026-11-13
+
+**What happened.** 1.9 (57) went live (the owner released it) and closed on
+opening for everyone on iOS 27. The crash logs, pulled from the owner's
+iPhone (iOS 27.0.1) with `xcrun devicectl`, all stop in UIKit's
+`_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption` (SIGTRAP):
+an app built with the iOS 27 SDK must use the UIScene life cycle. Builds
+54–57 were archived with Xcode 27.2 — 26.6 was no longer on the Mac — and
+Expo 57's template still makes the window in the app delegate. The note
+saying to release with Xcode 26.6 was not checked. The iPhone 17 and 17 Pro
+simulators run iOS 26.5, where the app opens, which is why nothing caught
+it; an iOS 27.2 simulator ("iPhone 17 Pro iOS27") reproduces it at once.
+
+**The fix** (`plugins/withSceneDelegate.js`, `plugins/scene/SceneDelegate.swift`,
+6424330): a scene delegate makes the window from the scene and starts React
+Native into it, puts a cold-start link into the launch options, and hands
+the scene's life-cycle, URL and user-activity events to the app delegate,
+where Expo's subscribers and Linking listen. Modelled on Expo 58's
+`ExpoAppSceneDelegate`, which replaces it when the project moves to 58.
+Checked on the iOS 27.2 simulator: opens, survives going to the background
+and back, takes `vidlun://record`; and on iOS 26.5 with the demo journal.
+
+**1.9.1 (58)** is exactly 1.9 (57) plus that fix, built from the branch
+`hotfix-1.9.1` (b262536 + the fix + the bump), uploaded 2026-11-13 07:40,
+submitted the same morning (review submission 8d61082f…, release after
+approval), What's New "Fixes Vidlun closing right after opening on iOS 27.
+Sorry for the trouble.", the review notes opening with the fix; an
+expedited review was requested and accepted ("We'll expedite review for
+Voice journal: Vidlun"). The work of 2026-11-12 (the bars, the voice, the
+echo) waits for the next build, 59.
+
+**From now on**: before any release archive, open the Release simulator
+build on the iOS 27.2 simulator.
+
+---
+
 ## 3ψψψ++++++++++++. The voice in the suggestions, and the echo back — 2026-11-12
 
 By the owner's word, for 1.9 (58): suggest the emotions more precisely with
