@@ -1822,6 +1822,13 @@ Seen in the simulator on Metro: the pill on home, the picker's heading, and
 the echo above the title (shown by pointing it at the latest entry for a
 moment, since the simulator's journal has none from a month ago).
 
+The same day, also by the owner's word: **home lost the last three entries
+under the record button and the date over the week strip**. The journal tab
+is where entries live, and the strip already says which day it is; the run
+of days stays at the top right while there is one. `EntryRow` and
+`SwipeGroup` (the swipe-to-delete row) had no other user and went;
+`dayWordOf` moved to `components/dayWord.ts` for the journal's cards.
+
 ---
 
 ## 3ψψψ+++++++++++++. 1.9 closed on opening under iOS 27; 1.9.1 — 2026-11-13

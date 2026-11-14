@@ -12,7 +12,6 @@ import { countedKey } from '@/i18n/plural';
 import { AppText } from '../components/AppText';
 import { TapTarget } from '../components/Button';
 import { CountPill } from '../components/CountPill';
-import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { AffirmationMark } from '../components/AffirmationButton';
 import { RecordButton } from '../components/RecordButton';
@@ -41,7 +40,6 @@ export interface HomeScreenProps {
   /** The month card's X: that month's card stays closed. */
   readonly onCloseMonth: () => void;
   readonly onOpen: (entry: MoodEntry) => void;
-  readonly onDelete: (id: string) => void;
   readonly t: Translate;
   readonly onRecord: () => void;
   readonly onWrite: () => void;
@@ -79,7 +77,6 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const week = props.home?.week ?? [];
   const hasEcho = props.home?.yearEcho != null || props.home?.echo != null;
   const offersYesterday = props.home?.offersYesterday ?? false;
-  const recent = props.home?.recentEntries ?? [];
 
   /*
    * Home scrolls. It used to be a fixed column with the record button in a
@@ -96,33 +93,22 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
       {props.onUpdate === null ? null : (
         <UpdateLine t={props.t} onUpdate={props.onUpdate} onClose={props.onCloseUpdate} />
       )}
-      <View
-        style={{
-          flexDirection: 'row',
-          // Wraps rather than clips: at large type the pill drops under the date.
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          marginBottom: 20,
-        }}
-      >
-        <AppText variant="caption" color="inkFaint">
-          {formatToday(props.locale)}
-        </AppText>
-        {/*
-          * Nothing but the run of days sits opposite the date. Settings moved to
-          * its own tab, and a gear here would be the only control on the screen
-          * competing with the one the screen exists for.
-          *
-          * At zero the pill is absent rather than showing a nought. A person on
-          * their first day has not failed at anything, and a counter that opens
-          * at zero is the app saying otherwise.
-          */}
-        {streak > 0 ? (
+      {/*
+        * The run of days, alone at the top right: the date over it went
+        * (owner's word, 2026-11-14) — the week strip under it already says
+        * which day it is. Settings moved to its own tab, and a gear here
+        * would be the only control competing with the one the screen exists
+        * for.
+        *
+        * At zero the pill is absent rather than showing a nought. A person on
+        * their first day has not failed at anything, and a counter that opens
+        * at zero is the app saying otherwise.
+        */}
+      {streak > 0 ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 20 }}>
           <CountPill value={streak} label={props.t(countedKey('home.streak', streak, props.locale))} />
-        ) : null}
-      </View>
+        </View>
+      ) : null}
 
       {week.length > 0 ? (
         /*
@@ -305,31 +291,10 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           onClose={props.onCloseMonth}
         />
       )}
-
-
       {/*
-        * The last three entries, as a list and nothing more: no heading, no
-        * "all" link — the journal tab is where entries live — and nothing at
-        * all while there are none. Owner's call on the first day on sale.
+        * No list of recent entries under the record button any more (owner's
+        * word, 2026-11-14): the journal tab is where entries live.
         */}
-      {recent.length === 0 ? null : (
-        <SwipeGroup>
-          <View style={{ gap: 12, marginTop: 6 }}>
-            {recent.map((entry) => (
-              <EntryRow
-                key={entry.id}
-                entry={entry}
-                vocabulary={props.vocabulary}
-                locale={props.locale}
-                today={props.today}
-                t={props.t}
-                onOpen={props.onOpen}
-                onDelete={props.onDelete}
-              />
-            ))}
-          </View>
-        </SwipeGroup>
-      )}
     </ScrollView>
   );
 }
@@ -366,10 +331,6 @@ function PickAffirmation(props: { readonly label: string; readonly onPress: () =
       <AppText variant="label">{props.label}</AppText>
     </Pressable>
   );
-}
-
-function formatToday(locale: Locale): string {
-  return new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 /**

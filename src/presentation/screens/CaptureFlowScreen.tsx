@@ -535,7 +535,6 @@ function Stage(
           onOpenStats={flow.openStats}
           onOpenMonth={flow.openMonth}
           onOpen={flow.openEntry}
-          onDelete={flow.deleteEntry}
           onUpdate={updateOpener(
             flow.update !== null && flow.update.version !== props.settings.updateLineClosed
               ? flow.update

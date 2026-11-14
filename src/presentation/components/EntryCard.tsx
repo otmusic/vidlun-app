@@ -5,7 +5,7 @@ import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { type Locale, type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
-import { dayWordOf } from './EntryRow';
+import { dayWordOf } from './dayWord';
 import { Icon } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
 import { emotionLabel, emotionWordsIn, moodTint } from './emotionDisplay';
