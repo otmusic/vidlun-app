@@ -14,6 +14,7 @@ import { TapTarget } from '../components/Button';
 import { CountPill } from '../components/CountPill';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { Icon, ICON_SIZE } from '../components/Icon';
+import { AffirmationMark } from '../components/AffirmationButton';
 import { RecordButton } from '../components/RecordButton';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 
@@ -55,6 +56,11 @@ export interface HomeScreenProps {
   readonly onUpdate: (() => void) | null;
   /** The update line's X: that version's line stays closed. */
   readonly onCloseUpdate: () => void;
+  /**
+   * Opens the five affirmations; null hides the invitation — affirmations
+   * are off, or this period's is already picked.
+   */
+  readonly onPickAffirmation: (() => void) | null;
 }
 
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
@@ -71,6 +77,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const [nudged, setNudged] = useState(false);
   const streak = props.home?.streakDays ?? 0;
   const week = props.home?.week ?? [];
+  const hasEcho = props.home?.yearEcho != null || props.home?.echo != null;
   const offersYesterday = props.home?.offersYesterday ?? false;
   const recent = props.home?.recentEntries ?? [];
 
@@ -172,7 +179,35 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         </Pressable>
       ) : null}
 
-      <AppText variant="display" style={{ marginTop: 22 }}>
+      {/*
+        * What came back from the past sits above the question (owner's word,
+        * 2026-11-14), so the record button and what is said today stay
+        * together under it.
+        */}
+      {hasEcho ? (
+        <View style={{ marginTop: 22 }}>
+          {props.home?.yearEcho == null ? null : (
+            <YearEchoCard
+              echo={props.home.yearEcho}
+              vocabulary={props.vocabulary}
+              locale={props.locale}
+              t={props.t}
+              onOpen={props.onOpen}
+            />
+          )}
+          {props.home?.echo == null ? null : (
+            <EchoFromPast
+              entry={props.home.echo}
+              vocabulary={props.vocabulary}
+              t={props.t}
+              alsoYear={props.home.yearEcho !== null}
+              onOpen={props.onOpen}
+            />
+          )}
+        </View>
+      ) : null}
+
+      <AppText variant="display" style={{ marginTop: hasEcho ? 4 : 22 }}>
         {props.t('home.prompt')}
       </AppText>
 
@@ -251,6 +286,14 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             </AppText>
           </Pressable>
         ) : null}
+        {/*
+          * The affirmation still to be picked, under the ways in (owner's
+          * word, 2026-11-14): on home as well as in the journal, and gone
+          * from here once it is picked — the journal keeps the picked one.
+          */}
+        {props.onPickAffirmation === null ? null : (
+          <PickAffirmation label={props.t('home.pickAffirmation')} onPress={props.onPickAffirmation} />
+        )}
       </View>
 
       {props.monthCard === null ? null : (
@@ -260,26 +303,6 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           t={props.t}
           onOpen={props.onOpenMonth}
           onClose={props.onCloseMonth}
-        />
-      )}
-
-      {props.home?.yearEcho == null ? null : (
-        <YearEchoCard
-          echo={props.home.yearEcho}
-          vocabulary={props.vocabulary}
-          locale={props.locale}
-          t={props.t}
-          onOpen={props.onOpen}
-        />
-      )}
-
-      {props.home?.echo == null ? null : (
-        <EchoFromPast
-          entry={props.home.echo}
-          vocabulary={props.vocabulary}
-          t={props.t}
-          alsoYear={props.home.yearEcho !== null}
-          onOpen={props.onOpen}
         />
       )}
 
@@ -308,6 +331,40 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         </SwipeGroup>
       )}
     </ScrollView>
+  );
+}
+
+/**
+ * The invitation to pick this period's affirmation: the journal's waiting
+ * mark and the words, in a quiet pill — a way in, never louder than the
+ * record button above it.
+ */
+function PickAffirmation(props: { readonly label: string; readonly onPress: () => void }): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={props.label}
+      onPress={props.onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginTop: 6,
+        paddingVertical: 6,
+        paddingLeft: 6,
+        paddingRight: 20,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: theme.palette.line,
+        backgroundColor: theme.palette.paper,
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <AffirmationMark size={36} />
+      <AppText variant="label">{props.label}</AppText>
+    </Pressable>
   );
 }
 

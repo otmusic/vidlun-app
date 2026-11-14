@@ -73,6 +73,32 @@ export function AffirmationButton(props: {
   );
 }
 
+/**
+ * The waiting mark on its own, not a button: the journal's sign for an
+ * affirmation still to be picked, wherever else it is invited (owner's word,
+ * 2026-11-14: home's invitation and the picker's heading wear the same one).
+ */
+export function AffirmationMark(props: { readonly size: number }): React.JSX.Element {
+  const theme = useTheme();
+  const tint = theme.isDark ? WAITING_DARK : WAITING_LIGHT;
+
+  return (
+    <View
+      style={{
+        width: props.size,
+        height: props.size,
+        borderRadius: props.size / 2,
+        backgroundColor: tint.fill,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Volume radius="round" strength={theme.isDark ? 0.35 : 0.9} />
+      <BrightHead color={tint.deep} size={Math.round(props.size * (HEAD / SIZE))} />
+    </View>
+  );
+}
+
 /*
  * A head in profile with light inside it (owner's word, 2026-11-10, in place
  * of a magic wand): the affirmation is a thought to carry, not a trick.

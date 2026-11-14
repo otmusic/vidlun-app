@@ -5,6 +5,7 @@ import type { AffirmationChoice, KeptAffirmation } from '@/domain/entities/KeptA
 import type { AffirmationFrequency } from '@/domain/ports/IAffirmationReminders';
 import { affirmationsFor, type Locale, type Translate, type TranslationKey } from '@/i18n';
 
+import { AffirmationMark } from '../components/AffirmationButton';
 import { AppText } from '../components/AppText';
 import {
   CHARM_FACES,
@@ -195,9 +196,13 @@ function FivePicks(props: {
           <SheetClose label={t('common.close')} onPress={props.onClose} />
         </View>
 
-        <AppText variant="kicker" style={{ fontSize: 27, lineHeight: 34, marginTop: 26, marginBottom: 6 }}>
-          {t('affirmation.title')}
-        </AppText>
+        {/* The journal's mark beside the words, as on home's invitation (owner's word, 2026-11-14). */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 26, marginBottom: 6 }}>
+          <AffirmationMark size={44} />
+          <AppText variant="kicker" style={{ fontSize: 27, lineHeight: 34, flexShrink: 1 }}>
+            {t('affirmation.title')}
+          </AppText>
+        </View>
         <AppText variant="secondary" color="inkSoft">
           {t('affirmation.hint')}
         </AppText>

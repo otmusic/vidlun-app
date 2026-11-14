@@ -1801,6 +1801,29 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++. Home invites the affirmation; the month-ago card on top — 2026-11-14
+
+By the owner's word, for the next build (59).
+
+- **Home invites the affirmation** while this period's is still to be picked
+  and affirmations are on: a quiet pill under "Спробуй текстом" with the
+  journal's waiting mark (the head with a spark, `AffirmationMark`, now its
+  own component) and "Вибери афірмацію" / "Pick an affirmation"
+  (`home.pickAffirmation`). It opens the five, as the journal's button does,
+  and is gone once one is picked; the journal keeps the picked one.
+- **The picker's heading** wears the same mark beside "Вибери афірмацію"
+  (`affirmation.title`, was "Обери одну").
+- **The month-ago card (and the year-ago one, when there is one) sit above
+  "Як ти сьогодні?"**, so the record button and today stay together under
+  the question. With the update line and an echo both up, the invitation
+  scrolls under the tab bar on a small screen.
+
+Seen in the simulator on Metro: the pill on home, the picker's heading, and
+the echo above the title (shown by pointing it at the latest entry for a
+moment, since the simulator's journal has none from a month ago).
+
+---
+
 ## 3ψψψ+++++++++++++. 1.9 closed on opening under iOS 27; 1.9.1 — 2026-11-13
 
 **What happened.** 1.9 (57) went live (the owner released it) and closed on

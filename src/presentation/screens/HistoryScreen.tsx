@@ -184,7 +184,7 @@ export function HistoryScreen(props: {
                 The affirmation (owner's word, 2026-11-06 and 11-10): the one
                 picked for this day, week or month, which a tap grows to the
                 whole screen again, or before it is picked the same mark every
-                time, which opens the five. Only here, not on home.
+                time, which opens the five. Home invites it too until it is picked.
               */}
               {props.affirmation === null ? null : (
                 <AffirmationButton

@@ -541,6 +541,9 @@ function Stage(
               ? flow.update
               : null,
           )}
+          onPickAffirmation={
+            props.settings.affirmationsOn && flow.keptAffirmation === null ? flow.pickAffirmation : null
+          }
           onCloseUpdate={() => {
             if (flow.update !== null) {
               props.onSettingsChange({ ...props.settings, updateLineClosed: flow.update.version });
