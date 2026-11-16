@@ -718,6 +718,9 @@ end-to-end with speech recognition disabled.
   §3ψψψ+++++++++++.
 - Do not gate basic tracking or backups behind the paywall. Only AI narrative
   is paid.
+  Changed by the owner on 2026-11-16: two entries a day are free, and more
+  than that needs the subscription (`FREE_ENTRIES_PER_DAY`). Backups stay
+  free. BACKLOG §3ψψψ+++++++++++++++.
 - Do not add analytics or crash SDKs until M5.
 - Do not "improve" the capture flow by adding steps, confirmations, or optional
   fields. The question the card opens with is not a precedent for granting
