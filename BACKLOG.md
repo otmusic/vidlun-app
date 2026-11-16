@@ -1817,6 +1817,11 @@ All for the next build (59), by the owner's word.
   which grows over home), and left the journal; the pill under the record
   button went. "Натисни, щоб розповісти" sits 16 points higher, inside the
   record button's halo.
+- **Then, the same day, also by the owner's word:** the date is back at
+  home's top left, beside the affirmation button; the last **two** entries
+  are back under the record button (`RECENT_LIMIT` 2, `EntryRow` restored,
+  with its swipe to delete); and the month-ago card (with the year-ago one)
+  is back where it was, under the record button above those entries.
 - **Journal cards**: the first emotion at the top right went; the emotions
   under the sentence are the one blue (`palette.tag`).
 - **The affirmation page** has no "Готово"; the X closes it.

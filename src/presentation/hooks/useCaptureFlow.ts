@@ -435,7 +435,7 @@ export interface CaptureFlow {
   readonly showLaterWeek: () => void;
 }
 
-const RECENT_LIMIT = 3;
+const RECENT_LIMIT = 2;
 
 /** How long one look at the App Store answers for; coming back sooner does not ask again. */
 const UPDATE_CHECK_EVERY_MS = 6 * 60 * 60 * 1000;

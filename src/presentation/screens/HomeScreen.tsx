@@ -12,6 +12,7 @@ import { AppText } from '../components/AppText';
 import { TapTarget } from '../components/Button';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { AffirmationButton } from '../components/AffirmationButton';
+import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import type { BloomOrigin, Charm } from '../components/AffirmationCharm';
 import { RecordButton } from '../components/RecordButton';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
@@ -39,6 +40,7 @@ export interface HomeScreenProps {
   /** The month card's X: that month's card stays closed. */
   readonly onCloseMonth: () => void;
   readonly onOpen: (entry: MoodEntry) => void;
+  readonly onDelete: (id: string) => void;
   readonly t: Translate;
   readonly onRecord: () => void;
   readonly onWrite: () => void;
@@ -75,7 +77,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   /** True after a tap on the microphone that could not record yet. */
   const [nudged, setNudged] = useState(false);
   const week = props.home?.week ?? [];
-  const hasEcho = props.home?.yearEcho != null || props.home?.echo != null;
+  const recent = props.home?.recentEntries ?? [];
   const offersYesterday = props.home?.offersYesterday ?? false;
 
   /*
@@ -94,20 +96,34 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         <UpdateLine t={props.t} onUpdate={props.onUpdate} onClose={props.onCloseUpdate} />
       )}
       {/*
-        * The affirmation at the top right (owner's word, 2026-11-16), moved
-        * here from the journal: the waiting mark until this period's is
-        * picked, then the picked one's face, which grows to the whole screen
-        * again. The run of days that stood here went with the same word.
+        * The date at the top left, back by the owner's word (2026-11-16), and
+        * the affirmation opposite it (owner's word, 2026-11-16, moved here
+        * from the journal): the waiting mark until this period's is picked,
+        * then the picked one's face, which grows to the whole screen again.
         */}
-      {props.affirmation === null ? null : (
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 14 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          // Wraps rather than clips: at large type the button drops under the date.
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          marginBottom: 14,
+          minHeight: 44,
+        }}
+      >
+        <AppText variant="caption" color="inkFaint">
+          {formatToday(props.locale)}
+        </AppText>
+        {props.affirmation === null ? null : (
           <AffirmationButton
             picked={props.affirmation.picked}
             label={props.t(props.affirmation.picked === null ? 'affirmation.pick' : 'feed.affirmation')}
             onPress={props.onAffirmation}
           />
-        </View>
-      )}
+        )}
+      </View>
 
       {week.length > 0 ? (
         /*
@@ -164,35 +180,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         </Pressable>
       ) : null}
 
-      {/*
-        * What came back from the past sits above the question (owner's word,
-        * 2026-11-14), so the record button and what is said today stay
-        * together under it.
-        */}
-      {hasEcho ? (
-        <View style={{ marginTop: 22 }}>
-          {props.home?.yearEcho == null ? null : (
-            <YearEchoCard
-              echo={props.home.yearEcho}
-              vocabulary={props.vocabulary}
-              locale={props.locale}
-              t={props.t}
-              onOpen={props.onOpen}
-            />
-          )}
-          {props.home?.echo == null ? null : (
-            <EchoFromPast
-              entry={props.home.echo}
-              vocabulary={props.vocabulary}
-              t={props.t}
-              alsoYear={props.home.yearEcho !== null}
-              onOpen={props.onOpen}
-            />
-          )}
-        </View>
-      ) : null}
-
-      <AppText variant="display" style={{ marginTop: hasEcho ? 4 : 22 }}>
+      <AppText variant="display" style={{ marginTop: 22 }}>
         {props.t('home.prompt')}
       </AppText>
 
@@ -287,12 +275,57 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           onClose={props.onCloseMonth}
         />
       )}
+      {props.home?.yearEcho == null ? null : (
+        <YearEchoCard
+          echo={props.home.yearEcho}
+          vocabulary={props.vocabulary}
+          locale={props.locale}
+          t={props.t}
+          onOpen={props.onOpen}
+        />
+      )}
+
+      {/* Back under the record button, where it was (owner's word, 2026-11-16). */}
+      {props.home?.echo == null ? null : (
+        <EchoFromPast
+          entry={props.home.echo}
+          vocabulary={props.vocabulary}
+          t={props.t}
+          alsoYear={props.home.yearEcho !== null}
+          onOpen={props.onOpen}
+        />
+      )}
+
       {/*
-        * No list of recent entries under the record button any more (owner's
-        * word, 2026-11-14): the journal tab is where entries live.
+        * The last two entries (owner's word, 2026-11-16; three until
+        * 2026-11-14), as a list and nothing more: no heading, no "all" link —
+        * the journal tab is where entries live — and nothing at all while
+        * there are none.
         */}
+      {recent.length === 0 ? null : (
+        <SwipeGroup>
+          <View style={{ gap: 12, marginTop: 6 }}>
+            {recent.map((entry) => (
+              <EntryRow
+                key={entry.id}
+                entry={entry}
+                vocabulary={props.vocabulary}
+                locale={props.locale}
+                today={props.today}
+                t={props.t}
+                onOpen={props.onOpen}
+                onDelete={props.onDelete}
+              />
+            ))}
+          </View>
+        </SwipeGroup>
+      )}
     </ScrollView>
   );
+}
+
+function formatToday(locale: Locale): string {
+  return new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 /**
