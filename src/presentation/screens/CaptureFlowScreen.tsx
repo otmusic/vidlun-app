@@ -15,6 +15,7 @@ import { MilestoneSheet } from '../components/MilestoneSheet';
 import { TabBar, type Tab } from '../components/TabBar';
 import { Toast, type ToastLine } from '../components/Toast';
 import type { CaptureFlow, Notice } from '../hooks/useCaptureFlow';
+import { SwipeBack } from '../components/SwipeBack';
 import { EntryDetailScreen } from './EntryDetailScreen';
 import { HistoryScreen } from './HistoryScreen';
 import { HomeScreen } from './HomeScreen';
@@ -98,13 +99,15 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
    */
   return (
     <View style={{ flex: 1 }}>
-      <Stage
-        {...props}
-        onWriteFeedback={() => {
-          setWritingFeedback(true);
-        }}
-        onOpenAffirmation={setAffirmationFrom}
-      />
+      <SwipeBack onBack={swipeBackFor(props.flow)}>
+        <Stage
+          {...props}
+          onWriteFeedback={() => {
+            setWritingFeedback(true);
+          }}
+          onOpenAffirmation={setAffirmationFrom}
+        />
+      </SwipeBack>
       {tab === undefined ? null : (
         <TabBar
           active={tab}
@@ -172,6 +175,32 @@ function affirmationButton(
   }
 
   return { picked: kept === null ? null : charmOf(kept.look) };
+}
+
+/**
+ * Where a swipe from the left edge goes (owner's word, 2026-11-16): the same
+ * place as the screen's own back button, and nowhere on a screen without one.
+ */
+function swipeBackFor(flow: CaptureFlow): (() => void) | null {
+  switch (flow.stage.kind) {
+    case 'writing':
+    case 'stats':
+    case 'subscription':
+      return flow.backHome;
+    case 'comparing':
+      return flow.backToCard;
+    case 'month':
+      return flow.closeMonth;
+    case 'months':
+    case 'vocabulary':
+      return flow.openStats;
+    case 'legal':
+      return flow.openSubscription;
+    case 'detail':
+      return flow.closeEntry;
+    default:
+      return null;
+  }
 }
 
 /**
@@ -481,15 +510,6 @@ function Stage(
           onRecord={flow.startRecording}
           milestones={flow.milestones}
           onEditMilestone={flow.openMilestone}
-          affirmation={affirmationButton(props.settings.affirmationsOn, flow.keptAffirmation)}
-          onAffirmation={(origin) => {
-            // The picked one grows out of the button over the journal; a waiting one opens the five.
-            if (flow.keptAffirmation === null || flow.keptAffirmation === undefined) {
-              flow.pickAffirmation();
-            } else {
-              props.onOpenAffirmation(origin);
-            }
-          }}
         />
       );
 
@@ -540,9 +560,15 @@ function Stage(
               ? flow.update
               : null,
           )}
-          onPickAffirmation={
-            props.settings.affirmationsOn && flow.keptAffirmation === null ? flow.pickAffirmation : null
-          }
+          affirmation={affirmationButton(props.settings.affirmationsOn, flow.keptAffirmation)}
+          onAffirmation={(origin) => {
+            // A waiting one opens the five; the picked one grows out of the button over home.
+            if (flow.keptAffirmation === null || flow.keptAffirmation === undefined) {
+              flow.pickAffirmation();
+            } else {
+              props.onOpenAffirmation(origin);
+            }
+          }}
           onCloseUpdate={() => {
             if (flow.update !== null) {
               props.onSettingsChange({ ...props.settings, updateLineClosed: flow.update.version });

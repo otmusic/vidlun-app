@@ -181,6 +181,7 @@ function Vidlun(props: {
     findRecording: container.findRecording,
     findRecordedEntries: container.findRecordedEntries,
     keepRecordings: props.settings.keepRecordings,
+    affirmationFrequency: props.settings.affirmationFrequency,
     parkedTake: container.parkedTake,
     createUnheardEntry: container.createUnheardEntry,
     unheardEntries: container.unheardEntries,
@@ -277,6 +278,8 @@ function Vidlun(props: {
    * back off, for the reason the reminder's does.
    */
   const { affirmationsOn, affirmationFrequency } = props.settings;
+  // A pick made, or its period over, moves the mornings that are still wanted.
+  const quietUntil = flow.keptAffirmation?.until.getTime() ?? null;
 
   useEffect(() => {
     if (!affirmationsOn) {
@@ -289,13 +292,23 @@ function Vidlun(props: {
       .schedule({
         frequency: affirmationFrequency,
         text: { title: t('affirmation.notifyTitle'), body: t('affirmation.notifyBody') },
+        from: container.clock.now(),
+        quietUntil: quietUntil === null ? null : new Date(quietUntil),
       })
       .then((scheduled) => {
         if (!scheduled) {
           onSettingsChange({ ...settingsRef.current, affirmationsOn: false });
         }
       });
-  }, [affirmationFrequency, affirmationsOn, container.affirmationReminders, onSettingsChange, t]);
+  }, [
+    affirmationFrequency,
+    affirmationsOn,
+    container.affirmationReminders,
+    container.clock,
+    onSettingsChange,
+    quietUntil,
+    t,
+  ]);
 
   // A tap on the affirmation opens the cards, the tap that launched the app included.
   useEffect(

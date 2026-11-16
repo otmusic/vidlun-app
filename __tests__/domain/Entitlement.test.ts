@@ -1,4 +1,4 @@
-import { entitlementOf, readsInFull } from '@/domain/entities/Entitlement';
+import { entitlementOf, readsInFull, FREE_ENTRIES_PER_DAY, mayWriteAnother } from '@/domain/entities/Entitlement';
 
 describe('entitlementOf', () => {
   it('reads an inactive store answer as nothing owned', () => {
@@ -25,5 +25,19 @@ describe('readsInFull', () => {
     expect(readsInFull('trial')).toBe(true);
     expect(readsInFull('subscribed')).toBe(true);
     expect(readsInFull('none')).toBe(false);
+  });
+});
+
+describe('the free daily entries', () => {
+  // Owner's word, 2026-11-16: two a day free, no limit with a subscription.
+  it('lets two entries a day be made without a subscription, and not a third', () => {
+    expect(FREE_ENTRIES_PER_DAY).toBe(2);
+    expect(mayWriteAnother(false, 0)).toBe(true);
+    expect(mayWriteAnother(false, 1)).toBe(true);
+    expect(mayWriteAnother(false, 2)).toBe(false);
+  });
+
+  it('sets no limit with a subscription or its free week', () => {
+    expect(mayWriteAnother(true, 12)).toBe(true);
   });
 });

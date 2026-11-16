@@ -79,10 +79,10 @@ describe('the evening reminder', () => {
     const center = new FakeCenter();
     const reminders = new ExpoReminders(center);
 
-    await center.scheduleRepeating({ hour: 10, minute: 0, weekday: 2 }, { title: 't', body: 'b' });
+    await center.scheduleAffirmation(new Date(2026, 10, 16, 10, 0), { title: 't', body: 'b' });
     await reminders.schedule(plan());
     await reminders.cancel();
 
-    expect(center.repeating).toHaveLength(1);
+    expect(center.affirmations).toHaveLength(1);
   });
 });

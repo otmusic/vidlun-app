@@ -1801,6 +1801,54 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++. The owner's list of 2026-11-16
+
+All for the next build (59), by the owner's word.
+
+- **Swipe back** from the left edge on every screen with a back button
+  (`SwipeBack`, react-native-gesture-handler, no new dependency): it does
+  what that screen's button does (`swipeBackFor`), the screen follows the
+  finger and goes back past a third of the width or on a fling; under
+  Reduce Motion it does not move. §7.5's "nothing slides sideways" is about
+  transitions the app plays; this one is the finger. Seen on the entry page
+  in the simulator.
+- **Home**: the run of days at the top right went; the journal's round
+  affirmation button moved there (waiting mark, or the picked one's face,
+  which grows over home), and left the journal; the pill under the record
+  button went. "Натисни, щоб розповісти" sits 16 points higher, inside the
+  record button's halo.
+- **Journal cards**: the first emotion at the top right went; the emotions
+  under the sentence are the one blue (`palette.tag`).
+- **The affirmation page** has no "Готово"; the X closes it.
+- **The kept affirmation's period follows the frequency now** (owner's bug:
+  weekly, then daily, and the morning's notification opened on last week's
+  pick with no way to choose). `KeepAffirmation.current(frequency)` measures
+  the period from the pick under the current frequency; the flow reloads it
+  when the frequency changes.
+- **No notification for a period already picked**: the affirmation is no
+  longer one repeating rule but the mornings ahead, one by one
+  (`affirmationMornings`: 14 daily, 8 Mondays, 6 firsts, at ten), skipping
+  any before the kept pick's end, rescheduled when the app opens, the
+  frequency changes or one is picked. Identifiers `affirmation-<time>`; the
+  old repeating `affirmation` still counts as one, so it is cancelled.
+- **Two entries a day free, no limit with a subscription or its free week**
+  (`FREE_ENTRIES_PER_DAY`, `mayWriteAnother`; `HomeView.writtenToday`). The
+  record button, "type instead", yesterday's entry, the widget and Siri all
+  go through it; past the limit they open the subscription. The
+  subscription's lead line, the terms (effective 16 November) and the
+  landing's free and paid lists say so; the site goes out with 59.
+- **"Час для себе" (thinking, not built)**: iOS lets no app silence other
+  apps' notifications or switch a Focus on. What is possible: (1) a Focus
+  filter (App Intents `SetFocusFilterIntent`), so that when the person's own
+  Focus is on, Vidlun quiets its reminders and can open on a calm page;
+  (2) a ready-made Shortcut, shared by an iCloud link, that turns on Do Not
+  Disturb for N minutes — Shortcuts can, apps cannot — offered from inside
+  the app with one tap; (3) inside Vidlun, a timer that pauses its own
+  reminders and affirmation for that time. Recommended: (3) with (2) as the
+  way to quiet the rest of the phone, and (1) later.
+
+---
+
 ## 3ψψψ++++++++++++++. Home invites the affirmation; the month-ago card on top — 2026-11-14
 
 By the owner's word, for the next build (59).

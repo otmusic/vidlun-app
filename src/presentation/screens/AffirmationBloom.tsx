@@ -4,7 +4,6 @@ import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-n
 import type { Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
-import { Button } from '../components/Button';
 import { SheetClose } from '../components/ModalSheet';
 import { charmTint, Face, type BloomOrigin, type Charm } from '../components/AffirmationCharm';
 import { useTheme } from '../theme/ThemeProvider';
@@ -146,8 +145,8 @@ export function AffirmationBloom(props: {
             <AppText variant="quote" style={{ fontSize: 34, lineHeight: 46 }}>
               {props.text}
             </AppText>
+            {/* No "done" button (owner's word, 2026-11-16): the X at the top closes it. */}
             <View style={{ flex: 1.4 }} />
-            <Button label={t('affirmation.done')} onPress={leave} />
           </Screen>
         </Animated.View>
       ) : null}

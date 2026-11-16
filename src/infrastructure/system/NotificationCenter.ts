@@ -5,18 +5,6 @@
  */
 export type NotificationKind = 'reminder' | 'affirmation';
 
-/**
- * A time that comes round again: every day at `hour:minute`, every `weekday`
- * (1 is Sunday, as the phone counts) when one is given, or on that `day` of
- * every month when that is given instead.
- */
-export interface RepeatRule {
-  readonly hour: number;
-  readonly minute: number;
-  readonly weekday?: number;
-  readonly day?: number;
-}
-
 export interface NotificationText {
   readonly title: string;
   readonly body: string;
@@ -34,6 +22,6 @@ export interface NotificationCenter {
   cancel(kind: NotificationKind): Promise<void>;
   /** One evening reminder, once. */
   scheduleAt(date: Date, text: NotificationText): Promise<void>;
-  /** The affirmation, again and again; tapping it opens the cards. */
-  scheduleRepeating(rule: RepeatRule, text: NotificationText): Promise<void>;
+  /** One morning's affirmation; tapping it opens the cards. */
+  scheduleAffirmation(date: Date, text: NotificationText): Promise<void>;
 }

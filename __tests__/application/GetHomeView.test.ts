@@ -72,6 +72,16 @@ describe('GetHomeView', () => {
     expect((await useCase.execute(3)).streakDays).toBe(1);
   });
 
+  it('counts the entries dated today, for the free daily limit', async () => {
+    const useCase = await setup([
+      entryOn(daysBefore(0, 8)),
+      entryOn(daysBefore(0, 9)),
+      entryOn(daysBefore(1, 22)),
+    ]);
+
+    expect((await useCase.execute(3)).writtenToday).toBe(2);
+  });
+
   it('returns the newest entries up to the limit asked for', async () => {
     const useCase = await setup([entryOn(daysBefore(0)), entryOn(daysBefore(1)), entryOn(daysBefore(2))]);
 

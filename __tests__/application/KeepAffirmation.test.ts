@@ -87,6 +87,27 @@ describe('KeepAffirmation', () => {
     expect(await keep.current()).toBeNull();
   });
 
+  it('lets a weekly pick go the next day once they come daily', async () => {
+    const { keep, clock } = setUp();
+
+    await keep.keep(CHOICE, 'weekly');
+
+    clock.set(new Date(2026, 10, 9, 22, 0));
+    expect((await keep.current('daily'))?.frequency).toBe('daily');
+
+    clock.set(new Date(2026, 10, 10, 10, 0));
+    expect(await keep.current('daily')).toBeNull();
+  });
+
+  it('keeps a daily pick to the end of the week once they come weekly', async () => {
+    const { keep, clock } = setUp();
+
+    await keep.keep(CHOICE, 'daily');
+
+    clock.set(new Date(2026, 10, 12, 10, 0));
+    expect((await keep.current('weekly'))?.until).toEqual(new Date(2026, 10, 16));
+  });
+
   it('puts a new pick in place of the last one', async () => {
     const { keep, clock } = setUp();
 

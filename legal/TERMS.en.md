@@ -1,6 +1,6 @@
 # Vidlun Terms of Use
 
-**Effective:** 12 November 2026
+**Effective:** 16 November 2026
 
 **Provider:** the Vidlun developer, support@vidlun.app
 
@@ -48,13 +48,13 @@ somewhere safe is yours to do; we never see or hold it.
 
 ## 4. Subscription
 
-**Free forever:** recording up to one minute, transcription, the emotion names
+**Free forever:** two entries a day, each recorded for up to one minute, transcription, the emotion names
 the app heard in a recording, the journal with its emotion filter, the mood
 chart and the emotion vocabulary.
 
 **Paid:** the monthly piece the language model writes after reading your whole
 month, the week's topics and "What stands out" — patterns in your mood — and
-recording up to five minutes.
+as many entries a day as you like, each recorded for up to five minutes.
 
 **Plan.** One: a monthly subscription, with no trial. The App Store shows the
 current price in your currency before you buy; we do not repeat it here, so

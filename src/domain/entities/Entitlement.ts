@@ -19,6 +19,17 @@ export function entitlementOf(status: SubscriptionStatus): Entitlement {
   return status.inTrial ? 'trial' : 'subscribed';
 }
 
+/**
+ * How many entries a day are free (owner's word, 2026-11-16); with a
+ * subscription, or its free week, there is no limit.
+ */
+export const FREE_ENTRIES_PER_DAY = 2;
+
+/** Whether one more entry may be started today. */
+export function mayWriteAnother(unlimited: boolean, writtenToday: number): boolean {
+  return unlimited || writtenToday < FREE_ENTRIES_PER_DAY;
+}
+
 /** Whether the monthly narrative and the patterns are open. */
 export function readsInFull(entitlement: Entitlement): boolean {
   return entitlement !== 'none';

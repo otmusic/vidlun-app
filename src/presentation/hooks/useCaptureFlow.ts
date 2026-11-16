@@ -19,6 +19,7 @@ import type { FindRecordedEntries } from '@/application/use-cases/FindRecordedEn
 import type { FindRecording } from '@/application/use-cases/FindRecording';
 import type { ForgetOldRecordings } from '@/application/use-cases/ForgetOldRecordings';
 import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory';
+import { mayWriteAnother } from '@/domain/entities/Entitlement';
 import { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { LegalDocumentKind } from '@/i18n/legal';
 import type { GetMonthSummary, MonthSummary } from '@/application/use-cases/GetMonthSummary';
@@ -171,8 +172,6 @@ export type CaptureStage =
   | {
       readonly kind: 'affirmation';
       readonly kept: KeptAffirmation | null;
-      /** The journal's button opened it, so closing goes back there. */
-      readonly fromJournal: boolean;
     }
   /** The one thing sold, and what the store said about buying it. */
   | {
@@ -254,6 +253,8 @@ export interface CaptureDependencies {
   readonly findRecordedEntries: FindRecordedEntries;
   /** False stops a confirmed take from being kept at all. */
   readonly keepRecordings: boolean;
+  /** How often the affirmation comes now, which is the period a pick is kept for. */
+  readonly affirmationFrequency: AffirmationFrequency;
   readonly parkedTake: IParkedTake;
   /** The draft for words Vidlun could not listen to; the person's answer still goes in. */
   readonly createUnheardEntry: CreateUnheardEntry;
@@ -778,12 +779,15 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   // Read again whenever it might have run out: on every way home and into the journal.
   const reloadKeptAffirmation = useCallback(() => {
     void dependencies.keepAffirmation
-      .current()
+      .current(dependencies.affirmationFrequency)
       .then(setKeptAffirmation)
       .catch(() => {
         setKeptAffirmation(null);
       });
-  }, [dependencies.keepAffirmation]);
+  }, [dependencies.keepAffirmation, dependencies.affirmationFrequency]);
+
+  // A new frequency can end the kept one's period at once.
+  useEffect(reloadKeptAffirmation, [reloadKeptAffirmation]);
 
   const reloadHome = useCallback(() => {
     reloadKeptAffirmation();
@@ -957,16 +961,16 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * five must not flash up and then be swapped for the one already picked.
    */
   const showAffirmation = useCallback(
-    (fromJournal: boolean) => {
+    () => {
       void dependencies.keepAffirmation
-        .current()
+        .current(dependencies.affirmationFrequency)
         .catch(() => null)
         .then((kept) => {
           setKeptAffirmation(kept);
-          setStage({ kind: 'affirmation', kept, fromJournal });
+          setStage({ kind: 'affirmation', kept });
         });
     },
-    [dependencies.keepAffirmation],
+    [dependencies.keepAffirmation, dependencies.affirmationFrequency],
   );
 
   /** A tap on the affirmation that came while an entry was being made. */
@@ -979,7 +983,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   useEffect(() => {
     if (affirmationWaiting && stage.kind === 'idle') {
       setAffirmationWaiting(false);
-      showAffirmation(false);
+      showAffirmation();
     }
   }, [affirmationWaiting, showAffirmation, stage.kind]);
 
@@ -1144,6 +1148,35 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    */
   const backfillAt = useRef<Date | null>(null);
 
+  const openSubscription = useCallback(() => {
+    setStage({ kind: 'subscription', plans: [], outcome: null });
+
+    // Asked for every time the screen opens: prices move, and a price
+    // remembered from last week is a price we would be quoting wrongly.
+    void dependencies.purchases
+      .plans()
+      .then((plans) => {
+        setStage((current) => (current.kind === 'subscription' ? { ...current, plans } : current));
+      })
+      .catch(fail);
+  }, [dependencies.purchases, fail]);
+
+  /*
+   * Two entries a day are free (owner's word, 2026-11-16); past them, a new
+   * one opens the subscription instead. Checked where every way in starts —
+   * the button, the text, yesterday's, the widget and Siri — and against the
+   * count home last read, which a save refreshes.
+   */
+  const withinDailyLimit = useCallback((): boolean => {
+    if (mayWriteAnother(dependencies.hasNarrativeAccess, home?.writtenToday ?? 0)) {
+      return true;
+    }
+
+    openSubscription();
+
+    return false;
+  }, [dependencies.hasNarrativeAccess, home, openSubscription]);
+
   const record = useCallback(() => {
     // Not awaited, and its failure is not ours: the take must start now, and
     // an unopened model only means the transcription pays for it later.
@@ -1178,6 +1211,10 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   }, [ask, dependencies, fail, hearVoice]);
 
   const startRecording = useCallback(() => {
+    if (!withinDailyLimit()) {
+      return;
+    }
+
     backfillAt.current = null;
     dependencies.haptics.tap();
 
@@ -1324,18 +1361,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     [dependencies, fail],
   );
 
-  const openSubscription = useCallback(() => {
-    setStage({ kind: 'subscription', plans: [], outcome: null });
-
-    // Asked for every time the screen opens: prices move, and a price
-    // remembered from last week is a price we would be quoting wrongly.
-    void dependencies.purchases
-      .plans()
-      .then((plans) => {
-        setStage((current) => (current.kind === 'subscription' ? { ...current, plans } : current));
-      })
-      .catch(fail);
-  }, [dependencies.purchases, fail]);
 
   /*
    * The month's page: its shape first, read off the phone at once, then the
@@ -1553,15 +1578,23 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         .catch(fail);
     }, [dependencies.forgetMilestone, fail, milestoneSheet, reloadMilestones]),
     startWriting: useCallback(() => {
+      if (!withinDailyLimit()) {
+        return;
+      }
+
       backfillAt.current = null;
       setStage({ kind: 'writing' });
-    }, []),
+    }, [withinDailyLimit]),
     startYesterday: useCallback(() => {
+      if (!withinDailyLimit()) {
+        return;
+      }
+
       const now = dependencies.clock.now();
 
       backfillAt.current = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 21, 0);
       setStage({ kind: 'writing' });
-    }, [dependencies.clock]),
+    }, [dependencies.clock, withinDailyLimit]),
     submitText: useCallback(
       (text: string) => {
         takeUri.current = null;
@@ -1588,22 +1621,14 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         return;
       }
 
-      showAffirmation(false);
+      showAffirmation();
     }, [showAffirmation]),
-    pickAffirmation: useCallback(() => {
-      showAffirmation(true);
-    }, [showAffirmation]),
+    // From home's button (owner's word, 2026-11-16), so closing goes home.
+    pickAffirmation: showAffirmation,
     closeAffirmation: useCallback(() => {
-      if (stage.kind === 'affirmation' && stage.fromJournal) {
-        // Straight back, the journal's filter and place kept as they were.
-        setStage({ kind: 'history' });
-
-        return;
-      }
-
       setStage({ kind: 'idle' });
       reloadHome();
-    }, [reloadHome, stage]),
+    }, [reloadHome]),
     keepAffirmation: useCallback(
       (choice: AffirmationChoice, frequency: AffirmationFrequency) => {
         void dependencies.keepAffirmation

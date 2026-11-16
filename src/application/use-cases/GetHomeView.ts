@@ -37,6 +37,8 @@ export interface HomeView {
    * hole, an empty yesterday in a journal that already existed before it.
    */
   readonly offersYesterday: boolean;
+  /** How many entries are dated today: the free version's daily count. */
+  readonly writtenToday: number;
 }
 
 /** A streak longer than this stops being a number anyone reads. */
@@ -67,6 +69,7 @@ export class GetHomeView {
       echo,
       yearEcho,
       offersYesterday: offersYesterday(window, today),
+      writtenToday: window.filter((entry) => entry.createdAt.getTime() >= today.getTime()).length,
     };
   }
 

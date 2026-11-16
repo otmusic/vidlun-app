@@ -7,7 +7,6 @@ import type {
   NotificationCenter,
   NotificationKind,
   NotificationText,
-  RepeatRule,
 } from '@/infrastructure/system/NotificationCenter';
 
 export class InMemoryKeyValueStore implements IKeyValueStore {
@@ -169,7 +168,8 @@ export function textReply(text: string): Partial<Anthropic.Message> {
  */
 export class FakeNotificationCenter implements NotificationCenter {
   pending: Date[] = [];
-  repeating: RepeatRule[] = [];
+  /** The affirmation mornings scheduled, in order. */
+  affirmations: Date[] = [];
   /** What each scheduled notification said, in the order they were scheduled. */
   texts: NotificationText[] = [];
   allows = true;
@@ -186,7 +186,7 @@ export class FakeNotificationCenter implements NotificationCenter {
     if (kind === 'reminder') {
       this.pending = [];
     } else {
-      this.repeating = [];
+      this.affirmations = [];
     }
   }
 
@@ -196,9 +196,9 @@ export class FakeNotificationCenter implements NotificationCenter {
     this.texts.push(text);
   }
 
-  async scheduleRepeating(rule: RepeatRule, text: NotificationText): Promise<void> {
+  async scheduleAffirmation(date: Date, text: NotificationText): Promise<void> {
     await Promise.resolve();
-    this.repeating.push(rule);
+    this.affirmations.push(date);
     this.texts.push(text);
   }
 }

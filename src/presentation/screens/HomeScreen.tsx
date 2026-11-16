@@ -7,13 +7,12 @@ import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import type { Milestone } from '@/domain/entities/Milestone';
 import type { ParkedTake } from '@/domain/ports/IParkedTake';
 import { type Locale, type Translate } from '@/i18n';
-import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
 import { TapTarget } from '../components/Button';
-import { CountPill } from '../components/CountPill';
 import { Icon, ICON_SIZE } from '../components/Icon';
-import { AffirmationMark } from '../components/AffirmationButton';
+import { AffirmationButton } from '../components/AffirmationButton';
+import type { BloomOrigin, Charm } from '../components/AffirmationCharm';
 import { RecordButton } from '../components/RecordButton';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 
@@ -55,10 +54,12 @@ export interface HomeScreenProps {
   /** The update line's X: that version's line stays closed. */
   readonly onCloseUpdate: () => void;
   /**
-   * Opens the five affirmations; null hides the invitation — affirmations
-   * are off, or this period's is already picked.
+   * The affirmation button: the picked one's look, null while this period's
+   * waits to be picked, or absent while affirmations are off.
    */
-  readonly onPickAffirmation: (() => void) | null;
+  readonly affirmation: { readonly picked: Charm | null } | null;
+  /** A waiting one opens the five; a picked one grows out of the button. */
+  readonly onAffirmation: (origin: BloomOrigin) => void;
 }
 
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
@@ -73,7 +74,6 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   const micRefused = props.mic === 'denied';
   /** True after a tap on the microphone that could not record yet. */
   const [nudged, setNudged] = useState(false);
-  const streak = props.home?.streakDays ?? 0;
   const week = props.home?.week ?? [];
   const hasEcho = props.home?.yearEcho != null || props.home?.echo != null;
   const offersYesterday = props.home?.offersYesterday ?? false;
@@ -94,21 +94,20 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         <UpdateLine t={props.t} onUpdate={props.onUpdate} onClose={props.onCloseUpdate} />
       )}
       {/*
-        * The run of days, alone at the top right: the date over it went
-        * (owner's word, 2026-11-14) — the week strip under it already says
-        * which day it is. Settings moved to its own tab, and a gear here
-        * would be the only control competing with the one the screen exists
-        * for.
-        *
-        * At zero the pill is absent rather than showing a nought. A person on
-        * their first day has not failed at anything, and a counter that opens
-        * at zero is the app saying otherwise.
+        * The affirmation at the top right (owner's word, 2026-11-16), moved
+        * here from the journal: the waiting mark until this period's is
+        * picked, then the picked one's face, which grows to the whole screen
+        * again. The run of days that stood here went with the same word.
         */}
-      {streak > 0 ? (
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 20 }}>
-          <CountPill value={streak} label={props.t(countedKey('home.streak', streak, props.locale))} />
+      {props.affirmation === null ? null : (
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 14 }}>
+          <AffirmationButton
+            picked={props.affirmation.picked}
+            label={props.t(props.affirmation.picked === null ? 'affirmation.pick' : 'feed.affirmation')}
+            onPress={props.onAffirmation}
+          />
         </View>
-      ) : null}
+      )}
 
       {week.length > 0 ? (
         /*
@@ -235,7 +234,12 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             />
           </View>
         ) : (
-          <AppText variant="body" color="inkSoft">
+          /*
+           * Pulled up into the record button's halo (owner's word,
+           * 2026-11-16): it belongs to the button, not to the links below.
+           * The rings stay clear of it; they reach 176 of the 196 points.
+           */
+          <AppText variant="body" color="inkSoft" style={{ marginTop: -16 }}>
             {props.t('home.recordHint')}
           </AppText>
         )}
@@ -272,14 +276,6 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
             </AppText>
           </Pressable>
         ) : null}
-        {/*
-          * The affirmation still to be picked, under the ways in (owner's
-          * word, 2026-11-14): on home as well as in the journal, and gone
-          * from here once it is picked — the journal keeps the picked one.
-          */}
-        {props.onPickAffirmation === null ? null : (
-          <PickAffirmation label={props.t('home.pickAffirmation')} onPress={props.onPickAffirmation} />
-        )}
       </View>
 
       {props.monthCard === null ? null : (
@@ -296,40 +292,6 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
         * word, 2026-11-14): the journal tab is where entries live.
         */}
     </ScrollView>
-  );
-}
-
-/**
- * The invitation to pick this period's affirmation: the journal's waiting
- * mark and the words, in a quiet pill — a way in, never louder than the
- * record button above it.
- */
-function PickAffirmation(props: { readonly label: string; readonly onPress: () => void }): React.JSX.Element {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={props.label}
-      onPress={props.onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        marginTop: 6,
-        paddingVertical: 6,
-        paddingLeft: 6,
-        paddingRight: 20,
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: theme.palette.line,
-        backgroundColor: theme.palette.paper,
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      <AffirmationMark size={36} />
-      <AppText variant="label">{props.label}</AppText>
-    </Pressable>
   );
 }
 

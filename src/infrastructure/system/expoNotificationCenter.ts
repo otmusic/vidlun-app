@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 
-import type { NotificationCenter, NotificationKind, RepeatRule } from './NotificationCenter';
+import type { NotificationCenter, NotificationKind } from './NotificationCenter';
 
 /**
  * Every affirmation notification carries this identifier and this data; the
@@ -16,22 +16,10 @@ export const OPENS_AFFIRMATION = { opens: 'affirmation' } as const;
  * reminder: cancelling the reminders must still clear those.
  */
 function kindOf(identifier: string): NotificationKind {
-  return identifier === AFFIRMATION_ID ? 'affirmation' : 'reminder';
-}
-
-function triggerFor(rule: RepeatRule): Notifications.NotificationTriggerInput {
-  const { hour, minute, weekday, day } = rule;
-
-  if (day !== undefined) {
-    // A day of the month is a calendar rule; the daily and weekly ones are not.
-    return { type: Notifications.SchedulableTriggerInputTypes.CALENDAR, repeats: true, day, hour, minute };
-  }
-
-  if (weekday !== undefined) {
-    return { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday, hour, minute };
-  }
-
-  return { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute };
+  // The one repeating rule of 1.9, and the mornings scheduled one by one since.
+  return identifier === AFFIRMATION_ID || identifier.startsWith(`${AFFIRMATION_ID}-`)
+    ? 'affirmation'
+    : 'reminder';
 }
 
 /** The phone's own notifications, as the reminders and the affirmation need them. */
@@ -86,11 +74,11 @@ export function expoNotificationCenter(): NotificationCenter {
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
       });
     },
-    async scheduleRepeating(rule, text) {
+    async scheduleAffirmation(date, text) {
       await Notifications.scheduleNotificationAsync({
-        identifier: AFFIRMATION_ID,
+        identifier: `${AFFIRMATION_ID}-${date.getTime()}`,
         content: { title: text.title, body: text.body, data: OPENS_AFFIRMATION },
-        trigger: triggerFor(rule),
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
       });
     },
   };

@@ -11,9 +11,10 @@ import { useTheme } from '../theme/ThemeProvider';
 import { emotionLabel, emotionWordsIn, moodTint } from './emotionDisplay';
 
 /**
- * A dot in the entry's own colour, the day and time, the first emotion's own
- * name at the right in the same colour, and the sentence. The colour names
- * what the entry held; no number and no verdict appears on the card at all.
+ * A dot in the entry's own colour, the day and time, the sentence, and the
+ * emotions under it in the one blue (owner's word, 2026-11-16: the first
+ * emotion at the top right went, the list below took its colour). No number
+ * and no verdict appears on the card at all.
  */
 export function EntryCard(props: {
   readonly entry: MoodEntry;
@@ -27,7 +28,6 @@ export function EntryCard(props: {
   readonly hasAudio?: boolean;
 }): React.JSX.Element {
   const theme = useTheme();
-  const first = props.entry.emotionIds[0];
   const words = emotionWordsIn(props.entry.cleanTranscript, props.t);
   // The mood marks the entry; the emotion's name wears the one blue.
   const marker = moodTint(props.entry.mood?.value ?? null, theme);
@@ -60,22 +60,13 @@ export function EntryCard(props: {
             <Icon name={props.hasAudio ? 'mic' : 'mic-off'} size={14} color="inkFaint" />
           </View>
         )}
-        {first === undefined ? null : (
-          <AppText
-            variant="secondary"
-            numberOfLines={1}
-            style={{ fontSize: 13, color: theme.palette.tag, marginLeft: 'auto', flexShrink: 1 }}
-          >
-            {emotionLabel(first, words)}
-          </AppText>
-        )}
       </View>
       <View style={{ gap: 8 }}>
         <AppText variant="body" style={{ fontSize: 16, lineHeight: 23 }}>
           {props.entry.cleanTranscript}
         </AppText>
         {props.entry.emotionIds.length === 0 ? null : (
-          <AppText variant="secondary" color="inkFaint">
+          <AppText variant="secondary" style={{ color: theme.palette.tag }}>
             {props.entry.emotionIds.map((id) => emotionLabel(id, words)).join(' · ')}
           </AppText>
         )}

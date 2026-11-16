@@ -123,7 +123,7 @@
       "free": {
         "title": "Безкоштовно назавжди",
         "items": [
-          "Записи до хвилини",
+          "2 записи на день, до хвилини кожен",
           "Підказки емоцій, настрій і теми",
           "Щоденник із фільтром за емоціями",
           "Настрій по днях і твої емоції",
@@ -137,7 +137,7 @@
         "items": [
           "Раз на місяць Vidlun пише, що помітив у твоїх записах",
           "Теми й закономірності тижня",
-          "Записи до п’яти хвилин"
+          "Скільки завгодно записів, до п’яти хвилин кожен"
         ],
         "plan": {
           "name": "Підписка на місяць",
@@ -395,7 +395,7 @@
       "free": {
         "title": "Free forever",
         "items": [
-          "Recordings up to a minute",
+          "Two entries a day, up to a minute each",
           "Emotion suggestions, mood and topics",
           "Journal with an emotion filter",
           "Mood by day and your emotions",
@@ -409,7 +409,7 @@
         "items": [
           "Once a month, Vidlun writes about what it noticed in your entries",
           "The week’s topics and patterns",
-          "Recordings up to five minutes"
+          "As many entries as you like, up to five minutes each"
         ],
         "plan": {
           "name": "Monthly",
