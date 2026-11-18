@@ -166,7 +166,7 @@
         },
         {
           "q": "Де зберігаються записи?",
-          "a": "На твоєму телефоні. Резервна копія — це файл, який ти зберігаєш де зручно. Голос у неї не входить."
+          "a": "На твоєму телефоні. Резервна копія — це файл разом з аудіо, який ти зберігаєш де зручно."
         },
         {
           "q": "Є версія для Android?",
@@ -440,7 +440,7 @@
         },
         {
           "q": "Where are my entries stored?",
-          "a": "On your phone. A backup is a file you keep wherever you like. Your voice recordings aren’t included."
+          "a": "On your phone. A backup is one file, audio included, that you keep wherever you like."
         },
         {
           "q": "Is there an Android version?",
