@@ -9,6 +9,7 @@ import { type Locale, type Translate } from '@/i18n';
 import { AppText } from './AppText';
 import { dayWordOf } from './dayWord';
 import { Icon, ICON_SIZE } from './Icon';
+import { LockedLine } from './LockGlass';
 import { useTheme } from '../theme/ThemeProvider';
 import { emotionLabel, emotionWordsIn, moodTint } from './emotionDisplay';
 
@@ -43,6 +44,14 @@ export function EntryRow(props: {
   readonly t: Translate;
   readonly onOpen: (entry: MoodEntry) => void;
   readonly onDelete: (id: string) => void;
+  /**
+   * Set when the entry is under the subscription's lock (owner's word,
+   * 2026-11-17): the way in, read aloud. The row keeps its day, time and
+   * mood colour, a small lock stands where the emotion was, one faint line
+   * where the words were, and the tap goes wherever `onOpen` says. Deleting
+   * still works — the entry is the person's own, read here or not.
+   */
+  readonly lockedHint?: string;
 }): React.JSX.Element {
   const theme = useTheme();
   const group = useContext(OpenRow);
@@ -95,6 +104,12 @@ export function EntryRow(props: {
       )}
     >
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          props.lockedHint === undefined
+            ? undefined
+            : `${dayWordOf(entry.createdAt, props.today, props.locale, t)} · ${timeOf(entry.createdAt, props.locale)}. ${props.lockedHint}`
+        }
         onPress={() => onOpen(entry)}
         onLongPress={confirm}
         style={{
@@ -114,7 +129,11 @@ export function EntryRow(props: {
           <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13 }}>
             {`${dayWordOf(entry.createdAt, props.today, props.locale, t)} · ${timeOf(entry.createdAt, props.locale)}`}
           </AppText>
-          {first === undefined ? null : (
+          {props.lockedHint !== undefined ? (
+            <View style={{ marginLeft: 'auto' }}>
+              <Icon name="lock" size={14} color="inkFaint" />
+            </View>
+          ) : first === undefined ? null : (
             <AppText
               variant="secondary"
               numberOfLines={1}
@@ -129,9 +148,13 @@ export function EntryRow(props: {
           * their own day by, so it keeps the reading size rather than the
           * list size.
           */}
-        <AppText variant="quote" numberOfLines={2} style={{ fontSize: 16, lineHeight: 23 }}>
-          {entry.cleanTranscript}
-        </AppText>
+        {props.lockedHint === undefined ? (
+          <AppText variant="quote" numberOfLines={2} style={{ fontSize: 16, lineHeight: 23 }}>
+            {entry.cleanTranscript}
+          </AppText>
+        ) : (
+          <LockedLine entryId={entry.id} />
+        )}
       </Pressable>
     </Swipeable>
   );

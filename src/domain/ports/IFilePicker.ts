@@ -1,7 +1,9 @@
+import type { PickedFile } from './IBackupArchive';
+
 /**
- * Lets the person choose one file and hands back its text. Null when they
- * closed the picker without choosing — a decision, not an error.
+ * Lets the person choose one file. Null when they closed the picker without
+ * choosing — a decision, not an error.
  */
 export interface IFilePicker {
-  pickText(): Promise<string | null>;
+  pickFile(): Promise<PickedFile | null>;
 }

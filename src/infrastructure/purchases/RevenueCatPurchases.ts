@@ -1,4 +1,5 @@
 import Purchases, {
+  INTRO_ELIGIBILITY_STATUS,
   PACKAGE_TYPE,
   type CustomerInfo,
   type PurchasesPackage,
@@ -66,8 +67,11 @@ export class RevenueCatPurchases implements IPurchases {
       return [];
     }
 
-    return offering.availablePackages
-      .map(planOf)
+    const packages = offering.availablePackages;
+    const eligible = await trialEligible(packages);
+
+    return packages
+      .map((item) => planOf(item, eligible))
       .filter((plan): plan is Plan => plan !== null)
       .sort((a, b) => a.amount - b.amount);
   }
@@ -102,8 +106,39 @@ export class RevenueCatPurchases implements IPurchases {
   }
 }
 
+/**
+ * The products whose free days this person can still have. Apple grants an
+ * introductory offer once per Apple ID in a subscription group, so someone
+ * who has had the trial, or a subscription, pays from the first day — and a
+ * screen promising them free days would be a promise the purchase sheet then
+ * breaks (owner's word, 2026-11-17, with the three-day trial). Only a plain
+ * "eligible" counts: on "unknown", or if the check fails, the screen shows
+ * the price without the trial, as RevenueCat advises.
+ */
+async function trialEligible(packages: readonly PurchasesPackage[]): Promise<ReadonlySet<string>> {
+  const withTrial = packages
+    .filter((item) => trialDaysOf(item) > 0)
+    .map((item) => item.product.identifier);
+
+  if (withTrial.length === 0) {
+    return new Set();
+  }
+
+  try {
+    const answers = await Purchases.checkTrialOrIntroductoryPriceEligibility(withTrial);
+
+    return new Set(
+      withTrial.filter(
+        (id) => answers[id]?.status === INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE,
+      ),
+    );
+  } catch {
+    return new Set();
+  }
+}
+
 /** Null for a package shape this app does not sell — a week, a quarter. */
-function planOf(item: PurchasesPackage): Plan | null {
+function planOf(item: PurchasesPackage, trialEligibleIds: ReadonlySet<string>): Plan | null {
   const kind = kindOf(item.packageType);
 
   if (kind === null) {
@@ -117,7 +152,7 @@ function planOf(item: PurchasesPackage): Plan | null {
     kind,
     price: product.priceString,
     amount: product.price,
-    trialDays: trialDaysOf(item),
+    trialDays: trialEligibleIds.has(product.identifier) ? trialDaysOf(item) : 0,
   };
 }
 
@@ -135,9 +170,8 @@ function kindOf(packageType: PurchasesPackage['packageType']): PlanKind | null {
 
 /**
  * Whatever free days the store is actually offering, rather than what our copy
- * remembers being configured. Apple decides eligibility per person, and a
- * screen promising a trial to someone who has used theirs is a promise the
- * purchase sheet then breaks.
+ * remembers being configured. Whether this person may have them is
+ * `trialEligible`'s question, asked separately.
  */
 function trialDaysOf(item: PurchasesPackage): number {
   const period = item.product.introPrice;

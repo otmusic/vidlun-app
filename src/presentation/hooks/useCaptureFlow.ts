@@ -17,7 +17,7 @@ import type { GetWeekThemes } from '@/application/use-cases/GetWeekThemes';
 import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
 import type { FindRecordedEntries } from '@/application/use-cases/FindRecordedEntries';
 import type { FindRecording } from '@/application/use-cases/FindRecording';
-import type { ForgetOldRecordings } from '@/application/use-cases/ForgetOldRecordings';
+import type { CompactRecordings } from '@/application/use-cases/CompactRecordings';
 import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory';
 import { mayWriteAnother } from '@/domain/entities/Entitlement';
 import { MoodEntry } from '@/domain/entities/MoodEntry';
@@ -248,13 +248,18 @@ export interface CaptureDependencies {
   readonly confirmEntry: ConfirmEntry;
   readonly deleteEntry: DeleteEntry;
   readonly getHistory: GetHistory;
-  readonly forgetOldRecordings: ForgetOldRecordings;
   readonly findRecording: FindRecording;
+  /** Keeps the voice as AAC on the phone (owner's word, 2026-11-18). */
+  readonly compactRecordings: CompactRecordings;
   readonly findRecordedEntries: FindRecordedEntries;
   /** False stops a confirmed take from being kept at all. */
   readonly keepRecordings: boolean;
-  /** How often the affirmation comes now, which is the period a pick is kept for. */
-  readonly affirmationFrequency: AffirmationFrequency;
+  /**
+   * How often the affirmation comes now, which is the period a pick is kept
+   * for — monthly without a subscription. Null until the store has said
+   * whether there is one, and the kept one is not read until then.
+   */
+  readonly affirmationFrequency: AffirmationFrequency | null;
   readonly parkedTake: IParkedTake;
   /** The draft for words Vidlun could not listen to; the person's answer still goes in. */
   readonly createUnheardEntry: CreateUnheardEntry;
@@ -435,7 +440,8 @@ export interface CaptureFlow {
   readonly showLaterWeek: () => void;
 }
 
-const RECENT_LIMIT = 2;
+/** Home's last entry, one for everyone (owner's word, 2026-11-17; two until then). */
+const RECENT_LIMIT = 1;
 
 /** How long one look at the App Store answers for; coming back sooner does not ask again. */
 const UPDATE_CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
@@ -778,6 +784,10 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
   // Read again whenever it might have run out: on every way home and into the journal.
   const reloadKeptAffirmation = useCallback(() => {
+    if (dependencies.affirmationFrequency === null) {
+      return;
+    }
+
     void dependencies.keepAffirmation
       .current(dependencies.affirmationFrequency)
       .then(setKeptAffirmation)
@@ -821,10 +831,10 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   useEffect(reloadHome, [reloadHome]);
 
   useEffect(() => {
-    // A year-old recording going a few days late harms nobody, so this runs on
-    // open rather than on a schedule there would be no way to test.
-    void dependencies.forgetOldRecordings.execute().catch(() => undefined);
-  }, [dependencies.forgetOldRecordings]);
+    // On open, for every recording made before AAC and any take whose
+    // compression a closed app cut short. Nothing waits on it.
+    void dependencies.compactRecordings.execute().catch(() => undefined);
+  }, [dependencies.compactRecordings]);
 
   /*
    * Entries saved while Vidlun could not listen are listened to when the app
@@ -962,8 +972,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    */
   const showAffirmation = useCallback(
     () => {
+      // Before the store answers, the period it was picked under.
       void dependencies.keepAffirmation
-        .current(dependencies.affirmationFrequency)
+        .current(dependencies.affirmationFrequency ?? undefined)
         .catch(() => null)
         .then((kept) => {
           setKeptAffirmation(kept);

@@ -1,5 +1,6 @@
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import type { INarrativeGenerator } from '../../domain/ports/INarrativeGenerator';
+import type { VoiceCue } from '../../domain/value-objects/VoiceCue';
 import { NARRATIVE_PROMPT_VERSION } from './ClaudeNarrativeGenerator';
 import type { IKeyValueStore } from '../persistence/IKeyValueStore';
 
@@ -29,11 +30,11 @@ export class CachedNarrativeGenerator implements INarrativeGenerator {
     private readonly store: IKeyValueStore,
   ) {}
 
-  async generate(entries: readonly MoodEntry[]): Promise<string> {
+  async generate(entries: readonly MoodEntry[], voices?: ReadonlyMap<string, VoiceCue>): Promise<string> {
     const key = monthKeyFor(entries);
 
     if (key === null) {
-      return this.inner.generate(entries);
+      return this.inner.generate(entries, voices);
     }
 
     const fingerprint = fingerprintOf(entries);
@@ -43,7 +44,7 @@ export class CachedNarrativeGenerator implements INarrativeGenerator {
       return cached.narrative;
     }
 
-    const narrative = await this.inner.generate(entries);
+    const narrative = await this.inner.generate(entries, voices);
 
     // Never let storing it cost the sentence itself: the caller asked for a
     // month, not for a cache to succeed.
@@ -70,6 +71,11 @@ function monthKeyFor(entries: readonly MoodEntry[]): string | null {
  * Everything the narrative was written from. An entry added, deleted or
  * corrected changes this, and a stale sentence about a month that has since
  * changed would be worse than paying for a fresh one.
+ *
+ * Except the voice. It is heard against the person's usual voice, which
+ * moves a little with every new take, so a fingerprint carrying it would
+ * rewrite — and pay for — a past month each time it is opened after a new
+ * entry. The month is written with the voice as it was heard then.
  */
 function fingerprintOf(entries: readonly MoodEntry[]): string {
   return `v${NARRATIVE_PROMPT_VERSION}\n` + entries

@@ -3,15 +3,18 @@ import { MoodEntry, type MoodEntryProps } from '@/domain/entities/MoodEntry';
 import type { INarrativeGenerator } from '@/domain/ports/INarrativeGenerator';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
+import type { VoiceCue } from '@/domain/value-objects/VoiceCue';
 import { InMemoryKeyValueStore } from './fakes';
 
 class CountingGenerator implements INarrativeGenerator {
   calls = 0;
+  readonly voices: (ReadonlyMap<string, VoiceCue> | undefined)[] = [];
 
   constructor(private readonly narrative = 'Calmer mornings, tense evenings.') {}
 
-  generate(): Promise<string> {
+  generate(_entries: readonly MoodEntry[], voices?: ReadonlyMap<string, VoiceCue>): Promise<string> {
     this.calls += 1;
+    this.voices.push(voices);
 
     return Promise.resolve(`${this.narrative} #${this.calls}`);
   }
@@ -46,6 +49,18 @@ describe('the month is written once', () => {
 
     expect(await subject.generate(month)).toBe(first);
     expect(inner.calls).toBe(1);
+  });
+
+  it('hands the voice to the writer, and does not write a month again for the voice alone', async () => {
+    const { inner, subject } = setup();
+    const quieter = new Map([['a', { marks: ['quieter'] as const }]]);
+
+    const first = await subject.generate([entry('a')], quieter);
+
+    // The usual voice moves with every new take; the month stays as written.
+    expect(await subject.generate([entry('a')], new Map([['a', { marks: [] }]]))).toBe(first);
+    expect(inner.calls).toBe(1);
+    expect(inner.voices[0]).toBe(quieter);
   });
 
   it('writes again when the month gained an entry', async () => {

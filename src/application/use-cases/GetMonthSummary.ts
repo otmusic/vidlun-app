@@ -2,6 +2,8 @@ import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import type { IClock } from '../../domain/ports/IClock';
 import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryRepository';
 import type { INarrativeGenerator } from '../../domain/ports/INarrativeGenerator';
+import type { VoiceCue } from '../../domain/value-objects/VoiceCue';
+import type { DescribeVoice } from './DescribeVoice';
 
 /** Under this many entries a month has too little in it for prose worth reading. */
 export const NARRATIVE_FROM_ENTRIES = 3;
@@ -43,6 +45,7 @@ export class GetMonthSummary {
     private readonly repository: IMoodEntryRepository,
     private readonly narrativeGenerator: INarrativeGenerator,
     private readonly clock: IClock,
+    private readonly describeVoice: Pick<DescribeVoice, 'ofSaved'>,
   ) {}
 
   /** True while the previous month's piece is worth surfacing. */
@@ -65,9 +68,27 @@ export class GetMonthSummary {
       hasEnough,
       narrative:
         input.withNarrative && hasEnough
-          ? await this.narrativeGenerator.generate(oldestFirst)
+          ? await this.narrativeGenerator.generate(oldestFirst, await this.voicesOf(oldestFirst))
           : null,
     };
+  }
+
+  /**
+   * How the month's spoken entries sounded (owner's word, 2026-11-18). A hard
+   * entry is left out, as it is from the echo: how someone sounded on a day
+   * they were struggling is not something to write back to them. A voice
+   * that cannot be read leaves the month to its words.
+   */
+  private async voicesOf(entries: readonly MoodEntry[]): Promise<ReadonlyMap<string, VoiceCue>> {
+    const ids = entries
+      .filter((entry) => entry.source === 'voice' && entry.safetyFlag === 'none')
+      .map((entry) => entry.id);
+
+    try {
+      return await this.describeVoice.ofSaved(ids);
+    } catch {
+      return new Map();
+    }
   }
 }
 

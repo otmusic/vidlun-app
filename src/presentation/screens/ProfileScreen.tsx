@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import type { Entitlement } from '@/domain/entities/Entitlement';
+import { affirmationFrequencyFor, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
 import type { AffirmationFrequency } from '@/domain/ports/IAffirmationReminders';
 import type { Settings, ThemeChoice } from '@/domain/ports/ISettings';
 import type { Translate, TranslationKey } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
+import { Icon } from '../components/Icon';
 import { ModalSheet, SheetClose } from '../components/ModalSheet';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
@@ -65,6 +66,8 @@ export function ProfileScreen(props: {
   readonly onOpenSubscription: () => void;
   /** Hands one export file to the share sheet; null label means nothing yet. */
   readonly onExport: (shape: 'backup' | 'markdown') => void;
+  /** How far a backup in progress is; null while none runs. */
+  readonly backupProgress: BackupProgress | null;
   readonly onRestore: () => void;
   /** Mails a note to support; rejects when it could not be delivered. */
   /** Opens the note-to-support sheet, which lives above the tabs rather than in here. */
@@ -126,7 +129,13 @@ export function ProfileScreen(props: {
         </Row>
       </Section>
 
-      <Affirmations settings={settings} t={t} onChange={props.onChange} />
+      <Affirmations
+        settings={settings}
+        t={t}
+        onChange={props.onChange}
+        readsAll={readsInFull(props.entitlement)}
+        onOpenSubscription={props.onOpenSubscription}
+      />
 
       <Theme settings={settings} t={t} onChange={props.onChange} />
 
@@ -183,7 +192,7 @@ export function ProfileScreen(props: {
       <Section>
         <Row
           title={t('profile.backup')}
-          hint={t('profile.backupHint')}
+          hint={backupHint(props.backupProgress, t)}
           onPress={() => {
             props.onExport('backup');
           }}
@@ -385,21 +394,29 @@ function ThemeChoiceButton(props: {
  * The morning affirmation (owner's word, 2026-11-06): a switch, and once it
  * is on, how often. The name's line says when it comes; off, it says what
  * it is.
+ *
+ * Without a subscription it comes monthly (owner's word, 2026-11-17): that
+ * one is lit whatever was chosen before, and daily and weekly carry the lock
+ * and open the subscription. What was chosen is kept, so subscribing brings
+ * it back.
  */
 function Affirmations(props: {
   readonly settings: Settings;
   readonly t: Translate;
   readonly onChange: (settings: Settings) => void;
+  readonly readsAll: boolean;
+  readonly onOpenSubscription: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const { settings, t } = props;
   const on = settings.affirmationsOn;
+  const frequency = affirmationFrequencyFor(settings.affirmationFrequency, props.readsAll);
 
   return (
     <Section>
       <Row
         title={t('profile.affirmations')}
-        hint={t(on ? FREQUENCY_HINTS[settings.affirmationFrequency] : 'profile.affirmationsOffHint')}
+        hint={t(on ? FREQUENCY_HINTS[frequency] : 'profile.affirmationsOffHint')}
       >
         <Switch
           value={on}
@@ -421,16 +438,30 @@ function Affirmations(props: {
             marginBottom: 18,
           }}
         >
-          {FREQUENCIES.map((frequency) => (
-            <Segment
-              key={frequency}
-              label={t(FREQUENCY_LABELS[frequency])}
-              chosen={settings.affirmationFrequency === frequency}
-              onPress={() => {
-                props.onChange({ ...settings, affirmationFrequency: frequency });
-              }}
-            />
-          ))}
+          {FREQUENCIES.map((each) => {
+            const label = t(FREQUENCY_LABELS[each]);
+            const locked = affirmationFrequencyFor(each, props.readsAll) !== each;
+
+            return (
+              <Segment
+                key={each}
+                label={label}
+                accessibilityLabel={locked ? t('profile.affirmationsLocked', { label }) : undefined}
+                chosen={frequency === each}
+                onPress={() => {
+                  if (locked) {
+                    props.onOpenSubscription();
+
+                    return;
+                  }
+
+                  props.onChange({ ...settings, affirmationFrequency: each });
+                }}
+                // Never lit while locked, so the lock wears the unlit label's colour.
+                glyph={locked ? () => <Icon name="lock" size={13} color="inkSoft" /> : undefined}
+              />
+            );
+          })}
         </View>
       ) : null}
     </Section>
@@ -440,6 +471,8 @@ function Affirmations(props: {
 /** One choice in a track of them: the theme's three, the affirmation's three. */
 function Segment(props: {
   readonly label: string;
+  /** Read aloud in place of the label, where the glyph says something the label does not. */
+  readonly accessibilityLabel?: string;
   readonly chosen: boolean;
   readonly onPress: () => void;
   readonly glyph?: (colour: string) => React.ReactNode;
@@ -450,6 +483,7 @@ function Segment(props: {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={props.accessibilityLabel}
       accessibilityState={{ selected: props.chosen }}
       onPress={props.onPress}
       style={{
@@ -555,6 +589,27 @@ function Section(props: { readonly children: React.ReactNode }): React.JSX.Eleme
       </View>
     </View>
   );
+}
+
+/** A backup's progress: recordings packed so far, of how many. */
+export interface BackupProgress {
+  readonly done: number;
+  readonly total: number;
+}
+
+/**
+ * The backup row's line: what it does, or — while a backup with its voice is
+ * being packed (owner's word, 2026-11-18) — how far it has got, so a year of
+ * recordings taking a while does not read as the app having stalled.
+ */
+function backupHint(progress: BackupProgress | null, t: Translate): string {
+  if (progress === null) {
+    return t('profile.backupHint');
+  }
+
+  return progress.total === 0
+    ? t('profile.backupPreparing')
+    : t('profile.backupProgress', { done: progress.done, total: progress.total });
 }
 
 function Row(props: {

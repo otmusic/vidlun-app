@@ -5,7 +5,7 @@ import type { IRecordingStore } from '../../domain/ports/IRecordingStore';
  * (owner's word, 2026-10-13).
  *
  * Read from the files rather than from `source`: a voice entry loses its audio
- * after thirteen months, or never kept it when recordings were switched off,
+ * when recordings are switched off, or never kept it while they were off,
  * and a card that promised a voice the entry no longer has would be wrong.
  */
 export class FindRecordedEntries {

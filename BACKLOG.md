@@ -1801,6 +1801,138 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++. The month hears the voice — 2026-11-18
+
+By the owner's word: the voice analysis goes into the monthly piece, "how
+your voice sounded", in the same plain words as the rest of the month (the
+rules of 2026-11-06, §3ψψψ++++++).
+
+- **Each spoken entry of the month carries its voice** to the model, after
+  its words: `| voice: quieter, slower` or `| voice: as usual`. A typed
+  entry, one not measured yet, or one heard too thinly to compare carries
+  nothing, so a month without any voice reads exactly as before.
+- **Against the whole history, from the readings already kept**
+  (`DescribeVoice.ofSaved`): each entry is set against every other reading
+  on the phone rather than the latest thirty, so October is not heard
+  against how the person sounds in November. Nothing is measured on the
+  way; `MeasureVoices` does that on opening.
+- **Never for a hard entry** (`distress`, `crisis`), as with the echo. A
+  voice that cannot be read leaves the month to its words.
+- **The prompt** (`NARRATIVE_PROMPT_VERSION` 4): one sentence at most on
+  the voice, inside the same three or four sentences under 70 words; only
+  when it adds something the words do not — the same change on several
+  days, or a voice that went against the words; left out when it was
+  mostly as usual or changed on one day. Said about the voice ("your voice
+  sounded quieter and slower towards the end of the month"), with the voice
+  as the subject so Ukrainian shows no gender; never a verdict about the
+  person, never pitch, loudness, measuring, the phone or numbers.
+- **Cached months are written once more** (the version is in the
+  fingerprint), and then the voice does not rewrite them: "usual" moves
+  with every new take, and a month paid for again each time it is opened
+  would be worse than one written with the voice as it was heard then.
+- **Privacy policy** (uk/en, the 18 November text): the monthly piece also
+  sends the same few words on the voice for spoken entries. In-app JSON and
+  `legal/site` rebuilt, not deployed.
+- **Not tried against the real model**: the proxy answers only an attested
+  app, so the first month with the voice will be read on the phone.
+
+---
+
+## 3ψψψ+++++++++++++++++. The backup carries the voice — 2026-11-18
+
+By the owner's word ("берись і по дефолту і аудіо бери"): the backup holds
+every recording still on the phone, by default, with no switch.
+
+- **One file**: an Apple Archive (`vidlun-backup-YYYY-MM-DD.aar`) with
+  `journal.json` (the codec's export, unchanged) and `audio/<entry id>.m4a`.
+  Recordings go in as AAC at 24 kbps — about a sixth of the WAV, measured on
+  a speech sample — and come back as the 16 kHz WAV the app keeps, dated as
+  the entry. A JSON backup made before 1.10 still opens.
+- **Native, no dependency**: `modules/vidlun-backup` (Swift, AVFoundation and
+  AppleArchive), streaming disk to disk. `NativeBackupArchive` stages in the
+  cache; where the module is absent (tests, Android for now) the backup is
+  the JSON alone. Apple Archive refuses paths that leave the folder
+  (`../`, absolute): checked with a crafted archive, extraction stops and
+  nothing escapes; the restore then says the file cannot be read.
+- **Use cases**: `BackUpJournal` (progress per recording; the profile's line
+  says "audio 12 of 240") and `RestoreJournal` (merges entries as before,
+  then brings each recording back, however old, unless keeping recordings
+  is off, the entry already has audio, or is not here; an unreadable
+  recording is skipped).
+- **Copy**: the backup and restore lines mention audio; the restore alert adds
+  "Повернулося аудіо: N"; the terms (effective 18 November) say the backup
+  file carries the audio still kept.
+- **No more deleting on a timer** (owner's word, the same day: "we will not
+  decide for the person"): `ForgetOldRecordings` and its test are gone; a
+  recording stays until its entry is deleted or keeping recordings is
+  switched off. The settings and profile lines, the year-ago card's "no
+  audio" line, the privacy policy (effective 18 November; "сам" made
+  genderless on the way) and the landing say so; CLAUDE.md §1 and §6 record
+  it.
+- **AAC on the phone too** (owner's word, the same day): `FileRecordingStore`
+  keeps `<entry id>.m4a`. A take still arrives as WAV (the speech model needs
+  it) and is moved into place at once, so confirming waits on nothing; it is
+  compressed right after, and on every open `CompactRecordings` converts any
+  WAV left (every recording made before, a compression a closed app cut
+  short). The AAC keeps the WAV's date. A WAV whose entry is deleted during
+  compression leaves nothing behind. The backup copies AAC files as they are
+  and the restore keeps them as they came — no decoding back to WAV. Playback
+  and the voice measures read AAC through AVAudioFile as before. The Keep
+  audio line in Me is now just "Аудіозаписи зберігаються на цьому телефоні."
+  (owner's word).
+- **Not done**: Android (needs its own AAC and archive; until then it keeps
+  WAV and a text-only backup).
+
+## 3ψψψ++++++++++++++++. Only the newest entry reads free; one affirmation a month — 2026-11-17
+
+By the owner's word, for 1.10 (the build after 59). Decided in four answers:
+the newest entry only (not "today's and one before"); the locked card keeps
+its day, time and mood colour with the words under the glass; daily and
+weekly affirmations need the subscription; the same for entries written
+before the rule (no grandfathering).
+
+- **The lock** (`FREE_ENTRIES_OPEN = 1`, `entriesOpen`): counted over the
+  whole journal newest first, so a filter never opens an older entry.
+- **The journal** (the owner's third pass the same day: a glass and a lock
+  on every card read as a wall of placeholders; one glass over everything
+  left nothing to delete). Every locked entry is still its own card —
+  `EntryRow` with `lockedHint`: day, time and mood colour, a small lock
+  where the emotion was, one faint line (`LockedLine`) where the words were,
+  no "read with a subscription" written anywhere. A tap opens the
+  subscription; a swipe or a hold deletes it, as on home.
+- **Home, for every plan**: the last entry only (`RECENT_LIMIT = 1`).
+  Without a subscription the month-ago card stands with a lock and a faint
+  line and opens the subscription; the year-ago card is not shown. With one,
+  both cards as before. `LockOverlay` moved out of the stats screen into
+  `LockGlass.tsx`; nothing of an entry is drawn on a locked card.
+- **No flash either way**: the store's answer is null until it comes, and
+  home and the journal hold the entries back until then, so a subscriber
+  never sees locks and nobody sees words that then lock. A store that fails
+  counts as no subscription, as before.
+- **The affirmation** (`affirmationFrequencyFor`): without the subscription
+  it comes monthly and a pick is kept to the 1st, whatever was chosen. In
+  Me, monthly is lit and daily and weekly carry a lock and open the
+  subscription; the stored choice is untouched, so subscribing brings it
+  back. The kept one is not read, and the mornings are not rescheduled,
+  until the store answers.
+- **Still free and complete**: deleting (swipe or hold, in the journal and
+  on home), the backup and the Markdown export (every entry in full).
+- **Three free days** (owner's word, the same day): a Free introductory offer
+  of 3 days on the monthly subscription, set up by the owner in App Store
+  Connect. The app reads the days from the store (`trialDaysOf`) and now
+  promises them only to people RevenueCat reports as eligible
+  (`checkTrialOrIntroductoryPriceEligibility`; "unknown" or a failed check
+  shows the plain price). Under the price, with a trial: when the charging
+  starts (`subs.noteTrial`; the line about cancelling went, owner's word).
+  "Trial week" became "free trial". The terms (no price, as before: once
+  per Apple ID, nothing charged if cancelled within the 3 days) and the
+  site's plan note say so.
+- **Copy**: the subscription screen lists what it gives (whole journal,
+  unlimited entries, the month's piece, the week's topics and patterns,
+  daily or weekly affirmations) in place of the lead paragraph; the terms (effective 17 November;
+  the 16 November text was never published) and the landing's free and paid
+  lists. Not in the design file: it has no locked entry or locked frequency.
+
 ## 3ψψψ+++++++++++++++. The owner's list of 2026-11-16
 
 All for the next build (59), by the owner's word.

@@ -1,3 +1,4 @@
+import type { AffirmationFrequency } from '../ports/IAffirmationReminders';
 import type { SubscriptionStatus } from '../ports/IPurchases';
 
 /**
@@ -21,7 +22,7 @@ export function entitlementOf(status: SubscriptionStatus): Entitlement {
 
 /**
  * How many entries a day are free (owner's word, 2026-11-16); with a
- * subscription, or its free week, there is no limit.
+ * subscription, or its free trial, there is no limit.
  */
 export const FREE_ENTRIES_PER_DAY = 2;
 
@@ -33,4 +34,40 @@ export function mayWriteAnother(unlimited: boolean, writtenToday: number): boole
 /** Whether the monthly narrative and the patterns are open. */
 export function readsInFull(entitlement: Entitlement): boolean {
   return entitlement !== 'none';
+}
+
+/**
+ * How many of the newest entries read without a subscription (owner's word,
+ * 2026-11-17): the latest one. Every other entry is still there, by its day
+ * and its mood's colour, but its words are under the lock — the same for
+ * entries written before the rule as after it.
+ */
+export const FREE_ENTRIES_OPEN = 1;
+
+/**
+ * The ids of the entries whose words read, given the journal newest first;
+ * null when every entry reads, with a subscription or its free trial.
+ */
+export function entriesOpen(
+  newestFirst: readonly { readonly id: string }[],
+  unlimited: boolean,
+): ReadonlySet<string> | null {
+  if (unlimited) {
+    return null;
+  }
+
+  return new Set(newestFirst.slice(0, FREE_ENTRIES_OPEN).map((entry) => entry.id));
+}
+
+/**
+ * How often the affirmation comes, and so how long a pick is kept: as chosen
+ * with a subscription, and monthly without one (owner's word, 2026-11-17 —
+ * one affirmation a month is free). The choice itself is left as it was, so
+ * subscribing brings it back.
+ */
+export function affirmationFrequencyFor(
+  chosen: AffirmationFrequency,
+  unlimited: boolean,
+): AffirmationFrequency {
+  return unlimited ? chosen : 'monthly';
 }

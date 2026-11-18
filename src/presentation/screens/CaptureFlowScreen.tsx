@@ -1,6 +1,6 @@
 import type { Emotion } from '@/domain/entities/Emotion';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
-import type { Entitlement } from '@/domain/entities/Entitlement';
+import { affirmationFrequencyFor, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
 import type { Settings } from '@/domain/ports/ISettings';
 import type { StoreRelease } from '@/domain/ports/IStoreListing';
 import type { Locale, Translate } from '@/i18n';
@@ -31,7 +31,7 @@ import { charmOf, type Charm } from '../components/AffirmationCharm';
 import type { KeptAffirmation } from '@/domain/entities/KeptAffirmation';
 import { GroundingScreen } from './GroundingScreen';
 import { SavedScreen } from './SavedScreen';
-import { ProfileScreen } from './ProfileScreen';
+import { ProfileScreen, type BackupProgress } from './ProfileScreen';
 import { LegalScreen } from './LegalScreen';
 import { SubscriptionScreen } from './SubscriptionScreen';
 import { StatsScreen } from './StatsScreen';
@@ -48,10 +48,12 @@ export interface CaptureFlowScreenProps {
   readonly locale: Locale;
   readonly today: Date;
   readonly t: Translate;
-  readonly entitlement: Entitlement;
+  /** What the store says is owned; null until it has answered. */
+  readonly entitlement: Entitlement | null;
   /** Whether anything is on sale, which decides if the profile shows the subscription. */
   readonly selling: boolean;
   readonly onExport: (shape: 'backup' | 'markdown') => void;
+  readonly backupProgress: BackupProgress | null;
   readonly onRestore: () => void;
   /** Mails a note to support; rejects when it could not be delivered. */
   readonly onFeedback: (text: string) => Promise<void>;
@@ -271,11 +273,19 @@ function Stage(
   },
 ): React.JSX.Element {
   const { flow, t } = props;
+  const entitlement = props.entitlement ?? 'none';
+  // Whether every entry reads; null while the store has not answered (owner's word, 2026-11-17).
+  const readsAll = props.entitlement === null ? null : readsInFull(props.entitlement);
+  // Monthly without a subscription: one affirmation a month is free (owner's word, 2026-11-17).
+  const affirmationFrequency = affirmationFrequencyFor(
+    props.settings.affirmationFrequency,
+    readsAll === true,
+  );
 
   switch (flow.stage.kind) {
     case 'recording': {
       // A minute free, five paid. The cap is a product decision, not audio's.
-      const paid = props.entitlement !== 'none';
+      const paid = entitlement !== 'none';
 
       return (
         <RecordingScreen
@@ -371,10 +381,10 @@ function Stage(
         <AffirmationScreen
           t={t}
           locale={props.locale}
-          frequency={props.settings.affirmationFrequency}
+          frequency={affirmationFrequency}
           kept={flow.stage.kept}
           onKeep={(choice) => {
-            flow.keepAffirmation(choice, props.settings.affirmationFrequency);
+            flow.keepAffirmation(choice, affirmationFrequency);
           }}
           onFlip={flow.noticed}
           onClose={flow.closeAffirmation}
@@ -398,11 +408,12 @@ function Stage(
         <ProfileScreen
           settings={props.settings}
           onExport={props.onExport}
+          backupProgress={props.backupProgress}
           onRestore={props.onRestore}
           onWriteFeedback={props.onWriteFeedback}
           t={t}
           onChange={props.onSettingsChange}
-          entitlement={props.entitlement}
+          entitlement={entitlement}
           selling={props.selling}
           onOpenSubscription={flow.openSubscription}
           onGround={flow.openGrounding}
@@ -469,7 +480,7 @@ function Stage(
     case 'subscription':
       return (
         <SubscriptionScreen
-          entitlement={props.entitlement}
+          entitlement={entitlement}
           plans={flow.stage.plans}
           outcome={flow.stage.outcome}
           locale={props.locale}
@@ -496,7 +507,8 @@ function Stage(
     case 'history':
       return (
         <HistoryScreen
-          days={flow.history}
+          // Held back until the store answers, so no entry shows and then locks.
+          days={readsAll === null ? null : flow.history}
           recorded={flow.recorded}
           filter={flow.journalFilter}
           onFilter={flow.filterJournal}
@@ -507,6 +519,9 @@ function Stage(
           today={props.today}
           t={t}
           onOpen={flow.openEntry}
+          readsAll={readsAll === true}
+          onOpenSubscription={flow.openSubscription}
+          onDelete={flow.deleteEntry}
           onRecord={flow.startRecording}
           milestones={flow.milestones}
           onEditMilestone={flow.openMilestone}
@@ -556,6 +571,8 @@ function Stage(
           onOpenMonth={flow.openMonth}
           onOpen={flow.openEntry}
           onDelete={flow.deleteEntry}
+          readsAll={readsAll}
+          onOpenSubscription={flow.openSubscription}
           onUpdate={updateOpener(
             flow.update !== null && flow.update.version !== props.settings.updateLineClosed
               ? flow.update

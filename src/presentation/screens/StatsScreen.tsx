@@ -1,5 +1,4 @@
-import { BlurView } from 'expo-blur';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { WeekSummary } from '@/application/use-cases/GetWeekSummary';
@@ -16,7 +15,7 @@ import type { Locale, Translate } from '@/i18n';
 import { AppText } from '../components/AppText';
 import { toneFor } from '../components/emotionTone';
 import { Button } from '../components/Button';
-import { Icon, ICON_SIZE } from '../components/Icon';
+import { LockOverlay } from '../components/LockGlass';
 import { RoundBack } from '../components/RoundBack';
 
 import { useDrawnSides } from '../hooks/useDrawnSides';
@@ -560,49 +559,6 @@ const LOCKED_RING = 88;
 
 /** Where the locked pattern's two sentences would be: three lines and a short one. */
 const LOCKED_LINES = ['94%', '86%', '90%', '46%'] as const;
-
-/**
- * What stands over a paid part of the week for someone without a
- * subscription (owner's word, 2026-10-23): frosted glass over the shape of
- * the thing, a veil of the card's own paper so the words read against
- * something quiet, and a lock with the way in. The parent clips it and
- * takes the tap.
- */
-function LockOverlay(props: { readonly label: string }): React.JSX.Element {
-  const theme = useTheme();
-
-  return (
-    <>
-      <BlurView
-        intensity={theme.isDark ? 34 : 30}
-        tint={theme.isDark ? 'dark' : 'light'}
-        style={StyleSheet.absoluteFill}
-      />
-      <View
-        style={[StyleSheet.absoluteFill, { backgroundColor: theme.palette.paper, opacity: 0.3 }]}
-      />
-      <View
-        style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', gap: 12 }]}
-      >
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 44,
-            backgroundColor: theme.palette.solid,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon name="lock" size={ICON_SIZE.inline} color="onSolid" />
-        </View>
-        <AppText variant="body" color="accentInk">
-          {props.label} ›
-        </AppText>
-      </View>
-    </>
-  );
-}
 
 /**
  * What the topics section looks like unpaid: the paid card's shape under

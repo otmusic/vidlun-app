@@ -10,30 +10,67 @@ import type { IRecordingStore } from '../../domain/ports/IRecordingStore';
 const RECORDINGS = 'recordings';
 
 /**
- * Kept as the WAV the recorder produced. Roughly 32 KB per second, so a year
- * of daily entries lands near 360 MB before the sweep starts reclaiming any.
- * Compressing is an optimisation for when that number matters; it would mean
- * adding something that transcodes, and the year bounds the total either way.
+ * Kept as AAC since 2026-11-18 (owner's word): about a sixth of the WAV the
+ * recorder writes, which matters now that nothing removes a voice but the
+ * person. A take arrives as WAV — the speech model needs it that way — and is
+ * compressed after its entry is saved; until then, and wherever compressing
+ * is not possible, the WAV is what is kept.
  */
-const EXTENSION = '.wav';
+const COMPACT = '.m4a';
+const RAW = '.wav';
+/** Where a compression writes before the result takes the recording's name. */
+const PARTIAL = '.partial.m4a';
+/** Only names this store writes count as an entry's recording. */
+const KEPT = /^([A-Za-z0-9_-]+)\.(m4a|wav)$/;
+
+/** The native compressor; see `modules/vidlun-backup`. Null where it was not built in. */
+export interface AudioCompressor {
+  compressAudio(source: string, target: string): Promise<void>;
+}
 
 export class FileRecordingStore implements IRecordingStore {
   private readonly directory = new Directory(Paths.document, RECORDINGS);
+  /** The compaction running now, so a second call joins it instead of racing it. */
+  private compacting: Promise<void> | null = null;
+
+  constructor(private readonly compressor: AudioCompressor | null) {}
 
   async keep(entryId: string, sourceUri: string): Promise<void> {
     this.ensureDirectory();
 
+    const source = new File(sourceUri);
+
     // Moved rather than copied: the take is in the recorder's scratch space,
-    // which is cleared without warning, and two copies of a megabyte serve
-    // nobody.
-    await new File(sourceUri).move(this.fileFor(entryId));
+    // which is cleared without warning, and two copies of a recording serve
+    // nobody. A compact file (from a backup) is kept as it came.
+    if (source.name.endsWith(COMPACT)) {
+      removeIfThere(this.fileFor(entryId, COMPACT));
+      await source.move(this.fileFor(entryId, COMPACT));
+
+      return;
+    }
+
+    await source.move(this.fileFor(entryId, RAW));
+
+    // Not awaited: the entry is saved, and its voice gets smaller behind it.
+    void this.compact();
+  }
+
+  compact(): Promise<void> {
+    if (this.compressor === null || !this.directory.exists) {
+      return Promise.resolve();
+    }
+
+    this.compacting ??= this.compactAll(this.compressor).finally(() => {
+      this.compacting = null;
+    });
+
+    return this.compacting;
   }
 
   discard(entryId: string): Promise<void> {
-    const file = this.fileFor(entryId);
-
-    if (file.exists) {
-      file.delete();
+    for (const extension of [COMPACT, RAW, PARTIAL]) {
+      removeIfThere(this.fileFor(entryId, extension));
     }
 
     return Promise.resolve();
@@ -56,9 +93,15 @@ export class FileRecordingStore implements IRecordingStore {
   }
 
   find(entryId: string): Promise<string | null> {
-    const file = this.fileFor(entryId);
+    const compact = this.fileFor(entryId, COMPACT);
 
-    return Promise.resolve(file.exists ? file.uri : null);
+    if (compact.exists) {
+      return Promise.resolve(compact.uri);
+    }
+
+    const raw = this.fileFor(entryId, RAW);
+
+    return Promise.resolve(raw.exists ? raw.uri : null);
   }
 
   withAudio(): Promise<ReadonlySet<string>> {
@@ -66,21 +109,60 @@ export class FileRecordingStore implements IRecordingStore {
       return Promise.resolve(new Set());
     }
 
-    const ids = this.directory
-      .list()
-      .filter((item): item is File => item instanceof File && item.name.endsWith(EXTENSION))
-      .map((file) => file.name.slice(0, -EXTENSION.length));
+    const ids = this.directory.list().flatMap((item) => {
+      const match = item instanceof File ? KEPT.exec(item.name) : null;
+
+      return match?.[1] === undefined ? [] : [match[1]];
+    });
 
     return Promise.resolve(new Set(ids));
   }
 
-  private fileFor(entryId: string): File {
-    return new File(this.directory, `${entryId}${EXTENSION}`);
+  /**
+   * One WAV at a time into AAC beside it, then the AAC takes the recording's
+   * name and the WAV goes. A WAV deleted meanwhile — its entry deleted —
+   * leaves nothing behind; a WAV that will not convert is left as it is.
+   */
+  private async compactAll(compressor: AudioCompressor): Promise<void> {
+    const raw = this.directory
+      .list()
+      .filter((item): item is File => item instanceof File && KEPT.exec(item.name)?.[2] === 'wav');
+
+    for (const wav of raw) {
+      const entryId = wav.name.slice(0, -RAW.length);
+      const partial = this.fileFor(entryId, PARTIAL);
+
+      try {
+        removeIfThere(partial);
+        await compressor.compressAudio(wav.uri, partial.uri);
+
+        if (!wav.exists) {
+          removeIfThere(partial);
+          continue;
+        }
+
+        removeIfThere(this.fileFor(entryId, COMPACT));
+        await partial.move(this.fileFor(entryId, COMPACT));
+        wav.delete();
+      } catch {
+        removeIfThere(partial);
+      }
+    }
+  }
+
+  private fileFor(entryId: string, extension: string): File {
+    return new File(this.directory, `${entryId}${extension}`);
   }
 
   private ensureDirectory(): void {
     if (!this.directory.exists) {
       this.directory.create({ intermediates: true });
     }
+  }
+}
+
+function removeIfThere(file: File): void {
+  if (file.exists) {
+    file.delete();
   }
 }

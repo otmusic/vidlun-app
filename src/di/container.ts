@@ -24,7 +24,6 @@ import { GetWeekThemes } from '../application/use-cases/GetWeekThemes';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
 import { FindRecordedEntries } from '../application/use-cases/FindRecordedEntries';
 import { FindRecording } from '../application/use-cases/FindRecording';
-import { ForgetOldRecordings } from '../application/use-cases/ForgetOldRecordings';
 import { GetHistory } from '../application/use-cases/GetHistory';
 import { ReviseEntry } from '../application/use-cases/ReviseEntry';
 import type { EmotionVocabulary } from '../domain/entities/EmotionVocabulary';
@@ -43,6 +42,9 @@ import { ExportJournal } from '../application/use-cases/ExportJournal';
 import { GetMonthSummary } from '../application/use-cases/GetMonthSummary';
 import { GetPastMonths } from '../application/use-cases/GetPastMonths';
 import { ImportJournal } from '../application/use-cases/ImportJournal';
+import { BackUpJournal } from '../application/use-cases/BackUpJournal';
+import { RestoreJournal } from '../application/use-cases/RestoreJournal';
+import { CompactRecordings } from '../application/use-cases/CompactRecordings';
 import { ProxyAuth, attestedFetch } from '../infrastructure/attest/ProxyAuth';
 import { DocumentFilePicker } from '../infrastructure/files/DocumentFilePicker';
 import { ShareSheetFileSharer } from '../infrastructure/files/ShareSheetFileSharer';
@@ -62,6 +64,7 @@ import { ExpoMicrophonePermission } from '../infrastructure/audio/ExpoMicrophone
 import { AsyncStorageMoodEntryRepository } from '../infrastructure/persistence/AsyncStorageMoodEntryRepository';
 import { AsyncStorageRevisionLog } from '../infrastructure/persistence/AsyncStorageRevisionLog';
 import { FileRecordingStore } from '../infrastructure/persistence/FileRecordingStore';
+import { NativeBackupArchive } from '../infrastructure/files/NativeBackupArchive';
 import { detectLocale, deviceInUkraine } from '../infrastructure/settings/deviceLocale';
 import { SettingsStore } from '../infrastructure/settings/SettingsStore';
 import { ExpoParkedFiles } from '../infrastructure/persistence/ExpoParkedFiles';
@@ -103,6 +106,7 @@ import { WriteEcho } from '../application/use-cases/WriteEcho';
 import { ClaudeEchoWriter } from '../infrastructure/analysis/ClaudeEchoWriter';
 import { FakeEchoWriter } from '../infrastructure/analysis/FakeEchoWriter';
 import { analyzeVoice } from '../../modules/vidlun-voice';
+import { nativeBackup } from '../../modules/vidlun-backup';
 import {
   TimedMessagesClient,
   TimedReflectionAnalyzer,
@@ -124,8 +128,9 @@ export interface Container {
   readonly reviseEntry: ReviseEntry;
   readonly deleteEntry: DeleteEntry;
   readonly getHistory: GetHistory;
-  readonly forgetOldRecordings: ForgetOldRecordings;
   readonly findRecording: FindRecording;
+  /** Keeps the voice as AAC on the phone; run on open for anything still WAV. */
+  readonly compactRecordings: CompactRecordings;
   readonly findRecordedEntries: FindRecordedEntries;
   readonly settings: SettingsStore;
   /** The take recorded before the phone could hear, if one waits. */
@@ -168,7 +173,9 @@ export interface Container {
   readonly markMilestone: MarkMilestone;
   readonly forgetMilestone: ForgetMilestone;
   readonly exportJournal: ExportJournal;
-  readonly importJournal: ImportJournal;
+  /** The backup with its voice: the journal and every kept recording in one file. */
+  readonly backUpJournal: BackUpJournal;
+  readonly restoreJournal: RestoreJournal;
   readonly fileSharer: IFileSharer;
   readonly filePicker: IFilePicker;
   readonly microphonePermission: IMicrophonePermission;
@@ -311,7 +318,8 @@ export function createContainer(dependencies: ContainerDependencies): Container 
   // The version this build says it is, from app.json; the build number is not part of it.
   const installedVersion = Constants.expoConfig?.version ?? null;
   const revisionLog = new AsyncStorageRevisionLog(AsyncStorage);
-  const recordings = new FileRecordingStore();
+  const recordings = new FileRecordingStore(nativeBackup);
+  const backupArchive = new NativeBackupArchive(nativeBackup);
   const milestones = new AsyncStorageMilestones(AsyncStorage);
   const unheard = new AsyncStorageUnheardEntries(AsyncStorage);
   const voiceReadings = new AsyncStorageVoiceReadings(AsyncStorage);
@@ -330,8 +338,8 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     reviseEntry: new ReviseEntry(vocabulary),
     deleteEntry: new DeleteEntry(repository, revisionLog, recordings, voiceReadings),
     getHistory: new GetHistory(repository),
-    forgetOldRecordings: new ForgetOldRecordings(recordings, clock),
     findRecording: new FindRecording(recordings),
+    compactRecordings: new CompactRecordings(recordings),
     findRecordedEntries: new FindRecordedEntries(recordings),
     settings: new SettingsStore(AsyncStorage, detectLocale),
     parkedTake: new FileParkedTake(AsyncStorage, new ExpoParkedFiles()),
@@ -383,6 +391,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
         ? new FakeNarrativeGenerator()
         : new CachedNarrativeGenerator(new ClaudeNarrativeGenerator(anthropic.messages), AsyncStorage),
       clock,
+      describeVoice,
     ),
     getPastMonths: new GetPastMonths(repository, clock),
     getWeekThemes: new GetWeekThemes(repository),
@@ -402,7 +411,13 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     selling: SELLING,
     getVocabularyGrowth: new GetVocabularyGrowth(repository, clock),
     exportJournal: new ExportJournal(repository, new JournalCodec(), clock),
-    importJournal: new ImportJournal(repository, new JournalCodec()),
+    backUpJournal: new BackUpJournal(repository, new JournalCodec(), recordings, backupArchive, clock),
+    restoreJournal: new RestoreJournal(
+      new ImportJournal(repository, new JournalCodec()),
+      repository,
+      recordings,
+      backupArchive,
+    ),
     fileSharer: new ShareSheetFileSharer(),
     filePicker: new DocumentFilePicker(),
     microphonePermission: new ExpoMicrophonePermission({

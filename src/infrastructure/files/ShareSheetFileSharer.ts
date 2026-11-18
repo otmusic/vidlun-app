@@ -18,7 +18,11 @@ export class ShareSheetFileSharer implements IFileSharer {
 
     file.write(contents);
 
-    const outcome = await Share.share({ url: file.uri });
+    return this.shareFile(file.uri);
+  }
+
+  async shareFile(uri: string): Promise<boolean> {
+    const outcome = await Share.share({ url: uri });
 
     return outcome.action === Share.sharedAction;
   }

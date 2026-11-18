@@ -2,7 +2,7 @@
   "title": "Vidlun Privacy Policy",
   "blocks": [
     {
-      "text": "*Effective:* 12 November 2026"
+      "text": "*Effective:* 18 November 2026"
     },
     {
       "text": "*Data controller:* the Vidlun developer, support@vidlun.app"
@@ -29,12 +29,12 @@
         [
           "Voice recordings",
           "the app's documents folder",
-          "thirteen months, then deleted automatically; immediately if \"Keep voice recordings\" is off"
+          "until you delete the entry or turn \"Keep voice recordings\" off, which deletes them at once"
         ],
         [
           "Measurements of the voice in a recording — pitch, loudness, pauses, pace — taken on the phone; numbers, not sound",
           "local storage",
-          "until you delete the entry or turn \"Keep voice recordings\" off; they stay when the recording's thirteen months end"
+          "until you delete the entry or turn \"Keep voice recordings\" off"
         ],
         [
           "Transcript, emotions, mood, topics, time",
@@ -68,7 +68,7 @@
       "sub": "2.1 The text of an entry, for analysis"
     },
     {
-      "text": "*What exactly.* The cleaned transcript of one entry. For a spoken entry, also a few words on how the voice sounded against your own usual voice, such as \"quieter, slower\" — words, never the recording and never the measurements themselves. For an entry's echo, also the mood and the emotions you chose. For the monthly piece: the date, the mood number, emotion codes, topics and the transcripts of a month's entries together."
+      "text": "*What exactly.* The cleaned transcript of one entry. For a spoken entry, also a few words on how the voice sounded against your own usual voice, such as \"quieter, slower\" — words, never the recording and never the measurements themselves. For an entry's echo, also the mood and the emotions you chose. For the monthly piece: the date, the mood number, emotion codes, topics and the transcripts of a month's entries together, with the same few words on the voice for the spoken ones."
     },
     {
       "text": "*Where to.* Through our Cloudflare Workers proxy to Anthropic PBC (USA), to the Claude API."

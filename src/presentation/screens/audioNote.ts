@@ -8,8 +8,9 @@ import type { TranslationKey } from '@/i18n';
  * accuses a setting that may well be on. A spoken entry without audio lost
  * it either because recordings are off — the one reason the person can
  * change, so it is named — or for a reason settings no longer explain:
- * they were off when it was recorded and are on now, or thirteen months
- * have passed. Those two get a line that claims nothing about settings.
+ * they were off when it was recorded and are on now, or the audio was
+ * deleted before the app stopped deleting it on its own (2026-11-18). Those
+ * get a line that claims nothing about settings.
  */
 export function audioNoteKey(source: EntrySource, keepRecordings: boolean): TranslationKey {
   if (source === 'text') {

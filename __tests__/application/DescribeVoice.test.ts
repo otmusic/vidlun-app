@@ -95,3 +95,35 @@ describe('describing a voice against its usual self', () => {
     expect(await stale.subject.ofTake('file:///take.wav')).toBeNull();
   });
 });
+
+describe('describing a month of saved voices', () => {
+  it('sets each entry against the rest of the history, without measuring anything', async () => {
+    const { readings, analyzer, subject } = await setup(-20, ORDINARY);
+
+    await readings.save('quiet', reading(-35));
+    await readings.save('ordinary', reading(-20));
+
+    const cues = await subject.ofSaved(['quiet', 'ordinary', 'typed']);
+
+    expect(cues.get('quiet')).toEqual({ marks: ['quieter'] });
+    expect(cues.get('ordinary')).toEqual({ marks: [] });
+    expect(cues.has('typed')).toBe(false);
+    expect(analyzer.asked).toEqual([]);
+  });
+
+  it('leaves out a reading from an older analysis', async () => {
+    const { readings, subject } = await setup(-20, ORDINARY);
+
+    await readings.save('older', reading(-35, 0));
+
+    expect((await subject.ofSaved(['older'])).size).toBe(0);
+  });
+
+  it('says nothing until enough of the voice was heard to know what usual is', async () => {
+    const { readings, subject } = await setup(-20, [-20, -21, -19]);
+
+    await readings.save('quiet', reading(-35));
+
+    expect((await subject.ofSaved(['quiet'])).size).toBe(0);
+  });
+});

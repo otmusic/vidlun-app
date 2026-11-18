@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, View, type ListRenderItem } from 'react-native';
 
 import type { HistoryDay } from '@/application/use-cases/GetHistory';
+import { entriesOpen } from '@/domain/entities/Entitlement';
 import type { Milestone } from '@/domain/entities/Milestone';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
@@ -12,6 +13,7 @@ import { AppText } from '../components/AppText';
 import { CountPill } from '../components/CountPill';
 import { EmotionFilterSheet } from '../components/EmotionFilterSheet';
 import { EntryCard } from '../components/EntryCard';
+import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { Icon } from '../components/Icon';
@@ -47,6 +49,16 @@ export function HistoryScreen(props: {
   readonly today: Date;
   readonly t: Translate;
   readonly onOpen: (entry: MoodEntry) => void;
+  /**
+   * Whether every entry reads, with a subscription or its free trial. Without
+   * one only the newest does (owner's word, 2026-11-17); every other entry
+   * is still its own card — day, time, mood colour, a small lock and one
+   * faint line — whose tap opens the subscription and which a swipe or a
+   * hold deletes, since it cannot be opened to be deleted from there.
+   */
+  readonly readsAll: boolean;
+  readonly onOpenSubscription: () => void;
+  readonly onDelete: (id: string) => void;
   readonly onRecord: () => void;
   /** Every milestone; each sits as a rule between the days before and after it. */
   readonly milestones: readonly Milestone[];
@@ -55,7 +67,7 @@ export function HistoryScreen(props: {
   const theme = useTheme();
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
-  const { t, onOpen, onEditMilestone } = props;
+  const { t, onOpen, onOpenSubscription, onDelete, onEditMilestone } = props;
   const [filtering, setFiltering] = useState(false);
   const entries = useMemo(() => (props.days ?? []).flatMap((day) => day.entries), [props.days]);
   const offered = useMemo(() => emotionsUsed(entries), [entries]);
@@ -79,10 +91,24 @@ export function HistoryScreen(props: {
     () => interleave(shown, narrowed ? [] : props.milestones),
     [shown, narrowed, props.milestones],
   );
+  // Counted over the whole journal, so a filter never opens an older entry.
+  const open = useMemo(() => entriesOpen(entries, props.readsAll), [entries, props.readsAll]);
+  const lockedHint = t('subs.entryLocked');
 
   const renderRow = useCallback<ListRenderItem<Row>>(
     ({ item: row }) =>
-      row.kind === 'entry' ? (
+      row.kind === 'entry' && open !== null && !open.has(row.entry.id) ? (
+        <EntryRow
+          entry={row.entry}
+          vocabulary={props.vocabulary}
+          locale={props.locale}
+          today={props.today}
+          t={t}
+          onOpen={onOpenSubscription}
+          onDelete={onDelete}
+          lockedHint={lockedHint}
+        />
+      ) : row.kind === 'entry' ? (
         <EntryCard
           entry={row.entry}
           vocabulary={props.vocabulary}
@@ -117,8 +143,12 @@ export function HistoryScreen(props: {
         </Pressable>
       ),
     [
+      lockedHint,
+      onDelete,
       onEditMilestone,
       onOpen,
+      onOpenSubscription,
+      open,
       props.locale,
       props.recorded,
       props.today,
@@ -129,6 +159,8 @@ export function HistoryScreen(props: {
   );
 
   return (
+    // One swiped-open locked card at a time, as on home.
+    <SwipeGroup>
     <View style={{ flex: 1 }}>
       {/*
        * A list that renders what is on screen and a little past it, rather
@@ -308,6 +340,7 @@ export function HistoryScreen(props: {
         }}
       />
     </View>
+    </SwipeGroup>
   );
 }
 

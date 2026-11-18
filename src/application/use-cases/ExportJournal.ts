@@ -29,8 +29,10 @@ export interface ExportJournalInput {
  * through the same mapper the repository uses, so an import loses nothing.
  * The markdown half is for reading, printing, or leaving to another app.
  *
- * Audio is deliberately not here: recordings are large, delete themselves
- * after a year by design, and the written entry is the part that is forever.
+ * Audio is not here: the backup the person keeps is `BackUpJournal`, which
+ * packs this same JSON together with the recordings (owner's word,
+ * 2026-11-18). This file is now the readable half and the JSON both shapes
+ * share.
  */
 export class ExportJournal {
   constructor(

@@ -1,6 +1,6 @@
 # Vidlun Terms of Use
 
-**Effective:** 16 November 2026
+**Effective:** 18 November 2026
 
 **Provider:** the Vidlun developer, support@vidlun.app
 
@@ -43,23 +43,30 @@ consequence worth knowing: **if you lose the phone or delete the app, the
 entries are gone for good** — we hold no copy to restore them from.
 
 That is what **Backup** in your profile is for: it hands you every entry as
-one file, and the same file restores them on a new phone. Keeping that file
-somewhere safe is yours to do; we never see or hold it.
+one file, with the audio still kept on the phone, and the same file restores
+them on a new phone. Keeping that file somewhere safe is yours to do; we never
+see or hold it.
 
 ## 4. Subscription
 
 **Free forever:** two entries a day, each recorded for up to one minute, transcription, the emotion names
-the app heard in a recording, the journal with its emotion filter, the mood
-chart and the emotion vocabulary.
+the app heard in a recording, the journal with its emotion filter, where the
+latest entry can be read, the mood chart, the emotion vocabulary and one
+affirmation a month.
 
 **Paid:** the monthly piece the language model writes after reading your whole
 month, the week's topics and "What stands out" — patterns in your mood — and
-as many entries a day as you like, each recorded for up to five minutes.
+as many entries a day as you like, each recorded for up to five minutes,
+every entry in the journal, and affirmations daily or weekly. Entries you
+cannot read in the app without a subscription stay on your phone and go into
+the backup in full.
 
-**Plan.** One: a monthly subscription, with no trial. The App Store shows the
-current price in your currency before you buy; we do not repeat it here, so
-that it cannot disagree with what you actually see. An annual subscription or
-lifetime access bought earlier keeps working on the same terms.
+**Plan.** One: a monthly subscription. New subscribers get 3 days free, then
+it is charged monthly; cancel before the 3 days are up and nothing is charged.
+The trial is given once per Apple ID. The App Store shows the current price in
+your currency before you buy; we do not repeat it here, so that it cannot
+disagree with what you actually see. An annual subscription or lifetime access
+bought earlier keeps working on the same terms.
 
 **Auto-renewal.** A subscription renews itself until cancelled. Apple charges
 within 24 hours before the end of the current period. You can cancel any time

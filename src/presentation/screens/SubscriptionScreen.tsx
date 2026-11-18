@@ -2,10 +2,11 @@ import { Linking, Modal, Pressable, ScrollView, View } from 'react-native';
 
 import type { Entitlement } from '@/domain/entities/Entitlement';
 import type { Plan, PurchaseOutcome } from '@/domain/ports/IPurchases';
-import type { Locale, Translate } from '@/i18n';
+import type { Locale, Translate, TranslationKey } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
+import { Icon } from '../components/Icon';
 import { RoundBack } from '../components/RoundBack';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
@@ -53,12 +54,10 @@ export function SubscriptionScreen(props: {
       >
         <RoundBack t={t} onPress={props.onBack} />
 
-        <AppText variant="display" style={{ marginBottom: 10 }}>
+        <AppText variant="display" style={{ marginBottom: 18 }}>
           {t('subs.title')}
         </AppText>
-        <AppText variant="body" color="inkSoft" style={{ marginBottom: 24 }}>
-          {t('subs.body')}
-        </AppText>
+        <Perks t={t} />
 
         {owns ? (
           <>
@@ -121,7 +120,7 @@ export function SubscriptionScreen(props: {
           <>
             <PlanCard plan={plan} locale={props.locale} t={t} />
             <AppText variant="secondary" color="inkFaint" style={{ marginTop: 14, marginBottom: 14 }}>
-              {t('subs.noteMonthly', { price: plan.price })}
+              {noteOf(plan, t, props.locale)}
             </AppText>
             <Solid
               label={buyLabel(plan, t, props.locale)}
@@ -136,7 +135,16 @@ export function SubscriptionScreen(props: {
         {/* Apple asks for these to work, and someone deciding whether to pay
             is exactly who wants to read them. Nothing else follows: the way
             out is the round back button at the top. */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 }}>
+        {/* Centred under the buttons, which are centred too (owner's word, 2026-11-17). */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            marginTop: 18,
+          }}
+        >
           <Pressable accessibilityRole="link" onPress={props.onOpenTerms} hitSlop={10}>
             <AppText variant="secondary" color="accentInk">
               {t('subs.terms')}
@@ -168,6 +176,72 @@ export function SubscriptionScreen(props: {
       />
     </View>
   );
+}
+
+/** What the subscription opens, in the owner's order (2026-11-17). */
+const PERKS: readonly TranslationKey[] = [
+  'subs.perkJournal',
+  'subs.perkEntries',
+  'subs.perkAudio',
+  'subs.perkMonth',
+  'subs.perkPatterns',
+  'subs.perkAffirmations',
+];
+
+/**
+ * What the subscription gives, as a list (owner's word, 2026-11-17) rather
+ * than the paragraph that mixed it with what stays free: one line a thing,
+ * each behind a check in a circle, so it reads at a glance — and shown to everyone,
+ * since someone who has it is reminded what they have.
+ */
+function Perks(props: { readonly t: Translate }): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <View accessibilityRole="list" style={{ gap: 12, marginBottom: 26 }}>
+      {/* A label over the list, as the week's sections have, not a second heading. */}
+      <AppText variant="caption" color="inkFaint">
+        {props.t('subs.perksTitle')}
+      </AppText>
+      {PERKS.map((key) => (
+        <View key={key} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+          {/* Each check in its own round mark (owner's word, 2026-11-17). */}
+          <View
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 13,
+              backgroundColor: theme.palette.accentSoft,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon name="check" size={15} color="accentInk" />
+          </View>
+          <AppText variant="body" style={{ flex: 1 }}>
+            {props.t(key)}
+          </AppText>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * The line under the price. With free days, it says when the charging starts
+ * (owner's word, 2026-11-17): Apple asks a trial's terms to be this plain,
+ * and a person deciding should not have to guess.
+ */
+function noteOf(plan: Plan, t: Translate, locale: Locale): string {
+  if (plan.trialDays > 0) {
+    return t('subs.noteTrial', {
+      n: plan.trialDays,
+      days: t(countedKey('subs.day', plan.trialDays, locale)),
+      price: plan.price,
+    });
+  }
+
+  return t('subs.noteMonthly', { price: plan.price });
 }
 
 /**
@@ -210,10 +284,22 @@ function PlanCard(props: {
         <AppText variant="body" style={{ fontSize: 16 }}>
           {t('subs.planMonthly')}
         </AppText>
+        {/* The free days stand out as a pill in the lime of the journal's count (owner's word, 2026-11-17). */}
         {note === null ? null : (
-          <AppText variant="secondary" color="inkSoft">
-            {note}
-          </AppText>
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              marginTop: 6,
+              paddingVertical: 4,
+              paddingHorizontal: 12,
+              borderRadius: 999,
+              backgroundColor: theme.palette.limeSoft,
+            }}
+          >
+            <AppText variant="secondary" style={{ fontWeight: '500' }}>
+              {note}
+            </AppText>
+          </View>
         )}
       </View>
       <View style={{ alignItems: 'flex-end', gap: 2 }}>

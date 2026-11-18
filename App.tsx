@@ -7,10 +7,15 @@ import { useAudioRecorder } from 'expo-audio';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService';
 import { createContainer, type Container } from '@/di/container';
-import { createTranslator, type Locale } from '@/i18n';
+import { createTranslator, type Locale, type Translate } from '@/i18n';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
-import { entitlementOf, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
+import {
+  affirmationFrequencyFor,
+  entitlementOf,
+  readsInFull,
+  type Entitlement,
+} from '@/domain/entities/Entitlement';
 import { DEFAULT_SETTINGS, type Settings } from '@/domain/ports/ISettings';
 import { bundledModelUri } from '@/infrastructure/transcription/bundledModel';
 import { SPEECH_MODEL } from '@/infrastructure/transcription/speechModel';
@@ -22,6 +27,8 @@ import { SplashOverlay } from '@/presentation/components/SplashOverlay';
 import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
 import { useRecordLink } from '@/presentation/hooks/useRecordLink';
 import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
+import type { BackupProgress } from '@/presentation/screens/ProfileScreen';
+import type { RestoreOutcome } from '@/application/use-cases/RestoreJournal';
 import { OnboardingScreen } from '@/presentation/screens/OnboardingScreen';
 import { Screen } from '@/presentation/screens/Screen';
 import { ThemeProvider, useTheme } from '@/presentation/theme/ThemeProvider';
@@ -145,8 +152,12 @@ function Vidlun(props: {
    * Asked of the store rather than remembered: a subscription can end, start
    * or refund without this app being open, and a flag we wrote ourselves
    * would outlive it. This includes the trial — the store runs it now.
+   *
+   * Null until the store first answers: the older entries and the
+   * affirmation's period hang on it (owner's word, 2026-11-17), and showing
+   * a subscriber locks for the moment it takes to ask would be wrong.
    */
-  const [entitlement, setEntitlement] = useState<Entitlement>('none');
+  const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
 
   const readStatus = useCallback(() => {
     void props.container.purchases
@@ -157,8 +168,20 @@ function Vidlun(props: {
       .catch(() => {
         // A store that will not answer is not a reason to lock someone out of
         // the rest of the app; it only means the paid half stays closed.
+        setEntitlement((known) => known ?? 'none');
       });
   }, [props.container.purchases]);
+
+  const readsAll = entitlement !== null && readsInFull(entitlement);
+  /*
+   * How often the affirmation comes and how long a pick is kept: monthly
+   * without a subscription (owner's word, 2026-11-17). Null until the store
+   * answers, so the pick is not read under one period and then another.
+   */
+  const affirmationFrequency =
+    entitlement === null
+      ? null
+      : affirmationFrequencyFor(props.settings.affirmationFrequency, readsAll);
 
   useEffect(readStatus, [readStatus]);
 
@@ -177,11 +200,11 @@ function Vidlun(props: {
     confirmEntry: container.confirmEntry,
     deleteEntry: container.deleteEntry,
     getHistory: container.getHistory,
-    forgetOldRecordings: container.forgetOldRecordings,
     findRecording: container.findRecording,
+    compactRecordings: container.compactRecordings,
     findRecordedEntries: container.findRecordedEntries,
     keepRecordings: props.settings.keepRecordings,
-    affirmationFrequency: props.settings.affirmationFrequency,
+    affirmationFrequency,
     parkedTake: container.parkedTake,
     createUnheardEntry: container.createUnheardEntry,
     unheardEntries: container.unheardEntries,
@@ -206,7 +229,7 @@ function Vidlun(props: {
      * it is M5's, and lands behind this same pair of flags rather than beside
      * them.
      */
-    hasNarrativeAccess: readsInFull(entitlement),
+    hasNarrativeAccess: readsAll,
     clock: container.clock,
     purchases: container.purchases,
     onEntitlementChanged: readStatus,
@@ -277,7 +300,7 @@ function Vidlun(props: {
    * speaks it), and once on opening. A refused permission turns the switch
    * back off, for the reason the reminder's does.
    */
-  const { affirmationsOn, affirmationFrequency } = props.settings;
+  const { affirmationsOn } = props.settings;
   // A pick made, or its period over, moves the mornings that are still wanted.
   const quietUntil = flow.keptAffirmation?.until.getTime() ?? null;
 
@@ -285,6 +308,11 @@ function Vidlun(props: {
     if (!affirmationsOn) {
       void container.affirmationReminders.cancel();
 
+      return;
+    }
+
+    // Until the store answers, the mornings already set stay as they are.
+    if (affirmationFrequency === null) {
       return;
     }
 
@@ -317,12 +345,58 @@ function Vidlun(props: {
   );
 
   /*
+   * The backup with its voice (owner's word, 2026-11-18). Packing a year of
+   * recordings takes a while on a phone, so the profile's line says how far
+   * it is, and a second tap while it runs does nothing.
+   */
+  const [backupProgress, setBackupProgress] = useState<BackupProgress | null>(null);
+  const backingUp = useRef(false);
+
+  const backUp = useCallback(() => {
+    if (backingUp.current) {
+      return;
+    }
+
+    backingUp.current = true;
+    setBackupProgress({ done: 0, total: 0 });
+
+    void (async () => {
+      try {
+        const backup = await container.backUpJournal.execute((done, total) => {
+          setBackupProgress({ done, total });
+        });
+
+        setBackupProgress(null);
+
+        if (backup === null) {
+          Alert.alert(t('profile.exportEmpty'));
+
+          return;
+        }
+
+        await container.fileSharer.shareFile(backup.uri);
+      } catch {
+        setBackupProgress(null);
+        Alert.alert(t('profile.backupFailedTitle'), t('profile.backupFailedBody'));
+      } finally {
+        backingUp.current = false;
+      }
+    })();
+  }, [container, t]);
+
+  /*
    * The whole journal as a file in the person's hand. Built here because it
    * needs the container and the translator at once, and the profile screen
    * needs neither — it only says which of the two shapes was asked for.
    */
   const exportJournal = useCallback(
     (shape: 'backup' | 'markdown') => {
+      if (shape === 'backup') {
+        backUp();
+
+        return;
+      }
+
       void (async () => {
         const journal = await container.exportJournal.execute({
           labelOf: (id) => emotionLabel(id, t),
@@ -339,42 +413,36 @@ function Vidlun(props: {
 
         const day = container.clock.now().toISOString().slice(0, 10);
 
-        await container.fileSharer.share(
-          shape === 'backup' ? `vidlun-backup-${day}.json` : `vidlun-journal-${day}.md`,
-          shape === 'backup' ? journal.json : journal.markdown,
-        );
+        await container.fileSharer.share(`vidlun-journal-${day}.md`, journal.markdown);
       })();
     },
-    [container, locale, t],
+    [backUp, container, locale, t],
   );
 
   /*
-   * The backup coming home. Cancelling the picker is silence; an unreadable
-   * file is told apart from an empty result, because "nothing new" and
-   * "could not read it" call for opposite feelings.
+   * The backup coming home, with its voice when it carries one and keeping
+   * recordings is on. Cancelling the picker is silence; an unreadable file
+   * is told apart from an empty result, because "nothing new" and "could not
+   * read it" call for opposite feelings.
    */
+  const keepRecordings = props.settings.keepRecordings;
   const restoreJournal = useCallback(() => {
     void (async () => {
       try {
-        const json = await container.filePicker.pickText();
+        const file = await container.filePicker.pickFile();
 
-        if (json === null) {
+        if (file === null) {
           return;
         }
 
-        const outcome = await container.importJournal.execute(json);
+        const outcome = await container.restoreJournal.execute(file, keepRecordings);
 
-        Alert.alert(
-          t('profile.restoredTitle'),
-          outcome.imported === 0
-            ? t('profile.restoredNothing')
-            : t('profile.restoredBody', { n: outcome.imported, skipped: outcome.skipped }),
-        );
+        Alert.alert(t('profile.restoredTitle'), restoredMessage(outcome, t));
       } catch {
         Alert.alert(t('profile.importBadTitle'), t('profile.importBadBody'));
       }
     })();
-  }, [container, t]);
+  }, [container, keepRecordings, t]);
 
   /*
    * "Record in Vidlun" from a widget, Siri, the Control Center or the Action
@@ -479,6 +547,7 @@ function Vidlun(props: {
       entitlement={entitlement}
       selling={container.selling}
       onExport={exportJournal}
+      backupProgress={backupProgress}
       onRestore={restoreJournal}
       onFeedback={(text) => container.feedback.send(text)}
       inUkraine={container.inUkraine}
@@ -575,4 +644,20 @@ function SetupNeeded(props: { readonly detail: string }): React.JSX.Element {
       </AppText>
     </Screen>
   );
+}
+
+/**
+ * What came back, in words: the entries, and the voices with them when any
+ * returned. "Nothing new" stays its own sentence.
+ */
+function restoredMessage(outcome: RestoreOutcome, t: Translate): string {
+  if (outcome.imported === 0 && outcome.recordings === 0) {
+    return t('profile.restoredNothing');
+  }
+
+  const entries = t('profile.restoredBody', { n: outcome.imported, skipped: outcome.skipped });
+
+  return outcome.recordings === 0
+    ? entries
+    : `${entries}\n${t('profile.restoredVoices', { n: outcome.recordings })}`;
 }

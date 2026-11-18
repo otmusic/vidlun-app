@@ -105,7 +105,7 @@
         },
         {
           "title": "Голос лишається на телефоні",
-          "body": "Аудіо зберігається лише на пристрої 13 місяців, потім видаляється саме. Текст запису лишається, доки ти його не видалиш.",
+          "body": "Аудіо й текст зберігаються лише на пристрої, доки ти їх не видалиш.",
           "art": "wave"
         }
       ]
@@ -125,9 +125,9 @@
         "items": [
           "2 записи на день, до хвилини кожен",
           "Підказки емоцій, настрій і теми",
-          "Щоденник із фільтром за емоціями",
+          "Щоденник: останній запис і фільтр за емоціями",
           "Настрій по днях і твої емоції",
-          "Афірмації",
+          "Афірмація раз на місяць",
           "Вправа, щоб заспокоїтися",
           "Резервна копія"
         ]
@@ -137,14 +137,16 @@
         "items": [
           "Раз на місяць Vidlun пише, що помітив у твоїх записах",
           "Теми й закономірності тижня",
-          "Скільки завгодно записів, до п’яти хвилин кожен"
+          "Скільки завгодно записів, до п’яти хвилин кожен",
+          "Усі записи в щоденнику",
+          "Афірмація щодня чи щотижня"
         ],
         "plan": {
           "name": "Підписка на місяць",
           "price": "$4.99",
           "period": "на місяць"
         },
-        "note": "Ціна в українському App Store. Підписка продовжується щомісяця сама; скасувати можна будь-коли в налаштуваннях App Store."
+        "note": "Перші 3 дні безкоштовно для нових підписників. Ціна в українському App Store. Підписка продовжується щомісяця сама; скасувати можна будь-коли в налаштуваннях App Store."
       }
     },
     "faq": {
@@ -377,7 +379,7 @@
         },
         {
           "title": "Your voice stays on your phone",
-          "body": "Audio is kept only on your device for 13 months, then deleted automatically. The text stays until you delete it.",
+          "body": "Audio and text are kept only on your device until you delete them.",
           "art": "wave"
         }
       ]
@@ -397,9 +399,9 @@
         "items": [
           "Two entries a day, up to a minute each",
           "Emotion suggestions, mood and topics",
-          "Journal with an emotion filter",
+          "Journal: the latest entry and an emotion filter",
           "Mood by day and your emotions",
-          "Affirmations",
+          "One affirmation a month",
           "A calming exercise",
           "Backup"
         ]
@@ -409,14 +411,16 @@
         "items": [
           "Once a month, Vidlun writes about what it noticed in your entries",
           "The week’s topics and patterns",
-          "As many entries as you like, up to five minutes each"
+          "As many entries as you like, up to five minutes each",
+          "Every entry in your journal",
+          "Affirmations daily or weekly"
         ],
         "plan": {
           "name": "Monthly",
           "price": "$3.99",
           "period": "per month"
         },
-        "note": "US price; the App Store shows the price for your country. Renews every month until you cancel — cancel anytime in your App Store settings."
+        "note": "First 3 days free for new subscribers. US price; the App Store shows the price for your country. Renews every month until you cancel — cancel anytime in your App Store settings."
       }
     },
     "faq": {

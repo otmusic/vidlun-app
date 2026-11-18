@@ -1,6 +1,6 @@
 # Vidlun Privacy Policy
 
-**Effective:** 12 November 2026
+**Effective:** 18 November 2026
 
 **Data controller:** the Vidlun developer, support@vidlun.app
 
@@ -20,8 +20,8 @@
 
 | Data | Where | How long |
 |---|---|---|
-| Voice recordings | the app's documents folder | thirteen months, then deleted automatically; immediately if "Keep voice recordings" is off |
-| Measurements of the voice in a recording — pitch, loudness, pauses, pace — taken on the phone; numbers, not sound | local storage | until you delete the entry or turn "Keep voice recordings" off; they stay when the recording's thirteen months end |
+| Voice recordings | the app's documents folder | until you delete the entry or turn "Keep voice recordings" off, which deletes them at once |
+| Measurements of the voice in a recording — pitch, loudness, pauses, pace — taken on the phone; numbers, not sound | local storage | until you delete the entry or turn "Keep voice recordings" off |
 | Transcript, emotions, mood, topics, time | the app's local storage | until you delete it |
 | Revision log: what the app proposed and what you changed | local storage | until you delete it |
 | Settings | local storage | while the app is installed |
@@ -38,7 +38,8 @@ few words on how the voice sounded against your own usual voice, such as
 "quieter, slower" — words, never the recording and never the measurements
 themselves. For an entry's echo, also the mood and the emotions you chose. For
 the monthly piece: the date, the mood number, emotion codes, topics and the
-transcripts of a month's entries together.
+transcripts of a month's entries together, with the same few words on the
+voice for the spoken ones.
 
 **Where to.** Through our Cloudflare Workers proxy to Anthropic PBC (USA), to
 the Claude API.

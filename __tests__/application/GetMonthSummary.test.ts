@@ -1,7 +1,8 @@
 import { GetMonthSummary } from '@/application/use-cases/GetMonthSummary';
-import { MoodEntry } from '@/domain/entities/MoodEntry';
+import { MoodEntry, type MoodEntryProps } from '@/domain/entities/MoodEntry';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
+import type { VoiceCue } from '@/domain/value-objects/VoiceCue';
 import { InMemoryMoodEntryRepository } from '@/infrastructure/persistence/InMemoryMoodEntryRepository';
 import { FixedClock, StubNarrativeGenerator } from './fakes';
 
@@ -10,7 +11,7 @@ const EARLY_SEPTEMBER = new Date(2026, 8, 3, 10, 0);
 
 let nextId = 0;
 
-function entryOn(date: Date): MoodEntry {
+function entryOn(date: Date, overrides: Partial<MoodEntryProps> = {}): MoodEntry {
   nextId += 1;
 
   return MoodEntry.create({
@@ -21,7 +22,24 @@ function entryOn(date: Date): MoodEntry {
     cleanTranscript: 'Something happened.',
     mood: MoodScore.of(3),
     confidence: Confidence.of(0.9),
+    ...overrides,
   });
+}
+
+/** Every entry it is asked about sounded quieter; broken, it cannot read a voice at all. */
+class QuietVoices {
+  readonly asked: (readonly string[])[] = [];
+  broken = false;
+
+  ofSaved(entryIds: readonly string[]): Promise<ReadonlyMap<string, VoiceCue>> {
+    this.asked.push(entryIds);
+
+    if (this.broken) {
+      return Promise.reject(new Error('the readings could not be read'));
+    }
+
+    return Promise.resolve(new Map(entryIds.map((id) => [id, { marks: ['quieter'] }])));
+  }
 }
 
 async function setup(entries: readonly MoodEntry[], now = EARLY_SEPTEMBER) {
@@ -32,8 +50,9 @@ async function setup(entries: readonly MoodEntry[], now = EARLY_SEPTEMBER) {
   }
 
   const generator = new StubNarrativeGenerator();
+  const voices = new QuietVoices();
 
-  return { generator, useCase: new GetMonthSummary(repository, generator, new FixedClock(now)) };
+  return { generator, voices, useCase: new GetMonthSummary(repository, generator, new FixedClock(now), voices) };
 }
 
 describe('GetMonthSummary', () => {
@@ -101,5 +120,44 @@ describe('GetMonthSummary', () => {
     expect(month.hasEnough).toBe(true);
     expect(month.narrative).toBeNull();
     expect(generator.calls).toHaveLength(0);
+  });
+
+  it('hears how the spoken entries sounded, and leaves typed and hard ones out', async () => {
+    const spoken = entryOn(new Date(2026, 7, 5, 9, 0));
+    const typed = entryOn(new Date(2026, 7, 6, 9, 0), { source: 'text' });
+    const hard = entryOn(new Date(2026, 7, 7, 9, 0), { safetyFlag: 'distress' });
+    const { generator, voices, useCase } = await setup([spoken, typed, hard]);
+
+    await useCase.execute({ withNarrative: true });
+
+    expect(voices.asked).toEqual([[spoken.id]]);
+    expect(generator.voices[0]).toEqual(new Map([[spoken.id, { marks: ['quieter'] }]]));
+  });
+
+  it('still writes the month when the voice cannot be read', async () => {
+    const { generator, voices, useCase } = await setup([
+      entryOn(new Date(2026, 7, 5, 9, 0)),
+      entryOn(new Date(2026, 7, 6, 9, 0)),
+      entryOn(new Date(2026, 7, 7, 9, 0)),
+    ]);
+
+    voices.broken = true;
+
+    const month = await useCase.execute({ withNarrative: true });
+
+    expect(month.narrative).not.toBeNull();
+    expect(generator.voices[0]?.size).toBe(0);
+  });
+
+  it('does not read the voice for a month it is not writing', async () => {
+    const { voices, useCase } = await setup([
+      entryOn(new Date(2026, 7, 5, 9, 0)),
+      entryOn(new Date(2026, 7, 6, 9, 0)),
+      entryOn(new Date(2026, 7, 7, 9, 0)),
+    ]);
+
+    await useCase.execute({ withNarrative: false });
+
+    expect(voices.asked).toHaveLength(0);
   });
 });

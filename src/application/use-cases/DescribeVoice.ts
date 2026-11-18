@@ -46,6 +46,42 @@ export class DescribeVoice {
     return compareVoice(reading, await this.usual(entryId));
   }
 
+  /**
+   * Saved entries as their voices were already measured, for the monthly
+   * piece (owner's word, 2026-11-18). Nothing is measured here: that is
+   * `MeasureVoices`' job, and a month would otherwise wait on a pass over
+   * every recording in it. An entry with no reading, or one too thin to
+   * compare, is left out of the map.
+   *
+   * Each is set against every other reading the phone holds rather than the
+   * latest thirty, so a past month is heard against the person's voice as a
+   * whole and not against however they happen to sound this week.
+   */
+  async ofSaved(entryIds: readonly string[]): Promise<ReadonlyMap<string, VoiceCue>> {
+    const all = await this.readings.all();
+    const fresh = [...all].filter(([, reading]) => !reading.stale);
+    const cues = new Map<string, VoiceCue>();
+
+    for (const id of entryIds) {
+      const reading = all.get(id);
+
+      if (reading === undefined || reading.stale) {
+        continue;
+      }
+
+      const cue = compareVoice(
+        reading,
+        fresh.filter(([other]) => other !== id).map(([, usual]) => usual),
+      );
+
+      if (cue !== null) {
+        cues.set(id, cue);
+      }
+    }
+
+    return cues;
+  }
+
   private async usual(except: string | null): Promise<readonly VoiceReading[]> {
     const all = await this.readings.all();
 

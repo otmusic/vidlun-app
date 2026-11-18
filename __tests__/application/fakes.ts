@@ -70,11 +70,13 @@ export class StubReflectionAnalyzer implements IReflectionAnalyzer {
 
 export class StubNarrativeGenerator implements INarrativeGenerator {
   readonly calls: (readonly MoodEntry[])[] = [];
+  readonly voices: (ReadonlyMap<string, VoiceCue> | undefined)[] = [];
 
   constructor(private readonly narrative = 'Calmer mornings, tense evenings.') {}
 
-  generate(entries: readonly MoodEntry[]): Promise<string> {
+  generate(entries: readonly MoodEntry[], voices?: ReadonlyMap<string, VoiceCue>): Promise<string> {
     this.calls.push(entries);
+    this.voices.push(voices);
 
     return Promise.resolve(this.narrative);
   }
@@ -159,5 +161,13 @@ export class InMemoryRecordingStore implements IRecordingStore {
 
   withAudio(): Promise<ReadonlySet<string>> {
     return Promise.resolve(new Set(this.kept.keys()));
+  }
+
+  compacted = 0;
+
+  compact(): Promise<void> {
+    this.compacted += 1;
+
+    return Promise.resolve();
   }
 }

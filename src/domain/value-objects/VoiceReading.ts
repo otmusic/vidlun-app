@@ -1,7 +1,7 @@
 /**
  * What the phone measured in a recording's voice: a handful of numbers about
  * how it sounded, never the sound. Measured from the kept recording, so the
- * numbers outlive the audio when the thirteen months take it.
+ * numbers stay with the entry after the audio is gone.
  *
  * Each measure is null when the take held too little speech to say anything
  * honest about it. The numbers mean most against the same person's other

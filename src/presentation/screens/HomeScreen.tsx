@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 
 import type { HomeView } from '@/application/use-cases/GetHomeView';
+import { entriesOpen } from '@/domain/entities/Entitlement';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 import type { Milestone } from '@/domain/entities/Milestone';
@@ -13,6 +14,7 @@ import { TapTarget } from '../components/Button';
 import { Icon, ICON_SIZE } from '../components/Icon';
 import { AffirmationButton } from '../components/AffirmationButton';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
+import { LockedLine } from '../components/LockGlass';
 import type { BloomOrigin, Charm } from '../components/AffirmationCharm';
 import { RecordButton } from '../components/RecordButton';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
@@ -41,6 +43,15 @@ export interface HomeScreenProps {
   readonly onCloseMonth: () => void;
   readonly onOpen: (entry: MoodEntry) => void;
   readonly onDelete: (id: string) => void;
+  /**
+   * Whether every entry reads, with a subscription or its free trial. Without
+   * one (owner's word, 2026-11-17) the month-ago card stands with a lock and
+   * a faint line where the words were, and opens the subscription; the
+   * year-ago card is not shown. Null until the store has answered, while
+   * both cards wait rather than show and then lock.
+   */
+  readonly readsAll: boolean | null;
+  readonly onOpenSubscription: () => void;
   readonly t: Translate;
   readonly onRecord: () => void;
   readonly onWrite: () => void;
@@ -77,7 +88,14 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
   /** True after a tap on the microphone that could not record yet. */
   const [nudged, setNudged] = useState(false);
   const week = props.home?.week ?? [];
+  // The newest entry, which always reads, whatever the plan.
   const recent = props.home?.recentEntries ?? [];
+  const open = entriesOpen(recent, props.readsAll === true);
+  const reads = (entry: MoodEntry): boolean => open === null || open.has(entry.id);
+  const yearEcho = props.readsAll === null || props.home?.yearEcho == null ? null : props.home.yearEcho;
+  const shownYearEcho = yearEcho !== null && reads(yearEcho.entry) ? yearEcho : null;
+  const echo = props.readsAll === null || props.home?.echo == null ? null : props.home.echo;
+  const echoLocked = echo !== null && !reads(echo);
   const offersYesterday = props.home?.offersYesterday ?? false;
 
   /*
@@ -275,9 +293,9 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           onClose={props.onCloseMonth}
         />
       )}
-      {props.home?.yearEcho == null ? null : (
+      {shownYearEcho === null ? null : (
         <YearEchoCard
-          echo={props.home.yearEcho}
+          echo={shownYearEcho}
           vocabulary={props.vocabulary}
           locale={props.locale}
           t={props.t}
@@ -286,19 +304,20 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
       )}
 
       {/* Back under the record button, where it was (owner's word, 2026-11-16). */}
-      {props.home?.echo == null ? null : (
+      {echo === null ? null : (
         <EchoFromPast
-          entry={props.home.echo}
+          entry={echo}
           vocabulary={props.vocabulary}
           t={props.t}
-          alsoYear={props.home.yearEcho !== null}
-          onOpen={props.onOpen}
+          alsoYear={shownYearEcho !== null}
+          onOpen={echoLocked ? props.onOpenSubscription : props.onOpen}
+          locked={echoLocked}
         />
       )}
 
       {/*
-        * The last two entries (owner's word, 2026-11-16; three until
-        * 2026-11-14), as a list and nothing more: no heading, no "all" link —
+        * The last entry (owner's word, 2026-11-17; two from 2026-11-16,
+        * three until 2026-11-14), as a list and nothing more: no heading, no "all" link —
         * the journal tab is where entries live — and nothing at all while
         * there are none.
         */}
@@ -345,6 +364,11 @@ function EchoFromPast(props: {
   /** True when the year-ago card sits above; the label then reads as "and". */
   readonly alsoYear: boolean;
   readonly onOpen: (entry: MoodEntry) => void;
+  /**
+   * Under the subscription's lock (owner's word, 2026-11-17): a small lock
+   * where the emotion was and one faint line where the words were.
+   */
+  readonly locked: boolean;
 }): React.JSX.Element {
   const theme = useTheme();
   const first = props.entry.emotionIds[0];
@@ -354,6 +378,11 @@ function EchoFromPast(props: {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={
+        props.locked
+          ? `${props.t(props.alsoYear ? 'home.echoAlsoPast' : 'home.echoPast')}. ${props.t('subs.entryLocked')}`
+          : undefined
+      }
       onPress={() => {
         props.onOpen(props.entry);
       }}
@@ -378,7 +407,11 @@ function EchoFromPast(props: {
         <AppText variant="caption" color="accentInk">
           {props.t(props.alsoYear ? 'home.echoAlsoPast' : 'home.echoPast')}
         </AppText>
-        {first === undefined ? null : (
+        {props.locked ? (
+          <View style={{ marginLeft: 'auto' }}>
+            <Icon name="lock" size={14} color="accentInk" />
+          </View>
+        ) : first === undefined ? null : (
           <AppText
             variant="secondary"
             numberOfLines={1}
@@ -388,9 +421,13 @@ function EchoFromPast(props: {
           </AppText>
         )}
       </View>
-      <AppText variant="body" numberOfLines={2} style={{ fontSize: 16, lineHeight: 23 }}>
-        {props.t('common.quoted', { text: props.entry.cleanTranscript })}
-      </AppText>
+      {props.locked ? (
+        <LockedLine entryId={props.entry.id} onAccent />
+      ) : (
+        <AppText variant="body" numberOfLines={2} style={{ fontSize: 16, lineHeight: 23 }}>
+          {props.t('common.quoted', { text: props.entry.cleanTranscript })}
+        </AppText>
+      )}
     </Pressable>
   );
 }

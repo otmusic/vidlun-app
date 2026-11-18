@@ -94,6 +94,13 @@ still play the voice on its anniversary (owner's decision, 2026-09-07). After
 that the audio goes and the entry stays whole: mood,
 emotions, transcript, everything the history is made of.
 
+**Changed by the owner on 2026-11-18: the app no longer deletes audio on its
+own.** "We will not decide for the person; if they want it gone, they delete
+it." The thirteen-month sweep (`ForgetOldRecordings`) is gone, and a
+recording stays until its entry is deleted or keeping recordings is switched
+off. The backup carries the recordings by default (BACKLOG
+§3ψψψ+++++++++++++++++).
+
 This is the journal, and only the journal. The grounding exercise (M8) still
 saves nothing at all, and the difference has to be visible in the copy — a
 person who knows the app keeps their voice will not mumble into an exercise
@@ -318,7 +325,7 @@ offered or matched from a typed word.
 | **Choosing a heavy emotion is not itself a crisis signal.** The flag comes from content analysis only. | People are allowed to feel bad without the product reacting. |
 | **Drafts are not persisted.** `CreateVoiceEntry` returns an entry; only `ConfirmEntry` writes it. | The card is a proposal. |
 | **Every user revision is logged** (proposed ids vs final ids). | Training data for v2 personalization; must be collected from day one. |
-| **Audio belongs to the entry and outlives neither it nor thirteen months.** Deleting an entry deletes its recording; a recording older than thirteen months is deleted on its own. | Keeping a voice after someone removed the entry it belonged to is the kind of thing that ends trust in a journal permanently. |
+| **Audio belongs to the entry and does not outlive it.** Deleting an entry deletes its recording, and switching keeping recordings off deletes them all. Nothing is deleted on a timer since 2026-11-18 (owner's word): the person decides. | Keeping a voice after someone removed the entry it belonged to is the kind of thing that ends trust in a journal permanently. |
 | **`proposedEmotionIds` is set once, at creation, and never changes.** It is Vidlun's own answer and defaults to nothing else. | M6 has to render an entry without revealing the analysis, and every entry needs the proposal — not just the corrected ones the revision log covers. The draft now starts from what the person named, so defaulting the proposal to `emotionIds` would file their guess as the model's. |
 | **`selfEmotionIds` is what the person named before seeing Vidlun's answer, and it is written once.** Empty is a real value, not a missing one: naming nothing is an answer. | It is the only unaided measurement the entry carries. The moment the person adopts one of Vidlun's chips, `emotionIds` stops being theirs alone, and emotional granularity — M6's core value signal — would be measured off Vidlun's vocabulary rather than the person's. |
 
@@ -577,7 +584,7 @@ reason the speaking is not.
 Insights screen (free daily trend + paywalled weekly narrative), onboarding
 (privacy screen before the microphone permission request), settings with
 reminder time picker, local notifications, playback of a kept recording, and
-the old-audio sweep (thirteen months).
+the old-audio sweep (thirteen months; removed by the owner on 2026-11-18).
 
 Keeping recordings is a setting, not a question at onboarding. Asking someone
 where their voice goes before they have said anything into the app is the worst
@@ -716,11 +723,22 @@ end-to-end with speech recognition disabled.
   anywhere, compared with the person's own voice rather than a norm, and
   shown nowhere until it has been checked against their moods. BACKLOG
   §3ψψψ+++++++++++.
+  Since then, by the owner's word, a few words on how it sounded ("quieter,
+  slower") go into the card's suggestions and the echo (2026-11-12) and the
+  monthly piece (2026-11-18, at most one plain sentence, never for a hard
+  entry); never the recording or the numbers. The statistics still show
+  nothing. BACKLOG §3ψψψ++++++++++++, §3ψψψ++++++++++++++++++.
 - Do not gate basic tracking or backups behind the paywall. Only AI narrative
   is paid.
   Changed by the owner on 2026-11-16: two entries a day are free, and more
   than that needs the subscription (`FREE_ENTRIES_PER_DAY`). Backups stay
   free. BACKLOG §3ψψψ+++++++++++++++.
+  And on 2026-11-17: without the subscription only the newest entry reads
+  (`FREE_ENTRIES_OPEN`) — the rest are cards with a lock and no words,
+  still deletable — and the affirmation comes monthly
+  (`affirmationFrequencyFor`). The same for entries written before the rule.
+  Backups and the Markdown export still carry every entry.
+  BACKLOG §3ψψψ++++++++++++++++.
 - Do not add analytics or crash SDKs until M5.
 - Do not "improve" the capture flow by adding steps, confirmations, or optional
   fields. The question the card opens with is not a precedent for granting

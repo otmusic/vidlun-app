@@ -1,17 +1,17 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { File } from 'expo-file-system';
 
+import type { PickedFile } from '../../domain/ports/IBackupArchive';
 import type { IFilePicker } from '../../domain/ports/IFilePicker';
 
 /**
- * The system document picker, reading whatever single file the person chose.
- * The type filter is a courtesy, not a wall: iOS greys out what it can, and
- * the codec behind this refuses anything that is not a Vidlun export anyway.
+ * The system document picker, for whatever single file the person chose.
+ * Any type is offered: a backup is an archive now and a plain JSON file
+ * before 1.10, and the archive behind this refuses anything that is neither.
  */
 export class DocumentFilePicker implements IFilePicker {
-  async pickText(): Promise<string | null> {
+  async pickFile(): Promise<PickedFile | null> {
     const picked = await DocumentPicker.getDocumentAsync({
-      type: 'application/json',
+      type: '*/*',
       copyToCacheDirectory: true,
       multiple: false,
     });
@@ -22,6 +22,6 @@ export class DocumentFilePicker implements IFilePicker {
       return null;
     }
 
-    return new File(asset.uri).text();
+    return { uri: asset.uri, name: asset.name };
   }
 }

@@ -1,5 +1,6 @@
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import type { INarrativeGenerator } from '../../domain/ports/INarrativeGenerator';
+import type { VoiceCue } from '../../domain/value-objects/VoiceCue';
 
 /** About what Sonnet takes, so the page's writing state is seen. */
 const DEFAULT_DELAY_MS = 2500;
@@ -16,11 +17,11 @@ const DEFAULT_DELAY_MS = 2500;
 export class FakeNarrativeGenerator implements INarrativeGenerator {
   constructor(private readonly delayMs: number = DEFAULT_DELAY_MS) {}
 
-  generate(entries: readonly MoodEntry[]): Promise<string> {
+  generate(entries: readonly MoodEntry[], voices: ReadonlyMap<string, VoiceCue> = new Map()): Promise<string> {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(
-          `Pretend month, written from ${String(entries.length)} entries.\n` +
+          `Pretend month, written from ${String(entries.length)} entries, ${String(voices.size)} of them heard.\n` +
             'A second paragraph, so the page shows how the prose breaks.',
         );
       }, this.delayMs);
