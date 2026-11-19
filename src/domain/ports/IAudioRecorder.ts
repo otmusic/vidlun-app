@@ -34,4 +34,12 @@ export interface IAudioRecorder {
    * with it.
    */
   level(): number;
+  /**
+   * Whether something outside the app — a phone call, Siri, an alarm — has
+   * taken the microphone from a take nobody paused. The system stops the
+   * recorder then and does not start it again, so from that moment the take
+   * hears nothing while the screen would go on counting. True until `pause`,
+   * `resume` or the end of the take.
+   */
+  interrupted(): boolean;
 }

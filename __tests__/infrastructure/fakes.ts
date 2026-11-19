@@ -95,6 +95,14 @@ export class FakeNativeRecorder implements NativeRecorder {
     this.isRecording = false;
   }
 
+  /**
+   * What expo-audio does on its own when iOS interrupts the audio session (a
+   * call, Siri, an alarm): the recorder stops recording, and nobody asked it to.
+   */
+  interruptBySystem(): void {
+    this.isRecording = false;
+  }
+
   stop(): Promise<void> {
     this.stopCalls += 1;
     this.isRecording = false;

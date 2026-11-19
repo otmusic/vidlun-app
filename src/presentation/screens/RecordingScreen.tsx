@@ -13,6 +13,9 @@ import { useTheme } from '../theme/ThemeProvider';
 const BAR_COUNT = 21;
 const BAR_MIN = 0.28;
 
+/** How often the screen asks whether the system has taken the microphone. */
+const INTERRUPTION_CHECK_MS = 300;
+
 /**
  * Two colours, and they are constants rather than tokens: this panel is dark
  * in both themes, so there is no light variant of them to hold. Lime is the
@@ -57,6 +60,8 @@ export function RecordingScreen(props: {
   readonly onCancel: () => void;
   /** How loud the voice is right now, 0 to 1; read many times a second. */
   readonly level: () => number;
+  /** Whether a call, Siri or an alarm has taken the microphone from the take. */
+  readonly interrupted: () => boolean;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(56);
@@ -65,7 +70,7 @@ export function RecordingScreen(props: {
   const elapsed = useElapsed(!paused);
   const asking = useRef(false);
   const away = useRef(false);
-  const { t, onStop, onPause, onResume, onCancel } = props;
+  const { t, onStop, onPause, onResume, onCancel, interrupted } = props;
 
   /*
    * Leaving is asked, never assumed (owner's word, 2026-10-30): the take is
@@ -128,6 +133,38 @@ export function RecordingScreen(props: {
       watch.remove();
     };
   }, [askToLeave, pause]);
+
+  /*
+   * A call, Siri or an alarm can take the microphone without the app leaving
+   * the front, and the system does not give it back: the clock would go on
+   * counting a take that hears nothing (owner's report, 2026-11-19). Held and
+   * asked the same way as leaving the app, so what was said before the call
+   * stays and the person decides whether to go on. Asked once back in front
+   * if the call took the screen as well.
+   */
+  useEffect(() => {
+    if (paused) {
+      return undefined;
+    }
+
+    const watch = setInterval(() => {
+      if (!interrupted()) {
+        return;
+      }
+
+      pause();
+
+      if (AppState.currentState === 'active') {
+        askToLeave('recording.pausedTitle');
+      } else {
+        away.current = true;
+      }
+    }, INTERRUPTION_CHECK_MS);
+
+    return () => {
+      clearInterval(watch);
+    };
+  }, [askToLeave, interrupted, pause, paused]);
 
   /*
    * Stopped for them, exactly as if they had pressed stop: the take is kept

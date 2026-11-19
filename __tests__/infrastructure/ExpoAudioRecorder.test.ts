@@ -272,6 +272,92 @@ describe('how loud the voice is, for the bars', () => {
   });
 });
 
+describe('a take the system interrupts', () => {
+  it('notices when a call takes the microphone from a take nobody paused', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    play(recorder, scheduler, SPEECH, 2);
+    expect(subject.interrupted()).toBe(false);
+
+    recorder.interruptBySystem();
+    play(recorder, scheduler, SPEECH, 1);
+
+    expect(subject.interrupted()).toBe(true);
+    expect(subject.level()).toBe(0);
+
+    subject.stop();
+    await take;
+  });
+
+  it('keeps what was said before the call and goes on into the same take', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    play(recorder, scheduler, SPEECH, 2);
+    recorder.interruptBySystem();
+    play(recorder, scheduler, SPEECH, 3);
+
+    await subject.pause();
+    expect(subject.interrupted()).toBe(false);
+
+    await subject.resume();
+    play(recorder, scheduler, SPEECH, 2);
+    expect(subject.interrupted()).toBe(false);
+
+    subject.stop();
+    await expect(take).resolves.toMatchObject({ durationMs: 400 });
+  });
+
+  it('does not take its own pause for an interruption', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    play(recorder, scheduler, SPEECH, 2);
+    await subject.pause();
+    play(recorder, scheduler, SPEECH, 3);
+
+    expect(subject.interrupted()).toBe(false);
+
+    subject.cancel();
+    await expect(take).rejects.toThrow(RecordingCancelledError);
+  });
+
+  it('waits for the recorder to say it is recording before reading a stop as an interruption', async () => {
+    const { recorder, scheduler, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    recorder.interruptBySystem();
+    play(recorder, scheduler, SPEECH, 2);
+
+    expect(subject.interrupted()).toBe(false);
+
+    subject.stop();
+    await take;
+  });
+
+  it('is not interrupted before a take, nor after it ends', async () => {
+    const { recorder, scheduler, subject } = setup();
+
+    expect(subject.interrupted()).toBe(false);
+
+    const take = subject.start();
+
+    await live();
+    play(recorder, scheduler, SPEECH, 1);
+    recorder.interruptBySystem();
+    play(recorder, scheduler, SPEECH, 1);
+    subject.stop();
+    await take;
+
+    expect(subject.interrupted()).toBe(false);
+  });
+});
+
 describe('the iOS audio session', () => {
   it('opens the session for recording before touching the recorder', async () => {
     const { recorder, subject, audioSession } = setup();

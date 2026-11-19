@@ -100,6 +100,16 @@ export function levelFromDecibels(decibels: number | undefined): number {
 export class ExpoAudioRecorder implements IAudioRecorder {
   private take: Take | null = null;
   private starting = false;
+  /** Started or resumed, and not paused since: the take is meant to be hearing. */
+  private listening = false;
+  /**
+   * The recorder has said it is recording since the take last began listening.
+   * Until then a status that says otherwise is the recorder catching up, not
+   * the system taking the microphone away.
+   */
+  private heard = false;
+  /** The system stopped the recorder under a take that was listening. */
+  private heldBySystem = false;
 
   constructor(
     private readonly recorder: NativeRecorder,
@@ -124,6 +134,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
       this.starting = false;
     }
 
+    this.beginListening();
     this.screen.keepOn();
 
     return new Promise<AudioRecording>((resolve, reject) => {
@@ -150,6 +161,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
       return;
     }
 
+    this.stopListening();
     this.recorder.pause();
     // A paused take may wait a long while for its answer; the phone may sleep meanwhile.
     this.screen.letSleep();
@@ -163,6 +175,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
 
     await this.setRecordingMode(true);
     this.recorder.record();
+    this.beginListening();
     this.screen.keepOn();
   }
 
@@ -198,10 +211,50 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     return status.isRecording ? levelFromDecibels(status.metering) : 0;
   }
 
+  interrupted(): boolean {
+    return this.take !== null && this.heldBySystem;
+  }
+
   private onTick(): void {
-    if (this.recorder.getStatus().durationMillis >= this.options.maxDurationMs) {
+    const status = this.recorder.getStatus();
+
+    if (status.durationMillis >= this.options.maxDurationMs) {
       void this.finish();
+
+      return;
     }
+
+    this.watchForSystemHold(status.isRecording);
+  }
+
+  /*
+   * expo-audio pauses every recorder when iOS interrupts the audio session —
+   * a call answered or ringing, Siri, an alarm — and on the interruption's end
+   * starts only its players again, never a recorder. Nothing tells the take,
+   * so it is read off the status: a recorder that stopped recording while
+   * nobody paused it was stopped by the system.
+   */
+  private watchForSystemHold(isRecording: boolean): void {
+    if (!this.listening) {
+      return;
+    }
+
+    if (isRecording) {
+      this.heard = true;
+    } else if (this.heard) {
+      this.heldBySystem = true;
+    }
+  }
+
+  private beginListening(): void {
+    this.listening = true;
+    this.heard = false;
+    this.heldBySystem = false;
+  }
+
+  private stopListening(): void {
+    this.listening = false;
+    this.heldBySystem = false;
   }
 
   private async finish(): Promise<void> {
@@ -239,6 +292,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     }
 
     this.take = null;
+    this.stopListening();
     take.stopWatching();
     this.screen.letSleep();
 

@@ -1801,6 +1801,38 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++++. A call no longer leaves the take deaf — 2026-11-19
+
+The owner rang the phone mid-take: the recording screen went on as if
+nothing had happened. That was half good news. expo-audio pauses every
+recorder when iOS interrupts the audio session (a call answered or ringing,
+Siri, an alarm) and on the interruption's end restarts only its players
+(`AudioModule.swift`, `handleInterruptionBegan` / `handleInterruptionEnded`),
+while the screen's clock is its own. So the take could stop hearing at the
+call, with the clock still counting, and whatever was said afterwards was
+lost without a word. Whether a ringing call alone interrupts was not
+measured; an answered one does.
+
+- **The adapter reads it off the status.** `IAudioRecorder.interrupted()`
+  is true when the recorder stopped recording under a take nobody paused
+  (`ExpoAudioRecorder.watchForSystemHold`, on the poll that already watches
+  the ceiling). It waits until the recorder has once said it is recording,
+  so a status that lags the start is not taken for a call. Pause, resume and
+  the take's end clear it. Five tests.
+- **The screen holds and asks**, the same way as leaving the app: the take
+  pauses and "Запис на паузі" offers "Продовжити запис" or "Вийти". What
+  was said before the call stays. If the call took the screen too, the
+  question waits until the app is in front again. No new copy, no new
+  screen. (The owner's word: "так, роби".)
+- **Not covered:** "Продовжити запис" pressed while the call still holds
+  the microphone. expo-audio marks the recorder as recording whether or not
+  iOS let it start, so nothing can tell; the person would normally answer
+  the question after the call.
+- **Needs a real phone** to confirm: a long take, a call from another phone,
+  answered and not. A simulator gets no calls.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++++. The support page and the policy catch up — 2026-11-19
 
 The competitor analysis (`reports/`, not committed) turned up public texts

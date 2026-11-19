@@ -328,6 +328,8 @@ export interface CaptureFlow {
   readonly resumeRecording: () => void;
   /** How loud the voice is right now, 0 to 1, for the recording screen's bars. */
   readonly voiceLevel: () => number;
+  /** Whether a call, Siri or an alarm has taken the microphone from the take. */
+  readonly recordingInterrupted: () => boolean;
   /** The take waiting for the model, if any — shown on home until it is read. */
   readonly parked: ParkedTake | null;
   /**
@@ -1579,6 +1581,10 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       });
     }, [dependencies.recorder]),
     voiceLevel: useCallback(() => dependencies.recorder.level(), [dependencies.recorder]),
+    recordingInterrupted: useCallback(
+      () => dependencies.recorder.interrupted(),
+      [dependencies.recorder],
+    ),
     cancel: useCallback(() => {
       dependencies.recorder.cancel();
       setStage({ kind: 'idle' });
