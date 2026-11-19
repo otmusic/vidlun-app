@@ -1823,6 +1823,11 @@ that no longer matched the app; the owner said to fix them.
   build.
 - **Deployed 17:58 the same day** (owner's word); the live text matches the
   build.
+- **The retention table still said "Keep voice recordings" / «Зберігати
+  голос»**, missed in the first pass (the updated competitor report caught
+  it). Both rows in both languages now name "Save audio" / «Зберігати
+  аудіо», the in-app copies are rebuilt, and the pages went out at 19:34
+  (owner's word); the live text matches the build.
 
 ---
 

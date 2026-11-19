@@ -20,8 +20,8 @@
 
 | Data | Where | How long |
 |---|---|---|
-| Voice recordings | the app's documents folder | until you delete the entry or turn "Keep voice recordings" off, which deletes them at once |
-| Measurements of the voice in a recording — pitch, loudness, pauses, pace — taken on the phone; numbers, not sound | local storage | until you delete the entry or turn "Keep voice recordings" off |
+| Voice recordings | the app's documents folder | until you delete the entry or turn "Save audio" off, which deletes them at once |
+| Measurements of the voice in a recording — pitch, loudness, pauses, pace — taken on the phone; numbers, not sound | local storage | until you delete the entry or turn "Save audio" off |
 | Transcript, emotions, mood, topics, time | the app's local storage | until you delete it |
 | Revision log: what the app proposed and what you changed | local storage | until you delete it |
 | Settings | local storage | while the app is installed |
