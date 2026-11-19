@@ -20,6 +20,14 @@ export interface ExportJournalInput {
   readonly timeOf: (date: Date) => string;
 }
 
+/** Where each entry's voice sits beside the journal, for the readable export's links. */
+export interface VoiceLinks {
+  /** The link's words, `export.voice` in the person's language. */
+  readonly label: string;
+  /** The voice file's path relative to the journal, or null when it has none there. */
+  readonly pathOf: (entryId: string) => string | null;
+}
+
 /**
  * The whole journal as two files the person owns.
  *
@@ -53,7 +61,16 @@ export class ExportJournal {
   }
 }
 
-function renderMarkdown(entries: readonly MoodEntry[], input: ExportJournalInput): string {
+/**
+ * The journal as Markdown, oldest first. With `voices`, an entry whose voice
+ * travels with it gets a link to the file between its time and its words
+ * (owner's word, 2026-11-19: above the text, so the voice is met first).
+ */
+export function renderMarkdown(
+  entries: readonly MoodEntry[],
+  input: ExportJournalInput,
+  voices?: VoiceLinks,
+): string {
   const lines: string[] = ['# Vidlun', ''];
   let day = '';
 
@@ -65,7 +82,16 @@ function renderMarkdown(entries: readonly MoodEntry[], input: ExportJournalInput
       lines.push(`## ${entryDay}`, '');
     }
 
-    lines.push(`**${input.timeOf(entry.createdAt)}**`, '', entry.cleanTranscript, '');
+    lines.push(`**${input.timeOf(entry.createdAt)}**`, '');
+
+    const voice = voices?.pathOf(entry.id) ?? null;
+
+    if (voices !== undefined && voice !== null) {
+      // Spaces and the like escaped, so every Markdown reader follows the link.
+      lines.push(`[${voices.label}](${encodeURI(voice)})`, '');
+    }
+
+    lines.push(entry.cleanTranscript, '');
 
     if (entry.emotionIds.length > 0) {
       lines.push(`*${entry.emotionIds.map((id) => input.labelOf(id)).join(' · ')}*`, '');

@@ -39,6 +39,7 @@ import type { ITranscriptionService } from '../domain/ports/ITranscriptionServic
 import type { IFileSharer } from '../domain/ports/IFileSharer';
 import type { ILeftoverFiles } from '../domain/ports/ILeftoverFiles';
 import { ExportJournal } from '../application/use-cases/ExportJournal';
+import { ExportReadableJournal } from '../application/use-cases/ExportReadableJournal';
 import { GetMonthSummary } from '../application/use-cases/GetMonthSummary';
 import { GetPastMonths } from '../application/use-cases/GetPastMonths';
 import { ImportJournal } from '../application/use-cases/ImportJournal';
@@ -67,6 +68,7 @@ import { AsyncStorageMoodEntryRepository } from '../infrastructure/persistence/A
 import { AsyncStorageRevisionLog } from '../infrastructure/persistence/AsyncStorageRevisionLog';
 import { FileRecordingStore } from '../infrastructure/persistence/FileRecordingStore';
 import { NativeBackupArchive } from '../infrastructure/files/NativeBackupArchive';
+import { NativeReadableArchive } from '../infrastructure/files/NativeReadableArchive';
 import { detectLocale, deviceInUkraine } from '../infrastructure/settings/deviceLocale';
 import { SettingsStore } from '../infrastructure/settings/SettingsStore';
 import { ExpoParkedFiles } from '../infrastructure/persistence/ExpoParkedFiles';
@@ -170,6 +172,8 @@ export interface Container {
   readonly markMilestone: MarkMilestone;
   readonly forgetMilestone: ForgetMilestone;
   readonly exportJournal: ExportJournal;
+  /** The journal to read: Markdown and every kept voice in one ZIP, free for everyone. */
+  readonly exportReadableJournal: ExportReadableJournal;
   /** The backup with its voice: the journal and every kept recording in one file. */
   readonly backUpJournal: BackUpJournal;
   readonly restoreJournal: RestoreJournal;
@@ -403,6 +407,11 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     selling: SELLING,
     getVocabularyGrowth: new GetVocabularyGrowth(repository, clock),
     exportJournal: new ExportJournal(repository, new JournalCodec(), clock),
+    exportReadableJournal: new ExportReadableJournal(
+      repository,
+      recordings,
+      new NativeReadableArchive(nativeBackup),
+    ),
     backUpJournal: new BackUpJournal(repository, new JournalCodec(), recordings, backupArchive, clock),
     restoreJournal: new RestoreJournal(
       new ImportJournal(repository, new JournalCodec()),

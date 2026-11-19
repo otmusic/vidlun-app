@@ -5,6 +5,8 @@ export interface NativeBackup {
   compressAudio(source: string, target: string): Promise<void>;
   pack(source: string, target: string): Promise<void>;
   unpack(source: string, target: string): Promise<void>;
+  /** The folder at `source`, itself at the root, as a ZIP at `target` (the readable export). */
+  zip(source: string, target: string): Promise<void>;
 }
 
 /*

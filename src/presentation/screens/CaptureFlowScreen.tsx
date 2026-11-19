@@ -54,6 +54,8 @@ export interface CaptureFlowScreenProps {
   readonly selling: boolean;
   readonly onExport: (shape: 'backup' | 'markdown') => void;
   readonly backupProgress: BackupProgress | null;
+  /** The readable export's progress while it runs; null otherwise. */
+  readonly exportProgress: BackupProgress | null;
   readonly onRestore: () => void;
   /** Mails a note to support; rejects when it could not be delivered. */
   readonly onFeedback: (text: string) => Promise<void>;
@@ -411,6 +413,7 @@ function Stage(
           settings={props.settings}
           onExport={props.onExport}
           backupProgress={props.backupProgress}
+          exportProgress={props.exportProgress}
           onRestore={props.onRestore}
           onWriteFeedback={props.onWriteFeedback}
           t={t}

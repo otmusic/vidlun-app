@@ -1801,6 +1801,59 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++++++. The readable export, with the voice — 2026-11-19
+
+Step 4 of the competitor plan (`reports/`, not committed): the competitors
+that let people take their journal out for free get thanked for it, the one
+that keeps it behind a paywall gets called a ransom, and since 1.10 a free
+Vidlun reads only its newest entry. The owner asked for the design first.
+
+- **The design is a new canvas**, https://claude.ai/artifact/J1n7iM2bndHj4AUhchRL3B
+  ("Vidlun 1.11 — дизайн"): all of 1.11 redrawn from the code, plus a page
+  "Експорт (новий)". The owner chose it to replace `Vidlun.dc.html`, since
+  the standalone Claude Design closes on 14 December. CLAUDE.md rule 6
+  still names the old file.
+- **The owner's word on it:** the archive carries the voice; the row keeps
+  the name «Експорт для читання»; each link to a voice sits above the
+  entry's words. And «Відновити з копії» now reads only «Відкрий файл
+  резервної копії — і записи повернуться у щоденник.» (English: "Open your
+  backup file, and your entries will come back to the journal."), without
+  "Для нового телефона або після перевстановлення" and without "разом з
+  аудіо".
+- **On «Я»:** a row between «Резервна копія» and «Відновити з копії», built
+  like the backup's, pill «Експорт», its line «Усі записи текстом і з
+  голосом — для зручного читання або щоб поділитися з фахівцем.»
+  (owner's wording, set right: "щоб поділитися" to match "для читання";
+  "фахівець" rather than "терапевт", which alone reads as a GP in
+  Ukrainian — owner's choice). While it runs its line reads
+  «Готуємо експорт…», then «Готуємо експорт: аудіо 3 з 12». Free, every
+  entry in it, a closed one too.
+- **The file:** «Vidlun — записи до 19.11.2026.zip» (English: "Vidlun —
+  entries to 2026-11-19.zip"), holding that folder with «Щоденник.md» and
+  `audio/` with one AAC per entry that kept its voice, named by when it was
+  said ("2026-11-18 21-10.m4a", a second one in the same minute gets
+  " (2)"). The Markdown is `ExportJournal`'s, unchanged but for one line,
+  `[Голос](audio/2026-11-18%2021-10.m4a)`, between the time and the words.
+  A voice that will not copy is left out, and so is its link: the journal
+  is written after the voices.
+- **The ZIP is written by the app** (`modules/vidlun-backup/ios/ZipFolder.swift`),
+  stored, not deflated. Foundation's own ZIP (a folder read "for
+  uploading") stores the names as UTF-8 without the flag that says so, and
+  Windows shows "Щоденник.md" as "╨⌐╨╛…"; checked on the Mac. Ours sets bit
+  11 on every name; Python's zipfile and `ditto` read it back exactly, CRCs
+  and bytes included. The classic format's 4 GB and 65,535-entry limits are
+  checked, not assumed.
+- `ExportReadableJournal` (8 tests), `IReadableArchive`,
+  `NativeReadableArchive` (staging and the finished file in two cache
+  folders of their own, which `CacheLeftovers` now sweeps). The old
+  Markdown-only share is gone from the app; `ExportJournal` stays for the
+  Markdown and the backup's JSON.
+- **Still to do when it ships:** the privacy policy's §5 names only the
+  backup as the way to take everything along; add the readable export back
+  in both languages and redeploy with that release, not before.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++++++. A way out of the card before saving — 2026-11-19
 
 The owner noticed that an entry, once heard, could not be left: the card

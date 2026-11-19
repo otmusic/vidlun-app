@@ -409,6 +409,59 @@ function Vidlun(props: {
   }, [container, t]);
 
   /*
+   * The readable export (owner's word, 2026-11-19): the journal as Markdown
+   * with every kept voice beside it, in one ZIP, free for everyone. Copying a
+   * year of voices takes a while too, so its line says how far it is, the
+   * way the backup's does, and a second tap while it runs does nothing.
+   */
+  const [exportProgress, setExportProgress] = useState<BackupProgress | null>(null);
+  const exporting = useRef(false);
+
+  const exportReadable = useCallback(() => {
+    if (exporting.current) {
+      return;
+    }
+
+    exporting.current = true;
+    setExportProgress({ done: 0, total: 0 });
+
+    void (async () => {
+      try {
+        const now = container.clock.now();
+        const exported = await container.exportReadableJournal.execute(
+          {
+            labelOf: (id) => emotionLabel(id, t),
+            dayOf: (date) =>
+              date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }),
+            timeOf: (date) => date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+            folderName: t('export.folder', { date: exportDay(now, locale) }),
+            journalName: t('export.journalFile'),
+            voiceLabel: t('export.voice'),
+          },
+          (done, total) => {
+            setExportProgress({ done, total });
+          },
+        );
+
+        setExportProgress(null);
+
+        if (exported === null) {
+          Alert.alert(t('profile.exportEmpty'));
+
+          return;
+        }
+
+        await container.fileSharer.shareFile(exported.uri);
+      } catch {
+        setExportProgress(null);
+        Alert.alert(t('profile.exportFailedTitle'), t('profile.backupFailedBody'));
+      } finally {
+        exporting.current = false;
+      }
+    })();
+  }, [container, locale, t]);
+
+  /*
    * The whole journal as a file in the person's hand. Built here because it
    * needs the container and the translator at once, and the profile screen
    * needs neither — it only says which of the two shapes was asked for.
@@ -417,30 +470,11 @@ function Vidlun(props: {
     (shape: 'backup' | 'markdown') => {
       if (shape === 'backup') {
         backUp();
-
-        return;
+      } else {
+        exportReadable();
       }
-
-      void (async () => {
-        const journal = await container.exportJournal.execute({
-          labelOf: (id) => emotionLabel(id, t),
-          dayOf: (date) =>
-            date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }),
-          timeOf: (date) => date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
-        });
-
-        if (journal.entryCount === 0) {
-          Alert.alert(t('profile.exportEmpty'));
-
-          return;
-        }
-
-        const day = container.clock.now().toISOString().slice(0, 10);
-
-        await container.fileSharer.share(`vidlun-journal-${day}.md`, journal.markdown);
-      })();
     },
-    [backUp, container, locale, t],
+    [backUp, exportReadable],
   );
 
   /*
@@ -570,6 +604,7 @@ function Vidlun(props: {
       selling={container.selling}
       onExport={exportJournal}
       backupProgress={backupProgress}
+      exportProgress={exportProgress}
       onRestore={restoreJournal}
       onFeedback={(text) => container.feedback.send(text)}
       inUkraine={container.inUkraine}
@@ -672,6 +707,21 @@ function SetupNeeded(props: { readonly detail: string }): React.JSX.Element {
  * What came back, in words: the entries, and the voices with them when any
  * returned. "Nothing new" stays its own sentence.
  */
+/**
+ * The day in the export's name, as people write it: "19.11.2026" in
+ * Ukrainian, and the unambiguous "2026-11-19" in English, where a slash
+ * could not go into a file name anyway.
+ */
+function exportDay(date: Date, locale: Locale): string {
+  const two = (value: number): string => String(value).padStart(2, '0');
+  const day = two(date.getDate());
+  const month = two(date.getMonth() + 1);
+
+  return locale === 'uk'
+    ? `${day}.${month}.${String(date.getFullYear())}`
+    : `${String(date.getFullYear())}-${month}-${day}`;
+}
+
 function restoredMessage(outcome: RestoreOutcome, t: Translate): string {
   if (outcome.imported === 0 && outcome.recordings === 0) {
     return t('profile.restoredNothing');

@@ -70,6 +70,8 @@ export function ProfileScreen(props: {
   readonly onExport: (shape: 'backup' | 'markdown') => void;
   /** How far a backup in progress is; null while none runs. */
   readonly backupProgress: BackupProgress | null;
+  /** How far a readable export in progress is; null while none runs. */
+  readonly exportProgress: BackupProgress | null;
   readonly onRestore: () => void;
   /** Mails a note to support; rejects when it could not be delivered. */
   /** Opens the note-to-support sheet, which lives above the tabs rather than in here. */
@@ -200,6 +202,20 @@ export function ProfileScreen(props: {
           }}
         >
           <Pill label={t('profile.backupAction')} />
+        </Row>
+        {/*
+          The readable export (owner's word, 2026-11-19, drawn in the canvas's
+          export page): between the backup and the way back, built like the
+          backup's row. Free, and every entry in it, a closed one too.
+        */}
+        <Row
+          title={t('profile.exportMd')}
+          hint={exportHint(props.exportProgress, t)}
+          onPress={() => {
+            props.onExport('markdown');
+          }}
+        >
+          <Pill label={t('profile.exportAction')} />
         </Row>
         <Row title={t('profile.restore')} hint={t('profile.restoreHint')} onPress={props.onRestore}>
           <Pill label={t('profile.restoreAction')} />
@@ -616,6 +632,17 @@ function backupHint(progress: BackupProgress | null, t: Translate): string {
   return progress.total === 0
     ? t('profile.backupPreparing')
     : t('profile.backupProgress', { done: progress.done, total: progress.total });
+}
+
+/** The readable export's line, the same way: what it does, or how far it has got. */
+function exportHint(progress: BackupProgress | null, t: Translate): string {
+  if (progress === null) {
+    return t('profile.exportMdHint');
+  }
+
+  return progress.total === 0
+    ? t('profile.exportPreparing')
+    : t('profile.exportProgress', { done: progress.done, total: progress.total });
 }
 
 function Row(props: {

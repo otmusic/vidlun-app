@@ -25,6 +25,11 @@ public class BackupModule: Module {
     AsyncFunction("unpack") { (source: String, target: String) in
       try BackupFiles.unpack(archive: try fileURL(source), into: try fileURL(target))
     }
+
+    /// The directory at `source`, itself at the root, as a plain ZIP at `target`: the readable export.
+    AsyncFunction("zip") { (source: String, target: String) in
+      try ZipFolder.write(folder: try fileURL(source), to: try fileURL(target))
+    }
   }
 }
 

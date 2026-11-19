@@ -2,9 +2,20 @@ import { Directory, File, Paths } from 'expo-file-system';
 
 import type { ILeftoverFiles } from '../../domain/ports/ILeftoverFiles';
 import { OPENED, STAGING } from './NativeBackupArchive';
+import { READABLE_OUT, READABLE_STAGING } from './NativeReadableArchive';
 
-/** Where expo-document-picker puts its copies, and the folders a backup passes through. */
-const FOLDERS: ReadonlySet<string> = new Set(['DocumentPicker', STAGING, OPENED]);
+/**
+ * Where expo-document-picker puts its copies, the folders a backup passes
+ * through, and the readable export's two: where it is put together and where
+ * the finished file waits for the share sheet.
+ */
+const FOLDERS: ReadonlySet<string> = new Set([
+  'DocumentPicker',
+  STAGING,
+  OPENED,
+  READABLE_STAGING,
+  READABLE_OUT,
+]);
 
 /**
  * A backup or Markdown export written for the share sheet, by this version
