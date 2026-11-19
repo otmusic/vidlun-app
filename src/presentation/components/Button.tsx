@@ -9,7 +9,8 @@ import { Volume } from './Volume';
 export interface ButtonProps {
   readonly label: string;
   readonly onPress: () => void;
-  readonly variant?: 'primary' | 'secondary' | 'ghost';
+  /** `link` is a ghost in the accent, for a way somewhere rather than an action of weight. */
+  readonly variant?: 'primary' | 'secondary' | 'ghost' | 'link';
   readonly disabled?: boolean;
   /** A glyph before the label, in the label's colour. */
   readonly icon?: IconName;
@@ -35,7 +36,14 @@ export function Button(props: ButtonProps): React.JSX.Element {
         : 'transparent';
   const border = variant === 'secondary' ? theme.palette.line : 'transparent';
   const color =
-    variant === 'primary' ? 'onSolid' : variant === 'secondary' ? 'ink' : 'inkFaint';
+    variant === 'primary'
+      ? 'onSolid'
+      : variant === 'secondary'
+        ? 'ink'
+        : variant === 'link'
+          ? 'accentInk'
+          : 'inkFaint';
+  const flat = variant === 'ghost' || variant === 'link';
 
   return (
     <Pressable
@@ -56,7 +64,7 @@ export function Button(props: ButtonProps): React.JSX.Element {
           // are the numbers the buttons were drawn with, and a filled pill
           // reads as underweight a few points short of them.
           paddingHorizontal: 20,
-          paddingVertical: variant === 'ghost' ? 14 : 18,
+          paddingVertical: flat ? 14 : 18,
           opacity: disabled ? 0.4 : pressed ? 0.9 : 1,
           ...(variant === 'primary' && !disabled && !theme.isDark
             ? {
@@ -87,7 +95,7 @@ export function Button(props: ButtonProps): React.JSX.Element {
           variant="label"
           color={color}
           align="center"
-          style={variant === 'ghost' ? undefined : { fontSize: 16 }}
+          style={flat ? undefined : { fontSize: 16 }}
         >
           {props.label}
         </AppText>

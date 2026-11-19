@@ -64,6 +64,8 @@ export function ProfileScreen(props: {
   /** False while nothing is sold: the subscription section is not shown at all. */
   readonly selling: boolean;
   readonly onOpenSubscription: () => void;
+  /** Apple's sheet for an offer code: six months free (owner's word, 2026-11-19). */
+  readonly onRedeemCode: () => void;
   /** Hands one export file to the share sheet; null label means nothing yet. */
   readonly onExport: (shape: 'backup' | 'markdown') => void;
   /** How far a backup in progress is; null while none runs. */
@@ -288,6 +290,10 @@ export function ProfileScreen(props: {
               variant="secondary"
               onPress={props.onOpenSubscription}
             />
+            {/* A promo code, for someone without a plan (owner's word, 2026-11-19). */}
+            {props.entitlement === 'none' ? (
+              <Button label={t('subs.redeemCode')} variant="link" onPress={props.onRedeemCode} />
+            ) : null}
           </View>
         </Section>
       ) : null}

@@ -52,4 +52,19 @@ export interface IPurchases {
   plans(): Promise<readonly Plan[]>;
   subscribe(planId: string): Promise<PurchaseOutcome>;
   restore(): Promise<PurchaseOutcome>;
+  /**
+   * The store's own sheet for an offer code (owner's word, 2026-11-19): a
+   * code made in App Store Connect gives the subscription free for its
+   * period — six months — and it renews after that unless cancelled, which
+   * the sheet itself says. A code of our own unlocking the app would break
+   * App Review's rule 3.1.1; this one is Apple's, so it is the store that
+   * grants it. Resolves once the sheet is up: the redemption is finished by
+   * the store afterwards and arrives through `onStatusChange`.
+   */
+  redeemCode(): Promise<void>;
+  /**
+   * Calls `listener` whenever the store's answer may have changed — a code
+   * redeemed, a renewal, a refund — and returns the way to stop listening.
+   */
+  onStatusChange(listener: () => void): () => void;
 }

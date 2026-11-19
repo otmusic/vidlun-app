@@ -27,4 +27,14 @@ export class EverythingFree implements IPurchases {
   restore(): Promise<PurchaseOutcome> {
     return Promise.resolve<PurchaseOutcome>('nothingToRestore');
   }
+
+  /** Everything is already open; there is nothing a code could add. */
+  redeemCode(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /** Nothing here ever changes. */
+  onStatusChange(): () => void {
+    return () => undefined;
+  }
 }

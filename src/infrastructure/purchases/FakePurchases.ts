@@ -32,6 +32,7 @@ const PRETEND_PLANS: readonly Plan[] = [
  */
 export class FakePurchases implements IPurchases {
   private active: boolean;
+  private readonly listeners = new Set<() => void>();
 
   constructor(
     /** What the next purchase or restore will answer. */
@@ -77,4 +78,30 @@ export class FakePurchases implements IPurchases {
 
     return Promise.resolve(outcome);
   }
+
+  /**
+   * A code that always works, as a redeemed one does: the store grants the
+   * subscription a moment after the sheet, and says so through the listener.
+   */
+  redeemCode(): Promise<void> {
+    setTimeout(() => {
+      this.active = true;
+      this.listeners.forEach((listener) => {
+        listener();
+      });
+    }, REDEEMED_AFTER_MS);
+
+    return Promise.resolve();
+  }
+
+  onStatusChange(listener: () => void): () => void {
+    this.listeners.add(listener);
+
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
 }
+
+/** About how long Apple's sheet takes to take a code and close. */
+const REDEEMED_AFTER_MS = 1500;

@@ -104,6 +104,24 @@ export class RevenueCatPurchases implements IPurchases {
       return 'failed';
     }
   }
+
+  redeemCode(): Promise<void> {
+    return Purchases.presentCodeRedemptionSheet();
+  }
+
+  onStatusChange(listener: () => void): () => void {
+    // RevenueCat hears the transaction a redeemed code makes, and every other
+    // change the store pushes, and hands over the customer it now knows.
+    const heard = (): void => {
+      listener();
+    };
+
+    Purchases.addCustomerInfoUpdateListener(heard);
+
+    return () => {
+      Purchases.removeCustomerInfoUpdateListener(heard);
+    };
+  }
 }
 
 /**

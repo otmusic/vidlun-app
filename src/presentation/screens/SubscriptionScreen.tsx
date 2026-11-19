@@ -6,6 +6,7 @@ import type { Locale, Translate, TranslationKey } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
+import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
 import { RoundBack } from '../components/RoundBack';
 import { useDrawnSides } from '../hooks/useDrawnSides';
@@ -34,6 +35,7 @@ export function SubscriptionScreen(props: {
   readonly onSubscribe: (planId: string) => void;
   readonly onRestore: () => void;
   /** Apple's sheet for an offer code: six months free (owner's word, 2026-11-19). */
+  readonly onRedeemCode: () => void;
   readonly onDismissOutcome: () => void;
   /** Asks the store for the plans again, for when it was quiet the first time. */
   readonly onRetryPlans: () => void;
@@ -100,6 +102,8 @@ export function SubscriptionScreen(props: {
           <>
             <PlanCardOutline />
             <Quiet label={t('subs.restore')} onPress={props.onRestore} />
+            {/* Looks like the way somewhere it is, not like the quiet line above it (owner's word, 2026-11-19). */}
+            <Button label={t('subs.redeemCode')} variant="link" onPress={props.onRedeemCode} />
           </>
         ) : face.kind === 'quiet' ? (
           /*
@@ -126,6 +130,8 @@ export function SubscriptionScreen(props: {
             </View>
             <Outlined label={t('subs.storeQuietRetry')} onPress={props.onRetryPlans} />
             <Quiet label={t('subs.restore')} onPress={props.onRestore} />
+            {/* Looks like the way somewhere it is, not like the quiet line above it (owner's word, 2026-11-19). */}
+            <Button label={t('subs.redeemCode')} variant="link" onPress={props.onRedeemCode} />
           </>
         ) : (
           <>
@@ -140,6 +146,8 @@ export function SubscriptionScreen(props: {
               }}
             />
             <Quiet label={t('subs.restore')} onPress={props.onRestore} />
+            {/* Looks like the way somewhere it is, not like the quiet line above it (owner's word, 2026-11-19). */}
+            <Button label={t('subs.redeemCode')} variant="link" onPress={props.onRedeemCode} />
           </>
         )}
 

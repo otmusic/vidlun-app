@@ -1801,6 +1801,47 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++. A promo code: six months free — 2026-11-19
+
+By the owner's word ("секцію де можна вести купон і весь функціонал буде
+безкоштовний ... на пів року"), and their two choices:
+
+- **Apple's offer codes, not our own.** A code of ours unlocking the paid
+  half would break App Review's rule 3.1.1 (no own keys or codes to unlock
+  functionality). An offer code on the monthly subscription is Apple's:
+  the person types it into the store's own sheet, gets the subscription free
+  for six months, and it renews at the normal price after that unless
+  cancelled — the sheet says so. Nothing to check on our side.
+- **Where**: "Маю промокод" / "I have a promo code" under "Restore
+  subscription" on the plan page (every state of it), and under
+  "Підключити" in the Subscription card in Me while there is no plan.
+- **How**: `IPurchases.redeemCode()` opens the sheet
+  (`Purchases.presentCodeRedemptionSheet`), and `onStatusChange` (RevenueCat's
+  customer info listener) re-reads the status the moment the store grants
+  it, so everything opens without a relaunch. `FakePurchases` grants a code
+  1.5 s after the sheet for walking the screens; the other two stores grant
+  nothing.
+- **Seen** on the iPhone 18 Pro simulator: both links; the tap reaches
+  StoreKit, which answers "No active account to present code redemption
+  sheet" — the simulator has no Apple Account. The sheet itself shows on a
+  phone signed into the App Store.
+- **Made in App Store Connect the same day** (owner's word: shared code
+  VIDLUN6, 20 redemptions, until the end of 2027). Offer "VIDLUN6 six months
+  free" (`2b251efb-d50b-46d7-a7d7-df9d71f8fdc8`): free for 6 months, for new,
+  current and lapsed subscribers, replacing the 3-day trial rather than
+  adding to it, all 175 territories. Custom code VIDLUN6 (`660568`): Apple
+  refused 20, 50, 100 and 250 redemptions and took **500**, the smallest it
+  accepts; and a custom code's end date may be at most six months ahead, so
+  it has **no end date** (owner's choice) and is to be switched off at the
+  end of 2027: `PATCH /v1/subscriptionOfferCodeCustomCodes/660568`
+  `{"active": false}`.
+- **Works before the in-app button ships**: the code can be redeemed in the
+  App Store already (the redeem link with the app's id and the code), and
+  the app reads the subscription from the store on launch.
+- Open: whether the terms name promo codes beside the trial.
+
+---
+
 ## 3ψψψ+++++++++++++++++++. iPhone Duo: checked, and the content in a column — 2026-11-18
 
 By the owner's word ("давай глянемо як наш застосунок буде під iPhone Duo"),

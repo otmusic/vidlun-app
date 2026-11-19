@@ -416,6 +416,7 @@ function Stage(
           entitlement={entitlement}
           selling={props.selling}
           onOpenSubscription={flow.openSubscription}
+          onRedeemCode={flow.redeemCode}
           onGround={flow.openGrounding}
         />
       );
@@ -487,6 +488,7 @@ function Stage(
           t={t}
           onSubscribe={flow.subscribe}
           onRestore={flow.restorePurchase}
+          onRedeemCode={flow.redeemCode}
           onDismissOutcome={flow.dismissPurchaseOutcome}
           onRetryPlans={flow.openSubscription}
           onOpenTerms={() => flow.openLegal('terms')}

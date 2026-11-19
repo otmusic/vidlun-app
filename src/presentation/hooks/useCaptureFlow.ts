@@ -430,6 +430,8 @@ export interface CaptureFlow {
   readonly noticed: () => void;
   readonly subscribe: (planId: string) => void;
   readonly restorePurchase: () => void;
+  /** Apple's sheet for an offer code; what it grants arrives as a status change. */
+  readonly redeemCode: () => void;
   readonly dismissPurchaseOutcome: () => void;
   readonly openStats: () => void;
   /** Home's month card: the month written back, or the plans without access to it. */
@@ -1992,6 +1994,12 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         })
         .catch(fail);
     }, [dependencies, fail]),
+    redeemCode: useCallback(() => {
+      void dependencies.purchases.redeemCode().catch(() => {
+        // The sheet is Apple's and says its own errors; one that would not
+        // open leaves the page as it was, with the plan still on it.
+      });
+    }, [dependencies.purchases]),
     dismissPurchaseOutcome: useCallback(() => {
       setStage((current) => (current.kind === 'subscription' ? { ...current, outcome: null } : current));
     }, []),

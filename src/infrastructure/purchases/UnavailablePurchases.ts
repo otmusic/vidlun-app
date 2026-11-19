@@ -31,4 +31,14 @@ export class UnavailablePurchases implements IPurchases {
   restore(): Promise<PurchaseOutcome> {
     return Promise.resolve<PurchaseOutcome>('nothingToRestore');
   }
+
+  /** No store, so no sheet: the tap does nothing rather than pretend. */
+  redeemCode(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /** Nothing here ever changes. */
+  onStatusChange(): () => void {
+    return () => undefined;
+  }
 }

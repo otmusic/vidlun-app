@@ -203,6 +203,13 @@ function Vidlun(props: {
 
   useEffect(readStatus, [readStatus]);
 
+  // A code redeemed in Apple's sheet, a renewal, a refund: the store says so
+  // when it happens, and the paid half opens or closes then, not next launch.
+  useEffect(
+    () => props.container.purchases.onStatusChange(readStatus),
+    [props.container.purchases, readStatus],
+  );
+
 
   const recorder = useMemo(
     () => container.createAudioRecorder(props.nativeRecorder),
