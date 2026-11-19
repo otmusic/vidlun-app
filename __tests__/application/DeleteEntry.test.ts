@@ -115,10 +115,14 @@ describe('DeleteEntry', () => {
     await repository.save(entry('entry-1'));
     await recordings.keep('entry-1', 'file:///take.wav');
 
-    await subject.execute('entry-1');
+    const deleted = await subject.execute('entry-1');
 
     expect(await recordings.find('entry-1')).toBeNull();
-    expect(recordings.discarded).toEqual(['entry-1']);
+
+    await deleted.settle();
+
+    expect(recordings.held.size).toBe(0);
+    expect(recordings.released).toEqual(['file:///cache/held-voices/entry-1']);
   });
 
   it('leaves other recordings where they are', async () => {
@@ -133,7 +137,90 @@ describe('DeleteEntry', () => {
 
   it('says nothing about an entry that was never there', async () => {
     const { subject } = setup();
+    const deleted = await subject.execute('never-existed');
 
-    await expect(subject.execute('never-existed')).resolves.toBeUndefined();
+    await expect(deleted.restore()).resolves.toBeUndefined();
+  });
+});
+
+describe('DeleteEntry, undone', () => {
+  const revision = {
+    entryId: 'entry-1',
+    revisedAt: CREATED_AT,
+    proposedMood: 4,
+    finalMood: 5,
+    proposedEmotionIds: ['happy.proud'],
+    finalEmotionIds: ['happy'],
+  };
+  const disagreement = {
+    entryId: 'entry-1',
+    at: CREATED_AT,
+    proposedEmotionIds: ['happy.proud'],
+    selfEmotionIds: [],
+  };
+
+  it('puts back the entry, its voice, what was measured in it and what was revised', async () => {
+    const { repository, revisionLog, recordings, voiceReadings, subject } = setup();
+    const reading = VoiceReading.from({ version: 1, speechMs: 4000, loudnessDb: -20 });
+
+    await repository.save(entry('entry-1'));
+    await recordings.keep('entry-1', 'file:///one.m4a');
+    await revisionLog.record(revision);
+    await revisionLog.disagree(disagreement);
+    if (reading !== null) {
+      await voiceReadings.save('entry-1', reading);
+    }
+
+    const deleted = await subject.execute('entry-1');
+
+    expect(await repository.findById('entry-1')).toBeNull();
+    expect(revisionLog.records).toEqual([]);
+
+    await deleted.restore();
+
+    expect((await repository.findById('entry-1'))?.cleanTranscript).toBe(entry('entry-1').cleanTranscript);
+    expect(await recordings.find('entry-1')).toBe('file:///cache/held-voices/entry-1');
+    expect(revisionLog.records).toEqual([revision]);
+    expect(revisionLog.disagreements).toEqual([disagreement]);
+    expect(await voiceReadings.find('entry-1')).not.toBeNull();
+    expect(recordings.released).toEqual([]);
+  });
+
+  it('brings back an entry that never had a voice, without one', async () => {
+    const { repository, recordings, subject } = setup();
+
+    await repository.save(entry('entry-1'));
+
+    const deleted = await subject.execute('entry-1');
+
+    await deleted.restore();
+
+    expect(await repository.findById('entry-1')).not.toBeNull();
+    expect(await recordings.find('entry-1')).toBeNull();
+  });
+
+  it('cannot be undone once settled, nor settled once undone', async () => {
+    const { repository, recordings, subject } = setup();
+
+    await repository.save(entry('entry-1'));
+    await recordings.keep('entry-1', 'file:///one.m4a');
+
+    const settled = await subject.execute('entry-1');
+
+    await settled.settle();
+    await settled.restore();
+
+    expect(await repository.findById('entry-1')).toBeNull();
+
+    await repository.save(entry('entry-2'));
+    await recordings.keep('entry-2', 'file:///two.m4a');
+
+    const undone = await subject.execute('entry-2');
+
+    await undone.restore();
+    await undone.settle();
+
+    expect(await recordings.find('entry-2')).toBe('file:///cache/held-voices/entry-2');
+    expect(recordings.released).toEqual(['file:///cache/held-voices/entry-1']);
   });
 });

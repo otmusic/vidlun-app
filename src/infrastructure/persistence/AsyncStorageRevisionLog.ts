@@ -1,5 +1,6 @@
 import type {
   DisagreementRecord,
+  EntryRecords,
   EntryRevisionRecord,
   IRevisionLog,
 } from '../../domain/ports/IRevisionLog';
@@ -55,6 +56,38 @@ export class AsyncStorageRevisionLog implements IRevisionLog {
     );
   }
 
+  async recordsOf(entryId: string): Promise<EntryRecords> {
+    const keys = await this.store.getAllKeys();
+    const read = async (prefix: string): Promise<unknown[]> => {
+      const values = await Promise.all(
+        keys
+          .filter((key) => key.startsWith(`${prefix}${entryId}.`))
+          .map((key) => this.store.getItem(key)),
+      );
+
+      return values.flatMap((raw) => {
+        try {
+          return raw === null ? [] : [JSON.parse(raw) as unknown];
+        } catch {
+          return [];
+        }
+      });
+    };
+
+    const revisions = (await read(REVISION_KEY_PREFIX)).flatMap((value) => {
+      const record = revisionFrom(value);
+
+      return record === null ? [] : [record];
+    });
+    const disagreements = (await read(DISAGREEMENT_KEY_PREFIX)).flatMap((value) => {
+      const record = disagreementFrom(value);
+
+      return record === null ? [] : [record];
+    });
+
+    return { revisions, disagreements };
+  }
+
   async forget(entryId: string): Promise<void> {
     // One entry can carry several of each, keyed by when they happened, so
     // this is a prefix sweep rather than a single removal. Both prefixes: a
@@ -70,4 +103,52 @@ export class AsyncStorageRevisionLog implements IRevisionLog {
 
     await Promise.all(keys.map((key) => this.store.removeItem(key)));
   }
+}
+
+/** A stored revision read back, or null where it is not one. */
+function revisionFrom(value: unknown): EntryRevisionRecord | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const revisedAt = typeof record.revisedAt === 'string' ? new Date(record.revisedAt) : null;
+
+  if (typeof record.entryId !== 'string' || revisedAt === null || Number.isNaN(revisedAt.getTime())) {
+    return null;
+  }
+
+  return {
+    entryId: record.entryId,
+    revisedAt,
+    proposedMood: typeof record.proposedMood === 'number' ? record.proposedMood : null,
+    finalMood: typeof record.finalMood === 'number' ? record.finalMood : null,
+    proposedEmotionIds: strings(record.proposedEmotionIds),
+    finalEmotionIds: strings(record.finalEmotionIds),
+  };
+}
+
+/** A stored disagreement read back, or null where it is not one. */
+function disagreementFrom(value: unknown): DisagreementRecord | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const at = typeof record.at === 'string' ? new Date(record.at) : null;
+
+  if (typeof record.entryId !== 'string' || at === null || Number.isNaN(at.getTime())) {
+    return null;
+  }
+
+  return {
+    entryId: record.entryId,
+    at,
+    proposedEmotionIds: strings(record.proposedEmotionIds),
+    selfEmotionIds: strings(record.selfEmotionIds),
+  };
+}
+
+function strings(value: unknown): readonly string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }

@@ -14,6 +14,7 @@ import { FeedbackSheet } from '../components/FeedbackSheet';
 import { MilestoneSheet } from '../components/MilestoneSheet';
 import { TabBar, type Tab } from '../components/TabBar';
 import { Toast, type ToastLine } from '../components/Toast';
+import { UndoToast } from '../components/UndoToast';
 import type { CaptureFlow, Notice } from '../hooks/useCaptureFlow';
 import { SwipeBack } from '../components/SwipeBack';
 import { EntryDetailScreen } from './EntryDetailScreen';
@@ -163,6 +164,12 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
         line={lineFor(props.flow.notice, props.t)}
         dismissHint={props.t('notice.dismiss')}
         onDismiss={props.flow.dismissNotice}
+      />
+      <UndoToast
+        showing={props.flow.undoable}
+        t={props.t}
+        onUndo={props.flow.undoDelete}
+        onSettle={props.flow.settleDelete}
       />
     </View>
   );

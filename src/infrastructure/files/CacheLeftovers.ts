@@ -2,12 +2,14 @@ import { Directory, File, Paths } from 'expo-file-system';
 
 import type { ILeftoverFiles } from '../../domain/ports/ILeftoverFiles';
 import { OPENED, STAGING } from './NativeBackupArchive';
+import { HELD_VOICES } from '../persistence/FileRecordingStore';
 import { READABLE_OUT, READABLE_STAGING } from './NativeReadableArchive';
 
 /**
  * Where expo-document-picker puts its copies, the folders a backup passes
- * through, and the readable export's two: where it is put together and where
- * the finished file waits for the share sheet.
+ * through, the readable export's two (where it is put together and where the
+ * finished file waits for the share sheet), and the voices held while a
+ * deletion could still be undone.
  */
 const FOLDERS: ReadonlySet<string> = new Set([
   'DocumentPicker',
@@ -15,6 +17,7 @@ const FOLDERS: ReadonlySet<string> = new Set([
   OPENED,
   READABLE_STAGING,
   READABLE_OUT,
+  HELD_VOICES,
 ]);
 
 /**

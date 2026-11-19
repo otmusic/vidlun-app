@@ -1,5 +1,5 @@
 import { createContext, useContext, useRef, type ReactNode } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
@@ -55,24 +55,18 @@ export function EntryRow(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const group = useContext(OpenRow);
-  const swipeable = useRef<{ close: () => void } | null>(null);
+  const swipeable = useRef<{ close: () => void; openRight: () => void } | null>(null);
   const { entry, t, onOpen, onDelete } = props;
   const marker = moodTint(entry.mood?.value ?? null, theme);
   const words = emotionWordsIn(entry.cleanTranscript, t);
 
-  const confirm = (): void => {
-    Alert.alert(t('delete.title'), t('delete.body'), [
-      { text: t('delete.cancel'), style: 'cancel', onPress: () => swipeable.current?.close() },
-      { text: t('delete.confirm'), style: 'destructive', onPress: () => onDelete(entry.id) },
-    ]);
-  };
-
   return (
     /*
-     * The swipe reveals rather than deletes, and the button behind it still
-     * asks. Three deliberate acts for something with no undo — a single swipe
-     * that removed an entry would be the wrong gesture for a journal people
-     * scroll through.
+     * The swipe reveals rather than deletes: a single swipe that removed an
+     * entry would be the wrong gesture for a journal people scroll through.
+     * The button behind it deletes at once (owner's word, 2026-11-19), and
+     * the undo line offers the entry back for five seconds; holding the row
+     * only opens it to the button, so a long press can never delete alone.
      */
     <Swipeable
       ref={(handle) => {
@@ -88,7 +82,10 @@ export function EntryRow(props: {
       }}
       renderRightActions={() => (
         <Pressable
-          onPress={confirm}
+          onPress={() => {
+            swipeable.current?.close();
+            onDelete(entry.id);
+          }}
           accessibilityLabel={t('delete.confirm')}
           style={{
             width: 76,
@@ -111,7 +108,7 @@ export function EntryRow(props: {
             : `${dayWordOf(entry.createdAt, props.today, props.locale, t)} · ${timeOf(entry.createdAt, props.locale)}. ${props.lockedHint}`
         }
         onPress={() => onOpen(entry)}
-        onLongPress={confirm}
+        onLongPress={() => swipeable.current?.openRight()}
         style={{
           minHeight: ROW_HEIGHT,
           backgroundColor: theme.palette.paper,

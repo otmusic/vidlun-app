@@ -21,6 +21,16 @@ export interface IRecordingStore {
   compact(): Promise<void>;
   /** Silent when there is nothing kept: deleting twice is not an error. */
   discard(entryId: string): Promise<void>;
+  /**
+   * Takes an entry's voice out of the recordings and holds it in the cache
+   * for the few seconds a deletion can still be undone (owner's word,
+   * 2026-11-19). Null when there is none. `keep` with the held uri brings it
+   * back; `release` lets it go. One neither reaches — the app closed in
+   * between — goes with the cache at the next launch.
+   */
+  setAside(entryId: string): Promise<string | null>;
+  /** Lets a held voice go for good. Silent when it is already gone. */
+  release(heldUri: string): Promise<void>;
   /** Removes everything recorded before the cutoff. Entries are untouched. */
   discardBefore(cutoff: Date): Promise<void>;
   /** Null when the entry has no audio. */

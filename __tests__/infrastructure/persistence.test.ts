@@ -274,6 +274,39 @@ describe('AsyncStorageRevisionLog', () => {
     expect(left[0]).toContain('entry-2');
   });
 
+  it('reads back what one entry holds, so an undone deletion records it again', async () => {
+    const store = new InMemoryKeyValueStore();
+    const log = new AsyncStorageRevisionLog(store);
+    const revision = {
+      entryId: 'entry-1',
+      revisedAt: CREATED_AT,
+      proposedMood: 4,
+      finalMood: null,
+      proposedEmotionIds: ['happy.proud'],
+      finalEmotionIds: ['happy'],
+    };
+    const disagreement = {
+      entryId: 'entry-1',
+      at: CREATED_AT,
+      proposedEmotionIds: ['happy.proud'],
+      selfEmotionIds: [],
+    };
+
+    await log.record(revision);
+    await log.disagree(disagreement);
+    await log.record({ ...revision, entryId: 'entry-2' });
+
+    const held = await log.recordsOf('entry-1');
+
+    expect(held).toEqual({ revisions: [revision], disagreements: [disagreement] });
+
+    await log.forget('entry-1');
+    await log.record(held.revisions[0] ?? revision);
+    await log.disagree(held.disagreements[0] ?? disagreement);
+
+    expect(await log.recordsOf('entry-1')).toEqual(held);
+  });
+
   it('writes the diff a future model would need to learn from', async () => {
     const store = new InMemoryKeyValueStore();
 

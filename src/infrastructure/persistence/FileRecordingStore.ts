@@ -10,6 +10,13 @@ import type { IRecordingStore } from '../../domain/ports/IRecordingStore';
 const RECORDINGS = 'recordings';
 
 /**
+ * Cache, on purpose: a voice held for the seconds a deletion can be undone
+ * (owner's word, 2026-11-19) must not outlive them. Whatever is left here
+ * when the app closes in between goes with the cache at the next launch.
+ */
+export const HELD_VOICES = 'held-voices';
+
+/**
  * Kept as AAC since 2026-11-18 (owner's word): about a sixth of the WAV the
  * recorder writes, which matters now that nothing removes a voice but the
  * person. A take arrives as WAV — the speech model needs it that way — and is
@@ -72,6 +79,37 @@ export class FileRecordingStore implements IRecordingStore {
     for (const extension of [COMPACT, RAW, PARTIAL]) {
       removeIfThere(this.fileFor(entryId, extension));
     }
+
+    return Promise.resolve();
+  }
+
+  async setAside(entryId: string): Promise<string | null> {
+    // A compression half done for this voice is of no use to anyone now.
+    removeIfThere(this.fileFor(entryId, PARTIAL));
+
+    const kept = await this.find(entryId);
+
+    if (kept === null) {
+      return null;
+    }
+
+    const held = new Directory(Paths.cache, HELD_VOICES);
+
+    if (!held.exists) {
+      held.create({ intermediates: true });
+    }
+
+    const source = new File(kept);
+    const target = new File(held, source.name);
+
+    removeIfThere(target);
+    await source.move(target);
+
+    return target.uri;
+  }
+
+  release(heldUri: string): Promise<void> {
+    removeIfThere(new File(heldUri));
 
     return Promise.resolve();
   }

@@ -6,7 +6,12 @@ import type { IClock } from '@/domain/ports/IClock';
 import type { IIdGenerator } from '@/domain/ports/IIdGenerator';
 import type { INarrativeGenerator } from '@/domain/ports/INarrativeGenerator';
 import type { IReflectionAnalyzer, ReflectionProposal } from '@/domain/ports/IReflectionAnalyzer';
-import type { DisagreementRecord, EntryRevisionRecord, IRevisionLog } from '@/domain/ports/IRevisionLog';
+import type {
+  DisagreementRecord,
+  EntryRecords,
+  EntryRevisionRecord,
+  IRevisionLog,
+} from '@/domain/ports/IRevisionLog';
 import type { ITranscriptionService, TranscriptionResult } from '@/domain/ports/ITranscriptionService';
 
 export const RECORDING: AudioRecording = { uri: 'file:///take.m4a', durationMs: 4200 };
@@ -99,6 +104,13 @@ export class RecordingRevisionLog implements IRevisionLog {
     return Promise.resolve();
   }
 
+  recordsOf(entryId: string): Promise<EntryRecords> {
+    return Promise.resolve({
+      revisions: this.records.filter((record) => record.entryId === entryId),
+      disagreements: this.disagreements.filter((record) => record.entryId === entryId),
+    });
+  }
+
   forget(entryId: string): Promise<void> {
     this.forgotten.push(entryId);
 
@@ -151,6 +163,32 @@ export class InMemoryRecordingStore implements IRecordingStore {
 
   discardBefore(cutoff: Date): Promise<void> {
     this.sweptBefore = cutoff;
+
+    return Promise.resolve();
+  }
+
+  /** Voices set aside while a deletion could be undone, by their held uri. */
+  readonly held = new Map<string, string>();
+  readonly released: string[] = [];
+
+  setAside(entryId: string): Promise<string | null> {
+    const uri = this.kept.get(entryId);
+
+    if (uri === undefined) {
+      return Promise.resolve(null);
+    }
+
+    const heldUri = `file:///cache/held-voices/${entryId}`;
+
+    this.kept.delete(entryId);
+    this.held.set(heldUri, uri);
+
+    return Promise.resolve(heldUri);
+  }
+
+  release(heldUri: string): Promise<void> {
+    this.released.push(heldUri);
+    this.held.delete(heldUri);
 
     return Promise.resolve();
   }

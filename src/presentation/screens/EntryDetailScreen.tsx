@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
@@ -56,13 +56,6 @@ export function EntryDetailScreen(props: {
   const portrait = props.voice?.kind === 'compared' && props.voice.portrait.length > 0 ? props.voice.portrait : null;
   const [portraitOpen, setPortraitOpen] = useState(false);
 
-  const confirmDelete = (): void => {
-    Alert.alert(t('delete.title'), t('delete.body'), [
-      { text: t('delete.cancel'), style: 'cancel' },
-      { text: t('delete.confirm'), style: 'destructive', onPress: () => props.onDelete(entry.id) },
-    ]);
-  };
-
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.palette.canvas }}
@@ -86,8 +79,12 @@ export function EntryDetailScreen(props: {
         <AppText variant="secondary" color="ink" style={{ fontFamily: fonts.strong }}>
           {formatWhen(entry.createdAt, props.locale)}
         </AppText>
-        {/* A bin in red (owner's word, 2026-10-01); it still asks first. */}
-        <TapTarget onPress={confirmDelete} accessibilityLabel={t('detail.delete')}>
+        {/*
+          A bin in red (owner's word, 2026-10-01). It no longer asks first
+          (owner's word, 2026-11-19): the undo line offers the entry back for
+          five seconds instead.
+        */}
+        <TapTarget onPress={() => props.onDelete(entry.id)} accessibilityLabel={t('detail.delete')}>
           <Icon name="trash-2" size={ICON_SIZE.action} color="danger" />
         </TapTarget>
       </View>

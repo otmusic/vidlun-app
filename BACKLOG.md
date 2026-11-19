@@ -1801,6 +1801,38 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++++++++. Undo a deletion, five seconds — 2026-11-19
+
+Step 6 of the competitor plan: what is deleted by accident cannot come
+back, and people ask for it (Video Diary's reviews; Apple Journal keeps
+"Recently Deleted"). Designed first on the canvas's "Скасувати видалення
+(новий)" page; the owner asked for a round timer and chose variant B.
+
+- **The question goes, the undo comes** (variant B): the journal's swipe
+  button and the entry page's bin delete at once, and a line at the top —
+  the notices' own dark panel — says «Запис видалено» with «Скасувати».
+  The question ("Видалити цей запис?") was there only because nothing
+  could be undone. Holding a row now only opens it to the button, so a
+  long press can never delete by itself. The card before saving keeps its
+  question: undo there would have to bring the card back.
+- **A round timer** on the left of the line (owner's word): a ring that
+  thins over five seconds with the seconds counted in its middle; under
+  Reduce Motion it steps once a second. Five seconds, a tap on the line or
+  another deletion make it final (`UndoToast`).
+- **Nothing is held in storage.** "A journal that quietly holds onto what
+  you deleted is worse than one that loses it" stays true: `DeleteEntry`
+  now removes the entry, its revisions and disagreements, and its voice
+  measurements at once, keeping them only in memory, and moves the voice
+  to `Caches/held-voices/` (`IRecordingStore.setAside` / `release`). Undo
+  writes it all back (`IRevisionLog.recordsOf` reads the records first);
+  settling lets the voice go. Closing the app in between is as final as
+  the five seconds: the cache folder is swept at the next launch
+  (`CacheLeftovers`).
+- Copy: `undo.deleted`, `undo.action`, `undo.left` (the ring's spoken
+  label). Tests: four new for `DeleteEntry`, one for `recordsOf`.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++++++++. The day of the last backup — 2026-11-19
 
 Step 5 of the competitor plan: Daylio's worst reviews are about lost voice

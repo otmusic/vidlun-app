@@ -30,9 +30,20 @@ export interface DisagreementRecord {
  * What Vidlun proposed against what the user kept. Collected from day one
  * because personalization later cannot be back-filled.
  */
+/** Everything held about one entry, as it was recorded. */
+export interface EntryRecords {
+  readonly revisions: readonly EntryRevisionRecord[];
+  readonly disagreements: readonly DisagreementRecord[];
+}
+
 export interface IRevisionLog {
   record(revision: EntryRevisionRecord): Promise<void>;
   disagree(disagreement: DisagreementRecord): Promise<void>;
+  /**
+   * What is held about one entry, read before a deletion so that undoing it
+   * can record the same things again (owner's word, 2026-11-19).
+   */
+  recordsOf(entryId: string): Promise<EntryRecords>;
   /**
    * Drops everything held about one entry, revisions and disagreements alike. The diff is made out of what the
    * person said, so it does not get to outlive the entry they removed —

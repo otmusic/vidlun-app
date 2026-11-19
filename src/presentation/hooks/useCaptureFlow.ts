@@ -14,7 +14,7 @@ import type { GetWeekSummary } from '@/application/use-cases/GetWeekSummary';
 import type { GetWeekNeighbours } from '@/application/use-cases/GetWeekNeighbours';
 import type { FindMoodPatterns } from '@/application/use-cases/FindMoodPatterns';
 import type { GetWeekThemes } from '@/application/use-cases/GetWeekThemes';
-import type { DeleteEntry } from '@/application/use-cases/DeleteEntry';
+import type { DeleteEntry, DeletedEntry } from '@/application/use-cases/DeleteEntry';
 import type { FindRecordedEntries } from '@/application/use-cases/FindRecordedEntries';
 import type { FindRecording } from '@/application/use-cases/FindRecording';
 import type { CompactRecordings } from '@/application/use-cases/CompactRecordings';
@@ -402,7 +402,17 @@ export interface CaptureFlow {
    * journal; null when none is, undefined until the store has answered.
    */
   readonly keptAffirmation: KeptAffirmation | null | undefined;
+  /** Deletes at once; the undo line offers it back for a few seconds. */
   readonly deleteEntry: (id: string) => void;
+  /**
+   * The deletion that can still be undone, by a number that changes with
+   * each one so the line starts its count afresh; null when there is none.
+   */
+  readonly undoable: number | null;
+  /** "Undo": the entry comes back with everything it had. */
+  readonly undoDelete: () => void;
+  /** The seconds ran out or the line was dismissed: the deletion is final. */
+  readonly settleDelete: () => void;
   readonly history: readonly HistoryDay[] | null;
   /** The entries that still have their audio; null until looked up. */
   readonly recorded: ReadonlySet<string> | null;
@@ -884,6 +894,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }
   }, [dependencies.getMonthSummary, getHomeView, reloadKeptAffirmation]);
 
+  /** Every list an entry shows in, read again after it went or came back. */
+  const refreshAfterDelete = useCallback(async (): Promise<void> => {
+    reloadHome();
+    setHistory(await dependencies.getHistory.execute());
+    setRecorded(await dependencies.findRecordedEntries.execute());
+  }, [dependencies.getHistory, dependencies.findRecordedEntries, reloadHome]);
+
   useEffect(reloadHome, [reloadHome]);
 
   useEffect(() => {
@@ -1062,6 +1079,14 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * nothing.
    */
   const cardsAsked = useRef(0);
+  /*
+   * The last deletion, held for the seconds it can be undone (owner's word,
+   * 2026-11-19), and a count that gives each its own undo line. A second
+   * deletion makes the first final: one line at a time.
+   */
+  const pendingDelete = useRef<DeletedEntry | null>(null);
+  const deletions = useRef(0);
+  const [undoable, setUndoable] = useState<number | null>(null);
   /*
    * How this card's words become a draft, kept so a corrected transcript can
    * be re-read the same way the original was — voice stays voice and typed
@@ -2076,12 +2101,20 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, [dependencies.getHistory, dependencies.findRecordedEntries, fail]),
     deleteEntry: useCallback(
       (id: string) => {
+        // One undo at a time: a deletion still waiting becomes final first.
+        void pendingDelete.current?.settle().catch(() => undefined);
+        pendingDelete.current = null;
+        setUndoable(null);
+
         // Reloading rather than dropping the row locally: the streak is
         // counted from what is stored, and it may have just changed. History
         // is refreshed too, since the row may have been deleted from there.
         void dependencies.deleteEntry
           .execute(id)
-          .then(async () => {
+          .then(async (deleted) => {
+            pendingDelete.current = deleted;
+            deletions.current += 1;
+            setUndoable(deletions.current);
             // Standing on a card that no longer exists is the one thing the
             // delete must not leave behind. Back to wherever it was opened
             // from — and only for that card, since a row swiped away in a list
@@ -2091,13 +2124,32 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
                 ? { kind: current.from }
                 : current,
             );
-            reloadHome();
-            setHistory(await dependencies.getHistory.execute());
-            setRecorded(await dependencies.findRecordedEntries.execute());
+            await refreshAfterDelete();
           })
           .catch(fail);
       },
-      [dependencies.deleteEntry, dependencies.getHistory, dependencies.findRecordedEntries, reloadHome, fail],
+      [dependencies.deleteEntry, refreshAfterDelete, fail],
     ),
+    undoable,
+    undoDelete: useCallback(() => {
+      const deleted = pendingDelete.current;
+
+      pendingDelete.current = null;
+      setUndoable(null);
+
+      if (deleted === null) {
+        return;
+      }
+
+      // Back where it was in every list; the card it was opened from stays closed.
+      void deleted.restore().then(refreshAfterDelete).catch(fail);
+    }, [refreshAfterDelete, fail]),
+    settleDelete: useCallback(() => {
+      const deleted = pendingDelete.current;
+
+      pendingDelete.current = null;
+      setUndoable(null);
+      void deleted?.settle().catch(() => undefined);
+    }, []),
   };
 }
