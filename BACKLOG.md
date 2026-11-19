@@ -1834,10 +1834,13 @@ ways — was the rarer case.
   - The terms (what the model does) and the privacy policy (what is sent,
     and why) no longer mention the echo; both are effective from 19
     November. The site's privacy FAQ the same. The in-app copies are
-    rebuilt (`build-legal.mjs`) and ship with the build; the web pages
-    are built but **not deployed**: 1.10 and 61 still write echoes, so
-    the pages go out when a build without the echo is released, or the
-    policy would say less is sent than the live app sends.
+    rebuilt (`build-legal.mjs`) and ship with the build. The web pages
+    went out the same day, before 1.11 was released (owner's word), with
+    one sentence added to the policy's §2.1 so it stays true for everyone
+    still on an older version: versions up to and including 1.10 also
+    send, after an entry is saved, the mood and the emotions chosen, to
+    write a short echo about it. Deployed 16:15; the live text matches
+    the build.
   - The review notes for 62 drop the echo (scratchpad
     `review-notes-62.txt`).
 

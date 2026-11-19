@@ -38,7 +38,9 @@ few words on how the voice sounded against your own usual voice, such as
 "quieter, slower" — words, never the recording and never the measurements
 themselves. For the monthly piece: the date, the mood number, emotion codes,
 topics and the transcripts of a month's entries together, with the same few
-words on the voice for the spoken ones.
+words on the voice for the spoken ones. Versions up to and including 1.10
+also send, after an entry is saved, the mood and the emotions you chose, to
+write a short echo about it.
 
 **Where to.** Through our Cloudflare Workers proxy to Anthropic PBC (USA), to
 the Claude API.
