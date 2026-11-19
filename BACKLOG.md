@@ -1801,6 +1801,31 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++++. The support page and the policy catch up — 2026-11-19
+
+The competitor analysis (`reports/`, not committed) turned up public texts
+that no longer matched the app; the owner said to fix them.
+
+- **Support page** (`legal/SUPPORT.*.md`, site only):
+  - a recording stays until the person deletes it — it said a year and
+    then gone, true only before 1.10;
+  - the opening says "how your day went", like the landing page, instead of
+    "one sentence about the day";
+  - the switch is named as the profile names it, "Save audio" /
+    «Зберігати аудіо» (it said "Keep recordings");
+  - the reinstall answer points at "Restore from backup";
+  - the Ukrainian heading "Я переставив застосунок…" showed a gender; it
+    is now "Після перевстановлення застосунку зникла підписка".
+- **Privacy policy §5**: the profile has no "Readable export" since
+  2026-09-17, so "take everything with you" names only Backup, audio
+  included; the switch is named as above. Still effective from 19 November.
+  The in-app copies are rebuilt (`build-legal.mjs`) and ship with the next
+  build.
+- **Deployed 17:58 the same day** (owner's word); the live text matches the
+  build.
+
+---
+
 ## 3ψψψ++++++++++++++++++++++. No echo, for now — 2026-11-19
 
 The owner asked what the echo gives a person, and then: "давай поки

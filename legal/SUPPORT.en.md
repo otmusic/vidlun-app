@@ -1,15 +1,15 @@
 # Vidlun Support
 
-Vidlun is a voice journal for feelings. You say one sentence about the day;
-the app recognises speech right on your phone and helps you name what was said.
+Vidlun is a voice journal for feelings. You say how your day went; the app
+recognises speech right on your phone and helps you name what was said.
 
 ## Frequently asked
 
 ### Where does my voice go?
 
 Nowhere. Speech is recognised on the phone itself; audio is never sent.
-A recording stays on the device for a year and then deletes itself; the
-written entry stays for good. Details in the [privacy policy](./privacy-en.html).
+A recording stays on the device until you delete it; the written entry stays
+for good. Details in the [privacy policy](./privacy-en.html).
 
 ### Why did recording stop at one minute?
 
@@ -26,11 +26,13 @@ paid period.
 
 Open the subscription screen and tap “Restore purchase” — the App Store
 returns it to this Apple ID. Journal entries do not survive deleting the
-app: they live only on your phone, and we hold no copy.
+app: they live only on your phone, and we hold no copy. If you saved a
+backup, “Restore from backup” in your profile brings them back, audio
+included.
 
 ### How do I delete my data?
 
-One entry — swipe it in the journal. All audio — turn off “Keep recordings”
+One entry — swipe it in the journal. All audio — turn off “Save audio”
 in your profile. Everything — delete the app: it all goes with it, because
 nowhere but your phone does this data exist.
 

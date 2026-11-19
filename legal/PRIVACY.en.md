@@ -124,10 +124,10 @@ What is unusual about Vidlun: **almost all of this data is only ever yours to
 control.** It is on your phone, not with us:
 
 - delete one entry — swipe it in the journal;
-- delete all audio — turn off "Keep recordings" in your profile;
+- delete all audio — turn off "Save audio" in your profile;
 - delete everything — delete the app;
-- take everything with you — Backup and Readable export in your profile hand
-  you every entry as a file (data portability, right in the app).
+- take everything with you — Backup in your profile hands you every entry,
+  audio included, as one file (data portability, right in the app).
 
 For purchase data, which is the only thing held off the phone, write to
 support@vidlun.app; we answer within 30 days.
