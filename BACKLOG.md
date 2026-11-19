@@ -1801,6 +1801,36 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++. No echo, for now — 2026-11-19
+
+The owner asked what the echo gives a person, and then: "давай поки
+приберемо". With variant A the line under the player and the voice portrait
+already say how an entry sounded, so the echo mostly said it a third time;
+the one thing only it could say — the words and the voice going different
+ways — was the rarer case.
+
+- **Nothing writes an echo any more.** Gone: `WriteEcho`, `IEchoWriter`,
+  `ClaudeEchoWriter` (Sonnet 5, its prompt and `echoRegister.json`),
+  `FakeEchoWriter`, `ECHO_MODEL`, the call after saving in both save paths,
+  and their tests. One model call per entry fewer, and the mood and
+  emotions are no longer sent after saving.
+- **The entry page shows no echo card**, not even for an entry that has one.
+  `MoodEntry.observation` stays, and the Markdown export still writes it.
+- **To bring it back:** everything is in 499ce5e (`git show
+  499ce5e:src/infrastructure/analysis/ClaudeEchoWriter.ts`, and the same
+  for the files above). The shape worth trying then is the narrow one
+  discussed: write only where the voice and the words go different ways,
+  and say nothing otherwise.
+- **Still mentioning the echo, not changed:** the processing title
+  ("Складаю відлуння" / "Writing your echo"); the capture card's fixed
+  `compare.noneEcho` line under an "Відлуння" label when nothing was heard
+  (still gendered in Ukrainian); the privacy policy (what is sent for an
+  echo, and why), the terms (an echo about each entry), the site's privacy
+  FAQ, and the review notes drafted for 61. The policy now says more is
+  sent than is; the texts and a deploy wait for the owner's word.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++. The entry page, variant A: the voice in one line — 2026-11-19
 
 The owner found the entry page plain ("просто і скучно") and asked for a

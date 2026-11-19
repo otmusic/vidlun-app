@@ -30,7 +30,7 @@ import { emotionLabel, emotionTint, emotionWordsIn } from '../components/emotion
  *
  * The sentence leads and is set large: what someone comes back for is their
  * own words, not the analysis of them. Everything Vidlun added sits below it,
- * in that order — voice, mood, words, echo.
+ * in that order — voice, mood, words, topics.
  */
 export function EntryDetailScreen(props: {
   readonly entry: MoodEntry;
@@ -216,26 +216,11 @@ export function EntryDetailScreen(props: {
         </View>
       )}
 
-      {entry.observation === null ? null : (
-        <View
-          style={{
-            borderRadius: 26,
-            backgroundColor: theme.palette.panel,
-            padding: 24,
-            gap: 14,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
-            <WaveMark width={34} color={theme.palette.lime} />
-            <AppText variant="caption" color="tileInk">
-              {t('compare.echo')}
-            </AppText>
-          </View>
-          <AppText variant="lede" color="onPanel">
-            {entry.observation}
-          </AppText>
-        </View>
-      )}
+      {/*
+        * No echo card (owner's word, 2026-11-19): the line under the player
+        * and the voice portrait already say how the entry sounded. An echo
+        * saved before stays in the entry and in the export, unshown.
+        */}
 
       {/*
         * Said once, quietly, on the screen people come back to rather than on

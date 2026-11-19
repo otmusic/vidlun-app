@@ -38,13 +38,6 @@ export const REFLECTION_MODEL = 'claude-haiku-4-5';
 /** The monthly narrative. Runs once a month, so it can afford the better model. */
 export const NARRATIVE_MODEL = 'claude-sonnet-5';
 
-/**
- * The echo: one sentence that has to sound like a person said it, in
- * Ukrainian as much as in English, and it is written after saving, so nobody
- * waits on it. That is where the better model earns its cost.
- */
-export const ECHO_MODEL = 'claude-sonnet-5';
-
 export function readText(message: Anthropic.Message): string {
   return message.content
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')

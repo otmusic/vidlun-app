@@ -42,7 +42,6 @@ import type { CreateUnheardEntry } from '@/application/use-cases/CreateUnheardEn
 import type { HearUnheardEntries } from '@/application/use-cases/HearUnheardEntries';
 import type { MeasureVoices } from '@/application/use-cases/MeasureVoices';
 import type { DescribeVoice } from '@/application/use-cases/DescribeVoice';
-import type { WriteEcho } from '@/application/use-cases/WriteEcho';
 import type { VoiceCue, VoiceHeard } from '@/domain/value-objects/VoiceCue';
 import type { AskForReview } from '@/application/use-cases/AskForReview';
 import type { CheckForUpdate } from '@/application/use-cases/CheckForUpdate';
@@ -278,7 +277,6 @@ export interface CaptureDependencies {
   readonly hearUnheardEntries: HearUnheardEntries;
   readonly measureVoices: MeasureVoices;
   readonly describeVoice: DescribeVoice;
-  readonly writeEcho: WriteEcho;
   readonly microphonePermission: IMicrophonePermission;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
@@ -936,25 +934,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     [dependencies.describeVoice],
   );
 
-  /*
-   * The echo is written after the entry is saved (owner's word, 2026-11-12),
-   * from what the person kept and how their voice sounded, and the journal
-   * is read again when it lands so the entry page has it.
-   */
-  const writeEcho = useCallback(
-    (entryId: string) => {
-      void dependencies.writeEcho
-        .execute(entryId)
-        .then((written) => {
-          if (written) {
-            reloadHome();
-          }
-        })
-        .catch(() => undefined);
-    },
-    [dependencies.writeEcho, reloadHome],
-  );
-
   const [notice, setNotice] = useState<Notice | null>(null);
   const noticesShown = useRef(0);
 
@@ -1109,7 +1088,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           dependencies.haptics.success();
           letTakeGo();
           measureVoices();
-          writeEcho(confirmed.id);
 
           const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
 
@@ -1140,7 +1118,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           });
         });
     },
-    [dependencies, fail, letTakeGo, measureVoices, noteReviewMoment, writeEcho],
+    [dependencies, fail, letTakeGo, measureVoices, noteReviewMoment],
   );
 
   const ask = useCallback(
@@ -1530,7 +1508,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
           letTakeGo();
           measureVoices();
-          writeEcho(draft.id);
 
           const refreshed = await dependencies.getHomeView.execute(RECENT_LIMIT);
 
@@ -1548,7 +1525,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           fail(error, backTo);
         });
     },
-    [dependencies, fail, letTakeGo, measureVoices, noteReviewMoment, writeEcho],
+    [dependencies, fail, letTakeGo, measureVoices, noteReviewMoment],
   );
 
   const confirm = useCallback(() => {
