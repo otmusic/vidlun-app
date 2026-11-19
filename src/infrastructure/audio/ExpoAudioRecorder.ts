@@ -40,6 +40,14 @@ export interface ScreenAwake {
 }
 
 /**
+ * Removes a take's file. expo-audio records every take of one launch into
+ * the same file in the cache and never removes it, so a take that was not
+ * kept stayed there for good. Passed in so this adapter stays testable
+ * without a device.
+ */
+export type RemoveTake = (uri: string) => void;
+
+/**
  * The take ends when the person ends it. Silence used to end it after a second
  * and a half, which read as attentive and was not: someone gathering their
  * words mid-sentence is the most ordinary thing on a screen that asks how the
@@ -91,22 +99,31 @@ export function levelFromDecibels(decibels: number | undefined): number {
  */
 export class ExpoAudioRecorder implements IAudioRecorder {
   private take: Take | null = null;
+  private starting = false;
 
   constructor(
     private readonly recorder: NativeRecorder,
     private readonly setRecordingMode: SetRecordingMode,
     private readonly scheduler: IScheduler,
     private readonly screen: ScreenAwake,
+    private readonly removeTake: RemoveTake,
     private readonly options: RecordingLimits = DEFAULT_RECORDING_LIMITS,
   ) {}
 
   async start(): Promise<AudioRecording> {
-    // Before preparing, not after: on iOS both `prepareToRecordAsync` and
-    // `record` throw while the session still forbids recording.
-    await this.setRecordingMode(true);
-    await this.recorder.prepareToRecordAsync();
+    this.starting = true;
 
-    this.recorder.record();
+    try {
+      // Before preparing, not after: on iOS both `prepareToRecordAsync` and
+      // `record` throw while the session still forbids recording.
+      await this.setRecordingMode(true);
+      await this.recorder.prepareToRecordAsync();
+
+      this.recorder.record();
+    } finally {
+      this.starting = false;
+    }
+
     this.screen.keepOn();
 
     return new Promise<AudioRecording>((resolve, reject) => {
@@ -157,8 +174,18 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     }
 
     void this.recorder.stop().finally(() => {
+      this.discard(this.recorder.uri);
       take.reject(new RecordingCancelledError());
     });
+  }
+
+  discard(uri: string | null): void {
+    // Every take goes into the same file: one under way must keep it.
+    if (uri === null || this.starting || this.take !== null) {
+      return;
+    }
+
+    this.removeTake(uri);
   }
 
   level(): number {

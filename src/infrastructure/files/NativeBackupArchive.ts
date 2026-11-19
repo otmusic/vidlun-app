@@ -19,8 +19,8 @@ export interface BackupPacker {
 
 const JOURNAL = 'journal.json';
 const AUDIO = 'audio';
-const STAGING = 'backup-staging';
-const OPENED = 'backup-opened';
+export const STAGING = 'backup-staging';
+export const OPENED = 'backup-opened';
 const RECORDING = /^([A-Za-z0-9_-]+)\.m4a$/;
 
 /**

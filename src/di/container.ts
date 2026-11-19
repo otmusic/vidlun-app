@@ -36,8 +36,8 @@ import type { IAffirmationReminders } from '../domain/ports/IAffirmationReminder
 import type { INotificationTaps } from '../domain/ports/INotificationTaps';
 import type { IReminders } from '../domain/ports/IReminders';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
-import type { IFilePicker } from '../domain/ports/IFilePicker';
 import type { IFileSharer } from '../domain/ports/IFileSharer';
+import type { ILeftoverFiles } from '../domain/ports/ILeftoverFiles';
 import { ExportJournal } from '../application/use-cases/ExportJournal';
 import { GetMonthSummary } from '../application/use-cases/GetMonthSummary';
 import { GetPastMonths } from '../application/use-cases/GetPastMonths';
@@ -46,6 +46,8 @@ import { BackUpJournal } from '../application/use-cases/BackUpJournal';
 import { RestoreJournal } from '../application/use-cases/RestoreJournal';
 import { CompactRecordings } from '../application/use-cases/CompactRecordings';
 import { ProxyAuth, attestedFetch } from '../infrastructure/attest/ProxyAuth';
+import { removeFromCache } from '../infrastructure/files/cache';
+import { CacheLeftovers } from '../infrastructure/files/CacheLeftovers';
 import { DocumentFilePicker } from '../infrastructure/files/DocumentFilePicker';
 import { ShareSheetFileSharer } from '../infrastructure/files/ShareSheetFileSharer';
 import { JournalCodec } from '../infrastructure/persistence/JournalCodec';
@@ -177,7 +179,8 @@ export interface Container {
   readonly backUpJournal: BackUpJournal;
   readonly restoreJournal: RestoreJournal;
   readonly fileSharer: IFileSharer;
-  readonly filePicker: IFilePicker;
+  /** Backups and picked copies an earlier session left in the cache. */
+  readonly leftoverFiles: ILeftoverFiles;
   readonly microphonePermission: IMicrophonePermission;
   readonly haptics: IHaptics;
   readonly vocabulary: EmotionVocabulary;
@@ -417,14 +420,15 @@ export function createContainer(dependencies: ContainerDependencies): Container 
       repository,
       recordings,
       backupArchive,
+      new DocumentFilePicker(),
     ),
     fileSharer: new ShareSheetFileSharer(),
-    filePicker: new DocumentFilePicker(),
+    leftoverFiles: new CacheLeftovers(),
     microphonePermission: new ExpoMicrophonePermission({
       getRecordingPermissionsAsync,
       requestRecordingPermissionsAsync,
     }),
     createAudioRecorder: (native) =>
-      new ExpoAudioRecorder(native, setRecordingMode, scheduler, screenAwake),
+      new ExpoAudioRecorder(native, setRecordingMode, scheduler, screenAwake, removeFromCache),
   };
 }

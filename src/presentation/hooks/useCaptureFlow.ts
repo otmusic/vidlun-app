@@ -771,6 +771,19 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * path on disk is not that.
    */
   const takeUri = useRef<string | null>(null);
+
+  /*
+   * Once the take's fate is settled. A kept take has been moved into the
+   * recordings by then; one that was not kept — nothing heard, keeping
+   * recordings off, a move that failed — is removed rather than left in the
+   * recorder's scratch space, where nothing else would remove it.
+   */
+  const letTakeGo = useCallback(() => {
+    if (takeUri.current !== null) {
+      dependencies.recorder.discard(takeUri.current);
+      takeUri.current = null;
+    }
+  }, [dependencies.recorder]);
   const [parked, setParked] = useState<ParkedTake | null>(null);
   const [micStatus, setMicStatus] = useState<PermissionStatus>('undetermined');
   const [milestones, setMilestones] = useState<readonly Milestone[]>([]);
@@ -1090,7 +1103,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         .then(async () => {
           await dependencies.unheardEntries.add(confirmed.id);
           dependencies.haptics.success();
-          takeUri.current = null;
+          letTakeGo();
           measureVoices();
           writeEcho(confirmed.id);
 
@@ -1123,7 +1136,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           });
         });
     },
-    [dependencies, fail, measureVoices, noteReviewMoment, writeEcho],
+    [dependencies, fail, letTakeGo, measureVoices, noteReviewMoment, writeEcho],
   );
 
   const ask = useCallback(
@@ -1256,9 +1269,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         );
       })
       .catch((error: unknown) => {
+        // Nothing heard, or nothing could be: the take has no entry to go to.
+        letTakeGo();
         fail(error, { kind: 'idle' });
       });
-  }, [ask, dependencies, fail, hearVoice]);
+  }, [ask, dependencies, fail, hearVoice, letTakeGo]);
 
   const startRecording = useCallback(() => {
     if (!withinDailyLimit()) {
@@ -1509,7 +1524,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         .then(async () => {
           dependencies.haptics.success();
 
-          takeUri.current = null;
+          letTakeGo();
           measureVoices();
           writeEcho(draft.id);
 
@@ -1529,7 +1544,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           fail(error, backTo);
         });
     },
-    [dependencies, fail, measureVoices, noteReviewMoment, writeEcho],
+    [dependencies, fail, letTakeGo, measureVoices, noteReviewMoment, writeEcho],
   );
 
   const confirm = useCallback(() => {

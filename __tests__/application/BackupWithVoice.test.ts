@@ -9,6 +9,7 @@ import type {
   PickedFile,
   WrittenBackup,
 } from '@/domain/ports/IBackupArchive';
+import type { IFilePicker } from '@/domain/ports/IFilePicker';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
 import { InMemoryMoodEntryRepository } from '@/infrastructure/persistence/InMemoryMoodEntryRepository';
@@ -58,6 +59,23 @@ class FakeBackupArchive implements IBackupArchive {
 
   close(): Promise<void> {
     this.closed += 1;
+
+    return Promise.resolve();
+  }
+}
+
+/** Hands over one file, or nothing when the person closes the picker, and notes what came back. */
+class FakeFilePicker implements IFilePicker {
+  readonly discarded: PickedFile[] = [];
+
+  constructor(private readonly picked: PickedFile | null) {}
+
+  pickFile(): Promise<PickedFile | null> {
+    return Promise.resolve(this.picked);
+  }
+
+  discard(file: PickedFile): Promise<void> {
+    this.discarded.push(file);
 
     return Promise.resolve();
   }
@@ -164,9 +182,15 @@ describe('restoring with the voice', () => {
 
   async function restore(
     archive: FakeBackupArchive,
-    options: { keepRecordings?: boolean; heard?: Record<string, string>; refused?: string[] } = {},
+    options: {
+      keepRecordings?: boolean;
+      heard?: Record<string, string>;
+      refused?: string[];
+      picker?: FakeFilePicker;
+    } = {},
   ) {
     const repository = await journalOf([alreadyHere]);
+    const picker = options.picker ?? new FakeFilePicker(FILE);
     const recordings = new PickyRecordingStore();
 
     for (const id of options.refused ?? []) {
@@ -182,10 +206,11 @@ describe('restoring with the voice', () => {
       repository,
       recordings,
       archive,
+      picker,
     );
-    const outcome = await useCase.execute(FILE, options.keepRecordings ?? true);
+    const outcome = await useCase.execute(options.keepRecordings ?? true);
 
-    return { outcome, recordings };
+    return { outcome, recordings, picker };
   }
 
   function archiveWith(ids: readonly string[]): FakeBackupArchive {
@@ -212,7 +237,7 @@ describe('restoring with the voice', () => {
 
     const { outcome, recordings } = await restore(archive, { keepRecordings: false });
 
-    expect(outcome.recordings).toBe(0);
+    expect(outcome?.recordings).toBe(0);
     expect(recordings.kept.size).toBe(0);
     expect(archive.closed).toBe(1);
   });
@@ -224,7 +249,7 @@ describe('restoring with the voice', () => {
       heard: { 'already-here': 'file:///rec/already-here.wav' },
     });
 
-    expect(outcome.recordings).toBe(0);
+    expect(outcome?.recordings).toBe(0);
     expect(recordings.kept.get('already-here')).toBe('file:///rec/already-here.wav');
   });
 
@@ -234,7 +259,7 @@ describe('restoring with the voice', () => {
 
     const { outcome, recordings } = await restore(archive);
 
-    expect(outcome.recordings).toBe(1);
+    expect(outcome?.recordings).toBe(1);
     expect(recordings.kept.get('last-year')).toBe('file:///unpacked/last-year.m4a');
   });
 
@@ -243,7 +268,7 @@ describe('restoring with the voice', () => {
 
     const { outcome } = await restore(archive);
 
-    expect(outcome.recordings).toBe(0);
+    expect(outcome?.recordings).toBe(0);
   });
 
   it('skips a recording it cannot keep and still restores the rest', async () => {
@@ -258,8 +283,39 @@ describe('restoring with the voice', () => {
   it('cleans up even when the file is not a backup', async () => {
     const archive = new FakeBackupArchive();
     archive.openFails = true;
+    const picker = new FakeFilePicker(FILE);
 
-    await expect(restore(archive)).rejects.toThrow('not a backup');
+    await expect(restore(archive, { picker })).rejects.toThrow('not a backup');
     expect(archive.closed).toBe(1);
+    expect(picker.discarded).toEqual([FILE]);
+  });
+
+  // The picker's copy holds the whole journal and its voice; once read, it must not linger.
+  it('gives the picked copy back once the journal is in', async () => {
+    const archive = archiveWith(['recent']);
+
+    const { picker } = await restore(archive);
+
+    expect(picker.discarded).toEqual([FILE]);
+  });
+
+  it('gives the picked copy back when keeping a recording fails', async () => {
+    const archive = archiveWith(['recent']);
+
+    const { picker } = await restore(archive, { refused: ['recent'] });
+
+    expect(picker.discarded).toEqual([FILE]);
+  });
+
+  it('opens nothing when the person closes the picker without choosing', async () => {
+    const archive = archiveWith(['recent']);
+
+    const { outcome, recordings, picker } = await restore(archive, { picker: new FakeFilePicker(null) });
+
+    expect(outcome).toBeNull();
+    expect(archive.openedFiles).toEqual([]);
+    expect(archive.closed).toBe(0);
+    expect(picker.discarded).toEqual([]);
+    expect(recordings.kept.size).toBe(0);
   });
 });

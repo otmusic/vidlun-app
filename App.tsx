@@ -132,6 +132,24 @@ function Vidlun(props: {
     };
   }, [container.feedback]);
 
+  /*
+   * Backups, picked copies and unkept takes an earlier session left in the
+   * cache go at launch, before anything new is made or recorded — the
+   * settings are still loading, so no take can have begun. Once per launch
+   * only: the container is built again when the language changes, and a
+   * backup or a take may be on its way by then.
+   */
+  const swept = useRef(false);
+
+  useEffect(() => {
+    if (swept.current) {
+      return;
+    }
+
+    swept.current = true;
+    void container.leftoverFiles.sweep();
+  }, [container.leftoverFiles]);
+
   const changeSettings = useCallback(
     (next: Settings) => {
       onSettingsChange(next);
@@ -429,13 +447,11 @@ function Vidlun(props: {
   const restoreJournal = useCallback(() => {
     void (async () => {
       try {
-        const file = await container.filePicker.pickFile();
+        const outcome = await container.restoreJournal.execute(keepRecordings);
 
-        if (file === null) {
+        if (outcome === null) {
           return;
         }
-
-        const outcome = await container.restoreJournal.execute(file, keepRecordings);
 
         Alert.alert(t('profile.restoredTitle'), restoredMessage(outcome, t));
       } catch {

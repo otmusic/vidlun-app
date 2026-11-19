@@ -36,6 +36,8 @@ function setup() {
   const scheduler = new ManualScheduler();
   const audioSession: string[] = [];
   const screen = new FakeScreen();
+  /** Each removed take's file, with how many times the recorder had stopped by then. */
+  const removed: { uri: string; afterStops: number }[] = [];
 
   const setRecordingMode = (allowed: boolean): Promise<void> => {
     audioSession.push(allowed ? 'enabled' : 'disabled');
@@ -43,12 +45,17 @@ function setup() {
     return Promise.resolve();
   };
 
+  const removeTake = (uri: string): void => {
+    removed.push({ uri, afterStops: recorder.stopCalls });
+  };
+
   return {
     recorder,
     scheduler,
     audioSession,
     screen,
-    subject: new ExpoAudioRecorder(recorder, setRecordingMode, scheduler, screen, OPTIONS),
+    removed,
+    subject: new ExpoAudioRecorder(recorder, setRecordingMode, scheduler, screen, removeTake, OPTIONS),
   };
 }
 
@@ -315,7 +322,14 @@ describe('the iOS audio session', () => {
     const scheduler = new ManualScheduler();
     const refused = new Error('Recording not allowed on iOS');
     const screen = new FakeScreen();
-    const subject = new ExpoAudioRecorder(recorder, () => Promise.reject(refused), scheduler, screen, OPTIONS);
+    const subject = new ExpoAudioRecorder(
+      recorder,
+      () => Promise.reject(refused),
+      scheduler,
+      screen,
+      () => undefined,
+      OPTIONS,
+    );
 
     await expect(subject.start()).rejects.toThrow(refused);
     expect(recorder.prepareCalls).toBe(0);
@@ -373,5 +387,69 @@ describe('ExpoAudioRecorder and the screen', () => {
     play(recorder, scheduler, SPEECH, 10);
     await take;
     expect(screen.awake).toBe(false);
+  });
+});
+
+/*
+ * Every take of one launch is recorded into the same file, and nothing in
+ * expo-audio removes it: a take that was not kept stayed in the cache for good.
+ */
+describe('ExpoAudioRecorder and the take on disk', () => {
+  it('removes a cancelled take once the recorder has stopped writing it', async () => {
+    const { removed, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    subject.cancel();
+
+    await expect(take).rejects.toThrow(RecordingCancelledError);
+    expect(removed).toEqual([{ uri: 'file:///take.m4a', afterStops: 1 }]);
+  });
+
+  it('leaves a finished take where it is until it is let go', async () => {
+    const { removed, subject } = setup();
+    const pending = subject.start();
+
+    await live();
+    subject.stop();
+
+    const take = await pending;
+
+    expect(removed).toEqual([]);
+
+    subject.discard(take.uri);
+
+    expect(removed.map((each) => each.uri)).toEqual([take.uri]);
+  });
+
+  it('never removes the file while a take is starting or recording into it', async () => {
+    const { removed, subject } = setup();
+    const take = subject.start();
+
+    subject.discard('file:///take.m4a');
+    await live();
+    subject.discard('file:///take.m4a');
+
+    expect(removed).toEqual([]);
+
+    subject.cancel();
+    await expect(take).rejects.toThrow(RecordingCancelledError);
+  });
+
+  it('leaves a cancelled take to be overwritten when the next take has already begun', async () => {
+    const { removed, subject } = setup();
+    const first = subject.start();
+
+    await live();
+    subject.cancel();
+
+    const second = subject.start();
+
+    await expect(first).rejects.toThrow(RecordingCancelledError);
+    await live();
+    expect(removed).toEqual([]);
+
+    subject.cancel();
+    await expect(second).rejects.toThrow(RecordingCancelledError);
   });
 });

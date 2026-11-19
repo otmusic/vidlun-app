@@ -19,8 +19,15 @@ export interface IAudioRecorder {
   pause(): Promise<void>;
   /** Goes on with a paused take, into the same recording. */
   resume(): Promise<void>;
-  /** Throws the take away. The promise from `start` rejects. */
+  /** Throws the take away, its file with it. The promise from `start` rejects. */
   cancel(): void;
+  /**
+   * Removes a finished take's file if it is still where the recorder left
+   * it: a take that was not kept, or whose keeping failed. A kept take has
+   * been moved away already, so nothing happens to it; nor while another
+   * take is under way.
+   */
+  discard(uri: string): void;
   /**
    * How loud the voice is right now, from 0 (silence) to 1 (as loud as speech
    * gets); 0 whenever nothing is being heard. The recording screen's bars move

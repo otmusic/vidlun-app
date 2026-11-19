@@ -41,8 +41,9 @@ export class ConfirmEntry {
 
     /*
      * Only now, and only here. Drafts are not persisted, so a take the user
-     * walked away from stays in the recorder's scratch space and is cleaned up
-     * with it — confirming is the moment the recording becomes theirs to keep.
+     * walked away from is never kept; the recorder removes it once its fate
+     * is settled (`IAudioRecorder.discard`) — confirming is the moment the
+     * recording becomes theirs to keep.
      *
      * Failing here must not cost them the entry. An entry without its audio is
      * complete; an entry lost because a file move failed is not.
