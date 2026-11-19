@@ -732,8 +732,11 @@ end-to-end with speech recognition disabled.
   Since then, by the owner's word, a few words on how it sounded ("quieter,
   slower") go into the card's suggestions and the echo (2026-11-12) and the
   monthly piece (2026-11-18, at most one plain sentence, never for a hard
-  entry); never the recording or the numbers. The statistics still show
-  nothing. BACKLOG §3ψψψ++++++++++++, §3ψψψ++++++++++++++++++.
+  entry); never the recording or the numbers. The entry page shows one
+  line under its player since 2026-11-19 ("Голос тихіший, ніж зазвичай",
+  or "too few entries yet" while fewer than five takes were heard); the
+  statistics still show nothing. BACKLOG §3ψψψ++++++++++++,
+  §3ψψψ++++++++++++++++++, §3ψψψ+++++++++++++++++++++.
 - Do not gate basic tracking or backups behind the paywall. Only AI narrative
   is paid.
   Changed by the owner on 2026-11-16: two entries a day are free, and more

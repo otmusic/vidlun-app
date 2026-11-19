@@ -25,6 +25,18 @@ export interface VoiceCue {
   readonly marks: readonly VoiceMark[];
 }
 
+/**
+ * What can honestly be said about a saved entry's voice (owner's word,
+ * 2026-11-19, the entry screen's voice line): how it compared with the
+ * person's usual voice; that too few takes were heard yet to know what usual
+ * is; or nothing — no recording, too little speech in it, nothing on this
+ * phone to measure with.
+ */
+export type VoiceHeard =
+  | { readonly kind: 'compared'; readonly cue: VoiceCue }
+  | { readonly kind: 'learning' }
+  | { readonly kind: 'silent' };
+
 /** Fewer takes than this and "usual" would be a guess. */
 export const ENOUGH_USUAL = 5;
 

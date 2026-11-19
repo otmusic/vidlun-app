@@ -1801,6 +1801,42 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++. The entry page, variant A: the voice in one line — 2026-11-19
+
+The owner found the entry page plain ("просто і скучно") and asked for a
+couple of variants and a way to show that the voice is analysed. Three
+mockups (A: the voice in one line under the player; B: a five-scale voice
+portrait against the usual voice; C: the entry as a conversation with
+Vidlun); the owner took **A**. The design draws no entry page, so A is the
+mockup, made from the app's own tokens.
+
+- **The voice line**, inside the player's card under a hairline, in the
+  accent (Vidlun speaking) beside the wave mark: "Голос тихіший і
+  повільніший, ніж зазвичай" / "Your voice is quieter and slower than
+  usual"; pauses join as their own clause ("…, і більше пауз"); "Голос як
+  зазвичай" when nothing stood out; "Ще замало записів, щоб порівняти голос
+  зі звичним" while fewer than five other takes were heard; nothing for a
+  take with no speech in it. Always the voice as the subject, never a
+  verdict on the person, never a number (`voiceLine`).
+- **Honest states** come from `DescribeVoice.hearEntry` → `VoiceHeard`
+  (`compared` / `learning` / `silent`), measured on opening if the reading
+  is missing; loaded beside the recording when an entry opens.
+- **The played part of the wave is in the entry's mood colour**
+  (`Playback.tint`), and the mood is a chip in its soft colour and its ink.
+  A had put it in one row with the emotions without captions; the owner
+  brought the captions back the same day ("потрібно пояснювати юзеру, що це
+  таке"): "Настрій" beside the mood chip, "Емоції" over the emotion chips.
+  Topics and the echo stay as they were.
+- Seen on the iPhone 18 Pro simulator with eight voiced test entries (the
+  newest made quieter): "Голос тихіший, ніж зазвичай", the green played bars,
+  the mood chip.
+- **Home's entry card lists its emotions as the journal's card does**
+  (owner's word, the same day): all of them under the sentence, in the one
+  blue, joined with " · ", in place of the first one alone at the top right
+  (`EntryRow`). A locked card keeps its lock at the top right.
+
+---
+
 ## 3ψψψ++++++++++++++++++++. A promo code: six months free — 2026-11-19
 
 By the owner's word ("секцію де можна вести купон і весь функціонал буде

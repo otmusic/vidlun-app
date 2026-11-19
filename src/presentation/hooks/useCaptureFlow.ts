@@ -43,7 +43,7 @@ import type { HearUnheardEntries } from '@/application/use-cases/HearUnheardEntr
 import type { MeasureVoices } from '@/application/use-cases/MeasureVoices';
 import type { DescribeVoice } from '@/application/use-cases/DescribeVoice';
 import type { WriteEcho } from '@/application/use-cases/WriteEcho';
-import type { VoiceCue } from '@/domain/value-objects/VoiceCue';
+import type { VoiceCue, VoiceHeard } from '@/domain/value-objects/VoiceCue';
 import type { AskForReview } from '@/application/use-cases/AskForReview';
 import type { CheckForUpdate } from '@/application/use-cases/CheckForUpdate';
 import type { KeepAffirmation } from '@/application/use-cases/KeepAffirmation';
@@ -228,6 +228,8 @@ export type CaptureStage =
       readonly entry: MoodEntry;
       /** Null while it is being looked up, and if there is none. */
       readonly recordingUri: string | null;
+      /** How the voice sounded against the usual one; null while it is being worked out. */
+      readonly voice: VoiceHeard | null;
     };
 
 /**
@@ -1746,8 +1748,19 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           kind: 'detail',
           entry,
           recordingUri: null,
+          voice: null,
           from: current.kind === 'history' ? 'history' : 'idle',
         }));
+
+        // Measured now if it never was; a voice that cannot be read says nothing.
+        void dependencies.describeVoice
+          .hearEntry(entry.id)
+          .catch((): VoiceHeard => ({ kind: 'silent' }))
+          .then((voice) => {
+            setStage((current) =>
+              current.kind === 'detail' && current.entry.id === entry.id ? { ...current, voice } : current,
+            );
+          });
 
         void dependencies.findRecording
           .execute(entry.id)
@@ -1762,7 +1775,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           })
           .catch(() => undefined);
       },
-      [dependencies.findRecording],
+      [dependencies.findRecording, dependencies.describeVoice],
     ),
     closeEntry: useCallback(() => {
       setStage((current) => (current.kind === 'detail' ? { kind: current.from } : current));

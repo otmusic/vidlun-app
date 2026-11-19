@@ -2,6 +2,7 @@ import { Alert, ScrollView, View } from 'react-native';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
+import type { VoiceHeard } from '@/domain/value-objects/VoiceCue';
 import { type Locale, type Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
@@ -9,14 +10,16 @@ import { BackButton } from '../components/BackButton';
 import { TapTarget } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { Icon, ICON_SIZE } from '../components/Icon';
-import { MoodLine } from '../components/MoodLine';
+import { moodKey } from '../components/MoodLine';
+import { toneFor } from '../components/emotionTone';
 import { Playback } from '../components/Playback';
 import { WaveMark } from '../components/WaveMark';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
-import { fonts } from '../theme/tokens';
+import { fonts, type Palette } from '../theme/tokens';
 import { audioNoteKey } from './audioNote';
+import { voiceLine } from './voiceLine';
 import { emotionLabel, emotionTint, emotionWordsIn } from '../components/emotionDisplay';
 
 
@@ -30,6 +33,8 @@ import { emotionLabel, emotionTint, emotionWordsIn } from '../components/emotion
 export function EntryDetailScreen(props: {
   readonly entry: MoodEntry;
   readonly recordingUri: string | null;
+  /** How the voice sounded against the usual one; null while it is being worked out. */
+  readonly voice: VoiceHeard | null;
   /** The Profile switch as it stands now; it decides what a missing recording is blamed on. */
   readonly keepRecordings: boolean;
   readonly vocabulary: EmotionVocabulary;
@@ -43,6 +48,8 @@ export function EntryDetailScreen(props: {
   const sides = useDrawnSides();
   const { entry, t } = props;
   const words = emotionWordsIn(entry.cleanTranscript, t);
+  const tone = entry.mood === null ? null : toneFor(entry.mood.value);
+  const heard = voiceLine(props.voice, t);
 
   const confirmDelete = (): void => {
     Alert.alert(t('delete.title'), t('delete.body'), [
@@ -88,10 +95,69 @@ export function EntryDetailScreen(props: {
       {props.recordingUri === null ? (
         <AudioNote text={t(audioNoteKey(entry.source, props.keepRecordings))} />
       ) : (
-        <Playback uri={props.recordingUri} t={t} />
+        /*
+         * Variant A (owner's word, 2026-11-19): the played part in the
+         * entry's mood, and under the player one line on how the voice
+         * sounded against its usual self — Vidlun speaking, so in the accent.
+         */
+        <Playback
+          uri={props.recordingUri}
+          t={t}
+          tint={tone === null ? undefined : theme.palette[tone]}
+          footer={
+            heard === null ? undefined : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <WaveMark width={22} color={theme.palette.accentInk} />
+                <AppText variant="secondary" color="accentInk" style={{ flexShrink: 1 }}>
+                  {heard}
+                </AppText>
+              </View>
+            )
+          }
+        />
       )}
 
-      {entry.mood === null ? null : <MoodLine value={entry.mood.value} t={t} />}
+      {/*
+        * Each under its own name, so the person knows what they are looking
+        * at (owner's word, 2026-11-19: the captions came back after variant A
+        * dropped them). The mood keeps A's chip, in its own colour.
+        */}
+      {entry.mood === null || tone === null ? null : (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <AppText variant="caption" color="inkFaint">
+            {t('compare.mood')}
+          </AppText>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 7,
+              borderRadius: 999,
+              paddingVertical: 7,
+              paddingHorizontal: 14,
+              backgroundColor: theme.palette[`${tone}Soft` as keyof Palette],
+            }}
+          >
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.palette[tone] }} />
+            <AppText variant="secondary" color={`${tone}Ink` as keyof Palette}>
+              {t(moodKey(entry.mood.value))}
+            </AppText>
+          </View>
+        </View>
+      )}
+
+      {entry.emotionIds.length === 0 ? null : (
+        <View style={{ gap: 10 }}>
+          <AppText variant="caption" color="inkFaint">
+            {t('entry.emotions')}
+          </AppText>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {entry.emotionIds.map((id) => (
+              <Chip key={id} label={emotionLabel(id, words)} color={emotionTint(id, props.vocabulary, theme)} />
+            ))}
+          </View>
+        </View>
+      )}
 
       {entry.emotionIds.length > 0 ? null : (
         /*
@@ -112,20 +178,6 @@ export function EntryDetailScreen(props: {
             {t('compare.lunaNone')}
           </AppText>
           <AppText variant="body">{t('compare.noneCopy')}</AppText>
-        </View>
-      )}
-
-      {/* Captioned like the topics under it (owner's word, 2026-10-12). */}
-      {entry.emotionIds.length === 0 ? null : (
-        <View style={{ gap: 10 }}>
-          <AppText variant="caption" color="inkFaint">
-            {t('entry.emotions')}
-          </AppText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {entry.emotionIds.map((id) => (
-              <Chip key={id} label={emotionLabel(id, words)} color={emotionTint(id, props.vocabulary, theme)} />
-            ))}
-          </View>
         </View>
       )}
 
@@ -168,7 +220,6 @@ export function EntryDetailScreen(props: {
         * the one they are still writing. It is the difference between a journal
         * that describes and a product that seems to be advising.
         */}
-
     </ScrollView>
   );
 }

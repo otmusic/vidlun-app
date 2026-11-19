@@ -127,3 +127,35 @@ describe('describing a month of saved voices', () => {
     expect((await subject.ofSaved(['quiet'])).size).toBe(0);
   });
 });
+
+describe('what an entry page can say about its voice', () => {
+  it('compares a heard entry once enough of the voice is known', async () => {
+    const { readings, subject } = await setup(-20, ORDINARY);
+
+    await readings.save('entry', reading(-35));
+
+    expect(await subject.hearEntry('entry')).toEqual({ kind: 'compared', cue: { marks: ['quieter'] } });
+  });
+
+  it('says it is still learning while too few takes were heard', async () => {
+    const { readings, subject } = await setup(-20, [-20, -21, -19]);
+
+    await readings.save('entry', reading(-35));
+
+    expect(await subject.hearEntry('entry')).toEqual({ kind: 'learning' });
+  });
+
+  it('says nothing about an entry with no recording, or none it could hear', async () => {
+    const { readings, subject } = await setup(-20, ORDINARY);
+    const silent = VoiceReading.from({ version: VoiceReading.VERSION, speechMs: 0 });
+
+    if (silent === null) {
+      throw new Error('not a reading');
+    }
+
+    await readings.save('quiet', silent);
+
+    expect(await subject.hearEntry('typed')).toEqual({ kind: 'silent' });
+    expect(await subject.hearEntry('quiet')).toEqual({ kind: 'silent' });
+  });
+});

@@ -1,7 +1,7 @@
 import type { IRecordingStore } from '../../domain/ports/IRecordingStore';
 import type { IVoiceAnalyzer } from '../../domain/ports/IVoiceAnalyzer';
 import type { IVoiceReadings } from '../../domain/ports/IVoiceReadings';
-import { compareVoice, type VoiceCue } from '../../domain/value-objects/VoiceCue';
+import { ENOUGH_USUAL, compareVoice, type VoiceCue, type VoiceHeard } from '../../domain/value-objects/VoiceCue';
 import type { VoiceReading } from '../../domain/value-objects/VoiceReading';
 
 /** The most recent takes are the person's voice as it is now. */
@@ -29,21 +29,52 @@ export class DescribeVoice {
 
   /** A saved entry, measured now if its reading is not there yet. */
   async ofEntry(entryId: string): Promise<VoiceCue | null> {
-    let reading = await this.readings.find(entryId);
+    const reading = await this.readingOf(entryId);
 
-    if (reading === null || reading.stale) {
-      const uri = await this.recordings.find(entryId);
-      const measured = uri === null ? null : await this.analyzer.analyze(uri);
+    return reading === null ? null : compareVoice(reading, await this.usual(entryId));
+  }
 
-      if (measured === null) {
-        return null;
-      }
+  /**
+   * A saved entry for its own page (owner's word, 2026-11-19): as `ofEntry`,
+   * but saying why there is nothing to compare — too few takes heard yet is
+   * worth telling the person, a take with no voice in it is not.
+   */
+  async hearEntry(entryId: string): Promise<VoiceHeard> {
+    const reading = await this.readingOf(entryId);
 
-      await this.readings.save(entryId, measured);
-      reading = measured;
+    if (reading === null || !reading.heard) {
+      return { kind: 'silent' };
     }
 
-    return compareVoice(reading, await this.usual(entryId));
+    const usual = await this.usual(entryId);
+
+    if (usual.filter((other) => other.heard).length < ENOUGH_USUAL) {
+      return { kind: 'learning' };
+    }
+
+    const cue = compareVoice(reading, usual);
+
+    return cue === null ? { kind: 'silent' } : { kind: 'compared', cue };
+  }
+
+  /** The entry's reading, measured now if it is missing or from an older analysis. */
+  private async readingOf(entryId: string): Promise<VoiceReading | null> {
+    const kept = await this.readings.find(entryId);
+
+    if (kept !== null && !kept.stale) {
+      return kept;
+    }
+
+    const uri = await this.recordings.find(entryId);
+    const measured = uri === null ? null : await this.analyzer.analyze(uri);
+
+    if (measured === null) {
+      return null;
+    }
+
+    await this.readings.save(entryId, measured);
+
+    return measured;
   }
 
   /**

@@ -31,6 +31,10 @@ export function Playback(props: {
    * border of its own.
    */
   readonly variant?: 'card' | 'inline';
+  /** The played bars' colour: the entry's mood on its own page. The accent where none is given. */
+  readonly tint?: string;
+  /** A line inside the card, under the player: how the voice sounded (owner's word, 2026-11-19). */
+  readonly footer?: React.ReactNode;
 }): React.JSX.Element {
   const theme = useTheme();
   const inline = props.variant === 'inline';
@@ -53,33 +57,8 @@ export function Playback(props: {
     player.play();
   };
 
-  return (
-    <View
-      style={
-        inline
-          ? {
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              borderRadius: 999,
-              backgroundColor: theme.palette.canvas,
-              paddingVertical: 6,
-              paddingLeft: 6,
-              paddingRight: 16,
-            }
-          : {
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 14,
-              borderWidth: 1,
-              borderColor: theme.palette.line,
-              borderRadius: 26,
-              backgroundColor: theme.palette.paper,
-              paddingVertical: 14,
-              paddingHorizontal: 16,
-            }
-      }
-    >
+  const controls = (
+    <>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={props.t(status.playing ? 'detail.pause' : 'detail.play')}
@@ -119,7 +98,7 @@ export function Playback(props: {
               height: inline ? Math.round(height * (28 / 34)) : height,
               borderRadius: 2,
               backgroundColor:
-                at / WAVE.length <= played ? theme.palette.accent : theme.palette.line,
+                at / WAVE.length <= played ? (props.tint ?? theme.palette.accent) : theme.palette.line,
             }}
           />
         ))}
@@ -132,6 +111,46 @@ export function Playback(props: {
       >
         {clock(status.playing ? status.currentTime : status.duration)}
       </AppText>
+    </>
+  );
+
+  if (inline) {
+    return (
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          borderRadius: 999,
+          backgroundColor: theme.palette.canvas,
+          paddingVertical: 6,
+          paddingLeft: 6,
+          paddingRight: 16,
+        }}
+      >
+        {controls}
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: theme.palette.line,
+        borderRadius: 26,
+        backgroundColor: theme.palette.paper,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        gap: 12,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>{controls}</View>
+      {props.footer === undefined ? null : (
+        <View style={{ borderTopWidth: 1, borderTopColor: theme.palette.line, paddingTop: 12 }}>
+          {props.footer}
+        </View>
+      )}
     </View>
   );
 }

@@ -535,6 +535,7 @@ function Stage(
         <EntryDetailScreen
           entry={flow.stage.entry}
           recordingUri={flow.stage.recordingUri}
+          voice={flow.stage.voice}
           keepRecordings={props.settings.keepRecordings}
           vocabulary={props.vocabulary}
           locale={props.locale}

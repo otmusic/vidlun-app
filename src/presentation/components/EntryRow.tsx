@@ -57,8 +57,8 @@ export function EntryRow(props: {
   const group = useContext(OpenRow);
   const swipeable = useRef<{ close: () => void } | null>(null);
   const { entry, t, onOpen, onDelete } = props;
-  const first = entry.emotionIds[0];
   const marker = moodTint(entry.mood?.value ?? null, theme);
+  const words = emotionWordsIn(entry.cleanTranscript, t);
 
   const confirm = (): void => {
     Alert.alert(t('delete.title'), t('delete.body'), [
@@ -129,18 +129,10 @@ export function EntryRow(props: {
           <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13 }}>
             {`${dayWordOf(entry.createdAt, props.today, props.locale, t)} · ${timeOf(entry.createdAt, props.locale)}`}
           </AppText>
-          {props.lockedHint !== undefined ? (
+          {props.lockedHint === undefined ? null : (
             <View style={{ marginLeft: 'auto' }}>
               <Icon name="lock" size={14} color="inkFaint" />
             </View>
-          ) : first === undefined ? null : (
-            <AppText
-              variant="secondary"
-              numberOfLines={1}
-              style={{ fontSize: 13, color: theme.palette.tag, marginLeft: 'auto', flexShrink: 1 }}
-            >
-              {emotionLabel(first, emotionWordsIn(entry.cleanTranscript, t))}
-            </AppText>
           )}
         </View>
         {/*
@@ -149,9 +141,21 @@ export function EntryRow(props: {
           * list size.
           */}
         {props.lockedHint === undefined ? (
-          <AppText variant="quote" numberOfLines={2} style={{ fontSize: 16, lineHeight: 23 }}>
-            {entry.cleanTranscript}
-          </AppText>
+          <View style={{ gap: 8 }}>
+            <AppText variant="quote" numberOfLines={2} style={{ fontSize: 16, lineHeight: 23 }}>
+              {entry.cleanTranscript}
+            </AppText>
+            {/*
+              * Every emotion under the sentence in the one blue, as the
+              * journal's card has it (owner's word, 2026-11-19), in place of
+              * the first one alone at the top right.
+              */}
+            {entry.emotionIds.length === 0 ? null : (
+              <AppText variant="secondary" style={{ color: theme.palette.tag }}>
+                {entry.emotionIds.map((id) => emotionLabel(id, words)).join(' · ')}
+              </AppText>
+            )}
+          </View>
         ) : (
           <LockedLine entryId={entry.id} />
         )}
