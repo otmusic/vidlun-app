@@ -340,6 +340,7 @@ function Stage(
           topics={flow.stage.draft?.contextTags ?? []}
           droppedTopics={flow.stage.droppedTopics}
           onToggleTopic={flow.toggleTopic}
+          onDiscard={flow.discardEntry}
         />
       );
     }

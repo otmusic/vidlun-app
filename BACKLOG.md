@@ -1801,6 +1801,31 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++++++. A way out of the card before saving — 2026-11-19
+
+The owner noticed that an entry, once heard, could not be left: the card
+had no way out but saving. "Давай додамо кнопку видалення" — on the card,
+before the entry is saved. The design is silent here (the 14 Sep export
+draws "Видалити" only on a saved entry's page), so the card takes the bin
+the app already uses there.
+
+- **The card has a red bin at the top right**, `trash-2` in `danger`, the
+  same control as a saved entry's page (owner's word, 2026-10-01 there).
+  It asks first in the same words — "Видалити цей запис?", "Залишити" /
+  "Видалити" — so no new copy. 22pt down to the words, as from the back
+  button on choosing together.
+- **`discardEntry`** goes home with nothing saved. The take's file is
+  removed at once (`letTakeGo`), and a "talk about yesterday" time is
+  forgotten. A typed entry goes the same way.
+- **A reading still on the way says nothing.** One that lands finds home
+  and changes nothing (`whenAnalysisLands` only touches a card). One that
+  fails used to say "no network" whatever the stage; a count of cards put
+  up (`cardsAsked`) now keeps that toast for the card it was asked for.
+- Choosing together keeps its back button: the bin is one step back, on the
+  card.
+
+---
+
 ## 3ψψψ++++++++++++++++++++++++. A call no longer leaves the take deaf — 2026-11-19
 
 The owner rang the phone mid-take: the recording screen went on as if

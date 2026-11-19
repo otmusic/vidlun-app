@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 
 import type { Emotion } from '@/domain/entities/Emotion';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
@@ -7,12 +7,13 @@ import { MoodEntry } from '@/domain/entities/MoodEntry';
 import { type Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
-import { Button } from '../components/Button';
+import { Button, TapTarget } from '../components/Button';
 import { Card } from '../components/Card';
 import { Chip } from '../components/Chip';
 import { EmotionShelf } from '../components/EmotionPicker';
 import { emotionLabel, emotionTint, emotionWordsIn, idForTypedWord } from '../components/emotionDisplay';
 import { FixWording } from '../components/FixWording';
+import { Icon, ICON_SIZE } from '../components/Icon';
 import { moodKey } from '../components/MoodLine';
 import { MoodScale } from '../components/MoodScale';
 import { toneFor } from '../components/emotionTone';
@@ -59,6 +60,8 @@ export function TurnScreen(props: {
   /** The topics taken off the card, still shown so the same tap puts one back. */
   readonly droppedTopics: readonly string[];
   readonly onToggleTopic: (tag: string) => void;
+  /** Throws the entry away unsaved, once the person has said yes. */
+  readonly onDiscard: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
   // The words beside the sentence are in the language it was said in.
@@ -113,6 +116,13 @@ export function TurnScreen(props: {
     }
   }, [after, chosen, onNext, onTogether]);
 
+  const confirmDiscard = (): void => {
+    Alert.alert(props.t('delete.title'), props.t('delete.body'), [
+      { text: props.t('delete.cancel'), style: 'cancel' },
+      { text: props.t('delete.confirm'), style: 'destructive', onPress: props.onDiscard },
+    ]);
+  };
+
   /** A word still being typed is part of the answer, so it goes in first. */
   const go = (to: Onward): void => {
     const added = commit();
@@ -138,6 +148,18 @@ export function TurnScreen(props: {
         gap: theme.spacing.md,
       }}
     >
+      {/*
+        * The way out of an entry not yet saved (owner's word, 2026-11-19):
+        * the same red bin as a saved entry's page, and it asks first in the
+        * same words. Nothing of the entry is kept, the voice included.
+        */}
+      {/* 22pt down to the words, as from the back button on choosing together. */}
+      <View style={{ alignItems: 'flex-end', marginBottom: 22 - theme.spacing.md }}>
+        <TapTarget onPress={confirmDiscard} accessibilityLabel={props.t('detail.delete')}>
+          <Icon name="trash-2" size={ICON_SIZE.action} color="danger" />
+        </TapTarget>
+      </View>
+
       {/*
         * The one repair only the speaker can make, as a button of its own
         * under the words rather than a pill inside them (owner's word,

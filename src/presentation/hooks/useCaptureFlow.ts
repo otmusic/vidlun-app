@@ -377,6 +377,11 @@ export interface CaptureFlow {
   readonly keepChosenTogether: () => void;
   /** From choosing together back to the question card, as it was. */
   readonly backToCard: () => void;
+  /**
+   * Throws away the entry on the card before it was ever saved: its words,
+   * its take and Vidlun's reading of it, landed or still on the way. Home.
+   */
+  readonly discardEntry: () => void;
   readonly confirm: () => void;
   readonly backHome: () => void;
   /** The saved screen's way out: home, and the rating request when it is due. */
@@ -1052,6 +1057,12 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * the person's own either way.
    */
   /*
+   * Counts the cards put up, and one thrown away. A reading answers only the
+   * card it was asked for: one that comes back for a card that is gone says
+   * nothing.
+   */
+  const cardsAsked = useRef(0);
+  /*
    * How this card's words become a draft, kept so a corrected transcript can
    * be re-read the same way the original was — voice stays voice and typed
    * stays typed without the stage having to know which it is holding.
@@ -1130,6 +1141,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       unheard: (words: Spoken) => MoodEntry,
     ) => {
       rebuild.current = { heard: build, unheard };
+      cardsAsked.current += 1;
+
+      const thisCard = cardsAsked.current;
 
       /*
        * Always asked: the question is no longer a setting (owner's word,
@@ -1157,6 +1171,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           );
         })
         .catch(() => {
+          // A card thrown away has no entry left to say "no network" about.
+          if (cardsAsked.current !== thisCard) {
+            return;
+          }
+
           /*
            * Vidlun could not listen — no network, or none fast enough. The
            * words are not lost for it: the card goes on with the person's
@@ -1918,6 +1937,20 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         current.kind === 'comparing' ? { ...current.card, draft: current.proposed } : current,
       );
     }, []),
+    /*
+     * The way out of an entry not yet saved (owner's word, 2026-11-19). The
+     * card is not saved, so there is nothing to delete but the take: its file
+     * goes now rather than waiting in the recorder's scratch space. A reading
+     * still on the way lands on home and changes nothing there, and if it
+     * fails it says nothing either — the entry it was for is gone.
+     */
+    discardEntry: useCallback(() => {
+      cardsAsked.current += 1;
+      backfillAt.current = null;
+      letTakeGo();
+      setStage({ kind: 'idle' });
+      reloadHome();
+    }, [letTakeGo, reloadHome]),
     openSettings: useCallback(() => {
       setStage({ kind: 'settings' });
     }, []),
