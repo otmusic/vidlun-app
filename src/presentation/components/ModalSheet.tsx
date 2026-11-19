@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Modal, Pressable, View } from 'react-native';
 
-import { useDrawnSides } from '../hooks/useDrawnSides';
+import { useColumnSurface } from '../hooks/useColumn';
 import { useTheme } from '../theme/ThemeProvider';
 import { TapTarget } from './Button';
 import { Icon, ICON_SIZE } from './Icon';
@@ -26,7 +26,8 @@ export function ModalSheet(props: {
   readonly children: React.ReactNode;
 }): React.JSX.Element {
   const theme = useTheme();
-  const sides = useDrawnSides(20);
+  // The card is the column on a wide window, not a strip across all of it.
+  const sides = useColumnSurface(20);
   /* Zero is below the screen, one is in place. */
   const rise = useRef(new Animated.Value(0)).current;
 

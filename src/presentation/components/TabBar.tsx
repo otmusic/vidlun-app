@@ -4,6 +4,7 @@ import { Circle, Path, Svg } from 'react-native-svg';
 
 import type { Translate, TranslationKey } from '@/i18n';
 
+import { useColumnSides } from '../hooks/useColumn';
 import { useTheme } from '../theme/ThemeProvider';
 import { Volume } from './Volume';
 
@@ -33,14 +34,16 @@ export function TabBar(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const column = useColumnSides();
 
   return (
     <View
       style={{
         position: 'absolute',
-        // 14 from the edge in the drawing; iPhone Duo keeps one side for the status bar.
-        left: 14 + insets.left,
-        right: 14 + insets.right,
+        // 14 from the edge in the drawing; iPhone Duo keeps one side for the
+        // status bar, and a wide window keeps the bar in the content's column.
+        left: 14 + column.left,
+        right: 14 + column.right,
         // 26 in the drawing, on a 34pt home indicator; the same 8pt below it here.
         bottom: Math.max(12, insets.bottom - 8),
         height: 66,

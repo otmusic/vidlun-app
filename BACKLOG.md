@@ -1801,6 +1801,37 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++. iPhone Duo: checked, and the content in a column — 2026-11-18
+
+By the owner's word ("давай глянемо як наш застосунок буде під iPhone Duo"),
+on the iPhone Duo simulator (iOS 27.2) with build 60 and a demo journal.
+
+- **Apple's requirements were already met**: a launch screen
+  (SplashScreen storyboard), the scene life cycle (since 1.9.1),
+  `UIRequiresFullScreen` false, no `UIScreen.main`, orientation or idiom in
+  our Swift, and the React Native side reads the window through hooks that
+  follow it and keeps each side's safe area apart. Xcode's app-resizability
+  skill found nothing to migrate.
+- **Seen**: closed (466×678) as on a phone, the status bar along the right
+  side kept clear; open and half open (951×669) edge to edge, re-laid out
+  live as the hinge moves, nothing clipped, home scrolls. But the phone
+  layout stretched across ~880pt: wide day pills, a tab bar across the
+  whole screen, very long lines.
+- **The content in a centred column** (owner's choice of three: column,
+  a drawn wide layout, or leave it). `COLUMN_MAX_WIDTH` 600 in
+  `presentation/theme/column.ts`; `useDrawnSides` adds the space around the
+  column to each side (the larger of it and the safe area, never both), the
+  tab bar follows, and both sheets make their card the column
+  (`useColumnSurface`), so a sheet is not a strip across 951pt. Backgrounds
+  stay full bleed. A phone is untouched: under 600pt the margin is zero.
+  Seen on the open Duo: home, the journal and the filter sheet stand in the
+  middle; closed, nothing changed.
+- **Not done**: a wide layout of its own (needs the design first), and the
+  "Made for iPhone Duo" badge, which wants iPhone Duo screenshots in App
+  Store Connect besides the iOS 27.1+ SDK build.
+
+---
+
 ## 3ψψψ++++++++++++++++++. The month hears the voice — 2026-11-18
 
 By the owner's word: the voice analysis goes into the monthly piece, "how

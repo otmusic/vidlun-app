@@ -401,6 +401,12 @@ scale survives for gaps no drawing specifies.
 - Buttons: 18 above and below, 20 either side; a ghost button 14.
 - Primary action lives in the **bottom third** (thumb zone). Never at the top.
 - One primary button per screen; everything else is secondary or text.
+- **A wide window gets the phone layout in a centred column**, at most
+  `COLUMN_MAX_WIDTH` (600pt) across, backgrounds still full bleed (owner's
+  word, 2026-11-18, for the open iPhone Duo). Every side margin goes through
+  `useDrawnSides`, and a sheet's card through `useColumnSurface`, so nothing
+  stretches edge to edge on a 951pt screen. The design has no wide layout;
+  a real one is drawn before it is built.
 
 ### 7.4 Icons
 

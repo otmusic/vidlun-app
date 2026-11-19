@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import { useDrawnSides } from '../hooks/useDrawnSides';
+import { useColumnSurface } from '../hooks/useColumn';
 import { useTheme } from '../theme/ThemeProvider';
 
 /**
@@ -32,7 +32,8 @@ export function Sheet(props: {
   readonly children: React.ReactNode;
 }): React.JSX.Element | null {
   const theme = useTheme();
-  const sides = useDrawnSides(20);
+  // The card is the column on a wide window, not a strip across all of it.
+  const { marginLeft, marginRight, ...sides } = useColumnSurface(20);
   /* Zero is below the screen, one is in place. */
   const rise = useRef(new Animated.Value(0)).current;
 
@@ -104,6 +105,8 @@ export function Sheet(props: {
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             overflow: 'hidden',
+            marginLeft,
+            marginRight,
             transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [360, 0] }) }],
           }}
         >
