@@ -176,7 +176,15 @@ export type CaptureStage =
   /** The one thing sold, and what the store said about buying it. */
   | {
       readonly kind: 'subscription';
-      readonly plans: readonly Plan[];
+      /**
+       * Null while the store has not answered. An empty list is an answer —
+       * nothing to sell — and the two must never look alike: a wait drawn as
+       * "the store isn't responding" is a false error on the page that sells
+       * the app.
+       */
+      readonly plans: readonly Plan[] | null;
+      /** Which ask of the store the page waits on; a late answer to an earlier one is dropped. */
+      readonly ask: number;
       readonly outcome: PurchaseOutcome | null;
     }
   /**
@@ -713,6 +721,32 @@ export function whenMoodSet(current: CaptureStage, value: number): CaptureStage 
   return current.kind === 'turn' ? { ...current, mood: value } : current;
 }
 
+/**
+ * The subscription page as it opens, and as "try again" puts it back: waiting
+ * on the store, with nothing priced and nothing said about a purchase.
+ *
+ * Exported for the test, like `whenAnalysisLands`.
+ */
+export function whenPlansAsked(ask: number): CaptureStage {
+  return { kind: 'subscription', plans: null, ask, outcome: null };
+}
+
+/**
+ * Where the store's answer goes: onto the page that asked for it, and only if
+ * no newer ask has replaced it since. Leaving and coming back, or "try
+ * again", asks anew; an earlier answer landing after that — an empty one
+ * especially — would call a wait that is still running a quiet store.
+ *
+ * Exported for the test, like `whenAnalysisLands`.
+ */
+export function whenPlansArrive(
+  current: CaptureStage,
+  plans: readonly Plan[],
+  ask: number,
+): CaptureStage {
+  return current.kind === 'subscription' && current.ask === ask ? { ...current, plans } : current;
+}
+
 export function whenAnalysisFails(
   current: CaptureStage,
   draft: MoodEntry,
@@ -1159,15 +1193,20 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    */
   const backfillAt = useRef<Date | null>(null);
 
+  const plansAsked = useRef(0);
+
   const openSubscription = useCallback(() => {
-    setStage({ kind: 'subscription', plans: [], outcome: null });
+    plansAsked.current += 1;
+    const ask = plansAsked.current;
+
+    setStage(whenPlansAsked(ask));
 
     // Asked for every time the screen opens: prices move, and a price
     // remembered from last week is a price we would be quoting wrongly.
     void dependencies.purchases
       .plans()
       .then((plans) => {
-        setStage((current) => (current.kind === 'subscription' ? { ...current, plans } : current));
+        setStage((current) => whenPlansArrive(current, plans, ask));
       })
       .catch(fail);
   }, [dependencies.purchases, fail]);

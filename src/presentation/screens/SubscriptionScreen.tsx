@@ -11,7 +11,7 @@ import { RoundBack } from '../components/RoundBack';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
-import { planOnSale } from './planOnSale';
+import { subscriptionFace } from './subscriptionFace';
 
 /** Where "manage" goes. The store owns cancelling; we only point at it. */
 const APP_STORE_SUBSCRIPTIONS = 'https://apps.apple.com/account/subscriptions';
@@ -26,12 +26,14 @@ const APP_STORE_SUBSCRIPTIONS = 'https://apps.apple.com/account/subscriptions';
  */
 export function SubscriptionScreen(props: {
   readonly entitlement: Entitlement;
-  readonly plans: readonly Plan[];
+  /** Null while the store has not answered; empty when it has nothing to sell. */
+  readonly plans: readonly Plan[] | null;
   readonly outcome: PurchaseOutcome | null;
   readonly locale: Locale;
   readonly t: Translate;
   readonly onSubscribe: (planId: string) => void;
   readonly onRestore: () => void;
+  /** Apple's sheet for an offer code: six months free (owner's word, 2026-11-19). */
   readonly onDismissOutcome: () => void;
   /** Asks the store for the plans again, for when it was quiet the first time. */
   readonly onRetryPlans: () => void;
@@ -43,9 +45,8 @@ export function SubscriptionScreen(props: {
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
   const { t } = props;
-  // Trial or paid alike: both hold the thing, and both manage it in the store.
-  const owns = props.entitlement !== 'none';
-  const plan = planOnSale(props.plans);
+  const face = subscriptionFace(props.entitlement, props.plans);
+  const plan = face.kind === 'offer' ? face.plan : undefined;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.palette.canvas }}>
@@ -59,7 +60,7 @@ export function SubscriptionScreen(props: {
         </AppText>
         <Perks t={t} />
 
-        {owns ? (
+        {face.kind === 'owned' ? (
           <>
             <View
               style={{
@@ -90,11 +91,21 @@ export function SubscriptionScreen(props: {
               }}
             />
           </>
-        ) : plan === undefined ? (
+        ) : face.kind === 'asking' ? (
           /*
-           * Nothing priced means the store has nothing to sell — not
-           * configured, or unreachable. A card and a retry, because the
-           * person did nothing wrong and may simply try later.
+           * The store has not answered yet. Not the quiet card: a wait is
+           * not an error, and on a slow store it lasted long enough to read
+           * as one (2026-11-18). Restoring needs no price, so it stays.
+           */
+          <>
+            <PlanCardOutline />
+            <Quiet label={t('subs.restore')} onPress={props.onRestore} />
+          </>
+        ) : face.kind === 'quiet' ? (
+          /*
+           * The store answered with nothing to sell — not configured, or
+           * unreachable. A card and a retry, because the person did nothing
+           * wrong and may simply try later.
            */
           <>
             <View
@@ -118,14 +129,14 @@ export function SubscriptionScreen(props: {
           </>
         ) : (
           <>
-            <PlanCard plan={plan} locale={props.locale} t={t} />
+            <PlanCard plan={face.plan} locale={props.locale} t={t} />
             <AppText variant="secondary" color="inkFaint" style={{ marginTop: 14, marginBottom: 14 }}>
-              {noteOf(plan, t, props.locale)}
+              {noteOf(face.plan, t, props.locale)}
             </AppText>
             <Solid
-              label={buyLabel(plan, t, props.locale)}
+              label={buyLabel(face.plan, t, props.locale)}
               onPress={() => {
-                props.onSubscribe(plan.id);
+                props.onSubscribe(face.plan.id);
               }}
             />
             <Quiet label={t('subs.restore')} onPress={props.onRestore} />
@@ -311,6 +322,86 @@ function PlanCard(props: {
         </AppText>
       </View>
     </View>
+  );
+}
+
+/**
+ * The plan card's frame while the store has not answered: the same border,
+ * paper and padding, with bars where the name, the free days and the price
+ * will be, so the card keeps its size when they arrive. The design
+ * draws no such state; this is the owner's pick (2026-11-18). Still rather
+ * than breathing, like the bars the design puts on its locked cards, and with
+ * nothing in it to read, buy or retry. Hidden from VoiceOver, which would
+ * have nothing to read out.
+ */
+function PlanCardOutline(): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        borderWidth: 1,
+        borderColor: theme.palette.line,
+        backgroundColor: theme.palette.paper,
+        borderRadius: 22,
+        paddingVertical: 20,
+        paddingHorizontal: 22,
+      }}
+    >
+      {/* Each bar sits in a box the height of the line it stands for. */}
+      <View style={{ flex: 1, gap: 3 }}>
+        <Line height={24}>
+          <Bar height={14} width="58%" />
+        </Line>
+        <Line height={29} style={{ marginTop: 6 }}>
+          <Bar height={22} width="46%" radius={theme.radii.pill} />
+        </Line>
+      </View>
+      <View style={{ alignItems: 'flex-end', gap: 2 }}>
+        <Line height={28}>
+          <Bar height={18} width={64} />
+        </Line>
+        <Line height={18}>
+          <Bar height={11} width={52} />
+        </Line>
+      </View>
+    </View>
+  );
+}
+
+function Line(props: {
+  readonly height: number;
+  readonly style?: { readonly marginTop: number };
+  readonly children: React.ReactNode;
+}): React.JSX.Element {
+  return (
+    <View style={[{ height: props.height, justifyContent: 'center' }, props.style]}>
+      {props.children}
+    </View>
+  );
+}
+
+function Bar(props: {
+  readonly height: number;
+  readonly width: number | `${number}%`;
+  readonly radius?: number;
+}): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <View
+      style={{
+        height: props.height,
+        width: props.width,
+        borderRadius: props.radius ?? props.height / 2,
+        backgroundColor: theme.palette.skeleton,
+      }}
+    />
   );
 }
 
