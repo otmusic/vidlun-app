@@ -56,6 +56,8 @@ export interface CaptureFlowScreenProps {
   readonly backupProgress: BackupProgress | null;
   /** The readable export's progress while it runs; null otherwise. */
   readonly exportProgress: BackupProgress | null;
+  /** When a backup was last handed over; null before the first. */
+  readonly lastBackup: Date | null;
   readonly onRestore: () => void;
   /** Mails a note to support; rejects when it could not be delivered. */
   readonly onFeedback: (text: string) => Promise<void>;
@@ -414,6 +416,8 @@ function Stage(
           onExport={props.onExport}
           backupProgress={props.backupProgress}
           exportProgress={props.exportProgress}
+          lastBackup={props.lastBackup}
+          today={props.today}
           onRestore={props.onRestore}
           onWriteFeedback={props.onWriteFeedback}
           t={t}

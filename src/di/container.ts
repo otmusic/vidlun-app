@@ -38,6 +38,7 @@ import type { IReminders } from '../domain/ports/IReminders';
 import type { ITranscriptionService } from '../domain/ports/ITranscriptionService';
 import type { IFileSharer } from '../domain/ports/IFileSharer';
 import type { ILeftoverFiles } from '../domain/ports/ILeftoverFiles';
+import type { IBackupLedger } from '../domain/ports/IBackupLedger';
 import { ExportJournal } from '../application/use-cases/ExportJournal';
 import { ExportReadableJournal } from '../application/use-cases/ExportReadableJournal';
 import { GetMonthSummary } from '../application/use-cases/GetMonthSummary';
@@ -102,6 +103,7 @@ import { CreateUnheardEntry } from '../application/use-cases/CreateUnheardEntry'
 import { HearUnheardEntries } from '../application/use-cases/HearUnheardEntries';
 import type { IUnheardEntries } from '../domain/ports/IUnheardEntries';
 import { AsyncStorageUnheardEntries } from '../infrastructure/persistence/AsyncStorageUnheardEntries';
+import { AsyncStorageBackupLedger } from '../infrastructure/persistence/AsyncStorageBackupLedger';
 import { MeasureVoices } from '../application/use-cases/MeasureVoices';
 import { AsyncStorageVoiceReadings } from '../infrastructure/persistence/AsyncStorageVoiceReadings';
 import { NativeVoiceAnalyzer } from '../infrastructure/voice/NativeVoiceAnalyzer';
@@ -180,6 +182,8 @@ export interface Container {
   readonly fileSharer: IFileSharer;
   /** Backups and picked copies an earlier session left in the cache. */
   readonly leftoverFiles: ILeftoverFiles;
+  /** When the last backup was handed over, for the profile's line. */
+  readonly backupLedger: IBackupLedger;
   readonly microphonePermission: IMicrophonePermission;
   readonly haptics: IHaptics;
   readonly vocabulary: EmotionVocabulary;
@@ -422,6 +426,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     ),
     fileSharer: new ShareSheetFileSharer(),
     leftoverFiles: new CacheLeftovers(),
+    backupLedger: new AsyncStorageBackupLedger(AsyncStorage),
     microphonePermission: new ExpoMicrophonePermission({
       getRecordingPermissionsAsync,
       requestRecordingPermissionsAsync,

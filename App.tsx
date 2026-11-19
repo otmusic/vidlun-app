@@ -376,6 +376,19 @@ function Vidlun(props: {
   const [backupProgress, setBackupProgress] = useState<BackupProgress | null>(null);
   const backingUp = useRef(false);
 
+  /*
+   * The day of the last backup handed over, for the profile's line (owner's
+   * word, 2026-11-19). A sheet closed without sharing leaves it as it was.
+   */
+  const [lastBackup, setLastBackup] = useState<Date | null>(null);
+
+  useEffect(() => {
+    void container.backupLedger
+      .last()
+      .then(setLastBackup)
+      .catch(() => undefined);
+  }, [container.backupLedger]);
+
   const backUp = useCallback(() => {
     if (backingUp.current) {
       return;
@@ -398,7 +411,12 @@ function Vidlun(props: {
           return;
         }
 
-        await container.fileSharer.shareFile(backup.uri);
+        if (await container.fileSharer.shareFile(backup.uri)) {
+          const at = container.clock.now();
+
+          setLastBackup(at);
+          await container.backupLedger.record(at);
+        }
       } catch {
         setBackupProgress(null);
         Alert.alert(t('profile.backupFailedTitle'), t('profile.backupFailedBody'));
@@ -605,6 +623,7 @@ function Vidlun(props: {
       onExport={exportJournal}
       backupProgress={backupProgress}
       exportProgress={exportProgress}
+      lastBackup={lastBackup}
       onRestore={restoreJournal}
       onFeedback={(text) => container.feedback.send(text)}
       inUkraine={container.inUkraine}

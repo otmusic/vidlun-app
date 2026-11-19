@@ -1801,6 +1801,32 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++++++++. The day of the last backup — 2026-11-19
+
+Step 5 of the competitor plan: Daylio's worst reviews are about lost voice
+recordings, from people who never knew when their last copy was. Designed
+first, on the canvas's "Дата копії (новий)" page; the owner chose variant A
+and kept the iCloud line.
+
+- **The backup row's line becomes the day** once a backup has been handed
+  over: «Остання копія: 12 листопада.» ("Last backup: November 12."),
+  «сьогодні» / «вчора» for the last two days, the year only when it is not
+  this one (`backupWhen`, added by hand in Ukrainian so the line does not
+  end in "р.."). Before the first backup the line is as it was. Same grey
+  however long ago: no reminder, no colour, nothing that reads as a
+  reproach. Variant B ("Відтоді 5 нових записів") was not taken.
+- **Only a backup the share sheet handed over counts**
+  (`Share.sharedAction`); a sheet closed without sharing leaves the day as
+  it was. `IBackupLedger` / `AsyncStorageBackupLedger`, key
+  `vidlun.lastBackup`, an ISO string.
+- **Under the data card, one quiet line** (`Section`'s new `footer`):
+  «Якщо на iPhone увімкнено резервне копіювання iCloud, записи й аудіо
+  також потрапляють у копію телефона.» — what the privacy policy's §4
+  already says.
+- 8 tests (`backupWhen`, the ledger).
+
+---
+
 ## 3ψψψ++++++++++++++++++++++++++. The readable export, with the voice — 2026-11-19
 
 Step 4 of the competitor plan (`reports/`, not committed): the competitors

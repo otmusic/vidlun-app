@@ -5,7 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import { affirmationFrequencyFor, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
 import type { AffirmationFrequency } from '@/domain/ports/IAffirmationReminders';
 import type { Settings, ThemeChoice } from '@/domain/ports/ISettings';
-import type { Translate, TranslationKey } from '@/i18n';
+import type { Locale, Translate, TranslationKey } from '@/i18n';
 
 import { AppText } from '../components/AppText';
 import { Button } from '../components/Button';
@@ -14,6 +14,7 @@ import { ModalSheet, SheetClose } from '../components/ModalSheet';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
+import { backupWhen } from './backupWhen';
 
 /** The bar floats over this screen, so the last row needs room under it. */
 const BOTTOM_ROOM = 118;
@@ -72,6 +73,10 @@ export function ProfileScreen(props: {
   readonly backupProgress: BackupProgress | null;
   /** How far a readable export in progress is; null while none runs. */
   readonly exportProgress: BackupProgress | null;
+  /** When a backup was last handed over; null before the first. */
+  readonly lastBackup: Date | null;
+  /** The clock's today, for saying "today" and "yesterday". */
+  readonly today: Date;
   readonly onRestore: () => void;
   /** Mails a note to support; rejects when it could not be delivered. */
   /** Opens the note-to-support sheet, which lives above the tabs rather than in here. */
@@ -193,10 +198,16 @@ export function ProfileScreen(props: {
         the settings screen must not tell. The card wears the drawing's
         shape — rows with pill actions — around what actually exists.
       */}
-      <Section>
+      {/*
+        Under the card, one quiet line on the phone's own iCloud backup
+        (owner's word, 2026-11-19): it carries the journal and the voice too,
+        as the privacy policy's §4 says, and someone counting their copies
+        should know it is there.
+      */}
+      <Section footer={t('profile.backupICloud')}>
         <Row
           title={t('profile.backup')}
-          hint={backupHint(props.backupProgress, t)}
+          hint={backupHint(props.backupProgress, props.lastBackup, props.today, settings.locale, t)}
           onPress={() => {
             props.onExport('backup');
           }}
@@ -592,7 +603,11 @@ function Pill(props: { readonly label: string }): React.JSX.Element {
  * "Plans", "Conversation" — and the owner took every caption off on
  * 2026-09-17: the rows name themselves.
  */
-function Section(props: { readonly children: React.ReactNode }): React.JSX.Element {
+function Section(props: {
+  readonly children: React.ReactNode;
+  /** A quiet line under the card, aligned with the rows' text. */
+  readonly footer?: string;
+}): React.JSX.Element {
   const theme = useTheme();
 
   return (
@@ -609,6 +624,15 @@ function Section(props: { readonly children: React.ReactNode }): React.JSX.Eleme
       >
         {props.children}
       </View>
+      {props.footer === undefined ? null : (
+        <AppText
+          variant="secondary"
+          color="inkFaint"
+          style={{ fontSize: 13, lineHeight: 19, marginTop: 12, paddingHorizontal: 20 }}
+        >
+          {props.footer}
+        </AppText>
+      )}
     </View>
   );
 }
@@ -622,11 +646,21 @@ export interface BackupProgress {
 /**
  * The backup row's line: what it does, or — while a backup with its voice is
  * being packed (owner's word, 2026-11-18) — how far it has got, so a year of
- * recordings taking a while does not read as the app having stalled.
+ * recordings taking a while does not read as the app having stalled. Once a
+ * backup has been handed over, the line is its day instead (owner's word,
+ * 2026-11-19), in the same quiet grey however long ago it was.
  */
-function backupHint(progress: BackupProgress | null, t: Translate): string {
+function backupHint(
+  progress: BackupProgress | null,
+  lastBackup: Date | null,
+  today: Date,
+  locale: Locale,
+  t: Translate,
+): string {
   if (progress === null) {
-    return t('profile.backupHint');
+    return lastBackup === null
+      ? t('profile.backupHint')
+      : t('profile.backupLast', { when: backupWhen(lastBackup, today, locale, t) });
   }
 
   return progress.total === 0
