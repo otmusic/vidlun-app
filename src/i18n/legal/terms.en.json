@@ -2,7 +2,7 @@
   "title": "Vidlun Terms of Use",
   "blocks": [
     {
-      "text": "*Effective:* 18 November 2026"
+      "text": "*Effective:* 19 November 2026"
     },
     {
       "text": "*Provider:* the Vidlun developer, support@vidlun.app"
@@ -14,7 +14,7 @@
       "heading": "1. What Vidlun is"
     },
     {
-      "text": "A voice journal for feelings. You speak, the app transcribes on the phone itself, and a language model proposes names for what was said, writes a short echo about each entry and once a month writes a piece about your month."
+      "text": "A voice journal for feelings. You speak, the app transcribes on the phone itself, and a language model proposes names for what was said and once a month writes a piece about your month."
     },
     {
       "text": "Speech is recognised by Parakeet Ultra from Moondream, a further-trained version of NVIDIA's Parakeet TDT 0.6B v3. Both are released under the Creative Commons Attribution 4.0 licence (https://creativecommons.org/licenses/by/4.0/); the app carries Parakeet Ultra converted to another file format and compressed to 4 bits."

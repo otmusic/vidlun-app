@@ -158,7 +158,7 @@
         },
         {
           "q": "Хто бачить мої записи?",
-          "a": "Записи лежать тільки на твоєму телефоні. Щоб підказати емоції й написати відлуння, Claude від Anthropic отримує текст запису й кілька слів про те, як звучав голос порівняно зі звичним, — без самого запису й без імені. Ми цього не зберігаємо, і моделі на цьому не вчаться."
+          "a": "Записи лежать тільки на твоєму телефоні. Щоб підказати емоції, Claude від Anthropic отримує текст запису й кілька слів про те, як звучав голос порівняно зі звичним, — без самого запису й без імені. Ми цього не зберігаємо, і моделі на цьому не вчаться."
         },
         {
           "q": "Це терапія?",
@@ -432,7 +432,7 @@
         },
         {
           "q": "Who sees my entries?",
-          "a": "Your entries live only on your phone. To suggest emotions and write the echo, Claude by Anthropic gets the text of an entry and a few words on how your voice sounded compared with usual — never the recording, never your name. We don’t keep any of it, and it isn’t used to train AI models."
+          "a": "Your entries live only on your phone. To suggest emotions, Claude by Anthropic gets the text of an entry and a few words on how your voice sounded compared with usual — never the recording, never your name. We don’t keep any of it, and it isn’t used to train AI models."
         },
         {
           "q": "Is this therapy?",

@@ -1821,13 +1821,25 @@ ways — was the rarer case.
   for the files above). The shape worth trying then is the narrow one
   discussed: write only where the voice and the words go different ways,
   and say nothing otherwise.
-- **Still mentioning the echo, not changed:** the processing title
-  ("Складаю відлуння" / "Writing your echo"); the capture card's fixed
-  `compare.noneEcho` line under an "Відлуння" label when nothing was heard
-  (still gendered in Ukrainian); the privacy policy (what is sent for an
-  echo, and why), the terms (an echo about each entry), the site's privacy
-  FAQ, and the review notes drafted for 61. The policy now says more is
-  sent than is; the texts and a deploy wait for the owner's word.
+- **The texts that still named it, fixed the same day** (owner's word):
+  - The processing title is "Читаю твій запис" / "Reading your entry"
+    (it was the design's "Складаю відлуння"; the one before that,
+    "Читаю те, що ти сказав", showed a gender).
+  - The capture card no longer has the "Відлуння" panel under the words
+    when nothing was heard: the card above it already says so in
+    `compare.noneCopy`, and its fixed line was gendered ("Ти розповів, що
+    робив"). The panel for a draft's observation went with it — a draft
+    has carried none since 2026-10-30. `compare.echo` and
+    `compare.noneEcho` are gone from both locales.
+  - The terms (what the model does) and the privacy policy (what is sent,
+    and why) no longer mention the echo; both are effective from 19
+    November. The site's privacy FAQ the same. The in-app copies are
+    rebuilt (`build-legal.mjs`) and ship with the build; the web pages
+    are built but **not deployed**: 1.10 and 61 still write echoes, so
+    the pages go out when a build without the echo is released, or the
+    policy would say less is sent than the live app sends.
+  - The review notes for 62 drop the echo (scratchpad
+    `review-notes-62.txt`).
 
 ---
 

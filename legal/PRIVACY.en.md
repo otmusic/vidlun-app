@@ -1,6 +1,6 @@
 # Vidlun Privacy Policy
 
-**Effective:** 18 November 2026
+**Effective:** 19 November 2026
 
 **Data controller:** the Vidlun developer, support@vidlun.app
 
@@ -36,15 +36,14 @@ None of this is sent to us. Deleting the app destroys all of it.
 **What exactly.** The cleaned transcript of one entry. For a spoken entry, also a
 few words on how the voice sounded against your own usual voice, such as
 "quieter, slower" — words, never the recording and never the measurements
-themselves. For an entry's echo, also the mood and the emotions you chose. For
-the monthly piece: the date, the mood number, emotion codes, topics and the
-transcripts of a month's entries together, with the same few words on the
-voice for the spoken ones.
+themselves. For the monthly piece: the date, the mood number, emotion codes,
+topics and the transcripts of a month's entries together, with the same few
+words on the voice for the spoken ones.
 
 **Where to.** Through our Cloudflare Workers proxy to Anthropic PBC (USA), to
 the Claude API.
 
-**Why.** To propose names for feelings, write a short echo about an entry, and write the monthly piece. This is what the app is installed for.
+**Why.** To propose names for feelings and write the monthly piece. This is what the app is installed for.
 
 **Lawful basis** (GDPR Art. 6(1)(b)): performance of our contract with you.
 

@@ -1,6 +1,6 @@
 # Vidlun Terms of Use
 
-**Effective:** 18 November 2026
+**Effective:** 19 November 2026
 
 **Provider:** the Vidlun developer, support@vidlun.app
 
@@ -10,8 +10,8 @@ the app.
 ## 1. What Vidlun is
 
 A voice journal for feelings. You speak, the app transcribes on the phone
-itself, and a language model proposes names for what was said, writes a short
-echo about each entry and once a month writes a piece about your month.
+itself, and a language model proposes names for what was said and once a month
+writes a piece about your month.
 
 Speech is recognised by Parakeet Ultra from Moondream, a further-trained
 version of NVIDIA's Parakeet TDT 0.6B v3. Both are released under the Creative

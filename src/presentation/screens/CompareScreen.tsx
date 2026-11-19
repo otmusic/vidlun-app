@@ -12,7 +12,6 @@ import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { emotionLabel, emotionTint, emotionWordsIn, idForTypedWord } from '../components/emotionDisplay';
 import { OwnWordField } from '../components/OwnWordField';
-import { WaveMark } from '../components/WaveMark';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
@@ -183,36 +182,6 @@ export function CompareScreen(props: {
           )}
         </Row>
       </Block>
-
-      {heardNothing ? (
-        /*
-         * The observation would be about a feeling there was none of, so the
-         * drawing gives this state its own line instead.
-         */
-        <Block surface={theme.palette.panel}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-            <WaveMark width={26} color={theme.palette.lime} />
-            <AppText variant="caption" color="tileInk">
-              {props.t('compare.echo')}
-            </AppText>
-          </View>
-          <AppText variant="quote" color="onPanel">
-            {props.t('compare.noneEcho')}
-          </AppText>
-        </Block>
-      ) : props.draft.observation === null ? null : (
-        <Block surface={theme.palette.panel}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-            <WaveMark width={26} color={theme.palette.lime} />
-            <AppText variant="caption" color="tileInk">
-              {props.t('compare.echo')}
-            </AppText>
-          </View>
-          <AppText variant="quote" color="onPanel">
-            {props.draft.observation}
-          </AppText>
-        </Block>
-      )}
 
       {props.draft.contextTags.length > 0 ? (
         <View style={{ gap: 10, marginTop: 4 }}>
