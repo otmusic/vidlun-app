@@ -1,4 +1,4 @@
-import { compareVoice, ENOUGH_USUAL } from '@/domain/value-objects/VoiceCue';
+import { compareVoice, ENOUGH_USUAL, voicePortrait } from '@/domain/value-objects/VoiceCue';
 import { VoiceReading } from '@/domain/value-objects/VoiceReading';
 
 /** A take of this person's, with the measures given and the rest at their usual. */
@@ -71,5 +71,33 @@ describe('a voice against its usual self', () => {
 
   it('leaves out a measure the take could not hold', () => {
     expect(compareVoice(take({ pitchHz: null, pitchRangeSemitones: null }), USUAL)?.marks).toEqual([]);
+  });
+});
+
+describe('the voice portrait behind the line', () => {
+  it('places every measure against the usual band, in the order they are shown', () => {
+    const portrait = voicePortrait(take(), USUAL);
+
+    expect(portrait?.map((scale) => scale.measure)).toEqual(['loudness', 'pitch', 'liveliness', 'pace', 'pauses']);
+    for (const scale of portrait ?? []) {
+      expect(Math.abs(scale.away)).toBeLessThan(scale.usualWithin);
+      expect(scale.mark).toBeNull();
+    }
+  });
+
+  it('marks exactly what the line says, on the side it says', () => {
+    const quietSlow = take({ loudnessDb: -40, pace: 1.2 });
+    const portrait = voicePortrait(quietSlow, USUAL) ?? [];
+
+    expect(portrait.flatMap((scale) => (scale.mark === null ? [] : [scale.mark]))).toEqual(
+      compareVoice(quietSlow, USUAL)?.marks,
+    );
+    expect(portrait.find((scale) => scale.measure === 'loudness')?.away).toBeLessThan(-1.5);
+    expect(portrait.find((scale) => scale.measure === 'pace')?.away).toBeLessThan(-1);
+  });
+
+  it('leaves out a measure the take did not carry, and says nothing too early', () => {
+    expect(voicePortrait(take({ pitchHz: null }), USUAL)?.map((scale) => scale.measure)).not.toContain('pitch');
+    expect(voicePortrait(take(), USUAL.slice(0, ENOUGH_USUAL - 1))).toBeNull();
   });
 });

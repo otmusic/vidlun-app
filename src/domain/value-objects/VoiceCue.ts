@@ -33,14 +33,33 @@ export interface VoiceCue {
  * phone to measure with.
  */
 export type VoiceHeard =
-  | { readonly kind: 'compared'; readonly cue: VoiceCue }
+  | { readonly kind: 'compared'; readonly cue: VoiceCue; readonly portrait: readonly VoiceScale[] }
   | { readonly kind: 'learning' }
   | { readonly kind: 'silent' };
 
 /** Fewer takes than this and "usual" would be a guess. */
 export const ENOUGH_USUAL = 5;
 
+/** The five things a voice is compared on, in the order they are shown. */
+export type VoiceMeasure = 'loudness' | 'pitch' | 'liveliness' | 'pace' | 'pauses';
+
+/**
+ * One measure of a take against the person's usual voice, for the voice
+ * portrait (owner's word, 2026-11-19): how far from their usual middle it
+ * sits, in spreads of their own voice — negative is less, positive more —
+ * and how far either side still counts as usual. Never a number on screen;
+ * a place on a line beside a band.
+ */
+export interface VoiceScale {
+  readonly measure: VoiceMeasure;
+  readonly away: number;
+  readonly usualWithin: number;
+  /** The mark this take earned on the measure, or null when it sat within the usual band. */
+  readonly mark: VoiceMark | null;
+}
+
 interface Measure {
+  readonly measure: VoiceMeasure;
   readonly read: (reading: VoiceReading) => number | null;
   /** The smallest spread worth trusting, so a very steady voice does not mark every wobble. */
   readonly floor: number;
@@ -55,17 +74,32 @@ interface Measure {
  * as with the voice. Brightness is left out for the same reason, more so.
  */
 const MEASURES: readonly Measure[] = [
-  { read: (r) => r.loudnessDb, floor: 3, beyond: 1.5, below: 'quieter', above: 'louder' },
+  { measure: 'loudness', read: (r) => r.loudnessDb, floor: 3, beyond: 1.5, below: 'quieter', above: 'louder' },
   {
+    measure: 'pitch',
     read: (r) => (r.pitchHz === null ? null : 12 * Math.log2(r.pitchHz)),
     floor: 1,
     beyond: 1,
     below: 'lower',
     above: 'higher',
   },
-  { read: (r) => r.pitchRangeSemitones, floor: 1, beyond: 1, below: 'flatter', above: 'livelier' },
-  { read: (r) => r.pace, floor: 0.3, beyond: 1, below: 'slower', above: 'faster' },
-  { read: (r) => r.pauseShare, floor: 0.05, beyond: 1, below: 'fewer pauses', above: 'more pauses' },
+  {
+    measure: 'liveliness',
+    read: (r) => r.pitchRangeSemitones,
+    floor: 1,
+    beyond: 1,
+    below: 'flatter',
+    above: 'livelier',
+  },
+  { measure: 'pace', read: (r) => r.pace, floor: 0.3, beyond: 1, below: 'slower', above: 'faster' },
+  {
+    measure: 'pauses',
+    read: (r) => r.pauseShare,
+    floor: 0.05,
+    beyond: 1,
+    below: 'fewer pauses',
+    above: 'more pauses',
+  },
 ];
 
 /**
@@ -74,35 +108,42 @@ const MEASURES: readonly Measure[] = [
  * a handful of earlier takes were heard.
  */
 export function compareVoice(take: VoiceReading, usual: readonly VoiceReading[]): VoiceCue | null {
+  const portrait = voicePortrait(take, usual);
+
+  return portrait === null
+    ? null
+    : { marks: portrait.flatMap((scale) => (scale.mark === null ? [] : [scale.mark])) };
+}
+
+/**
+ * The same comparison, measure by measure, for the voice portrait — so the
+ * line under the player and the scales behind it can never disagree. Null
+ * exactly when `compareVoice` is; a measure the take or the usual voice lacks
+ * is left out.
+ */
+export function voicePortrait(take: VoiceReading, usual: readonly VoiceReading[]): readonly VoiceScale[] | null {
   const heard = usual.filter((reading) => reading.heard);
 
   if (!take.heard || heard.length < ENOUGH_USUAL) {
     return null;
   }
 
-  const marks: VoiceMark[] = [];
-
-  for (const measure of MEASURES) {
+  return MEASURES.flatMap((measure) => {
     const value = measure.read(take);
     const values = heard.map(measure.read).filter((v): v is number => v !== null);
 
     if (value === null || values.length < ENOUGH_USUAL) {
-      continue;
+      return [];
     }
 
     const middle = median(values);
     // The median distance from the middle, scaled to read like a standard deviation.
     const spread = Math.max(1.4826 * median(values.map((v) => Math.abs(v - middle))), measure.floor);
     const away = (value - middle) / spread;
+    const mark = away <= -measure.beyond ? measure.below : away >= measure.beyond ? measure.above : null;
 
-    if (away <= -measure.beyond) {
-      marks.push(measure.below);
-    } else if (away >= measure.beyond) {
-      marks.push(measure.above);
-    }
-  }
-
-  return { marks };
+    return [{ measure: measure.measure, away, usualWithin: measure.beyond, mark }];
+  });
 }
 
 function median(values: readonly number[]): number {

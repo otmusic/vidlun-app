@@ -734,7 +734,9 @@ end-to-end with speech recognition disabled.
   monthly piece (2026-11-18, at most one plain sentence, never for a hard
   entry); never the recording or the numbers. The entry page shows one
   line under its player since 2026-11-19 ("Голос тихіший, ніж зазвичай",
-  or "too few entries yet" while fewer than five takes were heard); the
+  or "too few entries yet" while fewer than five takes were heard), and a
+  tap on it opens the voice portrait: five scales, each the person's usual
+  band with this take as a dot, a word per scale and no numbers; the
   statistics still show nothing. BACKLOG §3ψψψ++++++++++++,
   §3ψψψ++++++++++++++++++, §3ψψψ+++++++++++++++++++++.
 - Do not gate basic tracking or backups behind the paywall. Only AI narrative

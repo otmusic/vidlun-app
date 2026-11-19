@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Modal, Pressable, View } from 'react-native';
+import { Animated, Easing, Modal, Pressable, View, useWindowDimensions } from 'react-native';
 
 import { useColumnSurface } from '../hooks/useColumn';
 import { useTheme } from '../theme/ThemeProvider';
@@ -24,10 +24,13 @@ export function ModalSheet(props: {
   readonly closeLabel: string;
   readonly onClose: () => void;
   readonly children: React.ReactNode;
+  /** Nearly the whole screen rather than its content's height (the voice portrait, 2026-11-19). */
+  readonly tall?: boolean;
 }): React.JSX.Element {
   const theme = useTheme();
   // The card is the column on a wide window, not a strip across all of it.
   const sides = useColumnSurface(20);
+  const { height } = useWindowDimensions();
   /* Zero is below the screen, one is in place. */
   const rise = useRef(new Animated.Value(0)).current;
 
@@ -76,7 +79,16 @@ export function ModalSheet(props: {
             paddingTop: 24,
             ...sides,
             paddingBottom: 30,
-            transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [360, 0] }) }],
+            ...(props.tall === true ? { height: '90%' } : null),
+            // A tall card rises from below the screen, the whole of it.
+            transform: [
+              {
+                translateY: rise.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [props.tall === true ? height : 360, 0],
+                }),
+              },
+            ],
           }}
         >
           {props.children}

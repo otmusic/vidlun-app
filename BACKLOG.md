@@ -1834,6 +1834,19 @@ mockup, made from the app's own tokens.
   (owner's word, the same day): all of them under the sentence, in the one
   blue, joined with " · ", in place of the first one alone at the top right
   (`EntryRow`). A locked card keeps its lock at the top right.
+- **The voice portrait from variant B, behind the line** (owner's word, the
+  same day): a tap on the voice line (it gains a "›") opens a sheet rising
+  from the bottom over nearly the whole screen (`ModalSheet tall`, 90%):
+  "Як звучав голос", the line itself as the headline, a "твоє звичне"
+  legend, and five rows — loudness, pitch, liveliness, pace, pauses — each a
+  line with the person's usual band and this take as a dot (accent when
+  marked, grey within the band) and one word ("тихіше", "як завжди", …).
+  Under them only "Порівняно з твоїми попередніми записами." (owner's
+  wording). The scales come from the same computation as the line
+  (`voicePortrait`, which `compareVoice` now reads its marks from), so the
+  two can never disagree; the line spans three spreads either side of the
+  usual middle (`placeOnScale`, `usualBand`). No numbers on screen. While
+  too few takes were heard there is nothing to open, and the line is plain.
 
 ---
 

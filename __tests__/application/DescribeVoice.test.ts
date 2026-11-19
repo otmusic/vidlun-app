@@ -134,7 +134,14 @@ describe('what an entry page can say about its voice', () => {
 
     await readings.save('entry', reading(-35));
 
-    expect(await subject.hearEntry('entry')).toEqual({ kind: 'compared', cue: { marks: ['quieter'] } });
+    const heard = await subject.hearEntry('entry');
+
+    expect(heard).toMatchObject({ kind: 'compared', cue: { marks: ['quieter'] } });
+    // The scales behind the line say the same: loudness below the usual band, and marked.
+    expect(heard.kind === 'compared' ? heard.portrait : []).toEqual([
+      expect.objectContaining({ measure: 'loudness', mark: 'quieter', usualWithin: 1.5 }),
+    ]);
+    expect(heard.kind === 'compared' ? (heard.portrait[0]?.away ?? 0) : 0).toBeLessThan(-1.5);
   });
 
   it('says it is still learning while too few takes were heard', async () => {

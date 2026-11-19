@@ -1,7 +1,13 @@
 import type { IRecordingStore } from '../../domain/ports/IRecordingStore';
 import type { IVoiceAnalyzer } from '../../domain/ports/IVoiceAnalyzer';
 import type { IVoiceReadings } from '../../domain/ports/IVoiceReadings';
-import { ENOUGH_USUAL, compareVoice, type VoiceCue, type VoiceHeard } from '../../domain/value-objects/VoiceCue';
+import {
+  ENOUGH_USUAL,
+  compareVoice,
+  voicePortrait,
+  type VoiceCue,
+  type VoiceHeard,
+} from '../../domain/value-objects/VoiceCue';
 import type { VoiceReading } from '../../domain/value-objects/VoiceReading';
 
 /** The most recent takes are the person's voice as it is now. */
@@ -53,8 +59,9 @@ export class DescribeVoice {
     }
 
     const cue = compareVoice(reading, usual);
+    const portrait = voicePortrait(reading, usual);
 
-    return cue === null ? { kind: 'silent' } : { kind: 'compared', cue };
+    return cue === null || portrait === null ? { kind: 'silent' } : { kind: 'compared', cue, portrait };
   }
 
   /** The entry's reading, measured now if it is missing or from an older analysis. */

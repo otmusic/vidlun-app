@@ -6,7 +6,7 @@ const uk = createTranslator('uk');
 const en = createTranslator('en');
 
 function compared(...marks: VoiceMark[]) {
-  return { kind: 'compared' as const, cue: { marks } };
+  return { kind: 'compared' as const, cue: { marks }, portrait: [] };
 }
 
 describe('the voice line under an entry\'s player', () => {

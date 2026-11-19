@@ -1,4 +1,5 @@
-import { Alert, ScrollView, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
@@ -13,6 +14,7 @@ import { Icon, ICON_SIZE } from '../components/Icon';
 import { moodKey } from '../components/MoodLine';
 import { toneFor } from '../components/emotionTone';
 import { Playback } from '../components/Playback';
+import { VoicePortraitSheet } from '../components/VoicePortraitSheet';
 import { WaveMark } from '../components/WaveMark';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
@@ -50,6 +52,9 @@ export function EntryDetailScreen(props: {
   const words = emotionWordsIn(entry.cleanTranscript, t);
   const tone = entry.mood === null ? null : toneFor(entry.mood.value);
   const heard = voiceLine(props.voice, t);
+  // The scales behind the line, when there is something to set them against.
+  const portrait = props.voice?.kind === 'compared' && props.voice.portrait.length > 0 ? props.voice.portrait : null;
+  const [portraitOpen, setPortraitOpen] = useState(false);
 
   const confirmDelete = (): void => {
     Alert.alert(t('delete.title'), t('delete.body'), [
@@ -106,12 +111,29 @@ export function EntryDetailScreen(props: {
           tint={tone === null ? undefined : theme.palette[tone]}
           footer={
             heard === null ? undefined : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              /*
+               * A tap opens the voice portrait (owner's word, 2026-11-19);
+               * the chevron says the line goes somewhere. Without scales to
+               * show — too few takes yet — it is a line and nothing more.
+               */
+              <Pressable
+                disabled={portrait === null}
+                accessibilityRole={portrait === null ? 'text' : 'button'}
+                accessibilityHint={portrait === null ? undefined : t('voice.open')}
+                onPress={() => setPortraitOpen(true)}
+                hitSlop={8}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+              >
                 <WaveMark width={22} color={theme.palette.accentInk} />
                 <AppText variant="secondary" color="accentInk" style={{ flexShrink: 1 }}>
                   {heard}
                 </AppText>
-              </View>
+                {portrait === null ? null : (
+                  <AppText variant="secondary" color="accentInk" style={{ marginLeft: 'auto' }}>
+                    ›
+                  </AppText>
+                )}
+              </Pressable>
             )
           }
         />
@@ -220,6 +242,16 @@ export function EntryDetailScreen(props: {
         * the one they are still writing. It is the difference between a journal
         * that describes and a product that seems to be advising.
         */}
+
+      {portrait === null || heard === null ? null : (
+        <VoicePortraitSheet
+          open={portraitOpen}
+          line={heard}
+          portrait={portrait}
+          t={t}
+          onClose={() => setPortraitOpen(false)}
+        />
+      )}
     </ScrollView>
   );
 }
