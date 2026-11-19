@@ -1830,6 +1830,9 @@ back, and people ask for it (Video Diary's reviews; Apple Journal keeps
   (`CacheLeftovers`).
 - Copy: `undo.deleted`, `undo.action`, `undo.left` (the ring's spoken
   label). Tests: four new for `DeleteEntry`, one for `recordsOf`.
+- **The swipe's button is smaller** (owner's word, the same evening): the
+  entry page's own red bin glyph on the canvas, 44 pt to tap, instead of a
+  red block the height of the row.
 
 ---
 

@@ -7,6 +7,7 @@ import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import { type Locale, type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
+import { TapTarget } from './Button';
 import { dayWordOf } from './dayWord';
 import { Icon, ICON_SIZE } from './Icon';
 import { LockedLine } from './LockGlass';
@@ -81,23 +82,21 @@ export function EntryRow(props: {
         }
       }}
       renderRightActions={() => (
-        <Pressable
-          onPress={() => {
-            swipeable.current?.close();
-            onDelete(entry.id);
-          }}
-          accessibilityLabel={t('delete.confirm')}
-          style={{
-            width: 76,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.palette.danger,
-            borderRadius: theme.radii.card,
-            marginLeft: theme.spacing.sm,
-          }}
-        >
-          <Icon name="trash-2" size={ICON_SIZE.action} color="onAccent" />
-        </Pressable>
+        /*
+         * The entry page's own bin (owner's word, 2026-11-19): the red glyph
+         * alone on the canvas, no longer a red block the height of the row.
+         */
+        <View style={{ width: 56, alignItems: 'flex-end', justifyContent: 'center' }}>
+          <TapTarget
+            accessibilityLabel={t('delete.confirm')}
+            onPress={() => {
+              swipeable.current?.close();
+              onDelete(entry.id);
+            }}
+          >
+            <Icon name="trash-2" size={ICON_SIZE.action} color="danger" />
+          </TapTarget>
+        </View>
       )}
     >
       <Pressable
