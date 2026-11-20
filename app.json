@@ -2,7 +2,7 @@
   "expo": {
     "name": "Vidlun",
     "slug": "vidlun",
-    "version": "1.11",
+    "version": "1.12",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -16,7 +16,7 @@
         "NSFaceIDUsageDescription": "Face ID opens Vidlun when the journal lock is on, so nobody else holding your phone can read your entries.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "62",
+      "buildNumber": "63",
       "appleTeamId": "M3K99W5FFQ"
     },
     "android": {
