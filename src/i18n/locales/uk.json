@@ -170,7 +170,7 @@
   "profile.lockOnFace": "Щоденник відкривається через Face ID",
   "profile.lockOnTouch": "Щоденник відкривається через Touch ID",
   "profile.lockOnPasscode": "Щоденник відкривається через код-пароль",
-  "profile.lockOff": "Щоденник відкривається одразу",
+  "profile.lockOff": "Безпечний вхід",
   "profile.lockUnavailableTitle": "{{method}} недоступний",
   "profile.lockUnavailableBody": "На цьому телефоні не налаштовано ні {{method}}, ні код-пароль. Спершу ввімкни їх у Параметрах iOS.",
   "profile.lockUnavailablePasscodeBody": "На цьому телефоні не налаштовано код-пароль. Спершу ввімкни його в Параметрах iOS.",

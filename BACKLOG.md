@@ -1810,8 +1810,9 @@ with its key enlarged (88 pt, glyph 42).
 
 - **"Me"** has a row between "Зберігати аудіо" and the backup card, named by
   what opens the phone: Face ID, Touch ID or Код-пароль
-  (`IScreenLock.readiness`). Off it says «Щоденник відкривається одразу»; on,
-  «Щоденник відкривається через Face ID». The switch turns on only after one
+  (`IScreenLock.readiness`). Off it says «Безпечний вхід» (owner's word, the
+  same day, in place of «Щоденник відкривається одразу»; "Secure access" in
+  English); on, «Щоденник відкривається через Face ID». The switch turns on only after one
   successful unlock, and a phone with neither biometrics nor a passcode gets
   «Face ID недоступний» and the switch stays off.
 - **The door** is the splash's wordmark on the canvas and a round key at the

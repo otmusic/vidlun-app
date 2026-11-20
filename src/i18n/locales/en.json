@@ -170,7 +170,7 @@
   "profile.lockOnFace": "The journal opens with Face ID",
   "profile.lockOnTouch": "The journal opens with Touch ID",
   "profile.lockOnPasscode": "The journal opens with your passcode",
-  "profile.lockOff": "The journal opens right away",
+  "profile.lockOff": "Secure access",
   "profile.lockUnavailableTitle": "{{method}} is not available",
   "profile.lockUnavailableBody": "This phone has no {{method}} or passcode set up. Turn them on in iOS Settings first.",
   "profile.lockUnavailablePasscodeBody": "This phone has no passcode set up. Turn one on in iOS Settings first.",
