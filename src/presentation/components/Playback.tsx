@@ -1,4 +1,5 @@
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { useEffect, useRef } from 'react';
 import { Pressable, View } from 'react-native';
 import { Path, Svg } from 'react-native-svg';
 
@@ -35,12 +36,42 @@ export function Playback(props: {
   readonly tint?: string;
   /** A line inside the card, under the player: how the voice sounded (owner's word, 2026-11-19). */
   readonly footer?: React.ReactNode;
+  /**
+   * Where to stand before the first play, in milliseconds: the searched
+   * word's place, give or take (owner's word, 2026-11-20). Null starts at
+   * the beginning, as always.
+   */
+  readonly startAtMs?: number | null;
+  /** A quiet line right under the controls, saying where the player stands. */
+  readonly caption?: string;
 }): React.JSX.Element {
   const theme = useTheme();
   const inline = props.variant === 'inline';
   const player = useAudioPlayer(props.uri);
   const status = useAudioPlayerStatus(player);
   const played = status.duration > 0 ? status.currentTime / status.duration : 0;
+  const placedAt = useRef<number | null>(null);
+  const { startAtMs } = props;
+
+  /*
+   * Once the file is loaded, and once per place: a later play from the
+   * start is the person's own choice and is not undone.
+   */
+  useEffect(() => {
+    if (startAtMs === null || startAtMs === undefined || status.duration <= 0) {
+      return;
+    }
+
+    if (placedAt.current === startAtMs) {
+      return;
+    }
+
+    placedAt.current = startAtMs;
+    void player.seekTo(Math.min(startAtMs / 1000, Math.max(0, status.duration - 1)));
+  }, [player, startAtMs, status.duration]);
+
+  /* Standing somewhere other than the start, the clock says where. */
+  const placed = placedAt.current !== null && status.currentTime > 0;
 
   const toggle = (): void => {
     if (status.playing) {
@@ -109,7 +140,7 @@ export function Playback(props: {
         color="inkSoft"
         style={{ fontVariant: ['tabular-nums'], fontSize: inline ? 13 : undefined }}
       >
-        {clock(status.playing ? status.currentTime : status.duration)}
+        {clock(status.playing || placed ? status.currentTime : status.duration)}
       </AppText>
     </>
   );
@@ -146,6 +177,11 @@ export function Playback(props: {
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>{controls}</View>
+      {props.caption === undefined ? null : (
+        <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13, marginTop: -4 }}>
+          {props.caption}
+        </AppText>
+      )}
       {props.footer === undefined ? null : (
         <View style={{ borderTopWidth: 1, borderTopColor: theme.palette.line, paddingTop: 12 }}>
           {props.footer}

@@ -42,6 +42,8 @@ import type { CreateUnheardEntry } from '@/application/use-cases/CreateUnheardEn
 import type { HearUnheardEntries } from '@/application/use-cases/HearUnheardEntries';
 import type { MeasureVoices } from '@/application/use-cases/MeasureVoices';
 import type { DescribeVoice } from '@/application/use-cases/DescribeVoice';
+import type { FindSpokenMoment } from '@/application/use-cases/FindSpokenMoment';
+import { SearchQuery } from '@/domain/value-objects/SearchQuery';
 import type { VoiceCue, VoiceHeard } from '@/domain/value-objects/VoiceCue';
 import type { AskForReview } from '@/application/use-cases/AskForReview';
 import type { CheckForUpdate } from '@/application/use-cases/CheckForUpdate';
@@ -229,6 +231,13 @@ export type CaptureStage =
       readonly recordingUri: string | null;
       /** How the voice sounded against the usual one; null while it is being worked out. */
       readonly voice: VoiceHeard | null;
+      /** What the journal's search held when the entry was opened from it; null otherwise. */
+      readonly found: string | null;
+      /**
+       * Where in the recording the searched word is said, give or take, for
+       * the player to start from; null when there is no search or no telling.
+       */
+      readonly playFromMs: number | null;
     };
 
 /**
@@ -277,6 +286,7 @@ export interface CaptureDependencies {
   readonly hearUnheardEntries: HearUnheardEntries;
   readonly measureVoices: MeasureVoices;
   readonly describeVoice: DescribeVoice;
+  readonly findSpokenMoment: FindSpokenMoment;
   readonly microphonePermission: IMicrophonePermission;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
@@ -423,6 +433,9 @@ export interface CaptureFlow {
    * journal is opened from the bar (owner's word, 2026-10-13).
    */
   readonly journalFilter: readonly string[];
+  /** What is typed into the journal's search; empty shows every entry. */
+  readonly journalQuery: string;
+  readonly searchJournal: (typed: string) => void;
   readonly filterJournal: (emotionIds: readonly string[]) => void;
   /**
    * The handful of entries the journal was opened on from a pattern, or null.
@@ -433,7 +446,8 @@ export interface CaptureFlow {
   readonly clearJournalFocus: () => void;
   /** Leaves an open card for wherever it was opened from. */
   readonly closeEntry: () => void;
-  readonly openEntry: (entry: MoodEntry) => void;
+  /** `found` is the journal's search when the entry is opened from its results. */
+  readonly openEntry: (entry: MoodEntry, found?: string) => void;
   readonly openSettings: () => void;
   readonly openSubscription: () => void;
   readonly openLegal: (doc: LegalDocumentKind) => void;
@@ -783,6 +797,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
   const [recorded, setRecorded] = useState<ReadonlySet<string> | null>(null);
   const [journalFilter, setJournalFilter] = useState<readonly string[]>([]);
+  /*
+   * Kept in the flow like the filter, so it survives opening an entry and
+   * coming back, and cleared when the journal is opened from the bar.
+   */
+  const [journalQuery, setJournalQuery] = useState('');
   const [journalFocus, setJournalFocus] = useState<JournalFocus | null>(null);
   /*
    * The take behind the draft on screen, held only until it is confirmed or
@@ -1751,6 +1770,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     history,
     recorded,
     journalFilter,
+    journalQuery,
+    searchJournal: setJournalQuery,
     filterJournal: useCallback((emotionIds: readonly string[]) => {
       setJournalFocus(null);
       setJournalFilter(emotionIds);
@@ -1760,6 +1781,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       (focus: JournalFocus) => {
         setStage({ kind: 'history' });
         setJournalFilter([]);
+        setJournalQuery('');
         setJournalFocus(focus);
         void dependencies.getHistory.execute().then(setHistory).catch(fail);
         void dependencies.findRecordedEntries.execute().then(setRecorded).catch(() => undefined);
@@ -1770,13 +1792,17 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       setJournalFocus(null);
     }, []),
     openEntry: useCallback(
-      (entry: MoodEntry) => {
+      (entry: MoodEntry, found?: string) => {
+        const query = found === undefined ? null : SearchQuery.of(found);
+
         setStage((current) => ({
           kind: 'detail',
           entry,
           recordingUri: null,
           voice: null,
           from: current.kind === 'history' ? 'history' : 'idle',
+          found: query === null ? null : (found ?? null),
+          playFromMs: null,
         }));
 
         // Measured now if it never was; a voice that cannot be read says nothing.
@@ -1791,7 +1817,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
         void dependencies.findRecording
           .execute(entry.id)
-          .then((uri) => {
+          .then(async (uri) => {
             // Only if the same entry is still open: the lookup is quick, but
             // quick is not instant and people tap on.
             setStage((current) =>
@@ -1799,10 +1825,27 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
                 ? { ...current, recordingUri: uri }
                 : current,
             );
+
+            /*
+             * Opened from a search: where the word is said, so the player
+             * starts there (owner's word, 2026-11-20). Read from the file each
+             * time; nothing about it is stored.
+             */
+            if (uri === null || query === null) {
+              return;
+            }
+
+            const playFromMs = await dependencies.findSpokenMoment.execute(entry, uri, query);
+
+            setStage((current) =>
+              current.kind === 'detail' && current.entry.id === entry.id
+                ? { ...current, playFromMs }
+                : current,
+            );
           })
           .catch(() => undefined);
       },
-      [dependencies.findRecording, dependencies.describeVoice],
+      [dependencies.findRecording, dependencies.describeVoice, dependencies.findSpokenMoment],
     ),
     closeEntry: useCallback(() => {
       setStage((current) => (current.kind === 'detail' ? { kind: current.from } : current));
@@ -2094,6 +2137,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     openHistory: useCallback(() => {
       setStage({ kind: 'history' });
       setJournalFilter([]);
+      setJournalQuery('');
       setJournalFocus(null);
       void dependencies.getHistory.execute().then(setHistory).catch(fail);
       // A card without its icon until the files answer, rather than a guess.

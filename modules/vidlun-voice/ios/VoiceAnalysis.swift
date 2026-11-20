@@ -55,6 +55,26 @@ public enum VoiceAnalysis {
   static let enoughSpeechSeconds = 0.5
 
   public static func analyze(url: URL) throws -> VoiceMeasures {
+    guard let decoded = try read(url: url) else {
+      return VoiceMeasures()
+    }
+
+    return measure(samples: decoded.samples, rate: decoded.rate)
+  }
+
+  /// Where someone is speaking in the recording, as [from, to] pairs in
+  /// milliseconds: the measures' own test for speech, with a pause of a
+  /// quarter second or more between one stretch and the next.
+  public static func speechSpans(url: URL) throws -> [[Double]] {
+    guard let decoded = try read(url: url) else {
+      return []
+    }
+
+    return spans(samples: decoded.samples, rate: decoded.rate)
+  }
+
+  /// The recording's first channel, decoded, with its sample rate.
+  static func read(url: URL) throws -> (samples: [Float], rate: Double)? {
     let file = try AVAudioFile(forReading: url)
     let format = file.processingFormat
     let length = AVAudioFrameCount(file.length)
@@ -62,18 +82,61 @@ public enum VoiceAnalysis {
     guard length > 0,
       let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: length)
     else {
-      return VoiceMeasures()
+      return nil
     }
 
     try file.read(into: buffer)
 
     guard let channel = buffer.floatChannelData?[0] else {
-      return VoiceMeasures()
+      return nil
     }
 
-    let samples = Array(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+    return (Array(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength))), format.sampleRate)
+  }
 
-    return measure(samples: samples, rate: format.sampleRate)
+  public static func spans(samples raw: [Float], rate: Double) -> [[Double]] {
+    let frame = Int(rate * frameSeconds)
+    let hop = Int(rate * hopSeconds)
+
+    guard frame > 0, hop > 0, raw.count >= frame else {
+      return []
+    }
+
+    let samples = vDSP.add(-vDSP.mean(raw), raw)
+    let frames = (samples.count - frame) / hop + 1
+    var decibels = [Double](repeating: -120, count: frames)
+
+    samples.withUnsafeBufferPointer { all in
+      guard let base = all.baseAddress else { return }
+      for at in 0..<frames {
+        let rms = vDSP.rootMeanSquare(UnsafeBufferPointer(start: base + at * hop, count: frame))
+        decibels[at] = 20 * log10(max(Double(rms), 1e-6))
+      }
+    }
+
+    // The same line between speech and room as the measures draw.
+    let threshold = max(percentile(decibels, 0.1) + 12, -60)
+    let shortest = Int((pauseSeconds / hopSeconds).rounded())
+    let frameMs = hopSeconds * 1000
+    var found: [[Double]] = []
+    var opened: Int?
+    var lastSpoken = 0
+
+    for at in 0..<frames {
+      if decibels[at] > threshold {
+        if opened == nil { opened = at }
+        lastSpoken = at
+      } else if let start = opened, at - lastSpoken >= shortest {
+        found.append([Double(start) * frameMs, Double(lastSpoken + 1) * frameMs])
+        opened = nil
+      }
+    }
+
+    if let start = opened {
+      found.append([Double(start) * frameMs, Double(lastSpoken + 1) * frameMs])
+    }
+
+    return found
   }
 
   public static func measure(samples raw: [Float], rate: Double) -> VoiceMeasures {

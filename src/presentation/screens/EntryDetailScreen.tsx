@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
+import { SearchQuery } from '@/domain/value-objects/SearchQuery';
 import type { VoiceHeard } from '@/domain/value-objects/VoiceCue';
 import { type Locale, type Translate } from '@/i18n';
 
@@ -21,6 +22,7 @@ import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts, type Palette } from '../theme/tokens';
 import { audioNoteKey } from './audioNote';
+import { piecesOf } from './journalSearch';
 import { voiceLine } from './voiceLine';
 import { emotionLabel, emotionTint, emotionWordsIn } from '../components/emotionDisplay';
 
@@ -37,6 +39,13 @@ export function EntryDetailScreen(props: {
   readonly recordingUri: string | null;
   /** How the voice sounded against the usual one; null while it is being worked out. */
   readonly voice: VoiceHeard | null;
+  /**
+   * The search the entry was opened from (owner's word, 2026-11-20): its
+   * words are lit in the sentence. Null when it was opened any other way.
+   */
+  readonly found: string | null;
+  /** Where in the recording the searched word is said, give or take; null when unknown. */
+  readonly playFromMs: number | null;
   /** The Profile switch as it stands now; it decides what a missing recording is blamed on. */
   readonly keepRecordings: boolean;
   readonly vocabulary: EmotionVocabulary;
@@ -55,6 +64,10 @@ export function EntryDetailScreen(props: {
   // The scales behind the line, when there is something to set them against.
   const portrait = props.voice?.kind === 'compared' && props.voice.portrait.length > 0 ? props.voice.portrait : null;
   const [portraitOpen, setPortraitOpen] = useState(false);
+  const marks = props.found === null ? [] : (SearchQuery.of(props.found)?.matchesIn(entry.cleanTranscript) ?? []);
+  const firstFound = marks[0];
+  // The sentence sits inside the language's own quotation marks, which the lit words must not break.
+  const [quoteOpen, quoteClose] = t('common.quoted', { text: QUOTE_SLOT }).split(QUOTE_SLOT);
 
   return (
     <ScrollView
@@ -91,7 +104,21 @@ export function EntryDetailScreen(props: {
 
       {/* Read, not re-read: a saved entry's words are no longer corrected here (owner's word, 2026-10-01). */}
       <AppText variant="display" style={{ fontSize: 23, lineHeight: 31, marginBottom: 14 }}>
-        {t('common.quoted', { text: entry.cleanTranscript })}
+        {marks.length === 0
+          ? t('common.quoted', { text: entry.cleanTranscript })
+          : [
+              quoteOpen,
+              ...piecesOf(entry.cleanTranscript, marks).map((piece, at) =>
+                piece.found ? (
+                  <Text key={at} style={{ backgroundColor: theme.palette.accentSoft }}>
+                    {piece.text}
+                  </Text>
+                ) : (
+                  piece.text
+                ),
+              ),
+              quoteClose,
+            ]}
       </AppText>
 
       {props.recordingUri === null ? (
@@ -106,6 +133,14 @@ export function EntryDetailScreen(props: {
           uri={props.recordingUri}
           t={t}
           tint={tone === null ? undefined : theme.palette[tone]}
+          startAtMs={props.playFromMs}
+          caption={
+            props.playFromMs === null || firstFound === undefined
+              ? undefined
+              : t('search.playsFrom', {
+                  word: entry.cleanTranscript.slice(firstFound.start, firstFound.end),
+                })
+          }
           footer={
             heard === null ? undefined : (
               /*
@@ -237,6 +272,9 @@ export function EntryDetailScreen(props: {
     </ScrollView>
   );
 }
+
+/** A stand-in for the sentence, so the quotation marks can be split from around it. */
+const QUOTE_SLOT = '\u0000';
 
 /**
  * Where the player would have been, one quiet line on why there is none:

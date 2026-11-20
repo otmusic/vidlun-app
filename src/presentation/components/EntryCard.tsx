@@ -1,7 +1,8 @@
-import { Pressable, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
+import type { SearchQuery } from '@/domain/value-objects/SearchQuery';
 import { type Locale, type Translate } from '@/i18n';
 
 import { AppText } from './AppText';
@@ -9,6 +10,7 @@ import { dayWordOf } from './dayWord';
 import { Icon } from './Icon';
 import { useTheme } from '../theme/ThemeProvider';
 import { emotionLabel, emotionWordsIn, moodTint } from './emotionDisplay';
+import { snippetOf } from '../screens/journalSearch';
 
 /**
  * A dot in the entry's own colour, the day and time, the sentence, and the
@@ -26,6 +28,12 @@ export function EntryCard(props: {
   readonly onOpen: () => void;
   /** Whether the entry still has its audio; no icon at all while unknown. */
   readonly hasAudio?: boolean;
+  /**
+   * The journal's search, when the card is one of its results: the card
+   * shows the sentence the word is in, with the word lit (owner's word,
+   * 2026-11-20), instead of the entry's opening.
+   */
+  readonly found?: SearchQuery | null;
 }): React.JSX.Element {
   const theme = useTheme();
   const words = emotionWordsIn(props.entry.cleanTranscript, props.t);
@@ -62,9 +70,23 @@ export function EntryCard(props: {
         )}
       </View>
       <View style={{ gap: 8 }}>
-        <AppText variant="body" style={{ fontSize: 16, lineHeight: 23 }}>
-          {props.entry.cleanTranscript}
-        </AppText>
+        {props.found === undefined || props.found === null ? (
+          <AppText variant="body" style={{ fontSize: 16, lineHeight: 23 }}>
+            {props.entry.cleanTranscript}
+          </AppText>
+        ) : (
+          <AppText variant="body" numberOfLines={3} style={{ fontSize: 16, lineHeight: 23 }}>
+            {snippetOf(props.entry.cleanTranscript, props.found).map((piece, at) =>
+              piece.found ? (
+                <Text key={at} style={{ backgroundColor: theme.palette.accentSoft }}>
+                  {piece.text}
+                </Text>
+              ) : (
+                piece.text
+              ),
+            )}
+          </AppText>
+        )}
         {props.entry.emotionIds.length === 0 ? null : (
           <AppText variant="secondary" style={{ color: theme.palette.tag }}>
             {props.entry.emotionIds.map((id) => emotionLabel(id, words)).join(' · ')}

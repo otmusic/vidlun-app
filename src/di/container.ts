@@ -108,9 +108,11 @@ import { AsyncStorageUnheardEntries } from '../infrastructure/persistence/AsyncS
 import { AsyncStorageBackupLedger } from '../infrastructure/persistence/AsyncStorageBackupLedger';
 import { MeasureVoices } from '../application/use-cases/MeasureVoices';
 import { AsyncStorageVoiceReadings } from '../infrastructure/persistence/AsyncStorageVoiceReadings';
+import { NativeSpeechTimeline } from '../infrastructure/voice/NativeSpeechTimeline';
 import { NativeVoiceAnalyzer } from '../infrastructure/voice/NativeVoiceAnalyzer';
 import { DescribeVoice } from '../application/use-cases/DescribeVoice';
-import { analyzeVoice } from '../../modules/vidlun-voice';
+import { FindSpokenMoment } from '../application/use-cases/FindSpokenMoment';
+import { analyzeVoice, speechSpans } from '../../modules/vidlun-voice';
 import { nativeBackup } from '../../modules/vidlun-backup';
 import {
   TimedMessagesClient,
@@ -147,6 +149,8 @@ export interface Container {
   readonly measureVoices: MeasureVoices;
   /** How a take or an entry sounded against the person's usual voice. */
   readonly describeVoice: DescribeVoice;
+  /** Where a searched word is said in an entry's recording, estimated on the phone. */
+  readonly findSpokenMoment: FindSpokenMoment;
   /** Keeps a person's note to support and mails it through the proxy when it can. */
   readonly feedback: FeedbackOutbox;
   readonly forgetAllRecordings: () => Promise<void>;
@@ -358,6 +362,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     hearUnheardEntries: new HearUnheardEntries(unheard, repository, analyzer, vocabulary),
     measureVoices: new MeasureVoices(recordings, voiceReadings, voiceAnalyzer),
     describeVoice,
+    findSpokenMoment: new FindSpokenMoment(new NativeSpeechTimeline(speechSpans)),
     /*
      * Through an outbox, so the sheet closes on the tap and a note the
      * network refused goes at the next chance. Without a proxy there is no

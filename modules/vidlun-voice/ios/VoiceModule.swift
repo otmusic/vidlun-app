@@ -18,5 +18,15 @@ public class VoiceModule: Module {
       }
       return try VoiceAnalysis.analyze(url: url).dictionary
     }
+
+    /// Where the speech is in the recording at `uri`, as [from, to] pairs in
+    /// milliseconds, for finding a searched word in it; runs off the main thread.
+    AsyncFunction("speechSpans") { (uri: String) -> [[Double]] in
+      let url = uri.hasPrefix("file://") ? URL(string: uri) : URL(fileURLWithPath: uri)
+      guard let url else {
+        throw Exception(name: "BadRecordingUri", description: "Not a file: \(uri)")
+      }
+      return try VoiceAnalysis.speechSpans(url: url)
+    }
   }
 }

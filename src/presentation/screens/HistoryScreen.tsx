@@ -6,6 +6,7 @@ import { entriesOpen } from '@/domain/entities/Entitlement';
 import type { Milestone } from '@/domain/entities/Milestone';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
+import { SearchQuery } from '@/domain/value-objects/SearchQuery';
 import type { Locale, Translate } from '@/i18n';
 import { countedKey } from '@/i18n/plural';
 
@@ -14,6 +15,7 @@ import { CountPill } from '../components/CountPill';
 import { EmotionFilterSheet } from '../components/EmotionFilterSheet';
 import { EntryCard } from '../components/EntryCard';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
+import { SearchField } from '../components/SearchField';
 import { Button } from '../components/Button';
 import { Chip } from '../components/Chip';
 import { Icon } from '../components/Icon';
@@ -40,6 +42,12 @@ export function HistoryScreen(props: {
   readonly recorded: ReadonlySet<string> | null;
   /** The emotions the journal is narrowed to; empty shows every entry. */
   readonly filter: readonly string[];
+  /**
+   * What is typed into the search (owner's word, 2026-11-20); empty shows
+   * every entry. It narrows whatever the filter left.
+   */
+  readonly query: string;
+  readonly onQuery: (typed: string) => void;
   readonly onFilter: (emotionIds: readonly string[]) => void;
   /** A pattern's days, opened from the stats screen; null shows the journal. */
   readonly focus: JournalFocus | null;
@@ -48,7 +56,8 @@ export function HistoryScreen(props: {
   readonly locale: Locale;
   readonly today: Date;
   readonly t: Translate;
-  readonly onOpen: (entry: MoodEntry) => void;
+  /** `found` is the search the entry was found by, so its page can light the word. */
+  readonly onOpen: (entry: MoodEntry, found?: string) => void;
   /**
    * Whether every entry reads, with a subscription or its free trial. Without
    * one only the newest does (owner's word, 2026-11-17); every other entry
@@ -73,16 +82,20 @@ export function HistoryScreen(props: {
   const offered = useMemo(() => emotionsUsed(entries), [entries]);
   const { focus } = props;
   const filtered = props.filter.length > 0;
-  const narrowed = filtered || focus !== null;
+  const search = useMemo(() => SearchQuery.of(props.query), [props.query]);
+  const narrowed = filtered || focus !== null || search !== null;
   const shown = useMemo(() => {
-    if (focus === null) {
-      return entriesWithAny(entries, props.filter);
-    }
+    const wanted = focus === null ? null : new Set(focus.entryIds);
+    const kept =
+      wanted === null ? entriesWithAny(entries, props.filter) : entries.filter((entry) => wanted.has(entry.id));
 
-    const wanted = new Set(focus.entryIds);
-
-    return entries.filter((entry) => wanted.has(entry.id));
-  }, [entries, props.filter, focus]);
+    /*
+     * In what was said. A locked entry is found like any other and stays
+     * locked: its date and its lock, never its words (owner's word,
+     * 2026-11-20).
+     */
+    return search === null ? kept : kept.filter((entry) => search.matches(entry.cleanTranscript));
+  }, [entries, props.filter, focus, search]);
   // Sorted once per journal, not once per frame: a year of entries is a
   // few hundred rows, and the list re-renders on every scroll tick. The
   // milestones step aside while the journal is filtered: between a few
@@ -116,8 +129,9 @@ export function HistoryScreen(props: {
           today={props.today}
           t={t}
           hasAudio={props.recorded?.has(row.entry.id)}
+          found={search}
           onOpen={() => {
-            onOpen(row.entry);
+            onOpen(row.entry, search === null ? undefined : props.query);
           }}
         />
       ) : (
@@ -150,9 +164,11 @@ export function HistoryScreen(props: {
       onOpenSubscription,
       open,
       props.locale,
+      props.query,
       props.recorded,
       props.today,
       props.vocabulary,
+      search,
       t,
       theme.palette.ink,
     ],
@@ -174,6 +190,8 @@ export function HistoryScreen(props: {
         ItemSeparatorComponent={Gap}
         style={{ flex: 1, backgroundColor: theme.palette.canvas }}
         contentContainerStyle={{ paddingTop: top, ...sides, paddingBottom: BOTTOM_ROOM }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         initialNumToRender={8}
         maxToRenderPerBatch={8}
         windowSize={7}
@@ -262,6 +280,11 @@ export function HistoryScreen(props: {
             </View>
           </View>
           {/*
+            The search under the title (owner's word, 2026-11-20), absent
+            while there is nothing to search.
+          */}
+          {entries.length === 0 ? null : <SearchField value={props.query} onChange={props.onQuery} t={t} />}
+          {/*
             What the journal is narrowed to, under the title, each with its
             own X, and a reset for all of them: letting the filter go is
             one tap here, not a trip into the sheet (owner's word, 2026-10-13).
@@ -307,7 +330,16 @@ export function HistoryScreen(props: {
           </View>
         }
         ListEmptyComponent={
-          props.days === null ? null : narrowed ? (
+          props.days === null ? null : search !== null ? (
+            <View style={{ alignItems: 'center', gap: 8, paddingVertical: 48, paddingHorizontal: 20 }}>
+              <AppText variant="kicker" align="center">
+                {t('search.nothingTitle')}
+              </AppText>
+              <AppText variant="body" color="inkSoft" align="center">
+                {t('search.nothingBody')}
+              </AppText>
+            </View>
+          ) : narrowed ? (
             <AppText variant="body" color="inkSoft" style={{ paddingVertical: 24 }}>
               {t('feed.filterNothing')}
             </AppText>

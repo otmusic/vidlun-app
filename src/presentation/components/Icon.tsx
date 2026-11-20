@@ -24,7 +24,9 @@ export type IconName =
   | 'lock'
   | 'mic-off'
   | 'plus'
-  | 'filter';
+  | 'filter'
+  | 'search'
+  | 'x-circle';
 
 /** §7.4: 16–20 inline, 24 at most. Anything larger is a glyph, not an icon. */
 export const ICON_SIZE = { inline: 18, action: 22, glyph: 24 } as const;

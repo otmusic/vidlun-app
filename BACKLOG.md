@@ -1801,6 +1801,46 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++++++++++. Search what was said, and hear it — 2026-11-20
+
+The owner's word (plan item 9), drawn on the canvas page "Пошук по
+сказаному": search comes back, not as a tab but as a field in the journal,
+and the found word can be heard where it is said (way B: estimated, nothing
+stored).
+
+- **The field** «Пошук по записах» sits under the journal's title and scrolls
+  with the list (`SearchField`). The list narrows as the words are typed; the
+  count pill counts what is found; «Скасувати», there while the field is in
+  use, empties it. It survives opening an entry and coming back, and clears
+  when the journal is opened from the bar, like the emotion filter, which it
+  narrows further.
+- **Letters, not meaning** (`SearchQuery`): each typed word finds the words it
+  begins, so a Ukrainian stem finds its endings; every typed word must be
+  there; case, the three apostrophes and the Russian yo make no difference.
+  Words are split on a listed set of spaces and punctuation, not Unicode
+  classes, which Hermes may not know.
+- **A result card** shows the sentence the word is in, with every found word
+  lit in the accent's soft tint (`snippetOf`), three lines at most. A locked
+  entry is found like any other and stays locked: date and lock, no words.
+  Nothing found: «Нічого не знайшлося» and «Спробуй інше слово або зніми
+  фільтр емоції.»
+- **The entry opened from a result** lights the words in its sentence and
+  stands the player where the word is said, with «Грає з місця, де звучить
+  «…»» under it. Where comes from `FindSpokenMoment`: the word's place in the
+  raw transcript (the cleaned one if only there), as a share of the text,
+  laid over the stretches of the recording where the person speaks; the
+  pauses take no share. The player starts `LEAD_IN_MS` (2 s) earlier, never
+  before the start. The stretches come from the voice module's new
+  `speechSpans` (the measures' own speech test, pauses of 0.26 s or more
+  between stretches), read from the file each time; nothing is stored.
+- **Why estimated:** whisper.rn hands Parakeet's result over as one segment
+  for the whole take (t0 0, t1 the end), although the model times every
+  token. Way A — patching the bridge and storing word times — was offered
+  and not taken: it would only help new entries and means carrying a patch
+  of someone else's library.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++++++++++. Face ID, back and free — 2026-11-20
 
 The owner's word, after the competitor plan (item 8): every one of the six

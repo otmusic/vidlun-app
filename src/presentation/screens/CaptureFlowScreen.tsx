@@ -537,6 +537,8 @@ function Stage(
           recorded={flow.recorded}
           filter={flow.journalFilter}
           onFilter={flow.filterJournal}
+          query={flow.journalQuery}
+          onQuery={flow.searchJournal}
           focus={flow.journalFocus}
           onClearFocus={flow.clearJournalFocus}
           vocabulary={props.vocabulary}
@@ -559,6 +561,8 @@ function Stage(
           entry={flow.stage.entry}
           recordingUri={flow.stage.recordingUri}
           voice={flow.stage.voice}
+          found={flow.stage.found}
+          playFromMs={flow.stage.playFromMs}
           keepRecordings={props.settings.keepRecordings}
           vocabulary={props.vocabulary}
           locale={props.locale}
