@@ -1,6 +1,7 @@
 import type { Emotion } from '@/domain/entities/Emotion';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import { affirmationFrequencyFor, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
+import type { LockMethod } from '@/domain/ports/IScreenLock';
 import type { Settings } from '@/domain/ports/ISettings';
 import type { StoreRelease } from '@/domain/ports/IStoreListing';
 import type { Locale, Translate } from '@/i18n';
@@ -64,6 +65,10 @@ export interface CaptureFlowScreenProps {
   readonly onFeedback: (text: string) => Promise<void>;
   /** Whether the phone looks to be in Ukraine, for the grounding's helpline. */
   readonly inUkraine: () => boolean;
+  /** What opens this phone, which names the lock row in "Me". */
+  readonly lockMethod: LockMethod;
+  /** Asks for Face ID once before the lock is turned on. */
+  readonly onEnableLock: () => Promise<boolean>;
 }
 
 /**
@@ -434,6 +439,8 @@ function Stage(
           onOpenSubscription={flow.openSubscription}
           onRedeemCode={flow.redeemCode}
           onGround={flow.openGrounding}
+          lockMethod={props.lockMethod}
+          onEnableLock={props.onEnableLock}
         />
       );
 

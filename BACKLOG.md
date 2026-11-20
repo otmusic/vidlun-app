@@ -1801,6 +1801,46 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++++++++++. Face ID, back and free — 2026-11-20
+
+The owner's word, after the competitor plan (item 8): every one of the six
+journals compared has a lock, and a kept voice is more intimate than text.
+The design canvas page "Face ID" holds the drawings; the door is variant B
+with its key enlarged (88 pt, glyph 42).
+
+- **"Me"** has a row between "Зберігати аудіо" and the backup card, named by
+  what opens the phone: Face ID, Touch ID or Код-пароль
+  (`IScreenLock.readiness`). Off it says «Щоденник відкривається одразу»; on,
+  «Щоденник відкривається через Face ID». The switch turns on only after one
+  successful unlock, and a phone with neither biometrics nor a passcode gets
+  «Face ID недоступний» and the switch stays off.
+- **The door** is the splash's wordmark on the canvas and a round key at the
+  bottom («Відкрити через Face ID»). Face ID is asked for by itself a beat
+  after the door shows (`ASK_FOR_FACE_AFTER_MS`, 450 ms), never under the
+  splash, and asked again only on a real return from the background: the
+  prompt itself takes the app to "inactive", and counting that would ask
+  again the moment someone cancelled. The passcode stays allowed behind
+  Face ID.
+- **When it shuts:** at every launch and after more than a minute away
+  (`relocksAfter`). The door starts shut instead of following a default that
+  has not been read yet, which is how 1.3's lock let a cold launch in.
+- **A take from outside goes ahead** (owner's choice B): a widget, Siri, the
+  Control Center or the Action Button starts the recording without Face ID,
+  and the card shows only what was just said. The door stands again the
+  moment the take is saved or let go (`opensWhileLocked`). Anyone holding
+  the phone can add to the journal; only its owner can read it.
+- **The app switcher** shows the wordmark cover while the lock is on, rather
+  than the blur everyone else gets: a blur still shows the shape of the page.
+- **Stored as `journalLock`**, not 1.3's `appLock`: a phone that still
+  carries the old switch from then must not wake up shut.
+- `expo-local-authentication` 57.0.3 is back (the owner's yes, 2026-11-20), and
+  `NSFaceIDUsageDescription` with it in app.json.
+- **The privacy policy** has its Face ID line again in both languages
+  («лише якщо замок щоденника увімкнено в «Я»»), and the in-app copy is
+  rebuilt. The site goes out with the release that ships the lock, not before.
+
+---
+
 ## 3ψψψ++++++++++++++++++++++++++++. Undo a deletion, five seconds — 2026-11-19
 
 Step 6 of the competitor plan: what is deleted by accident cannot come

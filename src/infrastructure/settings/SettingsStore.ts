@@ -81,6 +81,10 @@ function merge(parsed: unknown): Settings {
         ? record['affirmationsOn']
         : DEFAULT_SETTINGS.affirmationsOn,
     affirmationFrequency: frequencyOr(record['affirmationFrequency']),
+    journalLock:
+      typeof record['journalLock'] === 'boolean'
+        ? record['journalLock']
+        : DEFAULT_SETTINGS.journalLock,
   };
 }
 

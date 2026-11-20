@@ -7,8 +7,10 @@ import { isRecordLink } from '../recordLink';
 /**
  * "Record in Vidlun" from outside the app, cold or while the app is open,
  * starts a take the moment the journal is ready for one — not over
- * onboarding, not behind the lock, not in the middle of a card. A request
- * that came too early waits rather than being dropped.
+ * onboarding, not in the middle of a card. A shut journal does not stop it
+ * (owner's word, 2026-11-20): the take goes ahead and the door stands again
+ * once it is saved. A request that came too early waits rather than being
+ * dropped.
  *
  * Two carriers. A widget tap is a URL the system launches the app with, or
  * hands to the open app. Siri, the Shortcuts app and the Control Center

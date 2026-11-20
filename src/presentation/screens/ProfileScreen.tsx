@@ -4,6 +4,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { affirmationFrequencyFor, readsInFull, type Entitlement } from '@/domain/entities/Entitlement';
 import type { AffirmationFrequency } from '@/domain/ports/IAffirmationReminders';
+import type { LockMethod } from '@/domain/ports/IScreenLock';
 import type { Settings, ThemeChoice } from '@/domain/ports/ISettings';
 import type { Locale, Translate, TranslationKey } from '@/i18n';
 
@@ -42,6 +43,19 @@ const FREQUENCY_HINTS: Readonly<Record<AffirmationFrequency, TranslationKey>> = 
   daily: 'profile.affirmationsHintDaily',
   weekly: 'profile.affirmationsHintWeekly',
   monthly: 'profile.affirmationsHintMonthly',
+};
+
+/** The lock is called what opens the phone: Face ID, Touch ID or the passcode. */
+const LOCK_NAMES: Readonly<Record<LockMethod, TranslationKey>> = {
+  face: 'lock.nameFace',
+  touch: 'lock.nameTouch',
+  passcode: 'lock.namePasscode',
+};
+
+const LOCK_ON_HINTS: Readonly<Record<LockMethod, TranslationKey>> = {
+  face: 'profile.lockOnFace',
+  touch: 'profile.lockOnTouch',
+  passcode: 'profile.lockOnPasscode',
 };
 
 const ROW_HEIGHT = 46;
@@ -83,12 +97,24 @@ export function ProfileScreen(props: {
   readonly onWriteFeedback: () => void;
   /** Opens the grounding exercise. */
   readonly onGround: () => void;
+  /** What opens this phone, which names the lock row. */
+  readonly lockMethod: LockMethod;
+  /** Asks for Face ID once; resolves false when it failed or the phone has no lock to use. */
+  readonly onEnableLock: () => Promise<boolean>;
 }): React.JSX.Element {
   const theme = useTheme();
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
   const { settings, t } = props;
   const [pickingTime, setPickingTime] = useState(false);
+  /*
+   * The lock switch while Face ID is being asked. The native switch flips
+   * itself on at the tap; if the ask fails the setting stays false, and a
+   * prop that stays false is no change for React to push back to the native
+   * side — the switch would sit on, lying. Holding "true" for the duration
+   * and dropping it after gives the native switch a real true→false.
+   */
+  const [armingLock, setArmingLock] = useState(false);
 
   return (
     <ScrollView
@@ -181,6 +207,49 @@ export function ProfileScreen(props: {
             }}
             trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
             accessibilityLabel={t('profile.keepAudio')}
+          />
+        </Row>
+      </Section>
+
+      {/*
+        * The journal's lock, back and free (owner's word, 2026-11-20): where
+        * it stood before 1.4, between keeping the voice and the backup.
+        */}
+      <Section>
+        <Row
+          title={t(LOCK_NAMES[props.lockMethod])}
+          hint={t(settings.journalLock ? LOCK_ON_HINTS[props.lockMethod] : 'profile.lockOff')}
+        >
+          <Switch
+            value={settings.journalLock || armingLock}
+            onValueChange={(lock) => {
+              if (!lock) {
+                props.onChange({ ...settings, journalLock: false });
+
+                return;
+              }
+
+              /*
+               * Proven before promised: the switch turns on only after one
+               * successful unlock, so nobody shuts themselves out behind a
+               * Face ID that does not work.
+               */
+              setArmingLock(true);
+              void props.onEnableLock().then(
+                (unlocked) => {
+                  setArmingLock(false);
+
+                  if (unlocked) {
+                    props.onChange({ ...settings, journalLock: true });
+                  }
+                },
+                () => {
+                  setArmingLock(false);
+                },
+              );
+            }}
+            trackColor={{ true: theme.palette.accent, false: theme.palette.line }}
+            accessibilityLabel={t(LOCK_NAMES[props.lockMethod])}
           />
         </Row>
       </Section>

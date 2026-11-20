@@ -46,6 +46,7 @@ describe('SettingsStore', () => {
       updateLineClosed: '1.9',
       affirmationsOn: true,
       affirmationFrequency: 'monthly',
+      journalLock: true,
     });
 
     expect(await subject.read()).toEqual({
@@ -60,6 +61,7 @@ describe('SettingsStore', () => {
       updateLineClosed: '1.9',
       affirmationsOn: true,
       affirmationFrequency: 'monthly',
+      journalLock: true,
     });
   });
 
@@ -75,16 +77,20 @@ describe('SettingsStore', () => {
     expect(await subject.read()).not.toHaveProperty('asksFirst');
   });
 
-  it('lets go of the retired Face ID lock in a stored record', async () => {
+  it('does not wake the old lock a phone still carries from 1.3', async () => {
     const { store, subject } = setup();
     await store.setItem(
       'vidlun.settings',
       JSON.stringify({ keepRecordings: true, locale: 'uk', hasOnboarded: true, appLock: true }),
     );
 
-    // The lock went in 1.4 (owner's word, 2026-10-13); a phone that had it on
-    // opens straight into the journal, and nothing reads the old switch.
-    expect(await subject.read()).not.toHaveProperty('appLock');
+    // The lock went in 1.4 (owner's word, 2026-10-13) and came back under a
+    // new name (2026-11-20); someone who had the old one on and forgot it
+    // must not find their journal shut after an update.
+    const read = await subject.read();
+
+    expect(read).not.toHaveProperty('appLock');
+    expect(read.journalLock).toBe(false);
   });
 
   it('falls back to defaults rather than failing on an unreadable file', async () => {
@@ -110,6 +116,7 @@ describe('SettingsStore', () => {
       updateLineClosed: null,
       affirmationsOn: false,
       affirmationFrequency: 'weekly',
+      journalLock: false,
     });
   });
 

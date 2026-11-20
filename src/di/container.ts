@@ -31,6 +31,7 @@ import type { IAudioRecorder } from '../domain/ports/IAudioRecorder';
 import type { IClock } from '../domain/ports/IClock';
 import type { IHaptics } from '../domain/ports/IHaptics';
 import type { IMicrophonePermission } from '../domain/ports/IMicrophonePermission';
+import type { IScreenLock } from '../domain/ports/IScreenLock';
 import type { IPurchases, PurchaseOutcome } from '../domain/ports/IPurchases';
 import type { IAffirmationReminders } from '../domain/ports/IAffirmationReminders';
 import type { INotificationTaps } from '../domain/ports/INotificationTaps';
@@ -87,6 +88,7 @@ import { requireOptionalNativeModule } from 'expo';
 import { AppleStoreListing } from '../infrastructure/store/AppleStoreListing';
 import { FeedbackOutbox } from '../infrastructure/feedback/FeedbackOutbox';
 import { ProxyFeedbackSender } from '../infrastructure/feedback/ProxyFeedbackSender';
+import { BiometricScreenLock } from '../infrastructure/system/BiometricScreenLock';
 import { ExpoHaptics } from '../infrastructure/system/ExpoHaptics';
 import { IntervalScheduler } from '../infrastructure/system/IScheduler';
 import { ExpoReminders } from '../infrastructure/system/ExpoReminders';
@@ -185,6 +187,8 @@ export interface Container {
   /** When the last backup was handed over, for the profile's line. */
   readonly backupLedger: IBackupLedger;
   readonly microphonePermission: IMicrophonePermission;
+  /** Face ID on the journal's door, when the person turns it on in "Me". */
+  readonly screenLock: IScreenLock;
   readonly haptics: IHaptics;
   readonly vocabulary: EmotionVocabulary;
   /** The screens need one too — the insights screen counts backwards from today. */
@@ -431,6 +435,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
       getRecordingPermissionsAsync,
       requestRecordingPermissionsAsync,
     }),
+    screenLock: new BiometricScreenLock(),
     createAudioRecorder: (native) =>
       new ExpoAudioRecorder(native, setRecordingMode, scheduler, screenAwake, removeFromCache),
   };

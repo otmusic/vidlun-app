@@ -39,6 +39,12 @@ export interface Settings {
   /** The morning affirmation, off until the person turns it on in "Me". */
   readonly affirmationsOn: boolean;
   readonly affirmationFrequency: AffirmationFrequency;
+  /**
+   * Whether the journal opens with Face ID (owner's word, 2026-11-20). A new
+   * name on purpose: the lock 1.3 had was stored as `appLock`, and a phone
+   * that still carries it from then must not wake up locked.
+   */
+  readonly journalLock: boolean;
 }
 
 /**
@@ -64,6 +70,7 @@ export const DEFAULT_SETTINGS: Settings = {
   affirmationsOn: false,
   // Weekly by default: the owner's first word for it was "every Monday".
   affirmationFrequency: 'weekly',
+  journalLock: false,
 };
 
 /**

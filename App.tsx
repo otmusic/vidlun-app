@@ -7,7 +7,8 @@ import { useAudioRecorder } from 'expo-audio';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ITranscriptionService } from '@/domain/ports/ITranscriptionService';
 import { createContainer, type Container } from '@/di/container';
-import { createTranslator, type Locale, type Translate } from '@/i18n';
+import { createTranslator, type Locale, type Translate, type TranslationKey } from '@/i18n';
+import type { LockMethod } from '@/domain/ports/IScreenLock';
 import { SPEECH_RECORDING_OPTIONS } from '@/infrastructure/audio/recordingOptions';
 import { ManualTranscriptionService } from '@/infrastructure/transcription/ManualTranscriptionService';
 import {
@@ -25,8 +26,11 @@ import { openSpeechEngine } from '@/infrastructure/transcription/whisperEngine';
 import { AppText } from '@/presentation/components/AppText';
 import { SplashOverlay } from '@/presentation/components/SplashOverlay';
 import { useCaptureFlow } from '@/presentation/hooks/useCaptureFlow';
+import { useJournalLock } from '@/presentation/hooks/useJournalLock';
 import { useRecordLink } from '@/presentation/hooks/useRecordLink';
 import { CaptureFlowScreen } from '@/presentation/screens/CaptureFlowScreen';
+import { LockCover, LockScreen } from '@/presentation/screens/LockScreen';
+import { opensWhileLocked } from '@/presentation/screens/lockRules';
 import type { BackupProgress } from '@/presentation/screens/ProfileScreen';
 import type { RestoreOutcome } from '@/application/use-cases/RestoreJournal';
 import { OnboardingScreen } from '@/presentation/screens/OnboardingScreen';
@@ -39,6 +43,20 @@ const MIN_SPLASH_MS = 1_200;
 
 /** Past this the wait stops being a wait; the quiet failure state takes over. */
 const SPLASH_GIVES_UP_MS = 5_000;
+
+/**
+ * The beat between the door appearing and Face ID being asked for. A take
+ * from a widget, arriving in the same moment, starts within it and keeps the
+ * prompt off the recording screen.
+ */
+const ASK_FOR_FACE_AFTER_MS = 450;
+
+/** The lock is called what opens the phone. */
+const LOCK_NAMES: Readonly<Record<LockMethod, TranslationKey>> = {
+  face: 'lock.nameFace',
+  touch: 'lock.nameTouch',
+  passcode: 'lock.namePasscode',
+};
 
 interface Wiring {
   readonly container?: Container;
@@ -80,7 +98,7 @@ export default function App() {
           onSettingsChange={setSettings}
         />
       )}
-        <PrivacyCurtain />
+        <PrivacyCurtain locked={settings.journalLock} />
         <ThemedStatusBar />
       </ThemeProvider>
       </SafeAreaProvider>
@@ -587,6 +605,65 @@ function Vidlun(props: {
 
   const { reloadHome } = flow;
 
+  /*
+   * The journal's lock (owner's word, 2026-11-20). The door stands over every
+   * screen except a take in progress: a recording started from a widget, Siri,
+   * the Control Center or the Action Button goes ahead without Face ID and
+   * shows only what was just said, and the door is back once it is saved or
+   * let go. Face ID is asked for by itself a beat after the door appears —
+   * never under the splash, and late enough that a widget's take, which
+   * arrives in the same moment, gets there first and no prompt lands on top
+   * of a recording.
+   */
+  const lockNow = useCallback(() => container.clock.now().getTime(), [container.clock]);
+  const lockPrompt = useMemo(
+    () => ({ reason: t('lock.reason'), cancel: t('lock.cancel'), fallback: t('lock.fallback') }),
+    [t],
+  );
+  const lock = useJournalLock({
+    on: props.settings.journalLock,
+    lock: container.screenLock,
+    prompt: lockPrompt,
+    now: lockNow,
+  });
+  const doorShown =
+    settingsLoaded &&
+    props.settings.hasOnboarded &&
+    !lock.open &&
+    !opensWhileLocked(flow.stage.kind);
+  const { tryOpen, returns } = lock;
+
+  useEffect(() => {
+    if (!doorShown || splash !== 'gone') {
+      return undefined;
+    }
+
+    const asking = setTimeout(() => {
+      if (AppState.currentState === 'active') {
+        tryOpen();
+      }
+    }, ASK_FOR_FACE_AFTER_MS);
+
+    return () => {
+      clearTimeout(asking);
+    };
+  }, [doorShown, splash, tryOpen, returns]);
+
+  const enableLock = useCallback(
+    () =>
+      lock.enable((method) => {
+        const name = t(LOCK_NAMES[method]);
+
+        Alert.alert(
+          t('profile.lockUnavailableTitle', { method: name }),
+          method === 'passcode'
+            ? t('profile.lockUnavailablePasscodeBody')
+            : t('profile.lockUnavailableBody', { method: name }),
+        );
+      }),
+    [lock, t],
+  );
+
   const splashGone = useCallback(() => {
     setSplash('gone');
   }, []);
@@ -627,6 +704,8 @@ function Vidlun(props: {
       onRestore={restoreJournal}
       onFeedback={(text) => container.feedback.send(text)}
       inUkraine={container.inUkraine}
+      lockMethod={lock.method}
+      onEnableLock={enableLock}
     />
   );
 
@@ -634,6 +713,7 @@ function Vidlun(props: {
     /* The next screen is already under the splash, so leaving is a crossfade. */
     <View style={{ flex: 1 }}>
       {screen}
+      {doorShown ? <LockScreen method={lock.method} t={t} onUnlock={tryOpen} /> : null}
       {splash === 'gone' ? null : (
         <SplashOverlay
           phase={splash}
@@ -671,9 +751,11 @@ function useTranscription(locale: Locale): ITranscriptionService {
  * The curtain over the app-switcher snapshot. iOS photographs the screen the
  * moment the app resigns active — before backgrounding, before any relock —
  * so whatever is on screen at that instant is what strangers flip past in
- * the switcher. This blurs it, the way a journal deserves.
+ * the switcher. This blurs it, the way a journal deserves; with the lock on
+ * it is the name on the canvas instead, the door without its key, since a
+ * blur still shows the shape of the page.
  */
-function PrivacyCurtain(): React.JSX.Element | null {
+function PrivacyCurtain(props: { readonly locked: boolean }): React.JSX.Element | null {
   const theme = useTheme();
   const [resting, setResting] = useState(AppState.currentState !== 'active');
 
@@ -689,6 +771,10 @@ function PrivacyCurtain(): React.JSX.Element | null {
 
   if (!resting) {
     return null;
+  }
+
+  if (props.locked) {
+    return <LockCover />;
   }
 
   return (
