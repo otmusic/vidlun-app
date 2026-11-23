@@ -107,6 +107,21 @@ describe('hearing the entries Vidlun could not listen to', () => {
     expect(await unheard.ids()).toEqual([]);
   });
 
+  it("keeps the topics written in on the card and lets Vidlun's join them", async () => {
+    const repository = new InMemoryMoodEntryRepository();
+
+    await repository.save(unheardEntry('e1', { contextTags: ['tea'] }));
+
+    await new HearUnheardEntries(
+      new InMemoryUnheard(['e1']),
+      repository,
+      new StubReflectionAnalyzer(heard),
+      vocabulary,
+    ).execute();
+
+    expect((await repository.findById('e1'))?.contextTags).toEqual(['tea', 'work']);
+  });
+
   it('never overwrites what the person named themselves', async () => {
     const repository = new InMemoryMoodEntryRepository();
 

@@ -30,6 +30,7 @@ const card: TurnStage = {
   together: false,
   mood: null,
   droppedTopics: [],
+  addedTopics: [],
   namedAlone: null,
 };
 

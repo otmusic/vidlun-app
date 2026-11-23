@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
 import type { Emotion } from '@/domain/entities/Emotion';
@@ -9,6 +9,7 @@ import { type Translate } from '@/i18n';
 import { AppText } from '../components/AppText';
 import { Button, TapTarget } from '../components/Button';
 import { Card } from '../components/Card';
+import { CardTopics } from '../components/CardTopics';
 import { Chip } from '../components/Chip';
 import { EmotionShelf } from '../components/EmotionPicker';
 import { emotionLabel, emotionTint, emotionWordsIn, idForTypedWord } from '../components/emotionDisplay';
@@ -59,7 +60,12 @@ export function TurnScreen(props: {
   readonly topics: readonly string[];
   /** The topics taken off the card, still shown so the same tap puts one back. */
   readonly droppedTopics: readonly string[];
+  /** The topics the person wrote in (owner's word, 2026-11-23). */
+  readonly addedTopics: readonly string[];
   readonly onToggleTopic: (tag: string) => void;
+  readonly onAddTopic: (typed: string) => void;
+  /** The topic line opened: the journal's topics are read, for the spelling a typed one is saved with. */
+  readonly onOpenTopic: () => void;
   /** Throws the entry away unsaved, once the person has said yes. */
   readonly onDiscard: () => void;
 }): React.JSX.Element {
@@ -70,6 +76,16 @@ export function TurnScreen(props: {
   const sides = useDrawnSides();
   /** Null while the own-word field is closed; the word so far while open. */
   const [typing, setTyping] = useState<string | null>(null);
+  /**
+   * The topic being written in, null while its line is closed. Mirrored in a
+   * ref and cleared the moment it is used: the line commits on return and
+   * then blurs, and "next" commits it and then unmounts it, and neither may
+   * write the same topic in twice.
+   */
+  const [topicTyping, setTopicTyping] = useState<string | null>(null);
+  const topicTyped = useRef<string | null>(null);
+  /** Where the card goes once a topic committed by a button is in the stage. */
+  const [onward, setOnward] = useState<Onward | null>(null);
   /** A typed word committed by a button, waited for before the card moves on. */
   const [after, setAfter] = useState<{ readonly id: string; readonly to: Onward } | null>(
     null,
@@ -123,12 +139,48 @@ export function TurnScreen(props: {
     ]);
   };
 
-  /** A word still being typed is part of the answer, so it goes in first. */
+  const typeTopic = (text: string | null): void => {
+    topicTyped.current = text;
+    setTopicTyping(text);
+  };
+
+  /** Writes in the topic being typed, if any; true when one went to the stage. */
+  const commitTopic = (): boolean => {
+    const text = topicTyped.current;
+
+    typeTopic(null);
+
+    if (text === null || text.trim().length === 0) {
+      return false;
+    }
+
+    props.onAddTopic(text);
+
+    return true;
+  };
+
+  // The render after a topic went in holds a stage that has it; go on from there.
+  useEffect(() => {
+    if (onward !== null) {
+      setOnward(null);
+
+      if (onward === 'next') {
+        onNext();
+      } else {
+        onTogether();
+      }
+    }
+  }, [onward, onNext, onTogether]);
+
+  /** A word or a topic still being typed is part of the answer, so it goes in first. */
   const go = (to: Onward): void => {
+    const topicWent = commitTopic();
     const added = commit();
 
     if (added !== null) {
       setAfter({ id: added, to });
+    } else if (topicWent) {
+      setOnward(to);
     } else if (to === 'next') {
       onNext();
     } else {
@@ -176,43 +228,25 @@ export function TurnScreen(props: {
         <Card tone="quiet">
           <AppText variant="quote">{props.t('common.quoted', { text: props.transcript })}</AppText>
           {/*
-            * What the entry was about, under the words it was read from
-            * (owner's word, 2026-10-01), and the one place a wrong topic can
-            * be taken off. One taken off stays, faded, so a slip is undone
-            * with the same tap.
+            * What the entry was about, under the words it was read from, and
+            * the one place its topics change: taken off, put back, or written
+            * in where Vidlun missed one (owner's word, 2026-10-01 and
+            * 2026-11-23). Shown with no topics too, for the one to write in.
             */}
-          {props.topics.length === 0 ? null : (
-            <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
-              <AppText variant="caption" color="inkFaint">
-                {props.t('entry.topics')}
-              </AppText>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-                {props.topics.map((tag) =>
-                  props.droppedTopics.includes(tag) ? (
-                    <View key={tag} style={{ opacity: 0.5 }}>
-                      <Chip
-                        label={`+ ${tag}`}
-                        tone="neutral"
-                        onPress={() => {
-                          props.onToggleTopic(tag);
-                        }}
-                      />
-                    </View>
-                  ) : (
-                    <Chip
-                      key={tag}
-                      label={tag}
-                      tone="neutral"
-                      action="remove"
-                      onPress={() => {
-                        props.onToggleTopic(tag);
-                      }}
-                    />
-                  ),
-                )}
-              </View>
-            </View>
-          )}
+          <CardTopics
+            topics={{ proposed: props.topics, dropped: props.droppedTopics, added: props.addedTopics }}
+            typing={topicTyping}
+            t={props.t}
+            onToggle={props.onToggleTopic}
+            onOpen={() => {
+              typeTopic('');
+              props.onOpenTopic();
+            }}
+            onChange={typeTopic}
+            onCommit={() => {
+              commitTopic();
+            }}
+          />
         </Card>
       </FixWording>
 
@@ -306,7 +340,7 @@ export function TurnScreen(props: {
       <View style={{ gap: theme.spacing.xs, marginTop: theme.spacing.sm }}>
         <Button
           label={props.t('turn.next')}
-          disabled={after !== null || !answered}
+          disabled={after !== null || onward !== null || !answered}
           onPress={() => {
             go('next');
           }}
@@ -319,7 +353,7 @@ export function TurnScreen(props: {
         <Button
           label={props.t('turn.together')}
           variant="secondary"
-          disabled={after !== null}
+          disabled={after !== null || onward !== null}
           onPress={() => {
             go('together');
           }}

@@ -21,6 +21,7 @@ import type { CompactRecordings } from '@/application/use-cases/CompactRecording
 import type { GetHistory, HistoryDay } from '@/application/use-cases/GetHistory';
 import { mayWriteAnother } from '@/domain/entities/Entitlement';
 import { MoodEntry } from '@/domain/entities/MoodEntry';
+import { type CardTopics, keptTopics, withTopicAdded, withTopicToggled } from '@/domain/entities/Topic';
 import type { LegalDocumentKind } from '@/i18n/legal';
 import type { GetMonthSummary, MonthSummary } from '@/application/use-cases/GetMonthSummary';
 import type { GetPastMonths, PastMonth } from '@/application/use-cases/GetPastMonths';
@@ -43,6 +44,7 @@ import type { HearUnheardEntries } from '@/application/use-cases/HearUnheardEntr
 import type { MeasureVoices } from '@/application/use-cases/MeasureVoices';
 import type { DescribeVoice } from '@/application/use-cases/DescribeVoice';
 import type { FindSpokenMoment } from '@/application/use-cases/FindSpokenMoment';
+import type { KnownTopics } from '@/application/use-cases/KnownTopics';
 import { SearchQuery } from '@/domain/value-objects/SearchQuery';
 import type { VoiceCue, VoiceHeard } from '@/domain/value-objects/VoiceCue';
 import type { AskForReview } from '@/application/use-cases/AskForReview';
@@ -100,6 +102,12 @@ export interface TurnStage {
    * without these. A correction keeps them off, like the named words.
    */
   readonly droppedTopics: readonly string[];
+  /**
+   * Topics the person wrote in where Vidlun missed one (owner's word,
+   * 2026-11-23), saved after Vidlun's. Only here, before saving: a kept
+   * entry's topics do not change.
+   */
+  readonly addedTopics: readonly string[];
   /**
    * What the person had named before choosing together showed them Vidlun's
    * words. Null until they have chosen together and come back to the card
@@ -287,6 +295,8 @@ export interface CaptureDependencies {
   readonly measureVoices: MeasureVoices;
   readonly describeVoice: DescribeVoice;
   readonly findSpokenMoment: FindSpokenMoment;
+  /** The journal's topics, for the spelling a topic written in on the card is saved with. */
+  readonly knownTopics: KnownTopics;
   readonly microphonePermission: IMicrophonePermission;
   readonly getHomeView: GetHomeView;
   readonly getWeekSummary: GetWeekSummary;
@@ -368,8 +378,12 @@ export interface CaptureFlow {
   readonly addOwnWord: (id: string) => void;
   /** Sets the mood on the card's scale, in place of Vidlun's reading. */
   readonly setMood: (value: number) => void;
-  /** Takes one of Vidlun's topics off the card, or puts it back. */
+  /** Takes one of Vidlun's topics off the card or puts it back; takes one of the person's own away. */
   readonly toggleTopic: (tag: string) => void;
+  /** Writes a topic of the person's own onto the card. */
+  readonly addTopic: (typed: string) => void;
+  /** Reads the journal's topics for the line that has just opened, for the spelling a typed one is saved with. */
+  readonly readKnownTopics: () => void;
   /** Done answering: saves what was named, or waits for the reading to land. */
   readonly answer: () => void;
   /** "Choose together": Vidlun's words, already chosen, beside whatever was named. */
@@ -602,10 +616,23 @@ export function declinedVidlunsWords(proposed: MoodEntry, draft: MoodEntry): boo
  * comes here too: with the person's answer no longer set beside Vidlun's,
  * there is no comparison left to spare it (owner's word, 2026-10-01).
  */
+/** The card's topics as the domain reads them; Vidlun's are empty until the reading lands. */
+function topicsOf(card: TurnStage): CardTopics {
+  return {
+    proposed: card.draft?.contextTags ?? [],
+    dropped: card.droppedTopics,
+    added: card.addedTopics,
+  };
+}
+
 function cardAfterAnswer(card: TurnStage, proposed: MoodEntry, together: boolean): CaptureStage {
   const { chosen } = card;
   const mood = card.mood === null ? proposed.mood : MoodScore.of(card.mood);
-  const contextTags = proposed.contextTags.filter((tag) => !card.droppedTopics.includes(tag));
+  const contextTags = keptTopics({
+    proposed: proposed.contextTags,
+    dropped: card.droppedTopics,
+    added: card.addedTopics,
+  });
   /*
    * A card that came back from choosing together carries Vidlun's words among
    * the chosen ones, so the unaided answer is what was named before that. No
@@ -795,6 +822,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [home, setHome] = useState<HomeView | null>(null);
   const [monthCard, setMonthCard] = useState<Date | null>(null);
   const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
+  const [knownTopics, setKnownTopics] = useState<readonly string[]>([]);
   const [recorded, setRecorded] = useState<ReadonlySet<string> | null>(null);
   const [journalFilter, setJournalFilter] = useState<readonly string[]>([]);
   /*
@@ -1123,13 +1151,21 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * which fills it in the next time the network is there.
    */
   const saveUnheard = useCallback(
-    (draft: MoodEntry, chosen: readonly string[], spoken: Spoken, mood: number | null) => {
+    (
+      draft: MoodEntry,
+      chosen: readonly string[],
+      spoken: Spoken,
+      mood: number | null,
+      added: readonly string[],
+    ) => {
       const confirmed = MoodEntry.create({
         ...draft.toProps(),
         selfEmotionIds: chosen,
         emotionIds: chosen,
         proposedEmotionIds: [],
         mood: mood === null ? draft.mood : MoodScore.of(mood),
+        // The person's own topics; Vidlun's join them once it has heard the entry.
+        contextTags: keptTopics({ proposed: draft.contextTags, dropped: [], added }),
       });
 
       setStage({ kind: 'processing' });
@@ -1171,6 +1207,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             together: false,
             mood,
             droppedTopics: [],
+            addedTopics: added,
             namedAlone: null,
           });
         });
@@ -1205,6 +1242,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         together: false,
         mood: null,
         droppedTopics: [],
+        addedTopics: [],
         namedAlone: null,
       });
 
@@ -1242,7 +1280,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    */
   useEffect(() => {
     if (stage.kind === 'turn' && stage.unheard && stage.holding && stage.draft !== null) {
-      saveUnheard(stage.draft, stage.chosen, stage.spoken, stage.mood);
+      saveUnheard(stage.draft, stage.chosen, stage.spoken, stage.mood, stage.addedTopics);
     }
   }, [saveUnheard, stage]);
 
@@ -1884,21 +1922,36 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           return current;
         }
 
-        const dropped = current.droppedTopics;
+        const topics = withTopicToggled(topicsOf(current), tag);
 
-        return {
-          ...current,
-          droppedTopics: dropped.includes(tag)
-            ? dropped.filter((each) => each !== tag)
-            : [...dropped, tag],
-        };
+        return { ...current, droppedTopics: topics.dropped, addedTopics: topics.added };
       });
     }, []),
+    addTopic: useCallback(
+      (typed: string) => {
+        setStage((current) => {
+          if (current.kind !== 'turn') {
+            return current;
+          }
+
+          const topics = withTopicAdded(topicsOf(current), typed, knownTopics);
+
+          return { ...current, droppedTopics: topics.dropped, addedTopics: topics.added };
+        });
+      },
+      [knownTopics],
+    ),
+    readKnownTopics: useCallback(() => {
+      void dependencies.knownTopics
+        .execute()
+        .then(setKnownTopics)
+        .catch(() => undefined);
+    }, [dependencies.knownTopics]),
     answer: useCallback(() => {
       // Vidlun could not listen: nothing to compare against, and nothing
       // coming. The answer given is the whole entry.
       if (stage.kind === 'turn' && stage.unheard && stage.draft !== null) {
-        saveUnheard(stage.draft, stage.chosen, stage.spoken, stage.mood);
+        saveUnheard(stage.draft, stage.chosen, stage.spoken, stage.mood, stage.addedTopics);
 
         return;
       }
@@ -1911,7 +1964,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       // Vidlun could not listen: there is nothing to choose together with,
       // and what was named so far is the whole entry.
       if (stage.kind === 'turn' && stage.unheard && stage.draft !== null) {
-        saveUnheard(stage.draft, stage.chosen, stage.spoken, stage.mood);
+        saveUnheard(stage.draft, stage.chosen, stage.spoken, stage.mood, stage.addedTopics);
 
         return;
       }

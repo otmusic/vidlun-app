@@ -353,7 +353,10 @@ function Stage(
           onMood={flow.setMood}
           topics={flow.stage.draft?.contextTags ?? []}
           droppedTopics={flow.stage.droppedTopics}
+          addedTopics={flow.stage.addedTopics}
           onToggleTopic={flow.toggleTopic}
+          onAddTopic={flow.addTopic}
+          onOpenTopic={flow.readKnownTopics}
           onDiscard={flow.discardEntry}
         />
       );

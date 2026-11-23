@@ -22,6 +22,7 @@ import { GetWeekSummary } from '../application/use-cases/GetWeekSummary';
 import { GetWeekNeighbours } from '../application/use-cases/GetWeekNeighbours';
 import { GetWeekThemes } from '../application/use-cases/GetWeekThemes';
 import { DeleteEntry } from '../application/use-cases/DeleteEntry';
+import { KnownTopics } from '../application/use-cases/KnownTopics';
 import { FindRecordedEntries } from '../application/use-cases/FindRecordedEntries';
 import { FindRecording } from '../application/use-cases/FindRecording';
 import { GetHistory } from '../application/use-cases/GetHistory';
@@ -148,6 +149,8 @@ export interface Container {
   readonly describeVoice: DescribeVoice;
   /** Where a searched word is said in an entry's recording, estimated on the phone. */
   readonly findSpokenMoment: FindSpokenMoment;
+  /** The journal's topics, for the spelling a topic written in on the card is saved with. */
+  readonly knownTopics: KnownTopics;
   /** Keeps a person's note to support and mails it through the proxy when it can. */
   readonly feedback: FeedbackOutbox;
   readonly forgetAllRecordings: () => Promise<void>;
@@ -357,6 +360,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     measureVoices: new MeasureVoices(recordings, voiceReadings, voiceAnalyzer),
     describeVoice,
     findSpokenMoment: new FindSpokenMoment(new NativeSpeechTimeline(speechSpans)),
+    knownTopics: new KnownTopics(repository),
     /*
      * Through an outbox, so the sheet closes on the tap and a note the
      * network refused goes at the next chance. Without a proxy there is no

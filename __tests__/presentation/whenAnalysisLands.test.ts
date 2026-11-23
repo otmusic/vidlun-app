@@ -36,6 +36,7 @@ const asking: CaptureStage = {
   together: false,
   mood: null,
   droppedTopics: [],
+  addedTopics: [],
   namedAlone: null,
 };
 
@@ -116,6 +117,28 @@ describe('what happens when the analysis lands', () => {
     // there stays off the entry. What Vidlun heard still has it.
     expect(after.kind === 'saving' ? after.draft.contextTags : null).toEqual(['sleep']);
     expect(after.kind === 'saving' ? after.proposed.contextTags : null).toEqual(['work', 'sleep']);
+  });
+
+  it("saves the topics written in on the card after Vidlun's", () => {
+    const after = whenAnalysisLands(
+      { ...asking, holding: true, droppedTopics: ['work'], addedTopics: ['tea'] },
+      analysis({ contextTags: ['work', 'sleep'] }),
+    );
+
+    // Owner's word, 2026-11-23: a topic Vidlun missed is written in on the
+    // card, and only there. What Vidlun heard stays as it heard it.
+    expect(after.kind === 'saving' ? after.draft.contextTags : null).toEqual(['sleep', 'tea']);
+    expect(after.kind === 'saving' ? after.proposed.contextTags : null).toEqual(['work', 'sleep']);
+  });
+
+  it('carries the topics written in into choosing together, and back', () => {
+    const after = whenAnalysisLands(
+      { ...asking, holding: true, together: true, addedTopics: ['tea'] },
+      analysis({ contextTags: ['work'] }),
+    );
+
+    expect(after.kind === 'comparing' ? after.draft.contextTags : null).toEqual(['work', 'tea']);
+    expect(after.kind === 'comparing' ? after.card.addedTopics : null).toEqual(['tea']);
   });
 
   it('carries the topics taken off into choosing together, and back', () => {

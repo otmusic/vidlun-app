@@ -36,6 +36,7 @@ const card: TurnStage = {
   together: false,
   mood: 2,
   droppedTopics: ['sleep'],
+  addedTopics: [],
   namedAlone: null,
 };
 

@@ -32,6 +32,7 @@ const asking: CaptureStage = {
   together: false,
   mood: null,
   droppedTopics: [],
+  addedTopics: [],
   namedAlone: null,
 };
 

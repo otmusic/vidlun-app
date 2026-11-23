@@ -1,5 +1,6 @@
 import type { EmotionVocabulary } from '../../domain/entities/EmotionVocabulary';
 import { MoodEntry } from '../../domain/entities/MoodEntry';
+import { mergedTopics } from '../../domain/entities/Topic';
 import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryRepository';
 import type { IReflectionAnalyzer } from '../../domain/ports/IReflectionAnalyzer';
 import type { IUnheardEntries } from '../../domain/ports/IUnheardEntries';
@@ -84,7 +85,8 @@ function merged(kept: MoodEntry, answer: MoodEntry): MoodEntry {
     mood: kept.mood ?? answer.mood,
     emotionIds: personAnswered ? kept.emotionIds : answer.emotionIds,
     proposedEmotionIds: answer.emotionIds,
-    contextTags: kept.contextTags.length > 0 ? kept.contextTags : answer.contextTags,
+    // The person's own topics stay, written in on the card; Vidlun's join them.
+    contextTags: mergedTopics(kept.contextTags, answer.contextTags),
     safetyFlag: answer.safetyFlag,
   });
 }

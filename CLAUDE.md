@@ -756,6 +756,10 @@ end-to-end with speech recognition disabled.
 - Do not "improve" the capture flow by adding steps, confirmations, or optional
   fields. The question the card opens with is not a precedent for granting
   others: it adds no wait, and it is the one thing the product exists to teach.
+  The owner made one more exception on 2026-11-23: a topic Vidlun missed is
+  written in on the card, under the words, before saving, five topics at
+  most; a saved entry's topics do not change. BACKLOG
+  §3ψψψ+++++++++++++++++++++++++++++++++.
 - Do not show Vidlun's observation before the person has given their answer.
   The rest of the reading is on the question card now, by the owner's word
   (2026-09-30, 2026-10-01): the words offered are the ones nearest to it, the

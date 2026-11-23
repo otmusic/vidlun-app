@@ -255,6 +255,7 @@ function Vidlun(props: {
     measureVoices: container.measureVoices,
     describeVoice: container.describeVoice,
     findSpokenMoment: container.findSpokenMoment,
+    knownTopics: container.knownTopics,
     microphonePermission: container.microphonePermission,
     getHomeView: container.getHomeView,
     getWeekSummary: container.getWeekSummary,

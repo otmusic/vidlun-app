@@ -1801,6 +1801,48 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++++++++++++++. A topic Vidlun missed, written in on the card — 2026-11-23
+
+The owner's word: a topic Vidlun got wrong comes off, and one it missed goes
+in, after recording and before saving; a saved entry's topics do not change.
+Five topics an entry at most. Drawn on the canvas page «Теми запису
+(новий)» (the entry-page boards there are marked as not built: the owner
+first chose them, then settled on the card the same day).
+
+- **On the card**, in the transcript's box, «Теми» is now always there: the
+  chips as before (one of Vidlun's taken off stays faded with «+», to be put
+  back), then the person's own, then a dashed «+ Додати тему». A topic of
+  one's own is taken away by its cross rather than faded.
+- **«+ Додати тему»** opens into a line in place (`CardTopics`, never a
+  Modal, which eats taps on iOS 26 with the keyboard up). Nothing is offered
+  under it: the person's topics from other entries were, for an hour, and
+  the owner took them out. Return adds what is typed, and "next" or "choose
+  together" adds a topic still being typed first, as with the own word. The
+  keyboard puts in no capital: Vidlun's topics are lower case; a name typed
+  with one keeps it. The line is a chip typed in the row where the topic
+  will stand, with its own round tick, pale until something is typed (the
+  owner's pick of two drawings, canvas «Своя тема: два варіанти поля», A;
+  the other was a line over the keyboard).
+- **Rules** (`Topic`): five topics, Vidlun's and the person's together
+  (`MAX_TOPICS`; Vidlun names three at most), and a faded one is put back
+  only while there is room; 30 characters; spaces tidied. Two spellings
+  that differ in case or apostrophe are one topic (`topicKey`): typing one
+  of Vidlun's taken-off topics puts it back, the card never holds one twice,
+  and a topic the journal has goes in with the journal's spelling, so the
+  week's themes do not split it (`KnownTopics`, read when the line opens,
+  so nothing on the way to the card waits for it).
+- **Saved** after Vidlun's (`keptTopics`), into the entry like any topic:
+  the week's themes, «Теми й настрій», the month and the backup count them.
+  `proposed` keeps what Vidlun heard. An entry Vidlun could not hear keeps
+  the person's topics, and Vidlun's join them once it has heard
+  (`mergedTopics`, up to five).
+- CLAUDE.md §9 keeps optional fields off the way in; the owner made this the
+  second exception after the question itself. It adds no wait: the card is
+  already up, and nothing is read until the line opens.
+- The privacy policy already lists topics among what the month sends.
+
+---
+
 ## 3ψψψ++++++++++++++++++++++++++++++++. One backup, to read and to restore — 2026-11-23
 
 The owner's word: the backup and the readable export looked like the same
