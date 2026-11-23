@@ -357,7 +357,7 @@
   "record.nearEnd": "Лишається {{n}} с",
   "profile.data": "Дані",
   "profile.backup": "Резервна копія",
-  "profile.backupHint": "Усі записи текстом і з голосом — щоб читати будь-де або повернути у Vidlun.",
+  "profile.backupHint": "Усі записи текстом і з голосом",
   "profile.backupLast": "Остання копія: {{when}}.",
   "profile.backupToday": "сьогодні",
   "profile.backupYesterday": "вчора",

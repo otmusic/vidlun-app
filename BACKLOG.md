@@ -1812,9 +1812,9 @@ the name «Резервна копія» (owner's word, 2026-11-23).
 - **On «Я»** the card has two rows again: «Резервна копія» with pill
   «Зберегти», and «Відновити з копії», whose line and error are unchanged.
   The backup's line before the first copy is «Усі записи текстом і з
-  голосом — щоб читати будь-де або повернути у Vidlun.» ("Every entry as
-  text, with its voice — to read anywhere or bring back into Vidlun."),
-  then the day of the last copy as before. «Експорт для читання» and its
+  голосом» ("Every entry as text, with its voice"; the owner cut the rest,
+  "to read anywhere or bring back into Vidlun", the same day), then the
+  day of the last copy as before. «Експорт для читання» and its
   six strings are gone; "to share with a professional" went with it,
   because the file is the whole journal now (below).
 - **The file** is the readable export's ZIP, same name («Vidlun — записи до

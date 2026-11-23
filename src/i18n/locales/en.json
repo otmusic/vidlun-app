@@ -357,7 +357,7 @@
   "record.nearEnd": "{{n}} sec left",
   "profile.data": "Your data",
   "profile.backup": "Backup",
-  "profile.backupHint": "Every entry as text, with its voice — to read anywhere or bring back into Vidlun.",
+  "profile.backupHint": "Every entry as text, with its voice",
   "profile.backupLast": "Last backup: {{when}}.",
   "profile.backupToday": "today",
   "profile.backupYesterday": "yesterday",
