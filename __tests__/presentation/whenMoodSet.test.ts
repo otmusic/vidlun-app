@@ -21,6 +21,7 @@ const reading = MoodEntry.create({
 
 const card: TurnStage = {
   kind: 'turn',
+  step: 'words',
   spoken: SPOKEN,
   chosen: [],
   draft: reading,

@@ -70,7 +70,8 @@ export function Chip(props: ChipProps): React.JSX.Element {
    * only names them. `filled` is what a selected chip becomes, so that picking
    * one is visible without a tick.
    */
-  const filled = props.selected === true && props.action === 'add';
+  // A chosen word on the card also carries the mark that takes it off (2026-11-23), and stays filled.
+  const filled = props.selected === true && (props.action === 'add' || props.action === 'remove');
   const line = props.color ?? theme.palette[tone.solid];
   /*
    * On a solid chip the text takes the ink that reads on that colour: paper

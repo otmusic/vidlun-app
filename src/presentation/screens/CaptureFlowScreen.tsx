@@ -23,9 +23,11 @@ import { HistoryScreen } from './HistoryScreen';
 import { HomeScreen } from './HomeScreen';
 import { ProcessingScreen } from './ProcessingScreen';
 import { ParkedScreen } from './ParkedScreen';
-import { CompareScreen } from './CompareScreen';
+import { CardFeelingsScreen } from './CardFeelingsScreen';
+import { CardMoodScreen } from './CardMoodScreen';
+import { CardTogetherScreen } from './CardTogetherScreen';
+import { CardWordsScreen } from './CardWordsScreen';
 import { RecordingScreen } from './RecordingScreen';
-import { TurnScreen } from './TurnScreen';
 import { ReflectionScreen } from './ReflectionScreen';
 import { AffirmationScreen, affirmationCaption } from './AffirmationScreen';
 import { AffirmationBloom, type BloomOrigin } from './AffirmationBloom';
@@ -205,6 +207,9 @@ function swipeBackFor(flow: CaptureFlow): (() => void) | null {
       return flow.backHome;
     case 'comparing':
       return flow.backToCard;
+    // The card's later steps go back a step; its first has nowhere to go but the bin.
+    case 'turn':
+      return flow.stage.step === 'words' ? null : flow.stepBack;
     case 'month':
       return flow.closeMonth;
     case 'months':
@@ -329,34 +334,65 @@ function Stage(
       );
 
     case 'turn': {
-      const offered = wordsFor(flow.stage, props.vocabulary);
+      const card = flow.stage;
+      const offered = wordsFor(card, props.vocabulary);
+      const draft = card.draft;
 
       // The card goes up whole, once there are words to offer (owner's word, 2026-10-01).
-      if (offered === null) {
+      if (offered === null || draft === null) {
         return <ProcessingScreen t={t} />;
       }
 
+      // Three steps (owner's word, 2026-11-23): the words, the feelings, the mood.
+      if (card.step === 'words') {
+        return (
+          <CardWordsScreen
+            transcript={card.spoken.text}
+            createdAt={draft.createdAt}
+            take={flow.take}
+            topics={{ proposed: draft.contextTags, dropped: card.droppedTopics, added: card.addedTopics }}
+            locale={props.locale}
+            t={t}
+            onCorrect={flow.correctWording}
+            onToggleTopic={flow.toggleTopic}
+            onAddTopic={flow.addTopic}
+            onOpenTopic={flow.readKnownTopics}
+            onNext={flow.toFeelings}
+            onDiscard={flow.discardEntry}
+          />
+        );
+      }
+
+      if (card.step === 'feelings') {
+        return (
+          <CardFeelingsScreen
+            transcript={card.spoken.text}
+            createdAt={draft.createdAt}
+            chosen={card.chosen}
+            vocabulary={props.vocabulary}
+            offered={offered}
+            choseTogether={card.namedAlone !== null}
+            locale={props.locale}
+            t={t}
+            onToggle={flow.toggleOwnWord}
+            onAddWord={flow.addOwnWord}
+            onNext={flow.toMood}
+            onTogether={flow.chooseTogether}
+            onBack={flow.stepBack}
+            onDiscard={flow.discardEntry}
+          />
+        );
+      }
+
       return (
-        <TurnScreen
-          transcript={flow.stage.spoken.text}
-          chosen={flow.stage.chosen}
-          vocabulary={props.vocabulary}
-          offered={offered}
+        <CardMoodScreen
+          createdAt={draft.createdAt}
+          mood={card.mood ?? draft.mood?.value ?? null}
+          locale={props.locale}
           t={t}
-          onToggle={flow.toggleOwnWord}
-          onAddWord={flow.addOwnWord}
-          onCorrect={flow.correctWording}
-          onNext={flow.answer}
-          onTogether={flow.chooseTogether}
-          choseTogether={flow.stage.namedAlone !== null}
-          mood={flow.stage.mood ?? flow.stage.draft?.mood?.value ?? null}
           onMood={flow.setMood}
-          topics={flow.stage.draft?.contextTags ?? []}
-          droppedTopics={flow.stage.droppedTopics}
-          addedTopics={flow.stage.addedTopics}
-          onToggleTopic={flow.toggleTopic}
-          onAddTopic={flow.addTopic}
-          onOpenTopic={flow.readKnownTopics}
+          onSave={flow.answer}
+          onBack={flow.stepBack}
           onDiscard={flow.discardEntry}
         />
       );
@@ -364,15 +400,17 @@ function Stage(
 
     case 'comparing':
       return (
-        <CompareScreen
+        <CardTogetherScreen
           proposed={flow.stage.proposed}
           draft={flow.stage.draft}
           vocabulary={props.vocabulary}
+          locale={props.locale}
           t={t}
           onToggle={flow.toggleKept}
           onAddWord={flow.addKept}
-          onKeep={flow.keepChosenTogether}
+          onNext={flow.keepChosenTogether}
           onBack={flow.backToCard}
+          onDiscard={flow.discardEntry}
         />
       );
 

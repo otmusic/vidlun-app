@@ -27,6 +27,7 @@ const reading = MoodEntry.create({
 /** The question card with the reading in, the person having named one word. */
 const card: TurnStage = {
   kind: 'turn',
+  step: 'words',
   spoken: SPOKEN,
   chosen: ['happy.content'],
   draft: reading,

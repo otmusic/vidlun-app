@@ -27,6 +27,7 @@ function analysis(overrides: Partial<Parameters<typeof MoodEntry.create>[0]> = {
 
 const asking: CaptureStage = {
   kind: 'turn',
+  step: 'words',
   spoken: { text: 'Finished three tasks, happy, but very tired.', confidence: Confidence.of(0.9) },
   chosen: ['bad.tired'],
   draft: null,
@@ -62,7 +63,7 @@ describe('what happens when the analysis lands', () => {
   it('holds the analysis without putting it on screen', () => {
     const after = whenAnalysisLands(asking, analysis());
 
-    // TurnScreen is handed the transcript, the chosen words and `holding`, and
+    // The card's steps are handed the transcript, the chosen words and `holding`, and
     // nothing else — so carrying the draft here is what makes the comparison
     // instant, not what makes it visible.
     expect(after.kind === 'turn' ? after.draft : null).not.toBeNull();

@@ -60,13 +60,22 @@ import type { MilestoneSheetState } from '../components/MilestoneSheet';
 import type { IMicrophonePermission, PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 
 /**
- * The card, asking before it answers. One stage rather than two screens: the
- * question and the hold are the same card in two states. The card itself goes
- * up once Vidlun's reading is in (owner's word, 2026-10-01); until then the
- * stage is drawn as the processing screen.
+ * The card's steps (owner's word, 2026-11-23): the words and their topics,
+ * then what the person feels, then the mood, which saves. Choosing together
+ * leaves the feelings step for its own screen and comes back on the mood.
+ */
+export type CardStep = 'words' | 'feelings' | 'mood';
+
+/**
+ * The card, asking before it answers. One stage rather than one per step: the
+ * steps, the question and the hold are the same card in different states. The
+ * card itself goes up once Vidlun's reading is in (owner's word, 2026-10-01);
+ * until then the stage is drawn as the processing screen.
  */
 export interface TurnStage {
   readonly kind: 'turn';
+  /** Which of the card's steps is on screen. */
+  readonly step: CardStep;
   readonly spoken: Spoken;
   /** What the person has named so far. Empty is an answer, not a blank. */
   readonly chosen: readonly string[];
@@ -384,7 +393,15 @@ export interface CaptureFlow {
   readonly addTopic: (typed: string) => void;
   /** Reads the journal's topics for the line that has just opened, for the spelling a typed one is saved with. */
   readonly readKnownTopics: () => void;
-  /** Done answering: saves what was named, or waits for the reading to land. */
+  /** From the words to the feelings. */
+  readonly toFeelings: () => void;
+  /** From the feelings to the mood. */
+  readonly toMood: () => void;
+  /** One step back: the mood to the feelings, the feelings to the words. */
+  readonly stepBack: () => void;
+  /** The take behind the card, to play back on its first step; null for typed words and once it is gone. */
+  readonly take: string | null;
+  /** "Save" on the mood: saves what was named, or waits for the reading to land. */
   readonly answer: () => void;
   /** "Choose together": Vidlun's words, already chosen, beside whatever was named. */
   readonly chooseTogether: () => void;
@@ -397,7 +414,7 @@ export interface CaptureFlow {
   readonly toggleKept: (id: string) => void;
   /** Adds a word typed while choosing together; never takes one away. */
   readonly addKept: (id: string) => void;
-  /** "Save" on choosing together: back to the card with the words chosen there. */
+  /** "Choose a mood" on choosing together: on to the card's mood with the words chosen there. */
   readonly keepChosenTogether: () => void;
   /** From choosing together back to the question card, as it was. */
   readonly backToCard: () => void;
@@ -675,8 +692,8 @@ function cardAfterAnswer(card: TurnStage, proposed: MoodEntry, together: boolean
 }
 
 /**
- * Where "next" and "choose together" go from the question card: on, once the
- * reading is in, or holding for it, and on the moment it lands.
+ * Where "save" (the mood step) and "choose together" (the feelings step) go:
+ * on, once the reading is in, or holding for it, and on the moment it lands.
  *
  * Exported for the test, like `whenAnalysisLands`.
  */
@@ -691,9 +708,9 @@ export function whenAnswered(current: CaptureStage, together: boolean): CaptureS
 }
 
 /**
- * "Save" on choosing together: back to the entry's card with the words chosen
- * there on it, for the card's own "next" to write the entry (owner's word,
- * 2026-11-12). The mood is set on the card, and only there.
+ * "Choose a mood" on choosing together: on to the card's mood step with the
+ * words chosen there, for the card's own "save" to write the entry (owner's
+ * word, 2026-11-12 and 2026-11-23). The mood is set on the card, and only there.
  *
  * Exported for the test, like `whenAnalysisLands`.
  */
@@ -704,10 +721,36 @@ export function whenChosenTogether(current: CaptureStage): CaptureStage {
 
   return {
     ...current.card,
+    // On to the mood with the words chosen together (owner's word, 2026-11-23).
+    step: 'mood',
     draft: current.proposed,
     chosen: current.draft.emotionIds,
     namedAlone: current.draft.selfEmotionIds,
   };
+}
+
+/**
+ * The card moved to one of its steps, by its buttons and its back arrows.
+ * Anything else is left as it is: a tap that lands after the card is gone.
+ *
+ * Exported for the test, like `whenAnalysisLands`.
+ */
+export function whenStepped(current: CaptureStage, step: CardStep): CaptureStage {
+  return current.kind === 'turn' ? { ...current, step } : current;
+}
+
+/**
+ * Where the back arrow goes from a step: the mood to the feelings, the
+ * feelings to the words. The words are the first step and stay put.
+ *
+ * Exported for the test, like `whenAnalysisLands`.
+ */
+export function whenSteppedBack(current: CaptureStage): CaptureStage {
+  if (current.kind !== 'turn' || current.step === 'words') {
+    return current;
+  }
+
+  return whenStepped(current, current.step === 'mood' ? 'feelings' : 'words');
 }
 
 /** Any day inside the week `weeksBack` weeks before the one holding `from`. */
@@ -751,7 +794,7 @@ export function whenAnalysisLands(
 
   /*
    * Held, not shown whole. The draft is carried on the stage because the
-   * comparison needs it the instant the person answers. `TurnScreen` is given
+   * comparison needs it the instant the person answers. The card's steps are given
    * only what the owner put on the card — the words near the reading, its
    * mood and its topics (2026-09-30, 2026-10-01) — and never the observation,
    * so what the card can display and what the stage knows stay two sets.
@@ -837,6 +880,12 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
    * path on disk is not that.
    */
   const takeUri = useRef<string | null>(null);
+  /** The same take for the card to play back: a ref is not drawn. */
+  const [take, setTake] = useState<string | null>(null);
+  const holdTake = useCallback((uri: string | null) => {
+    takeUri.current = uri;
+    setTake(uri);
+  }, []);
 
   /*
    * Once the take's fate is settled. A kept take has been moved into the
@@ -847,9 +896,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const letTakeGo = useCallback(() => {
     if (takeUri.current !== null) {
       dependencies.recorder.discard(takeUri.current);
-      takeUri.current = null;
+      holdTake(null);
     }
-  }, [dependencies.recorder]);
+  }, [dependencies.recorder, holdTake]);
   const [parked, setParked] = useState<ParkedTake | null>(null);
   const [micStatus, setMicStatus] = useState<PermissionStatus>('undetermined');
   const [milestones, setMilestones] = useState<readonly Milestone[]>([]);
@@ -1195,9 +1244,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         })
         .catch((error: unknown) => {
           // The words and the answer are still in hand: the card comes back
-          // as it stood, for one more tap on "next".
+          // as it stood, for one more tap on "save".
           fail(error, {
             kind: 'turn',
+            // Back on the step the save was asked from, for one more tap on it.
+            step: 'mood',
             spoken,
             chosen,
             draft,
@@ -1233,6 +1284,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
        */
       setStage({
         kind: 'turn',
+        step: 'words',
         spoken,
         chosen: [],
         draft: null,
@@ -1336,7 +1388,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         // Fires for a tap and for the ceiling alike: the person may not be looking.
         dependencies.haptics.settle();
 
-        takeUri.current = take.uri;
+        holdTake(take.uri);
         setStage({ kind: 'processing' });
 
         // Alongside the recognition, not after it: both read the same file.
@@ -1413,7 +1465,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         }
 
         backfillAt.current = waiting.recordedAt;
-        takeUri.current = waiting.recording.uri;
+        holdTake(waiting.recording.uri);
         setParked(null);
 
         const voice = hearVoice(waiting.recording.uri);
@@ -1750,7 +1802,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, [dependencies.clock, withinDailyLimit]),
     submitText: useCallback(
       (text: string) => {
-        takeUri.current = null;
+        holdTake(null);
         // Full confidence for the same reason CreateTextEntry grants it:
         // nothing was heard, so nothing was misheard.
         ask(
@@ -1947,6 +1999,16 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         .then(setKnownTopics)
         .catch(() => undefined);
     }, [dependencies.knownTopics]),
+    toFeelings: useCallback(() => {
+      setStage((current) => whenStepped(current, 'feelings'));
+    }, []),
+    toMood: useCallback(() => {
+      setStage((current) => whenStepped(current, 'mood'));
+    }, []),
+    stepBack: useCallback(() => {
+      setStage(whenSteppedBack);
+    }, []),
+    take,
     answer: useCallback(() => {
       // Vidlun could not listen: nothing to compare against, and nothing
       // coming. The answer given is the whole entry.
@@ -1962,9 +2024,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, [saveUnheard, stage]),
     chooseTogether: useCallback(() => {
       // Vidlun could not listen: there is nothing to choose together with,
-      // and what was named so far is the whole entry.
+      // and what was named so far goes on to the mood as the whole answer.
       if (stage.kind === 'turn' && stage.unheard && stage.draft !== null) {
-        saveUnheard(stage.draft, stage.chosen, stage.spoken, stage.mood, stage.addedTopics);
+        setStage((current) => whenStepped(current, 'mood'));
 
         return;
       }
@@ -1973,7 +2035,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       // having no answer, and what they named before seeing Vidlun's is
       // still the unaided measurement.
       setStage((current) => whenAnswered(current, true));
-    }, [saveUnheard, stage]),
+    }, [stage]),
     correctWording: useCallback(
       (text: string) => {
         const corrected = text.trim();

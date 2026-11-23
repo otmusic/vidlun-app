@@ -23,6 +23,7 @@ const wordsAlone = MoodEntry.create({
 
 const asking: CaptureStage = {
   kind: 'turn',
+  step: 'words',
   spoken: SPOKEN,
   chosen: ['bad.tired'],
   draft: null,

@@ -1801,6 +1801,54 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++++++++++++++. The card in three steps — 2026-11-23
+
+The owner's word: the card after a recording was one page too full — the
+words, their topics, the repair, the question, the words offered, the
+mood and two buttons. It is three steps now, drawn on the canvas page
+«Картка: фінальний флоу» after a day of drawings (one-page redesigns, two
+steps, the mood on a page of its own, six mood screens, four places for
+the repair).
+
+- **1 «Твої слова»** (`CardWordsScreen`): for a spoken entry the take to
+  play back (`Playback`, inline), then the whole transcript, never
+  shortened (owner's word); «✎ Виправити», a small labelled pill beside
+  the heading, opens the repair in place (the owner's pick of four: a
+  pencil alone was easy to miss, a whole-width button stood a second large
+  button over the way on); the topics as before. «Обери емоцію» goes on.
+- **2 «Що ти зараз відчуваєш?»** (`CardFeelingsScreen`): one row — the
+  nearest words, a chosen one filled where it stands with its cross, a
+  word of one's own after them, and «+ Додати емоцію» (the production
+  name, owner's word) as a chip typed in place with its tick (`ChipField`,
+  shared with the topics). The box of chosen words above the list is gone.
+  «Обери настрій» (was «Далі»; named for where it goes, owner's word
+  2026-11-23) needs a word, as before; «Обрати разом» opens 2′.
+- **2′ «Обираємо разом»** (`CardTogetherScreen`, was `CompareScreen`):
+  only emotions — what Vidlun heard, already chosen, and what the person
+  named before asking — plus «+ Додати емоцію» (owner's word). No other
+  offers, no topics, no mood. «Обери настрій» goes to the mood.
+- **3 «Який зараз настрій?»** (`CardMoodScreen`, `MoodList`): the quiet
+  list without plates (the owner's pick of six): a dot and a name, highest
+  first; Vidlun's mood already chosen, with no mark saying whose it is
+  (owner's word); the chosen row takes its soft ground, bold letters and a
+  tick. «Зберегти» saves.
+- Every step (`CardPage`, `CardHeader`): three bars, «Новий запис · 21:14»,
+  the bin that asks; a back arrow from the second step (and the edge
+  swipe), keeping everything chosen. The buttons stay at the foot of the
+  screen; the content scrolls under them.
+- **State** (`useCaptureFlow`): the card's stage carries a `step`
+  (`whenStepped`, `whenSteppedBack`); choosing together comes back on the
+  mood (`whenChosenTogether`); an entry Vidlun could not hear goes from
+  «Обрати разом» to the mood. Saving is unchanged (`whenAnswered`,
+  `cardAfterAnswer`), only asked from the mood now.
+- **Cost:** two more taps than the one page («Обери емоцію», «Зберегти»).
+  CLAUDE.md §9 notes the owner's exception.
+- Removed: `TurnScreen`, `CompareScreen`, `OwnWordField`, `FixWording`,
+  `EmotionShelf`. `Chip` keeps a chosen word filled when it carries its
+  cross.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++++++++++++++. A topic Vidlun missed, written in on the card — 2026-11-23
 
 The owner's word: a topic Vidlun got wrong comes off, and one it missed goes
