@@ -203,13 +203,20 @@ export function HistoryScreen(props: {
            * at zero, as home's is.
            */
           <View style={{ gap: 16, marginBottom: 26 }}>
+          {/*
+            The gap is only the least the title and the pill may stand apart:
+            spread to the edges, they are further apart than that on any
+            phone. Kept at 8 so a three-digit count stays beside the title
+            on a 390pt phone (owner's word, 2026-11-20, on a 14 Pro).
+          */}
           <View
             style={{
               flexDirection: 'row',
               flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: 12,
+              columnGap: 8,
+              rowGap: 12,
             }}
           >
             <AppText variant="display">{t('feed.title')}</AppText>

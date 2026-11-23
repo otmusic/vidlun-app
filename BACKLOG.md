@@ -1801,6 +1801,25 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++++++++++++. The journal's count stays beside its title — 2026-11-20
+
+The owner's word: on a 14 Pro the count and the filter fell under
+«Щоденник».
+
+- **Why:** from 100 entries the row needed 360 pt, and a 393 pt phone has
+  349 between its margins: the pill's tabular digits, its dot, and a 12 pt
+  least gap. A 402 pt phone was 2 pt short of the same.
+- **The dot before the number is gone** (owner's word, `CountPill`): it said
+  nothing the number did not, and it cost 13 pt.
+- **The least gap between the title and the pill is 8 pt**, not 12; spread
+  to the edges they stand further apart than that on any phone (about 10 pt
+  on a 390 pt one). A three-digit count now fits beside the title on a
+  390 pt phone; 1,000 entries or a larger text size still wrap under it,
+  rather than clip.
+- Checked on the iPhone 17e simulator (390 pt) with 128 entries.
+
+---
+
 ## 3ψψψ++++++++++++++++++++++++++++++. Search what was said, and hear it — 2026-11-20
 
 The owner's word (plan item 9), drawn on the canvas page "Пошук по

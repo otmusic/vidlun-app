@@ -28,7 +28,11 @@ export function CountPill(props: { readonly value: number; readonly label: strin
       }}
     >
       <Volume radius="round" strength={theme.isDark ? 0.35 : 0.9} />
-      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.palette.accent }} />
+      {/*
+        No dot before the number (owner's word, 2026-11-20): it said nothing
+        the number did not, and its 13pt pushed a three-digit count under
+        the title on a 393pt phone.
+      */}
       {/* The pill shares a row with a heading; past 1.2 the two no longer fit side by side. */}
       <AppText variant="numeric" maxScale={1.2} style={{ fontSize: 14 }}>
         {String(props.value)}
