@@ -3,12 +3,14 @@ import { Directory, File, Paths } from 'expo-file-system';
 import type { ILeftoverFiles } from '../../domain/ports/ILeftoverFiles';
 import { OPENED, OUT, STAGING } from './NativeBackupArchive';
 import { HELD_VOICES } from '../persistence/FileRecordingStore';
+import { MONTH_VOICE } from '../voice/NativeVoiceMontage';
 
 /**
  * Where expo-document-picker puts its copies, the three folders a backup
  * passes through (put together, waiting for the share sheet, opened), the
  * two the readable export used before it became the backup (1.12 builds on
- * TestFlight), and the voices held while a deletion could still be undone.
+ * TestFlight), the voices held while a deletion could still be undone, and
+ * a month joined into one file to be heard in its own voice.
  */
 const FOLDERS: ReadonlySet<string> = new Set([
   'DocumentPicker',
@@ -18,6 +20,7 @@ const FOLDERS: ReadonlySet<string> = new Set([
   'readable-staging',
   'readable-export',
   HELD_VOICES,
+  MONTH_VOICE,
 ]);
 
 /**

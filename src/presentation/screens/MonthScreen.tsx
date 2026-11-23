@@ -1,9 +1,13 @@
 import { ScrollView, View } from 'react-native';
 
+import type { PlayableMonth } from '@/application/use-cases/ComposeMonthVoice';
 import type { MonthSummary } from '@/application/use-cases/GetMonthSummary';
+import type { MoodEntry } from '@/domain/entities/MoodEntry';
+import type { MonthVoice, MonthVoiceMode } from '@/domain/entities/MonthVoice';
 import type { Locale, Translate } from '@/i18n';
 
 import { AppText } from '../components/AppText';
+import { MonthVoicePlayer } from '../components/MonthVoicePlayer';
 import { RoundBack } from '../components/RoundBack';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
@@ -14,6 +18,9 @@ import { useTheme } from '../theme/ThemeProvider';
  * one from the list of past months (owner's word, 2026-10-06). The card's own
  * two lines, then the prose. Only someone who can read it is brought here;
  * everyone else is taken to the plans.
+ *
+ * Under the prose, the month heard in its own voice (owner's word,
+ * 2026-11-23), when any of its entries kept a voice.
  */
 export function MonthScreen(props: {
   /** Null for the moment its shape is read. */
@@ -22,6 +29,10 @@ export function MonthScreen(props: {
   /** Today, so a month from another year says which year. */
   readonly today: Date;
   readonly t: Translate;
+  /** The month's voice, or null while it is gathered and when there is none to hear. */
+  readonly voice: MonthVoice | null;
+  readonly composeVoice: (voice: MonthVoice, mode: MonthVoiceMode) => Promise<PlayableMonth | null>;
+  readonly onOpenEntry: (entry: MoodEntry) => void;
   readonly onBack: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
@@ -36,6 +47,18 @@ export function MonthScreen(props: {
       <RoundBack t={props.t} onPress={props.onBack} />
       {props.month === null ? null : (
         <MonthPanel month={props.month} locale={props.locale} today={props.today} t={props.t} />
+      )}
+      {props.month === null || props.voice === null ? null : (
+        <MonthVoicePlayer
+          voice={props.voice}
+          locale={props.locale}
+          t={props.t}
+          title={props.t('home.monthKicker', {
+            month: monthNameOf(props.month.monthStart, props.locale, props.today),
+          })}
+          compose={props.composeVoice}
+          onOpenEntry={props.onOpenEntry}
+        />
       )}
     </ScrollView>
   );
@@ -53,10 +76,7 @@ function MonthPanel(props: {
   readonly t: Translate;
 }): React.JSX.Element {
   const theme = useTheme();
-  const start = props.month.monthStart;
-  const name = start.toLocaleDateString(props.locale, { month: 'long' });
-  const monthName =
-    start.getFullYear() === props.today.getFullYear() ? name : `${name} ${start.getFullYear()}`;
+  const monthName = monthNameOf(props.month.monthStart, props.locale, props.today);
   const paragraphs = (props.month.narrative ?? '')
     .split('\n')
     .filter((line) => line.trim().length > 0);
@@ -104,4 +124,11 @@ function MonthPanel(props: {
       )}
     </View>
   );
+}
+
+/** The month's name, with its year when it is not this year's. */
+function monthNameOf(start: Date, locale: Locale, today: Date): string {
+  const name = start.toLocaleDateString(locale, { month: 'long' });
+
+  return start.getFullYear() === today.getFullYear() ? name : `${name} ${start.getFullYear()}`;
 }

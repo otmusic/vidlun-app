@@ -1801,6 +1801,50 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++++++++++++++++. The month heard in its own voice — 2026-11-23
+
+Owner's word "бери місяць голосом" on the canvas page «Місяць голосом»
+(the proposal there, open questions settled as advised).
+
+- **Where:** the month page, under the prose (`MonthScreen` →
+  `MonthVoicePlayer`). Shown only when an entry of the month kept a voice;
+  the month page is already the subscription's, so the player is too. The
+  plans list a new line, «Послухати свій місяць голосом» (`subs.perkMonthVoice`).
+- **What plays:** every entry of the month with a kept take, first to last
+  (`GetMonthVoice`). Typed entries and ones recorded with keeping off have no
+  take and are not in it. Hard entries (distress, crisis) are heard like any
+  other, and nothing is written under the block (owner's word, 2026-11-23,
+  replacing the proposal's leaving them out with a quiet line).
+- **Two modes:** «По 10 секунд» (`GLIMPSE_MS`; a take cut short fades out
+  over 600 ms) and «Цілком». 700 ms of quiet between takes.
+- **One file:** the takes are joined on the phone into one AAC file
+  (`ComposeMonthVoice` → `NativeVoiceMontage` → `MonthMontage.swift` in the
+  voice module: AVMutableComposition + AVAssetExportSession). One file plays
+  on with the screen off without the app waking between takes, and the lock
+  screen shows one player. The file lives in the cache folder `month-voice`:
+  one at a time, removed when the month page closes, swept at launch
+  (`CacheLeftovers`). Nothing leaves the phone.
+- **Playing:** «5 з 18», the strip filling take by take, the day and the
+  sentence being heard (a tap pauses and opens the entry; back from the
+  entry returns to the month), back / pause / on. Back restarts the take
+  after 2 s, else goes to the one before. Switching modes while playing
+  goes on from the same take.
+- **Background:** `UIBackgroundModes: audio` (app.json `enableBackgroundPlayback`
+  and ios Info.plist by hand). The month player alone asks for the
+  background (`shouldPlayInBackground`, `doNotMix` for the lock screen
+  controls) and puts the session back when it leaves. App Review should be
+  told why the mode is there (scratchpad review notes).
+- **Lock screen and Dynamic Island** (owner's pick of two, variant A, canvas
+  «Місяць голосом: заблокований екран і острівець»): iOS draws both; the
+  title is the take's day and time («22 жовтня · 22:00»), the subtitle the
+  month and how far («Твій жовтень · 5 з 18»), the picture Vidlun's mark on
+  its dark ground (`assets/month-voice-artwork.png`, the icon at 600 px).
+  Nothing from what was said: anyone near can see a lock screen. ◀◀ ▶▶ go
+  between entries, as the page's own buttons do: the voice module registers
+  MPRemoteCommandCenter's previous/next track commands while a month plays
+  (`listenForTracks`, `setTrackCommands`); expo-audio alone has only ±10 s.
+- **Later (owner's call):** a ▶ on home's month card and in «Твої місяці».
+
 ## 3ψψψ++++++++++++++++++++++++++++++++++. The card in three steps — 2026-11-23
 
 The owner's word: the card after a recording was one page too full — the

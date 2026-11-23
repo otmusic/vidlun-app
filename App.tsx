@@ -261,6 +261,8 @@ function Vidlun(props: {
     getWeekSummary: container.getWeekSummary,
     getWeekNeighbours: container.getWeekNeighbours,
     getMonthSummary: container.getMonthSummary,
+    getMonthVoice: container.getMonthVoice,
+    composeMonthVoice: container.composeMonthVoice,
     getPastMonths: container.getPastMonths,
     getWeekThemes: container.getWeekThemes,
     findMoodPatterns: container.findMoodPatterns,

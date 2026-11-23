@@ -24,6 +24,9 @@ import { MoodEntry } from '@/domain/entities/MoodEntry';
 import { type CardTopics, keptTopics, withTopicAdded, withTopicToggled } from '@/domain/entities/Topic';
 import type { LegalDocumentKind } from '@/i18n/legal';
 import type { GetMonthSummary, MonthSummary } from '@/application/use-cases/GetMonthSummary';
+import type { ComposeMonthVoice, PlayableMonth } from '@/application/use-cases/ComposeMonthVoice';
+import type { GetMonthVoice } from '@/application/use-cases/GetMonthVoice';
+import type { MonthVoice, MonthVoiceMode } from '@/domain/entities/MonthVoice';
 import type { GetPastMonths, PastMonth } from '@/application/use-cases/GetPastMonths';
 import type { StatsView } from '@/presentation/screens/StatsScreen';
 import type { JournalFocus } from '@/presentation/screens/journalFilter';
@@ -126,6 +129,23 @@ export interface TurnStage {
   readonly namedAlone: readonly string[] | null;
 }
 
+/**
+ * A month written back: the one just ended behind home's card, or any
+ * earlier one from the list of past months (owner's word, 2026-10-06).
+ * Null while its shape is read; the prose is written in after. `from` is
+ * where its back arrow goes.
+ */
+export interface MonthStage {
+  readonly kind: 'month';
+  readonly month: MonthSummary | null;
+  readonly from: 'idle' | 'months';
+  /**
+   * The month heard in its own voice (owner's word, 2026-11-23); null while
+   * it is gathered, and when no entry of the month kept a voice.
+   */
+  readonly voice: MonthVoice | null;
+}
+
 export type CaptureStage =
   | { readonly kind: 'idle' }
   | { readonly kind: 'recording' }
@@ -217,13 +237,7 @@ export type CaptureStage =
    * remembers you were reading June is a screen you have to navigate out of.
    */
   | { readonly kind: 'stats'; readonly weeksBack: number; readonly view: StatsView | null }
-  /**
-   * A month written back: the one just ended behind home's card, or any
-   * earlier one from the list of past months (owner's word, 2026-10-06).
-   * Null while its shape is read; the prose is written in after. `from` is
-   * where its back arrow goes.
-   */
-  | { readonly kind: 'month'; readonly month: MonthSummary | null; readonly from: 'idle' | 'months' }
+  | MonthStage
   /** Every past month with something to read, behind the statistics screen. Null while counted. */
   | { readonly kind: 'months'; readonly months: readonly PastMonth[] | null }
   /** The other half of the insights screen, and its own screen in the drawing. */
@@ -243,6 +257,11 @@ export type CaptureStage =
        * opened from home.
        */
       readonly from: 'idle' | 'history';
+      /**
+       * The month it was opened from, as it stood, when it was opened from
+       * the month heard in its own voice: closing goes back there instead.
+       */
+      readonly backTo: MonthStage | null;
       readonly entry: MoodEntry;
       /** Null while it is being looked up, and if there is none. */
       readonly recordingUri: string | null;
@@ -311,6 +330,8 @@ export interface CaptureDependencies {
   readonly getWeekSummary: GetWeekSummary;
   readonly getWeekNeighbours: GetWeekNeighbours;
   readonly getMonthSummary: GetMonthSummary;
+  readonly getMonthVoice: GetMonthVoice;
+  readonly composeMonthVoice: ComposeMonthVoice;
   readonly getPastMonths: GetPastMonths;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
@@ -504,6 +525,8 @@ export interface CaptureFlow {
   readonly openMonthOf: (monthStart: Date) => void;
   /** The month page's back: to the list when it was opened there, home otherwise. */
   readonly closeMonth: () => void;
+  /** The month's takes joined into one file to play, in a mode. */
+  readonly composeMonthVoice: (voice: MonthVoice, mode: MonthVoiceMode) => Promise<PlayableMonth | null>;
   readonly openVocabulary: () => void;
   /** Re-counts the vocabulary over a period the person picked. */
   readonly showPeriod: (period: { readonly from: Date; readonly to: Date }) => void;
@@ -1577,12 +1600,24 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         return;
       }
 
-      setStage({ kind: 'month', month: null, from });
+      setStage({ kind: 'month', month: null, from, voice: null });
 
       void dependencies.getMonthSummary
         .execute({ withNarrative: false, month })
         .then(async (shape) => {
           setStage((current) => (current.kind === 'month' ? { ...current, month: shape } : current));
+
+          // The voice is gathered beside the prose; one that cannot be leaves the page as it was.
+          void dependencies.getMonthVoice
+            .execute(shape.monthStart)
+            .then((voice) => {
+              setStage((current) =>
+                current.kind === 'month' && current.month?.monthStart.getTime() === shape.monthStart.getTime()
+                  ? { ...current, voice }
+                  : current,
+              );
+            })
+            .catch(() => undefined);
 
           const written = await dependencies.getMonthSummary.execute({ withNarrative: true, month });
 
@@ -1593,7 +1628,13 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           fail(error, from === 'idle' ? { kind: 'idle' } : undefined);
         });
     },
-    [dependencies.getMonthSummary, dependencies.hasNarrativeAccess, fail, openSubscription],
+    [
+      dependencies.getMonthSummary,
+      dependencies.getMonthVoice,
+      dependencies.hasNarrativeAccess,
+      fail,
+      openSubscription,
+    ],
   );
 
   const openMonth = useCallback(() => {
@@ -1891,6 +1932,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           recordingUri: null,
           voice: null,
           from: current.kind === 'history' ? 'history' : 'idle',
+          backTo: current.kind === 'month' ? current : null,
           found: query === null ? null : (found ?? null),
           playFromMs: null,
         }));
@@ -1938,7 +1980,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       [dependencies.findRecording, dependencies.describeVoice, dependencies.findSpokenMoment],
     ),
     closeEntry: useCallback(() => {
-      setStage((current) => (current.kind === 'detail' ? { kind: current.from } : current));
+      setStage((current) => (current.kind === 'detail' ? (current.backTo ?? { kind: current.from }) : current));
       reloadHome();
     }, [reloadHome]),
     toggleOwnWord: useCallback((id: string) => {
@@ -2147,6 +2189,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       [showMonth],
     ),
     closeMonth: useCallback(() => {
+      // The month's voice joined into one file goes with the page.
+      void dependencies.composeMonthVoice.forget();
+
       if (stage.kind === 'month' && stage.from === 'months') {
         openMonths();
 
@@ -2155,7 +2200,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
       setStage({ kind: 'idle' });
       reloadHome();
-    }, [openMonths, reloadHome, stage]),
+    }, [dependencies.composeMonthVoice, openMonths, reloadHome, stage]),
+    composeMonthVoice: useCallback(
+      (voice: MonthVoice, mode: MonthVoiceMode) => dependencies.composeMonthVoice.execute(voice, mode),
+      [dependencies.composeMonthVoice],
+    ),
     openLegal: useCallback((doc: LegalDocumentKind) => {
       setStage({ kind: 'legal', doc });
     }, []),
@@ -2265,6 +2314,11 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         pendingDelete.current = null;
         setUndoable(null);
 
+        // A card opened from the month's voice goes back to the month, which
+        // is heard again without the entry.
+        const backToMonth = stage.kind === 'detail' && stage.entry.id === id ? stage.backTo : null;
+        const monthStart = backToMonth?.month?.monthStart ?? null;
+
         // Reloading rather than dropping the row locally: the streak is
         // counted from what is stored, and it may have just changed. History
         // is refreshed too, since the row may have been deleted from there.
@@ -2278,16 +2332,29 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             // delete must not leave behind. Back to wherever it was opened
             // from — and only for that card, since a row swiped away in a list
             // should leave the list where it is.
-            setStage((current) =>
-              current.kind === 'detail' && current.entry.id === id
-                ? { kind: current.from }
-                : current,
-            );
+            setStage((current) => {
+              if (current.kind !== 'detail' || current.entry.id !== id) {
+                return current;
+              }
+
+              return current.backTo === null ? { kind: current.from } : { ...current.backTo, voice: null };
+            });
+
+            if (monthStart !== null) {
+              const voice = await dependencies.getMonthVoice.execute(monthStart).catch(() => null);
+
+              setStage((current) =>
+                current.kind === 'month' && current.month?.monthStart.getTime() === monthStart.getTime()
+                  ? { ...current, voice }
+                  : current,
+              );
+            }
+
             await refreshAfterDelete();
           })
           .catch(fail);
       },
-      [dependencies.deleteEntry, refreshAfterDelete, fail],
+      [dependencies.deleteEntry, dependencies.getMonthVoice, refreshAfterDelete, fail, stage],
     ),
     undoable,
     undoDelete: useCallback(() => {

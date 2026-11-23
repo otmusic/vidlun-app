@@ -43,6 +43,8 @@ import type { ILeftoverFiles } from '../domain/ports/ILeftoverFiles';
 import type { IBackupLedger } from '../domain/ports/IBackupLedger';
 import { GetMonthSummary } from '../application/use-cases/GetMonthSummary';
 import { GetPastMonths } from '../application/use-cases/GetPastMonths';
+import { GetMonthVoice } from '../application/use-cases/GetMonthVoice';
+import { ComposeMonthVoice } from '../application/use-cases/ComposeMonthVoice';
 import { ImportJournal } from '../application/use-cases/ImportJournal';
 import { BackUpJournal } from '../application/use-cases/BackUpJournal';
 import { RestoreJournal } from '../application/use-cases/RestoreJournal';
@@ -107,10 +109,11 @@ import { AsyncStorageBackupLedger } from '../infrastructure/persistence/AsyncSto
 import { MeasureVoices } from '../application/use-cases/MeasureVoices';
 import { AsyncStorageVoiceReadings } from '../infrastructure/persistence/AsyncStorageVoiceReadings';
 import { NativeSpeechTimeline } from '../infrastructure/voice/NativeSpeechTimeline';
+import { NativeVoiceMontage } from '../infrastructure/voice/NativeVoiceMontage';
 import { NativeVoiceAnalyzer } from '../infrastructure/voice/NativeVoiceAnalyzer';
 import { DescribeVoice } from '../application/use-cases/DescribeVoice';
 import { FindSpokenMoment } from '../application/use-cases/FindSpokenMoment';
-import { analyzeVoice, speechSpans } from '../../modules/vidlun-voice';
+import { analyzeVoice, composeMontage, montageLengths, speechSpans } from '../../modules/vidlun-voice';
 import { nativeBackup } from '../../modules/vidlun-backup';
 import {
   TimedMessagesClient,
@@ -158,6 +161,9 @@ export interface Container {
   readonly getWeekSummary: GetWeekSummary;
   readonly getWeekNeighbours: GetWeekNeighbours;
   readonly getMonthSummary: GetMonthSummary;
+  /** The month heard in its own voice: which takes, and the file they are joined into. */
+  readonly getMonthVoice: GetMonthVoice;
+  readonly composeMonthVoice: ComposeMonthVoice;
   readonly getPastMonths: GetPastMonths;
   readonly getWeekThemes: GetWeekThemes;
   readonly findMoodPatterns: FindMoodPatterns;
@@ -330,6 +336,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
   const installedVersion = Constants.expoConfig?.version ?? null;
   const revisionLog = new AsyncStorageRevisionLog(AsyncStorage);
   const recordings = new FileRecordingStore(nativeBackup);
+  const montage = new NativeVoiceMontage({ lengths: montageLengths, compose: composeMontage });
   const backupArchive = new NativeBackupArchive(nativeBackup);
   const milestones = new AsyncStorageMilestones(AsyncStorage);
   const unheard = new AsyncStorageUnheardEntries(AsyncStorage);
@@ -400,6 +407,8 @@ export function createContainer(dependencies: ContainerDependencies): Container 
       clock,
       describeVoice,
     ),
+    getMonthVoice: new GetMonthVoice(repository, recordings, montage),
+    composeMonthVoice: new ComposeMonthVoice(montage),
     getPastMonths: new GetPastMonths(repository, clock),
     getWeekThemes: new GetWeekThemes(repository),
     findMoodPatterns: new FindMoodPatterns(repository),

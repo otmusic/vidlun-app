@@ -197,12 +197,13 @@ export function SubscriptionScreen(props: {
   );
 }
 
-/** What the subscription opens, in the owner's order (2026-11-17). */
+/** What the subscription opens, in the owner's order (2026-11-17; the month's voice 2026-11-23). */
 const PERKS: readonly TranslationKey[] = [
   'subs.perkJournal',
   'subs.perkEntries',
   'subs.perkAudio',
   'subs.perkMonth',
+  'subs.perkMonthVoice',
   'subs.perkPatterns',
   'subs.perkAffirmations',
 ];

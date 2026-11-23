@@ -507,6 +507,9 @@ function Stage(
           locale={props.locale}
           today={props.today}
           t={t}
+          voice={flow.stage.voice}
+          composeVoice={flow.composeMonthVoice}
+          onOpenEntry={flow.openEntry}
           onBack={flow.closeMonth}
         />
       );
