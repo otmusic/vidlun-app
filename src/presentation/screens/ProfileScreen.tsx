@@ -81,12 +81,10 @@ export function ProfileScreen(props: {
   readonly onOpenSubscription: () => void;
   /** Apple's sheet for an offer code: six months free (owner's word, 2026-11-19). */
   readonly onRedeemCode: () => void;
-  /** Hands one export file to the share sheet; null label means nothing yet. */
-  readonly onExport: (shape: 'backup' | 'markdown') => void;
+  /** Makes the backup and hands it to the share sheet. */
+  readonly onBackUp: () => void;
   /** How far a backup in progress is; null while none runs. */
   readonly backupProgress: BackupProgress | null;
-  /** How far a readable export in progress is; null while none runs. */
-  readonly exportProgress: BackupProgress | null;
   /** When a backup was last handed over; null before the first. */
   readonly lastBackup: Date | null;
   /** The clock's today, for saying "today" and "yesterday". */
@@ -256,9 +254,10 @@ export function ProfileScreen(props: {
 
       {/*
         The paywall's free-forever list promises backup; this is where the
-        promise is kept. Two shapes on purpose: the JSON file is the copy
-        that comes back, the markdown one is for reading somewhere else.
-        No drawing exists for this section yet — it wears Row like the rest.
+        promise is kept. One file since 2026-11-23 (owner's word, drawn on
+        the canvas's backup page): the journal to read anywhere, with its
+        voice, and the copy that comes back. It used to be two rows, a
+        backup and a readable export, and nobody could tell which to keep.
       */}
       {/*
         The drawing's backup card shows a copy in iCloud with a "manage"
@@ -277,25 +276,9 @@ export function ProfileScreen(props: {
         <Row
           title={t('profile.backup')}
           hint={backupHint(props.backupProgress, props.lastBackup, props.today, settings.locale, t)}
-          onPress={() => {
-            props.onExport('backup');
-          }}
+          onPress={props.onBackUp}
         >
           <Pill label={t('profile.backupAction')} />
-        </Row>
-        {/*
-          The readable export (owner's word, 2026-11-19, drawn in the canvas's
-          export page): between the backup and the way back, built like the
-          backup's row. Free, and every entry in it, a closed one too.
-        */}
-        <Row
-          title={t('profile.exportMd')}
-          hint={exportHint(props.exportProgress, t)}
-          onPress={() => {
-            props.onExport('markdown');
-          }}
-        >
-          <Pill label={t('profile.exportAction')} />
         </Row>
         <Row title={t('profile.restore')} hint={t('profile.restoreHint')} onPress={props.onRestore}>
           <Pill label={t('profile.restoreAction')} />
@@ -735,17 +718,6 @@ function backupHint(
   return progress.total === 0
     ? t('profile.backupPreparing')
     : t('profile.backupProgress', { done: progress.done, total: progress.total });
-}
-
-/** The readable export's line, the same way: what it does, or how far it has got. */
-function exportHint(progress: BackupProgress | null, t: Translate): string {
-  if (progress === null) {
-    return t('profile.exportMdHint');
-  }
-
-  return progress.total === 0
-    ? t('profile.exportPreparing')
-    : t('profile.exportProgress', { done: progress.done, total: progress.total });
 }
 
 function Row(props: {

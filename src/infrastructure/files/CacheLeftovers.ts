@@ -1,28 +1,29 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
 import type { ILeftoverFiles } from '../../domain/ports/ILeftoverFiles';
-import { OPENED, STAGING } from './NativeBackupArchive';
+import { OPENED, OUT, STAGING } from './NativeBackupArchive';
 import { HELD_VOICES } from '../persistence/FileRecordingStore';
-import { READABLE_OUT, READABLE_STAGING } from './NativeReadableArchive';
 
 /**
- * Where expo-document-picker puts its copies, the folders a backup passes
- * through, the readable export's two (where it is put together and where the
- * finished file waits for the share sheet), and the voices held while a
- * deletion could still be undone.
+ * Where expo-document-picker puts its copies, the three folders a backup
+ * passes through (put together, waiting for the share sheet, opened), the
+ * two the readable export used before it became the backup (1.12 builds on
+ * TestFlight), and the voices held while a deletion could still be undone.
  */
 const FOLDERS: ReadonlySet<string> = new Set([
   'DocumentPicker',
   STAGING,
+  OUT,
   OPENED,
-  READABLE_STAGING,
-  READABLE_OUT,
+  'readable-staging',
+  'readable-export',
   HELD_VOICES,
 ]);
 
 /**
- * A backup or Markdown export written for the share sheet, by this version
- * or an earlier one. Before 1.10 a backup was JSON; it is an archive now.
+ * A backup or Markdown export an earlier version wrote straight into the
+ * cache for the share sheet: JSON before 1.10, an Apple Archive in 1.10 and
+ * 1.11. The backup waits in its own folder now, swept whole.
  */
 const HANDED_OVER = /^vidlun-(backup|journal)-\d{4}-\d{2}-\d{2}\.(aar|json|md)$/;
 

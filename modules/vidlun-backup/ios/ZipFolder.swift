@@ -1,8 +1,9 @@
 import Foundation
 
 /*
- * The readable export as a plain ZIP (owner's word, 2026-11-19), written here
- * rather than by Foundation. A folder read "for uploading" does come back
+ * The backup as a plain ZIP (the readable export of 2026-11-19, and the
+ * backup itself since 2026-11-23, owner's word), written here rather than by
+ * Foundation. A folder read "for uploading" does come back
  * zipped, but its names are stored as UTF-8 without the flag that says so,
  * and Windows then shows "Щоденник.md" as noise. Every name here carries that
  * flag (bit 11).
@@ -154,14 +155,22 @@ enum ZipFolder {
     var size: UInt64 = 0
 
     while let data = try input.read(upToCount: chunk), !data.isEmpty {
-      for byte in data {
-        crc = table[Int((crc ^ UInt32(byte)) & 0xFF)] ^ (crc >> 8)
-      }
-
+      crc = running(crc, over: data)
       size += UInt64(data.count)
     }
 
     return (crc ^ 0xFFFF_FFFF, size)
+  }
+
+  /// The CRC-32 carried on over `data`; start at all ones and flip the bits at the end.
+  static func running(_ crc: UInt32, over data: Data) -> UInt32 {
+    var crc = crc
+
+    for byte in data {
+      crc = table[Int((crc ^ UInt32(byte)) & 0xFF)] ^ (crc >> 8)
+    }
+
+    return crc
   }
 
   private static func copy(_ url: URL, into out: FileHandle) throws {

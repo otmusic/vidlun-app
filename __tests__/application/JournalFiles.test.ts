@@ -1,11 +1,10 @@
-import { ExportJournal } from '@/application/use-cases/ExportJournal';
+import { renderMarkdown } from '@/application/use-cases/journalMarkdown';
 import { ImportJournal } from '@/application/use-cases/ImportJournal';
 import { MoodEntry } from '@/domain/entities/MoodEntry';
 import { Confidence } from '@/domain/value-objects/Confidence';
 import { MoodScore } from '@/domain/value-objects/MoodScore';
 import { JournalCodec, UnreadableExportError } from '@/infrastructure/persistence/JournalCodec';
 import { InMemoryMoodEntryRepository } from '@/infrastructure/persistence/InMemoryMoodEntryRepository';
-import { FixedClock } from './fakes';
 
 const NOW = new Date(2026, 8, 1, 12, 0);
 
@@ -24,29 +23,18 @@ function entry(id: string, createdAt: Date, extras: Partial<Parameters<typeof Mo
   });
 }
 
-async function exporterOver(entries: readonly MoodEntry[]) {
-  const repository = new InMemoryMoodEntryRepository();
-
-  for (const each of entries) {
-    await repository.save(each);
-  }
-
-  return new ExportJournal(repository, new JournalCodec(), new FixedClock(NOW));
-}
-
 const FORMATTERS = {
   labelOf: (id: string) => `label:${id}`,
   dayOf: (date: Date) => date.toISOString().slice(0, 10),
   timeOf: (date: Date) => date.toISOString().slice(11, 16),
 };
 
-describe('ExportJournal', () => {
-  it('round-trips every field through the backup file', async () => {
+describe('the journal in the backup', () => {
+  it('round-trips every field through the codec the backup carries', () => {
     const original = entry('one', new Date(2026, 7, 30, 9, 30));
-    const exporter = await exporterOver([original]);
+    const codec = new JournalCodec();
 
-    const { json } = await exporter.execute(FORMATTERS);
-    const [back] = new JournalCodec().decode(json);
+    const [back] = codec.decode(codec.encode([original], NOW));
 
     expect(back?.id).toBe('one');
     expect(back?.cleanTranscript).toBe(original.cleanTranscript);
@@ -57,27 +45,23 @@ describe('ExportJournal', () => {
     expect(back?.createdAt.getTime()).toBe(original.createdAt.getTime());
   });
 
-  it('writes the readable file oldest day first with words, labels and remark', async () => {
-    const exporter = await exporterOver([
-      entry('late', new Date(2026, 7, 31, 20, 0)),
-      entry('early', new Date(2026, 7, 30, 9, 0)),
-    ]);
+  it('reads oldest day first with words, labels and remark', () => {
+    const markdown = renderMarkdown(
+      [entry('early', new Date(2026, 7, 30, 9, 0)), entry('late', new Date(2026, 7, 31, 20, 0))],
+      FORMATTERS,
+    );
 
-    const { markdown, entryCount } = await exporter.execute(FORMATTERS);
-
-    expect(entryCount).toBe(2);
     expect(markdown.indexOf('2026-08-30')).toBeLessThan(markdown.indexOf('2026-08-31'));
     expect(markdown).toContain('Something true about the day.');
     expect(markdown).toContain('label:happy.calm');
     expect(markdown).toContain('> A quiet day, held well.');
   });
 
-  it('leaves the emotion line out of an entry that named none', async () => {
-    const exporter = await exporterOver([
-      entry('bare', new Date(2026, 7, 30, 9, 0), { emotionIds: [], observation: null }),
-    ]);
-
-    const { markdown } = await exporter.execute(FORMATTERS);
+  it('leaves the emotion line out of an entry that named none', () => {
+    const markdown = renderMarkdown(
+      [entry('bare', new Date(2026, 7, 30, 9, 0), { emotionIds: [], observation: null })],
+      FORMATTERS,
+    );
 
     expect(markdown).not.toContain('label:');
     expect(markdown).not.toContain('>');

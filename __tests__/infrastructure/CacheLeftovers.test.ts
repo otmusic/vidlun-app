@@ -65,12 +65,20 @@ describe('CacheLeftovers', () => {
   });
 
   // Each of these holds the whole journal, and some its voice; iOS clears the cache only when short of space.
-  it('removes picked copies and the folders a backup is packed or unpacked in', async () => {
-    cache.folders = ['DocumentPicker', 'backup-staging', 'backup-opened'];
+  it('removes picked copies and the folders a backup is packed, handed over or unpacked in', async () => {
+    cache.folders = ['DocumentPicker', 'backup-staging', 'backup-out', 'backup-opened'];
 
     await new CacheLeftovers().sweep();
 
-    expect(cache.deleted).toEqual(['DocumentPicker', 'backup-staging', 'backup-opened']);
+    expect(cache.deleted).toEqual(['DocumentPicker', 'backup-staging', 'backup-out', 'backup-opened']);
+  });
+
+  it('removes the folders the readable export used before it became the backup', async () => {
+    cache.folders = ['readable-staging', 'readable-export'];
+
+    await new CacheLeftovers().sweep();
+
+    expect(cache.deleted).toEqual(['readable-staging', 'readable-export']);
   });
 
   it('removes backups and exports left by this version and earlier ones', async () => {

@@ -2,10 +2,11 @@ import ExpoModulesCore
 
 /*
  * The voice kept small, and the backup with it (owner's word, 2026-11-18):
- * recordings are kept on the phone as AAC rather than WAV, and the whole
- * journal travels as one Apple Archive. Everything here streams from disk to
- * disk, because years of someone's voice is a lot of data and the JS heap is
- * not where it should pass through.
+ * recordings are kept on the phone as AAC rather than WAV. The backup is one
+ * ZIP since 2026-11-23, readable anywhere and restorable here; the Apple
+ * Archive it was before is still unpacked, so an older backup comes home.
+ * Everything here streams from disk to disk, because years of someone's
+ * voice is a lot of data and the JS heap is not where it should pass through.
  */
 public class BackupModule: Module {
   public func definition() -> ModuleDefinition {
@@ -26,9 +27,14 @@ public class BackupModule: Module {
       try BackupFiles.unpack(archive: try fileURL(source), into: try fileURL(target))
     }
 
-    /// The directory at `source`, itself at the root, as a plain ZIP at `target`: the readable export.
+    /// The directory at `source`, itself at the root, as a plain ZIP at `target`: the backup.
     AsyncFunction("zip") { (source: String, target: String) in
       try ZipFolder.write(folder: try fileURL(source), to: try fileURL(target))
+    }
+
+    /// The ZIP at `source`, ours or packed again elsewhere, unpacked into the directory at `target`.
+    AsyncFunction("unzip") { (source: String, target: String) in
+      try ZipReader.read(archive: try fileURL(source), into: try fileURL(target))
     }
   }
 }

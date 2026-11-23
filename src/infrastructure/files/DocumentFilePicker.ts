@@ -6,8 +6,9 @@ import { removeFromCache } from './cache';
 
 /**
  * The system document picker, for whatever single file the person chose.
- * Any type is offered: a backup is an archive now and a plain JSON file
- * before 1.10, and the archive behind this refuses anything that is neither.
+ * Any type is offered: a backup is a ZIP now, an Apple Archive in 1.10 and
+ * 1.11 and a plain JSON file before, and the archive behind this refuses
+ * anything that is none of them.
  *
  * The chosen file is copied into the app's cache, so it can be read the way
  * any of the app's own files is. The copy is this picker's to remove.

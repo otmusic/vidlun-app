@@ -1801,6 +1801,53 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++++++++++++. One backup, to read and to restore — 2026-11-23
+
+The owner's word: the backup and the readable export looked like the same
+thing twice, and only one of them could come back. Way A of two (one file
+for everything; way B, a second "for reading only" button, was not taken),
+drawn on the canvas page «Резервна копія: один файл (новий)»; the row keeps
+the name «Резервна копія» (owner's word, 2026-11-23).
+
+- **On «Я»** the card has two rows again: «Резервна копія» with pill
+  «Зберегти», and «Відновити з копії», whose line and error are unchanged.
+  The backup's line before the first copy is «Усі записи текстом і з
+  голосом — щоб читати будь-де або повернути у Vidlun.» ("Every entry as
+  text, with its voice — to read anywhere or bring back into Vidlun."),
+  then the day of the last copy as before. «Експорт для читання» and its
+  six strings are gone; "to share with a professional" went with it,
+  because the file is the whole journal now (below).
+- **The file** is the readable export's ZIP, same name («Vidlun — записи до
+  23.11.2026.zip»), same «Щоденник.md» and `audio/`, plus a hidden
+  `.vidlun.json` (`backupEnvelope`): the codec's JSON whole and each voice's
+  path by entry. The leading dot keeps it out of sight in Files and Finder.
+  It is everything the journal holds, the raw transcript, mood, topics, the
+  words named before Vidlun's answer and the hard-day flag included, which
+  is why the line no longer suggests sending the file to someone.
+- **Restoring** (`NativeBackupArchive.open`) takes that ZIP, the Apple
+  Archive backups of 1.10 and 1.11, and JSON before them; picking the hidden
+  file itself works too, without the voices. What comes back is what the
+  hidden file says; edits to the Markdown do not travel. An unpacked folder
+  cannot be picked on an iPhone, so the ZIP is what restores.
+- **Reading a ZIP** is new native code (`ZipReader.swift`), stored and
+  deflated entries, so a backup that a Mac or the Files app packed again
+  still opens. Streamed in chunks and checked by size and CRC. Every name is
+  checked before anything is written: one that climbs out ("../") or starts
+  at the root refuses the whole file, and `__MACOSX` is skipped. A voice
+  whose entry id or path could reach outside the backup is dropped. Checked
+  on the Mac against our own ZIP, `ditto` and `zip -9` archives, a damaged
+  byte, and hostile names.
+- `BackUpJournal` now writes the readable journal too (it took in
+  `ExportReadableJournal` and its tests); `ExportJournal` became
+  `journalMarkdown` (`renderMarkdown`); `IReadableArchive` and
+  `NativeReadableArchive` are gone. The cache sweep knows the new
+  `backup-out` folder and still sweeps the export's two old ones.
+- The privacy policy needs nothing: §5 already says «Резервна копія» hands
+  over every entry with its audio in one file, which closes the to-do in
+  §3ψψψ++++++++++++++++++++++++++.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++++++++++++. The journal's count stays beside its title — 2026-11-20
 
 The owner's word: on a 14 Pro the count and the filter fell under

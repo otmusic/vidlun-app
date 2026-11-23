@@ -388,9 +388,10 @@ function Vidlun(props: {
   );
 
   /*
-   * The backup with its voice (owner's word, 2026-11-18). Packing a year of
-   * recordings takes a while on a phone, so the profile's line says how far
-   * it is, and a second tap while it runs does nothing.
+   * The backup (owner's word, 2026-11-23): one ZIP with the journal to read
+   * anywhere, every kept voice beside it, and the copy Vidlun restores from.
+   * Packing a year of recordings takes a while on a phone, so the profile's
+   * line says how far it is, and a second tap while it runs does nothing.
    */
   const [backupProgress, setBackupProgress] = useState<BackupProgress | null>(null);
   const backingUp = useRef(false);
@@ -418,9 +419,21 @@ function Vidlun(props: {
 
     void (async () => {
       try {
-        const backup = await container.backUpJournal.execute((done, total) => {
-          setBackupProgress({ done, total });
-        });
+        const now = container.clock.now();
+        const backup = await container.backUpJournal.execute(
+          {
+            labelOf: (id) => emotionLabel(id, t),
+            dayOf: (date) =>
+              date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }),
+            timeOf: (date) => date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+            folderName: t('export.folder', { date: exportDay(now, locale) }),
+            journalName: t('export.journalFile'),
+            voiceLabel: t('export.voice'),
+          },
+          (done, total) => {
+            setBackupProgress({ done, total });
+          },
+        );
 
         setBackupProgress(null);
 
@@ -443,76 +456,7 @@ function Vidlun(props: {
         backingUp.current = false;
       }
     })();
-  }, [container, t]);
-
-  /*
-   * The readable export (owner's word, 2026-11-19): the journal as Markdown
-   * with every kept voice beside it, in one ZIP, free for everyone. Copying a
-   * year of voices takes a while too, so its line says how far it is, the
-   * way the backup's does, and a second tap while it runs does nothing.
-   */
-  const [exportProgress, setExportProgress] = useState<BackupProgress | null>(null);
-  const exporting = useRef(false);
-
-  const exportReadable = useCallback(() => {
-    if (exporting.current) {
-      return;
-    }
-
-    exporting.current = true;
-    setExportProgress({ done: 0, total: 0 });
-
-    void (async () => {
-      try {
-        const now = container.clock.now();
-        const exported = await container.exportReadableJournal.execute(
-          {
-            labelOf: (id) => emotionLabel(id, t),
-            dayOf: (date) =>
-              date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }),
-            timeOf: (date) => date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
-            folderName: t('export.folder', { date: exportDay(now, locale) }),
-            journalName: t('export.journalFile'),
-            voiceLabel: t('export.voice'),
-          },
-          (done, total) => {
-            setExportProgress({ done, total });
-          },
-        );
-
-        setExportProgress(null);
-
-        if (exported === null) {
-          Alert.alert(t('profile.exportEmpty'));
-
-          return;
-        }
-
-        await container.fileSharer.shareFile(exported.uri);
-      } catch {
-        setExportProgress(null);
-        Alert.alert(t('profile.exportFailedTitle'), t('profile.backupFailedBody'));
-      } finally {
-        exporting.current = false;
-      }
-    })();
   }, [container, locale, t]);
-
-  /*
-   * The whole journal as a file in the person's hand. Built here because it
-   * needs the container and the translator at once, and the profile screen
-   * needs neither — it only says which of the two shapes was asked for.
-   */
-  const exportJournal = useCallback(
-    (shape: 'backup' | 'markdown') => {
-      if (shape === 'backup') {
-        backUp();
-      } else {
-        exportReadable();
-      }
-    },
-    [backUp, exportReadable],
-  );
 
   /*
    * The backup coming home, with its voice when it carries one and keeping
@@ -698,9 +642,8 @@ function Vidlun(props: {
       onSettingsChange={changeSettings}
       entitlement={entitlement}
       selling={container.selling}
-      onExport={exportJournal}
+      onBackUp={backUp}
       backupProgress={backupProgress}
-      exportProgress={exportProgress}
       lastBackup={lastBackup}
       onRestore={restoreJournal}
       onFeedback={(text) => container.feedback.send(text)}

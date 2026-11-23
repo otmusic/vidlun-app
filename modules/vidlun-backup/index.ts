@@ -5,8 +5,10 @@ export interface NativeBackup {
   compressAudio(source: string, target: string): Promise<void>;
   pack(source: string, target: string): Promise<void>;
   unpack(source: string, target: string): Promise<void>;
-  /** The folder at `source`, itself at the root, as a ZIP at `target` (the readable export). */
+  /** The folder at `source`, itself at the root, as a ZIP at `target`: the backup since 2026-11-23. */
   zip(source: string, target: string): Promise<void>;
+  /** The ZIP at `source` unpacked into the folder at `target`; refuses a name that would leave it. */
+  unzip(source: string, target: string): Promise<void>;
 }
 
 /*

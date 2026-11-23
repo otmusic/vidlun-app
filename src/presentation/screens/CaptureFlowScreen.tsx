@@ -54,10 +54,8 @@ export interface CaptureFlowScreenProps {
   readonly entitlement: Entitlement | null;
   /** Whether anything is on sale, which decides if the profile shows the subscription. */
   readonly selling: boolean;
-  readonly onExport: (shape: 'backup' | 'markdown') => void;
+  readonly onBackUp: () => void;
   readonly backupProgress: BackupProgress | null;
-  /** The readable export's progress while it runs; null otherwise. */
-  readonly exportProgress: BackupProgress | null;
   /** When a backup was last handed over; null before the first. */
   readonly lastBackup: Date | null;
   readonly onRestore: () => void;
@@ -425,9 +423,8 @@ function Stage(
       return (
         <ProfileScreen
           settings={props.settings}
-          onExport={props.onExport}
+          onBackUp={props.onBackUp}
           backupProgress={props.backupProgress}
-          exportProgress={props.exportProgress}
           lastBackup={props.lastBackup}
           today={props.today}
           onRestore={props.onRestore}
