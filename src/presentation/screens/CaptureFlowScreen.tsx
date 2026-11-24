@@ -7,8 +7,8 @@ import type { StoreRelease } from '@/domain/ports/IStoreListing';
 import type { Locale, Translate } from '@/i18n';
 import { legalDocument } from '@/i18n/legal';
 
-import { useEffect, useState } from 'react';
-import { Linking, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Linking, View, useWindowDimensions } from 'react-native';
 
 import { wordsOffered, wordsWithoutReading } from '../components/emotionTone';
 import { FeedbackSheet } from '../components/FeedbackSheet';
@@ -16,9 +16,11 @@ import { MilestoneSheet } from '../components/MilestoneSheet';
 import { TabBar, type Tab } from '../components/TabBar';
 import { Toast, type ToastLine } from '../components/Toast';
 import { UndoToast } from '../components/UndoToast';
-import type { CaptureFlow, Notice } from '../hooks/useCaptureFlow';
+import type { CaptureFlow, CaptureStage, Notice } from '../hooks/useCaptureFlow';
 import { SwipeBack } from '../components/SwipeBack';
 import { EntryDetailScreen } from './EntryDetailScreen';
+import { nextStack, screenKeyOf } from './screenStack';
+import { useTheme } from '../theme/ThemeProvider';
 import { HistoryScreen } from './HistoryScreen';
 import { HomeScreen } from './HomeScreen';
 import { ProcessingScreen } from './ProcessingScreen';
@@ -99,6 +101,42 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
   const [affirmationFrom, setAffirmationFrom] = useState<BloomOrigin | null>(null);
   const kept = props.flow.keptAffirmation;
   const stageKind = props.flow.stage.kind;
+  const { width } = useWindowDimensions();
+  /*
+   * The screens kept under the top one for a swipe back to land on as they
+   * were (owner's word, 2026-11-24). Worked out as the stage changes, during
+   * the render itself: a stack a render behind would draw the new stage's
+   * screen with the old one's for a frame.
+   */
+  const stack = useRef<readonly CaptureStage[]>([]);
+
+  if (stack.current[stack.current.length - 1] !== props.flow.stage) {
+    stack.current = nextStack(stack.current, props.flow.stage);
+  }
+
+  const layers = stack.current.slice(-2);
+  /* Each screen's own place, so the one coming back starts where it stands. */
+  const shifts = useRef(new Map<string, Animated.Value>());
+  const shiftOf = (key: string): Animated.Value => {
+    const known = shifts.current.get(key);
+
+    if (known !== undefined) {
+      return known;
+    }
+
+    const made = new Animated.Value(0);
+
+    shifts.current.set(key, made);
+
+    return made;
+  };
+  const keptKeys = new Set(stack.current.map(screenKeyOf));
+
+  for (const key of [...shifts.current.keys()]) {
+    if (!keptKeys.has(key)) {
+      shifts.current.delete(key);
+    }
+  }
 
   // Anything that takes the journal away takes the page over it too.
   useEffect(() => {
@@ -112,15 +150,31 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
    */
   return (
     <View style={{ flex: 1 }}>
-      <SwipeBack onBack={swipeBackFor(props.flow)}>
-        <Stage
-          {...props}
-          onWriteFeedback={() => {
-            setWritingFeedback(true);
-          }}
-          onOpenAffirmation={setAffirmationFrom}
-        />
-      </SwipeBack>
+      {layers.map((stage, at) => {
+        const key = screenKeyOf(stage);
+        const top = at === layers.length - 1;
+        const above = layers[at + 1];
+
+        return (
+          <Layer
+            key={key}
+            under={above === undefined ? null : shiftOf(screenKeyOf(above))}
+            width={width}
+          >
+            <SwipeBack onBack={top ? swipeBackFor(props.flow) : null} shift={shiftOf(key)}>
+              <Stage
+                {...props}
+                // The screen underneath is drawn as it stands; the one on top is the flow itself.
+                flow={top ? props.flow : { ...props.flow, stage }}
+                onWriteFeedback={() => {
+                  setWritingFeedback(true);
+                }}
+                onOpenAffirmation={setAffirmationFrom}
+              />
+            </SwipeBack>
+          </Layer>
+        );
+      })}
       {tab === undefined ? null : (
         <TabBar
           active={tab}
@@ -194,6 +248,66 @@ function affirmationButton(
   }
 
   return { picked: kept === null ? null : charmOf(kept.look) };
+}
+
+/** How far left the screen underneath sits while the one above covers it, as a share of the width. */
+const UNDER_OFFSET = 0.3;
+/** How much of the scrim lies over the screen underneath while covered; it clears as the one above leaves. */
+const UNDER_DIM = 0.25;
+
+/**
+ * One screen in the stack; its ground moves with it, inside `SwipeBack`.
+ * Covered, it sits a little to the left, dimmed and out of reach of touch,
+ * and moves into place as the screen above it is swiped away, as the
+ * system's own back does.
+ */
+function Layer(props: {
+  /** How far the screen above has moved; null for the screen on top. */
+  readonly under: Animated.Value | null;
+  readonly width: number;
+  readonly children: React.ReactNode;
+}): React.JSX.Element {
+  const theme = useTheme();
+  const { under, width } = props;
+  const moving = under !== null && !theme.reduceMotion;
+
+  return (
+    <Animated.View
+      pointerEvents={under === null ? 'auto' : 'none'}
+      importantForAccessibility={under === null ? 'auto' : 'no-hide-descendants'}
+      accessibilityElementsHidden={under !== null}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        transform: [
+          {
+            translateX: moving
+              ? under.interpolate({ inputRange: [0, width], outputRange: [-width * UNDER_OFFSET, 0], extrapolate: 'clamp' })
+              : 0,
+          },
+        ],
+      }}
+    >
+      {props.children}
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: theme.palette.scrim,
+          opacity: moving
+            ? under.interpolate({ inputRange: [0, width], outputRange: [UNDER_DIM, 0], extrapolate: 'clamp' })
+            : 0,
+        }}
+      />
+    </Animated.View>
+  );
 }
 
 /**

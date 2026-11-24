@@ -1801,6 +1801,31 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++++++++++++++++++. A swipe back that shows where it goes — 2026-11-24
+
+Owner's word: "поглянь на плавність повернення на попередній скрін через
+свайп". Three things made it rough: nothing was under the screen being
+swiped (the screen behind was not drawn, only the ground), the swiped screen
+was put back in place a frame before the next one appeared, and the screen
+come back to was built again (the journal back at its top).
+
+- **Kept underneath** (`screenStack.ts`, `CaptureFlowScreen`): the screen a
+  swipe or the back button goes to stays mounted under the one on top —
+  home, the journal, the statistics, the months and the subscription page,
+  the screens that hold nothing playing. A month heard in its own voice and
+  the card with its take are left out, so nothing sounds under the page
+  above. Only the screen right under the top one is drawn.
+- **As on iOS**: covered, it sits 30% to the left under a light scrim and
+  moves into place with the finger; the screen on top carries its own
+  ground and a soft shadow on its left edge (`Layer`, `SwipeBack`).
+- **No flash**: the screen that leaves is no longer put back before it is
+  gone; each screen has its own place value, so the one come back to stands
+  where it was. The journal keeps its scroll.
+- The back button goes back at once, as before; it lands on the same kept
+  screen.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++++++++++++++++++. The entry page: voice and words in one card — 2026-11-24
 
 Owner's word on the canvas page «Запис: голос і текст у картці» (variant B,
