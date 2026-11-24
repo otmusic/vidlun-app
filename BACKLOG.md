@@ -1855,11 +1855,12 @@ the word being said lit as it plays, and a searched word lit in the
 transcript).
 
 - **With a voice** (`EntryDetailScreen`): no large sentence at the top. The
-  player's card holds the player, the line on how the voice sounded and
-  «Транскрипція запису». The line's chevron folds the voice's scales out in
-  the card (`VoicePortrait`, which was a sheet); the transcript's chevron
-  folds it away. Every entry opens with the voice folded and the
-  transcript open; nothing is remembered between entries.
+  player's card holds the player, «Текст запису» (named «Транскрипція
+  запису» until the owner's word the same day) and, under it, the line on
+  how the voice sounded. The line's chevron folds the voice's scales out in
+  the card (`VoicePortrait`, which was a sheet); the text's chevron folds it
+  away. Every entry opens with the text open and the voice folded; nothing
+  is remembered between entries.
 - **The word being said** is lit in the mood's soft colour as it plays, as
   the played bars are. It is an estimate: nothing records when each word
   was said, so the share of the speech already heard (`shareAt`, the way

@@ -34,9 +34,9 @@ import { emotionLabel, emotionTint, emotionWordsIn } from '../components/emotion
  * An entry as it stands, months later.
  *
  * With a voice, the voice leads (owner's word, 2026-11-24, variant B): one
- * card holds the player, the line on how the voice sounded — its scales
- * folding out under it, closed to begin with — and the transcript, open to
- * begin with. Every entry opens that way. As it plays, the word being said
+ * card holds the player, the entry's text — open to begin with — and under
+ * it the line on how the voice sounded, its scales folding out under it,
+ * closed to begin with. Every entry opens that way. As it plays, the word being said
  * is lit in the mood's colour, give or take, as the played bars are.
  *
  * Without a voice, the sentence leads and is set large, with a note under it
@@ -155,44 +155,8 @@ export function EntryDetailScreen(props: {
           }
           footer={(place) => (
             <View style={{ gap: 12 }}>
-              {heard === null ? null : (
-                <View style={{ gap: 14 }}>
-                  {/*
-                    * The line on how the voice sounded (variant A, owner's word,
-                    * 2026-11-19); a tap folds the scales out under it rather
-                    * than opening a sheet (2026-11-24). Without scales to show
-                    * — too few takes yet — it is a line and nothing more.
-                    */}
-                  <Pressable
-                    disabled={portrait === null}
-                    accessibilityRole={portrait === null ? 'text' : 'button'}
-                    accessibilityHint={portrait === null ? undefined : t('voice.open')}
-                    accessibilityState={portrait === null ? undefined : { expanded: portraitOpen }}
-                    onPress={() => setPortraitOpen((open) => !open)}
-                    hitSlop={8}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
-                  >
-                    <WaveMark width={22} color={theme.palette.accentInk} />
-                    <AppText variant="secondary" color="accentInk" style={{ flexShrink: 1 }}>
-                      {heard}
-                    </AppText>
-                    {portrait === null ? null : (
-                      <View style={{ marginLeft: 'auto' }}>
-                        <Icon name={portraitOpen ? 'chevron-up' : 'chevron-down'} size={16} color="accentInk" />
-                      </View>
-                    )}
-                  </Pressable>
-                  {portrait === null || !portraitOpen ? null : <VoicePortrait portrait={portrait} t={t} />}
-                </View>
-              )}
-
-              <View
-                style={
-                  heard === null
-                    ? { gap: 12 }
-                    : { gap: 12, borderTopWidth: 1, borderTopColor: theme.palette.line, paddingTop: 12 }
-                }
-              >
+              {/* The words first, then the voice (owner's word, 2026-11-24). */}
+              <View style={{ gap: 12 }}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityState={{ expanded: transcriptOpen }}
@@ -221,6 +185,37 @@ export function EntryDetailScreen(props: {
                   />
                 )}
               </View>
+
+              {heard === null ? null : (
+                <View style={{ gap: 14, borderTopWidth: 1, borderTopColor: theme.palette.line, paddingTop: 12 }}>
+                  {/*
+                    * The line on how the voice sounded (variant A, owner's word,
+                    * 2026-11-19); a tap folds the scales out under it rather
+                    * than opening a sheet (2026-11-24). Without scales to show
+                    * — too few takes yet — it is a line and nothing more.
+                    */}
+                  <Pressable
+                    disabled={portrait === null}
+                    accessibilityRole={portrait === null ? 'text' : 'button'}
+                    accessibilityHint={portrait === null ? undefined : t('voice.open')}
+                    accessibilityState={portrait === null ? undefined : { expanded: portraitOpen }}
+                    onPress={() => setPortraitOpen((open) => !open)}
+                    hitSlop={8}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                  >
+                    <WaveMark width={22} color={theme.palette.accentInk} />
+                    <AppText variant="secondary" color="accentInk" style={{ flexShrink: 1 }}>
+                      {heard}
+                    </AppText>
+                    {portrait === null ? null : (
+                      <View style={{ marginLeft: 'auto' }}>
+                        <Icon name={portraitOpen ? 'chevron-up' : 'chevron-down'} size={16} color="accentInk" />
+                      </View>
+                    )}
+                  </Pressable>
+                  {portrait === null || !portraitOpen ? null : <VoicePortrait portrait={portrait} t={t} />}
+                </View>
+              )}
             </View>
           )}
         />
