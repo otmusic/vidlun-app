@@ -194,12 +194,15 @@ function Vidlun(props: {
    * a subscriber locks for the moment it takes to ask would be wrong.
    */
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
+  /** The day the free trial ends, which is all the trial's card says (owner's word, 2026-11-24). */
+  const [trialEndsAt, setTrialEndsAt] = useState<Date | null>(null);
 
   const readStatus = useCallback(() => {
     void props.container.purchases
       .status()
       .then((status) => {
         setEntitlement(entitlementOf(status));
+        setTrialEndsAt(status.inTrial ? status.renewsAt : null);
       })
       .catch(() => {
         // A store that will not answer is not a reason to lock someone out of
@@ -644,6 +647,7 @@ function Vidlun(props: {
       settings={props.settings}
       onSettingsChange={changeSettings}
       entitlement={entitlement}
+      trialEndsAt={trialEndsAt}
       selling={container.selling}
       onBackUp={backUp}
       backupProgress={backupProgress}

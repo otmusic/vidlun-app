@@ -27,6 +27,8 @@ const APP_STORE_SUBSCRIPTIONS = 'https://apps.apple.com/account/subscriptions';
  */
 export function SubscriptionScreen(props: {
   readonly entitlement: Entitlement;
+  /** When the free days end, where the store says; null outside a trial or when it does not know. */
+  readonly trialEndsAt: Date | null;
   /** Null while the store has not answered; empty when it has nothing to sell. */
   readonly plans: readonly Plan[] | null;
   readonly outcome: PurchaseOutcome | null;
@@ -76,9 +78,20 @@ export function SubscriptionScreen(props: {
               <AppText variant="kicker">
                 {t(props.entitlement === 'trial' ? 'subs.trialActive' : 'subs.manageTitle')}
               </AppText>
-              <AppText variant="body" color="inkSoft">
-                {t(props.entitlement === 'trial' ? 'subs.trialBody' : 'subs.manageBody')}
-              </AppText>
+              {/* A trial says when it ends and nothing more (owner's word, 2026-11-24). */}
+              {props.entitlement === 'trial' ? (
+                props.trialEndsAt === null ? null : (
+                  <AppText variant="body" color="inkSoft">
+                    {t('subs.trialEnds', {
+                      date: props.trialEndsAt.toLocaleDateString(props.locale, { day: 'numeric', month: 'long' }),
+                    })}
+                  </AppText>
+                )
+              ) : (
+                <AppText variant="body" color="inkSoft">
+                  {t('subs.manageBody')}
+                </AppText>
+              )}
             </View>
             <Outlined
               label={t('subs.manageBtn')}

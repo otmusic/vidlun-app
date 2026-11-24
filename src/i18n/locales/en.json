@@ -200,7 +200,7 @@
   "subs.terms": "Terms",
   "subs.privacy": "Privacy",
   "subs.trialActive": "You’re on a free trial",
-  "subs.trialBody": "Your monthly summary is unlocked. We’ll let you know when the trial ends — anything you’ve already read stays yours.",
+  "subs.trialEnds": "Ends {{date}}",
   "subs.manageTitle": "Your subscription is active",
   "subs.manageBody": "Manage or cancel it in the App Store. Anything you’ve already seen stays yours.",
   "subs.manageBtn": "Manage in the App Store",

@@ -54,6 +54,8 @@ export interface CaptureFlowScreenProps {
   readonly t: Translate;
   /** What the store says is owned; null until it has answered. */
   readonly entitlement: Entitlement | null;
+  /** When the free trial ends, where the store says; null outside a trial. */
+  readonly trialEndsAt: Date | null;
   /** Whether anything is on sale, which decides if the profile shows the subscription. */
   readonly selling: boolean;
   readonly onBackUp: () => void;
@@ -546,6 +548,7 @@ function Stage(
       return (
         <SubscriptionScreen
           entitlement={entitlement}
+          trialEndsAt={props.trialEndsAt}
           plans={flow.stage.plans}
           outcome={flow.stage.outcome}
           locale={props.locale}
