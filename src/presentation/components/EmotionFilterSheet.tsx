@@ -14,8 +14,9 @@ import { ModalSheet, SheetClose } from './ModalSheet';
  * The journal's filter (owner's word, 2026-10-13): every emotion this person
  * has used, as chips to pick, and "Show" to narrow the journal to the
  * entries holding any of them. Nothing changes until that button: closing the
- * sheet leaves the journal as it was, and showing with nothing picked shows
- * every entry again.
+ * sheet leaves the journal as it was. "Show" waits for a chip (owner's word,
+ * 2026-11-24); the whole journal comes back through "Reset" on the journal
+ * itself.
  */
 export function EmotionFilterSheet(props: {
   readonly open: boolean;
@@ -83,6 +84,7 @@ export function EmotionFilterSheet(props: {
       {/* No "reset" beside it (owner's word, 2026-10-13): a picked chip lets go on a second tap. */}
       <Button
         label={t('feed.filterShow')}
+        disabled={picked.length === 0}
         style={{ marginTop: 24 }}
         onPress={() => {
           props.onApply(picked);
