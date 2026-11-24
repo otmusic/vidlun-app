@@ -1819,6 +1819,14 @@ Owner's word on the canvas page «Щоденник: фільтр за темам
 - **From an entry's page**: a tap on a topic opens the journal narrowed to
   it (`openTopic`), its search and emotions cleared.
 - Copy: «Показати записи», «Фільтр записів», «Таких записів немає.».
+- **Two tabs** (owner's word the same day, canvas page «Фільтр: таби
+  «Емоції · Теми»», variant B): with many emotions the topics sat out of
+  sight at the bottom, so the sheet has «Емоції» and «Теми» as text tabs,
+  the open one underlined, each with a round count of its picked words.
+  The sheet holds the taller tab's height (both are laid out and measured),
+  opens on the topics when only topics are applied, and shows no tabs when
+  the journal has only one kind. The words may take up to 70% of the
+  screen before they scroll.
 
 ---
 
