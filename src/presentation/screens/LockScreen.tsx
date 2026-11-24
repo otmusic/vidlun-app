@@ -7,7 +7,6 @@ import type { Translate, TranslationKey } from '@/i18n';
 
 import wordmarkDark from '../../../assets/splash/wordmark-dark.png';
 import wordmarkLight from '../../../assets/splash/wordmark-light.png';
-import { AppText } from '../components/AppText';
 import { Icon } from '../components/Icon';
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -40,7 +39,8 @@ export function LockScreen(props: {
 
   return (
     <LockCover>
-      <View style={{ position: 'absolute', bottom: 56, alignItems: 'center', gap: 14 }}>
+      {/* The key alone, with no caption under it (owner's word, 2026-11-24); its name is for VoiceOver. */}
+      <View style={{ position: 'absolute', bottom: 56, alignItems: 'center' }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={label}
@@ -63,12 +63,6 @@ export function LockScreen(props: {
             <Icon name="lock" size={34} color="ink" />
           )}
         </Pressable>
-        {/* The button already says it; the caption is for the eye only. */}
-        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <AppText variant="secondary" color="inkSoft">
-            {label}
-          </AppText>
-        </View>
       </View>
     </LockCover>
   );
