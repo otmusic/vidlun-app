@@ -15,8 +15,11 @@ import { snippetOf } from '../screens/journalSearch';
 /**
  * A dot in the entry's own colour, the day and time, the sentence, and the
  * emotions under it in the one blue (owner's word, 2026-11-16: the first
- * emotion at the top right went, the list below took its colour). No number
- * and no verdict appears on the card at all.
+ * emotion at the top right went, the list below took its colour). Under them
+ * the entry's topics as small grey chips, the shape topics have on the
+ * entry's page and in the filter (owner's word, 2026-11-24, canvas variant
+ * C); a tap on one narrows the journal to it. No number and no verdict
+ * appears on the card at all.
  */
 export function EntryCard(props: {
   readonly entry: MoodEntry;
@@ -34,6 +37,8 @@ export function EntryCard(props: {
    * 2026-11-20), instead of the entry's opening.
    */
   readonly found?: SearchQuery | null;
+  /** A topic tapped: the journal narrowed to it. */
+  readonly onTopic?: (topic: string) => void;
 }): React.JSX.Element {
   const theme = useTheme();
   const words = emotionWordsIn(props.entry.cleanTranscript, props.t);
@@ -91,6 +96,35 @@ export function EntryCard(props: {
           <AppText variant="secondary" style={{ color: theme.palette.tag }}>
             {props.entry.emotionIds.map((id) => emotionLabel(id, words)).join(' · ')}
           </AppText>
+        )}
+        {props.entry.contextTags.length === 0 ? null : (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+            {props.entry.contextTags.map((tag) => (
+              <Pressable
+                key={tag}
+                accessibilityRole="button"
+                accessibilityHint={props.t('feed.byTopic')}
+                disabled={props.onTopic === undefined}
+                onPress={() => {
+                  props.onTopic?.(tag);
+                }}
+                // A small pill with a finger-sized reach (§7.3).
+                hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
+                style={({ pressed }) => ({
+                  borderWidth: 1,
+                  borderColor: theme.palette.lineStrong,
+                  borderRadius: 999,
+                  paddingVertical: 2,
+                  paddingHorizontal: 10,
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
+                <AppText variant="secondary" color="inkSoft" style={{ fontSize: 13, lineHeight: 19 }}>
+                  {tag}
+                </AppText>
+              </Pressable>
+            ))}
+          </View>
         )}
       </View>
     </Pressable>

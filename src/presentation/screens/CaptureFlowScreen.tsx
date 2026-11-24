@@ -679,6 +679,7 @@ function Stage(
           recorded={flow.recorded}
           filter={flow.journalFilter}
           onFilter={flow.filterJournal}
+          onOpenTopic={flow.openTopic}
           query={flow.journalQuery}
           onQuery={flow.searchJournal}
           focus={flow.journalFocus}

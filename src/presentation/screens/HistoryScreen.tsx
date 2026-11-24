@@ -57,6 +57,8 @@ export function HistoryScreen(props: {
   readonly query: string;
   readonly onQuery: (typed: string) => void;
   readonly onFilter: (filter: JournalFilter) => void;
+  /** A topic tapped on a card: the journal narrowed to it (owner's word, 2026-11-24). */
+  readonly onOpenTopic: (topic: string) => void;
   /** A pattern's days, opened from the stats screen; null shows the journal. */
   readonly focus: JournalFocus | null;
   readonly onClearFocus: () => void;
@@ -143,6 +145,7 @@ export function HistoryScreen(props: {
           onOpen={() => {
             onOpen(row.entry, search === null ? undefined : props.query);
           }}
+          onTopic={props.onOpenTopic}
         />
       ) : (
         /* The drawing's rule with the milestone's name in it: the
@@ -174,6 +177,7 @@ export function HistoryScreen(props: {
       onOpenSubscription,
       open,
       props.locale,
+      props.onOpenTopic,
       props.query,
       props.recorded,
       props.today,

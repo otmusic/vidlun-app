@@ -130,6 +130,7 @@
   "feed.affirmation": "Твоя афірмація",
   "feed.filterTitle": "Показати записи",
   "feed.filterShow": "Показати",
+  "feed.byTopic": "Показати записи з цією темою",
   "feed.filterReset": "Скинути",
   "feed.filterNothing": "Таких записів немає.",
   "search.placeholder": "Пошук по записах",

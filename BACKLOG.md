@@ -1827,6 +1827,13 @@ Owner's word on the canvas page «Щоденник: фільтр за темам
   opens on the topics when only topics are applied, and shows no tabs when
   the journal has only one kind. The words may take up to 70% of the
   screen before they scroll.
+- **Topics on the journal's cards** (owner's word the same day, canvas page
+  «Щоденник: теми на картці запису», variant C): under the emotions, the
+  entry's topics as small grey chips, the shape topics have on the entry's
+  page and in the filter (`EntryCard`). A tap on one narrows the journal to
+  it (`openTopic`, search and emotions cleared); a tap anywhere else on the
+  card opens the entry, as before. Locked cards show no topics, as they
+  show no words.
 
 ---
 

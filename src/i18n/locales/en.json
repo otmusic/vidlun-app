@@ -130,6 +130,7 @@
   "feed.affirmation": "Your affirmation",
   "feed.filterTitle": "Show entries",
   "feed.filterShow": "Show",
+  "feed.byTopic": "Show the entries with this topic",
   "feed.filterReset": "Reset",
   "feed.filterNothing": "No entries like that.",
   "search.placeholder": "Search your entries",
