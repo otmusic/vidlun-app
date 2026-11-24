@@ -12,7 +12,7 @@ import { countedKey } from '@/i18n/plural';
 
 import { AppText } from '../components/AppText';
 import { CountPill } from '../components/CountPill';
-import { EmotionFilterSheet } from '../components/EmotionFilterSheet';
+import { JournalFilterSheet } from '../components/JournalFilterSheet';
 import { EntryCard } from '../components/EntryCard';
 import { EntryRow, SwipeGroup } from '../components/EntryRow';
 import { SearchField } from '../components/SearchField';
@@ -24,7 +24,15 @@ import { emotionLabel } from '../components/emotionDisplay';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
-import { emotionsUsed, entriesWithAny, type JournalFocus } from './journalFilter';
+import {
+  emotionsUsed,
+  entriesMatching,
+  filterSize,
+  NO_FILTER,
+  topicsUsed,
+  type JournalFilter,
+  type JournalFocus,
+} from './journalFilter';
 
 /** The bar floats over this screen, so the last card needs room under it. */
 const BOTTOM_ROOM = 118;
@@ -40,15 +48,15 @@ export function HistoryScreen(props: {
   readonly days: readonly HistoryDay[] | null;
   /** Entries that still have their audio; null while the files are being read. */
   readonly recorded: ReadonlySet<string> | null;
-  /** The emotions the journal is narrowed to; empty shows every entry. */
-  readonly filter: readonly string[];
+  /** The emotions and topics the journal is narrowed to; empty shows every entry. */
+  readonly filter: JournalFilter;
   /**
    * What is typed into the search (owner's word, 2026-11-20); empty shows
    * every entry. It narrows whatever the filter left.
    */
   readonly query: string;
   readonly onQuery: (typed: string) => void;
-  readonly onFilter: (emotionIds: readonly string[]) => void;
+  readonly onFilter: (filter: JournalFilter) => void;
   /** A pattern's days, opened from the stats screen; null shows the journal. */
   readonly focus: JournalFocus | null;
   readonly onClearFocus: () => void;
@@ -80,14 +88,16 @@ export function HistoryScreen(props: {
   const [filtering, setFiltering] = useState(false);
   const entries = useMemo(() => (props.days ?? []).flatMap((day) => day.entries), [props.days]);
   const offered = useMemo(() => emotionsUsed(entries), [entries]);
-  const { focus } = props;
-  const filtered = props.filter.length > 0;
+  const topics = useMemo(() => topicsUsed(entries), [entries]);
+  const { focus, filter } = props;
+  const chosen = filterSize(filter);
+  const filtered = chosen > 0;
   const search = useMemo(() => SearchQuery.of(props.query), [props.query]);
   const narrowed = filtered || focus !== null || search !== null;
   const shown = useMemo(() => {
     const wanted = focus === null ? null : new Set(focus.entryIds);
     const kept =
-      wanted === null ? entriesWithAny(entries, props.filter) : entries.filter((entry) => wanted.has(entry.id));
+      wanted === null ? entriesMatching(entries, filter) : entries.filter((entry) => wanted.has(entry.id));
 
     /*
      * In what was said. A locked entry is found like any other and stays
@@ -95,7 +105,7 @@ export function HistoryScreen(props: {
      * 2026-11-20).
      */
     return search === null ? kept : kept.filter((entry) => search.matches(entry.cleanTranscript));
-  }, [entries, props.filter, focus, search]);
+  }, [entries, filter, focus, search]);
   // Sorted once per journal, not once per frame: a year of entries is a
   // few hundred rows, and the list re-renders on every scroll tick. The
   // milestones step aside while the journal is filtered: between a few
@@ -231,15 +241,15 @@ export function HistoryScreen(props: {
               {/*
                 The filter (owner's word, 2026-10-13), in place of the search
                 tab. While it narrows the list, a badge on it says how many
-                emotions it holds, so a short journal never looks like a
-                lost one.
+                emotions and topics it holds, so a short journal never looks
+                like a lost one.
               */}
-              {offered.length === 0 ? null : (
+              {offered.length === 0 && topics.length === 0 ? null : (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('feed.filter')}
                   accessibilityState={{ selected: filtered }}
-                  accessibilityValue={filtered ? { text: String(props.filter.length) } : undefined}
+                  accessibilityValue={filtered ? { text: String(chosen) } : undefined}
                   onPress={() => {
                     setFiltering(true);
                   }}
@@ -278,7 +288,7 @@ export function HistoryScreen(props: {
                         maxScale={1.2}
                         style={{ fontSize: 11, lineHeight: 14 }}
                       >
-                        {String(props.filter.length)}
+                        {String(chosen)}
                       </AppText>
                     </View>
                   ) : null}
@@ -309,14 +319,26 @@ export function HistoryScreen(props: {
           )}
           {filtered ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              {props.filter.map((id) => (
+              {filter.emotionIds.map((id) => (
                 <Chip
                   key={id}
                   label={emotionLabel(id, t)}
                   color={theme.palette.tag}
                   action="remove"
                   onPress={() => {
-                    props.onFilter(props.filter.filter((each) => each !== id));
+                    props.onFilter({ ...filter, emotionIds: filter.emotionIds.filter((each) => each !== id) });
+                  }}
+                />
+              ))}
+              {/* Topics after the emotions, in their own grey (owner's word, 2026-11-24). */}
+              {filter.topics.map((tag) => (
+                <Chip
+                  key={`topic:${tag}`}
+                  label={tag}
+                  tone="neutral"
+                  action="remove"
+                  onPress={() => {
+                    props.onFilter({ ...filter, topics: filter.topics.filter((each) => each !== tag) });
                   }}
                 />
               ))}
@@ -324,7 +346,7 @@ export function HistoryScreen(props: {
                 accessibilityRole="button"
                 hitSlop={12}
                 onPress={() => {
-                  props.onFilter([]);
+                  props.onFilter(NO_FILTER);
                 }}
                 style={{ paddingHorizontal: 6 }}
               >
@@ -365,14 +387,15 @@ export function HistoryScreen(props: {
           )
         }
       />
-      <EmotionFilterSheet
+      <JournalFilterSheet
         open={filtering}
         emotionIds={offered}
-        chosen={props.filter}
+        topics={topics}
+        chosen={filter}
         t={t}
-        onApply={(emotionIds) => {
+        onApply={(picked) => {
           setFiltering(false);
-          props.onFilter(emotionIds);
+          props.onFilter(picked);
         }}
         onClose={() => {
           setFiltering(false);

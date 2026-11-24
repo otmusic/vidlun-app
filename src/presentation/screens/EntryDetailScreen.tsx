@@ -65,6 +65,8 @@ export function EntryDetailScreen(props: {
   readonly locale: Locale;
   readonly t: Translate;
   readonly onDelete: (id: string) => void;
+  /** A topic tapped: the journal, narrowed to it (owner's word, 2026-11-24). */
+  readonly onOpenTopic: (topic: string) => void;
   readonly onBack: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
@@ -295,7 +297,14 @@ export function EntryDetailScreen(props: {
           </AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {entry.contextTags.map((tag) => (
-              <Chip key={tag} label={tag} tone="neutral" />
+              <Chip
+                key={tag}
+                label={tag}
+                tone="neutral"
+                onPress={() => {
+                  props.onOpenTopic(tag);
+                }}
+              />
             ))}
           </View>
         </View>

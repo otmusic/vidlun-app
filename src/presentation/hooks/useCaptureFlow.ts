@@ -29,7 +29,7 @@ import type { GetMonthVoice } from '@/application/use-cases/GetMonthVoice';
 import type { MonthVoice, MonthVoiceMode } from '@/domain/entities/MonthVoice';
 import type { GetPastMonths, PastMonth } from '@/application/use-cases/GetPastMonths';
 import type { StatsView } from '@/presentation/screens/StatsScreen';
-import type { JournalFocus } from '@/presentation/screens/journalFilter';
+import { NO_FILTER, type JournalFilter, type JournalFocus } from '@/presentation/screens/journalFilter';
 import { entryDays, type EntryDays } from '@/presentation/components/entryDays';
 import { NothingWasSaidError } from '@/domain/errors/MoodEntryErrors';
 import { RecordingCancelledError } from '@/domain/errors/RecordingErrors';
@@ -473,15 +473,18 @@ export interface CaptureFlow {
   readonly recorded: ReadonlySet<string> | null;
   readonly openHistory: () => void;
   /**
-   * The emotions the journal is narrowed to; empty shows every entry. Kept
-   * while an entry is opened from the list and closed again, cleared when the
-   * journal is opened from the bar (owner's word, 2026-10-13).
+   * The emotions and topics the journal is narrowed to; empty shows every
+   * entry. Kept while an entry is opened from the list and closed again,
+   * cleared when the journal is opened from the bar (owner's word, 2026-10-13;
+   * topics 2026-11-24).
    */
-  readonly journalFilter: readonly string[];
+  readonly journalFilter: JournalFilter;
   /** What is typed into the journal's search; empty shows every entry. */
   readonly journalQuery: string;
   readonly searchJournal: (typed: string) => void;
-  readonly filterJournal: (emotionIds: readonly string[]) => void;
+  readonly filterJournal: (filter: JournalFilter) => void;
+  /** A topic tapped on an entry's page: the journal, narrowed to it (owner's word, 2026-11-24). */
+  readonly openTopic: (topic: string) => void;
   /**
    * The handful of entries the journal was opened on from a pattern, or null.
    * Cleared with the bar's journal tab, with its X, and by the emotion filter.
@@ -867,7 +870,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
   const [history, setHistory] = useState<readonly HistoryDay[] | null>(null);
   const [knownTopics, setKnownTopics] = useState<readonly string[]>([]);
   const [recorded, setRecorded] = useState<ReadonlySet<string> | null>(null);
-  const [journalFilter, setJournalFilter] = useState<readonly string[]>([]);
+  const [journalFilter, setJournalFilter] = useState<JournalFilter>(NO_FILTER);
   /*
    * Kept in the flow like the filter, so it survives opening an entry and
    * coming back, and cleared when the journal is opened from the bar.
@@ -1880,15 +1883,26 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     journalFilter,
     journalQuery,
     searchJournal: setJournalQuery,
-    filterJournal: useCallback((emotionIds: readonly string[]) => {
+    filterJournal: useCallback((filter: JournalFilter) => {
       setJournalFocus(null);
-      setJournalFilter(emotionIds);
+      setJournalFilter(filter);
     }, []),
+    openTopic: useCallback(
+      (topic: string) => {
+        setStage({ kind: 'history' });
+        setJournalFilter({ emotionIds: [], topics: [topic] });
+        setJournalQuery('');
+        setJournalFocus(null);
+        void dependencies.getHistory.execute().then(setHistory).catch(fail);
+        void dependencies.findRecordedEntries.execute().then(setRecorded).catch(() => undefined);
+      },
+      [dependencies.getHistory, dependencies.findRecordedEntries, fail],
+    ),
     journalFocus,
     openJournalFocus: useCallback(
       (focus: JournalFocus) => {
         setStage({ kind: 'history' });
-        setJournalFilter([]);
+        setJournalFilter(NO_FILTER);
         setJournalQuery('');
         setJournalFocus(focus);
         void dependencies.getHistory.execute().then(setHistory).catch(fail);
@@ -2244,7 +2258,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     }, [loadStats, stage]),
     openHistory: useCallback(() => {
       setStage({ kind: 'history' });
-      setJournalFilter([]);
+      setJournalFilter(NO_FILTER);
       setJournalQuery('');
       setJournalFocus(null);
       void dependencies.getHistory.execute().then(setHistory).catch(fail);

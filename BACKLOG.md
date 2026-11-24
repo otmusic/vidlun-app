@@ -1801,6 +1801,27 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++++++++++++++++++++. The journal filtered by topic — 2026-11-24
+
+Owner's word on the canvas page «Щоденник: фільтр за темами»: "бери А, і
+так, тап по темі відкриває щоденник".
+
+- **One sheet** (`JournalFilterSheet`, was `EmotionFilterSheet`): «Показати
+  записи», the emotions this person used, and under them «Теми» — every
+  topic their entries had, the most used first (`topicsUsed`), in the
+  neutral grey. «Показати» waits for a chip of either kind.
+- **How they combine** (`entriesMatching`): any of the chosen emotions, any
+  of the chosen topics; with both chosen, an entry needs one of each.
+- **Applied**: the chips over the journal, emotions in blue then topics in
+  grey, each with its X, and «Скинути» for all. The badge on the filter
+  button counts both (`filterSize`). The flow holds a `JournalFilter`
+  (`emotionIds`, `topics`) instead of a list of emotions.
+- **From an entry's page**: a tap on a topic opens the journal narrowed to
+  it (`openTopic`), its search and emotions cleared.
+- Copy: «Показати записи», «Фільтр записів», «Таких записів немає.».
+
+---
+
 ## 3ψψψ++++++++++++++++++++++++++++++++++++++. A swipe back that shows where it goes — 2026-11-24
 
 Owner's word: "поглянь на плавність повернення на попередній скрін через

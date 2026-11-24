@@ -713,6 +713,7 @@ function Stage(
           vocabulary={props.vocabulary}
           locale={props.locale}
           t={t}
+          onOpenTopic={flow.openTopic}
           onDelete={flow.deleteEntry}
           onBack={flow.closeEntry}
         />
