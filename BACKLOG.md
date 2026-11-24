@@ -1801,6 +1801,33 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++++++++++++++++. Choosing together as a sheet — 2026-11-24
+
+Owner's word on the canvas page «Обрати разом» діалогом: "«Обрати разом»
+плутає … не окремою сторінкою, а діалог", then the name kept, the button
+centred under the words, none when nothing was heard, and "так, бери A".
+
+- **Where it is:** «✦ Обрати разом» in Vidlun's colour, centred under the
+  feelings step's words (`CardFeelingsScreen`). It used to be the second
+  button under «Обери настрій», where it read as choosing the mood together.
+  The step has one button at its foot now.
+- **What it opens:** a sheet, not a page (`TogetherSheet`): «✦ Vidlun почув»
+  and Vidlun's words, all chosen to start with; a tap takes one off and puts
+  it back. «Обрати» puts the ones left chosen into the step's row, after the
+  person's own, and the link is gone. ✕ or a tap outside adds nothing. The
+  page «Обираємо разом» and its stage (`comparing`) are removed.
+- **The unaided answer** (`selfEmotionIds`) is what was named when the sheet
+  first opened (`whenTogetherOpened`), since Vidlun's words are in sight from
+  then on. A word of Vidlun's left out of the sheet, or the sheet closed with
+  nothing taken, counts as declining (`declinedVidlunsWords`).
+- **Nothing heard:** when Vidlun heard no clear emotion, or could not listen,
+  there is no link at all, and «Обери настрій» goes on without a word (§6:
+  no words is an answer). Otherwise it still needs a word, or the sheet seen.
+- **Saving** always writes the entry from the card (`cardAfterAnswer`): the
+  old way of going on without a word to Vidlun's words is gone with the page.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++++++++++++++++. The month heard in its own voice — 2026-11-23
 
 Owner's word "бери місяць голосом" on the canvas page «Місяць голосом»

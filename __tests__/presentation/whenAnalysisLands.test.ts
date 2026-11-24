@@ -98,16 +98,6 @@ describe('what happens when the analysis lands', () => {
     expect(after.kind === 'saving' ? after.draft.mood?.value : null).toBe(4);
   });
 
-  it('carries the mood set on the card into choosing together, and back', () => {
-    const after = whenAnalysisLands(
-      { ...asking, holding: true, together: true, mood: 5 },
-      analysis(),
-    );
-
-    expect(after.kind === 'comparing' ? after.draft.mood?.value : null).toBe(5);
-    expect(after.kind === 'comparing' ? after.card.mood : null).toBe(5);
-  });
-
   it('saves the entry without the topics taken off the card', () => {
     const after = whenAnalysisLands(
       { ...asking, holding: true, droppedTopics: ['work'] },
@@ -132,63 +122,15 @@ describe('what happens when the analysis lands', () => {
     expect(after.kind === 'saving' ? after.proposed.contextTags : null).toEqual(['work', 'sleep']);
   });
 
-  it('carries the topics written in into choosing together, and back', () => {
-    const after = whenAnalysisLands(
-      { ...asking, holding: true, together: true, addedTopics: ['tea'] },
-      analysis({ contextTags: ['work'] }),
-    );
-
-    expect(after.kind === 'comparing' ? after.draft.contextTags : null).toEqual(['work', 'tea']);
-    expect(after.kind === 'comparing' ? after.card.addedTopics : null).toEqual(['tea']);
-  });
-
-  it('carries the topics taken off into choosing together, and back', () => {
-    const after = whenAnalysisLands(
-      { ...asking, holding: true, together: true, droppedTopics: ['work'] },
-      analysis({ contextTags: ['work', 'sleep'] }),
-    );
-
-    expect(after.kind === 'comparing' ? after.draft.contextTags : null).toEqual(['sleep']);
-    expect(after.kind === 'comparing' ? after.card.droppedTopics : null).toEqual(['work']);
-  });
-
-  it("shows Vidlun's answer to someone who went on without naming anything", () => {
+  it('saves no words as the answer of someone who went on without naming any', () => {
     const after = whenAnalysisLands({ ...asking, chosen: [], holding: true }, analysis());
 
-    expect(after.kind).toBe('comparing');
-  });
-
-  it("offers Vidlun's words already chosen, after the person's own, when choosing together", () => {
-    const after = whenAnalysisLands({ ...asking, holding: true, together: true }, analysis());
-
-    // Owner's word, 2026-10-01: one list, everything in it chosen to start
-    // with. Their word stays the unaided answer.
-    expect(after.kind).toBe('comparing');
-    expect(after.kind === 'comparing' ? after.draft.emotionIds : null).toEqual([
+    // §6: zero emotions is a complete entry. Vidlun's words stay the proposal.
+    expect(after.kind).toBe('saving');
+    expect(after.kind === 'saving' ? after.draft.emotionIds : null).toEqual([]);
+    expect(after.kind === 'saving' ? after.draft.proposedEmotionIds : null).toEqual([
+      'happy.proud',
       'bad.tired',
-      'happy.proud',
-    ]);
-    expect(after.kind === 'comparing' ? after.draft.selfEmotionIds : null).toEqual(['bad.tired']);
-  });
-
-  it('starts with no more than the six words an entry can hold', () => {
-    const after = whenAnalysisLands(
-      {
-        ...asking,
-        chosen: ['angry', 'sad', 'fearful', 'surprised', 'disgusted'],
-        holding: true,
-        together: true,
-      },
-      analysis(),
-    );
-
-    expect(after.kind === 'comparing' ? after.draft.emotionIds : null).toEqual([
-      'angry',
-      'sad',
-      'fearful',
-      'surprised',
-      'disgusted',
-      'happy.proud',
     ]);
   });
 
@@ -200,45 +142,6 @@ describe('what happens when the analysis lands', () => {
 
     expect(after).toMatchObject({ kind: 'turn', nearby: ['happy.content', 'bad.tired.drained'] });
     expect(after.kind === 'turn' ? after.draft?.emotionIds : null).toEqual(['happy.proud', 'bad.tired']);
-  });
-
-  it('keeps the offered words for the way back from choosing together', () => {
-    const after = whenAnalysisLands(
-      { ...asking, holding: true, together: true },
-      analysis(),
-      asking.spoken.text,
-      ['happy.content'],
-    );
-
-    expect(after.kind === 'comparing' ? after.card.nearby : null).toEqual(['happy.content']);
-  });
-
-  it('remembers the card it came from, for the way back', () => {
-    const after = whenAnalysisLands({ ...asking, holding: true, together: true }, analysis());
-    const card = after.kind === 'comparing' ? after.card : null;
-
-    // Back is the card as it was — the words, what was named, the reading in
-    // hand — and no longer on its way anywhere.
-    expect(card).toMatchObject({
-      kind: 'turn',
-      spoken: asking.spoken,
-      chosen: ['bad.tired'],
-      holding: false,
-      together: false,
-    });
-    expect(card?.draft?.emotionIds).toEqual(['happy.proud', 'bad.tired']);
-  });
-
-  it('brings a difficult entry to the same words when choosing together', () => {
-    const after = whenAnalysisLands(
-      { ...asking, chosen: [], holding: true, together: true },
-      analysis({ safetyFlag: 'distress' }),
-    );
-
-    // The answer is no longer set beside Vidlun's, so there is no comparison
-    // left to spare a hard entry; its flag still brings grounding after.
-    expect(after.kind).toBe('comparing');
-    expect(after.kind === 'comparing' ? after.draft.safetyFlag : null).toBe('distress');
   });
 
   it('drops an analysis that belongs to a card nobody is on any more', () => {

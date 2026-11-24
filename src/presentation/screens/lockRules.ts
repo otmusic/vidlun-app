@@ -23,7 +23,6 @@ const OPEN_WHILE_LOCKED: ReadonlySet<CaptureFlow['stage']['kind']> = new Set([
   'recording',
   'processing',
   'turn',
-  'comparing',
   'reflecting',
   'saving',
   'saved',

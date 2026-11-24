@@ -65,7 +65,7 @@ import type { IMicrophonePermission, PermissionStatus } from '@/domain/ports/IMi
 /**
  * The card's steps (owner's word, 2026-11-23): the words and their topics,
  * then what the person feels, then the mood, which saves. Choosing together
- * leaves the feelings step for its own screen and comes back on the mood.
+ * is a sheet over the feelings step, not a screen of its own (2026-11-24).
  */
 export type CardStep = 'words' | 'feelings' | 'mood';
 
@@ -99,8 +99,9 @@ export interface TurnStage {
    */
   readonly unheard: boolean;
   /**
-   * True once the person asked to choose together with Vidlun: the card goes
-   * on to Vidlun's words rather than saving their own.
+   * True once "choose" in the choosing-together sheet put Vidlun's words on
+   * the card (owner's word, 2026-11-24): the way to them is gone from the
+   * card then, the words being in its row.
    */
   readonly together: boolean;
   /**
@@ -122,9 +123,9 @@ export interface TurnStage {
   readonly addedTopics: readonly string[];
   /**
    * What the person had named before choosing together showed them Vidlun's
-   * words. Null until they have chosen together and come back to the card
-   * with the words (owner's word, 2026-11-12); `chosen` is then those words,
-   * and this stays the unaided answer `selfEmotionIds` is written from.
+   * words. Null until its sheet first opened (owner's word, 2026-11-24): from
+   * then on Vidlun's words have been seen, whatever was taken from them, and
+   * this stays the unaided answer `selfEmotionIds` is written from.
    */
   readonly namedAlone: readonly string[] | null;
 }
@@ -158,17 +159,6 @@ export type CaptureStage =
    */
   | { readonly kind: 'parked' }
   | TurnStage
-  /**
-   * Choosing together: Vidlun's words, already chosen, beside whatever the
-   * person named on the card (owner's word, 2026-10-01).
-   */
-  | {
-      readonly kind: 'comparing';
-      readonly proposed: MoodEntry;
-      readonly draft: MoodEntry;
-      /** The question card as it was, for the way back to it. */
-      readonly card: TurnStage;
-    }
   | { readonly kind: 'reflecting'; readonly proposed: MoodEntry; readonly draft: MoodEntry }
   /**
    * The answer is in and the entry is being written — no card in between
@@ -424,21 +414,15 @@ export interface CaptureFlow {
   readonly take: string | null;
   /** "Save" on the mood: saves what was named, or waits for the reading to land. */
   readonly answer: () => void;
-  /** "Choose together": Vidlun's words, already chosen, beside whatever was named. */
-  readonly chooseTogether: () => void;
+  /** "Choose together" opened its sheet: what was named so far is the unaided answer from now on. */
+  readonly openTogether: () => void;
+  /** "Choose" in that sheet: these of Vidlun's words join the ones on the card. */
+  readonly chooseTogether: (ids: readonly string[]) => void;
   /**
    * The transcript, fixed by the one person who knows what was said. Throws
    * the mishearing's analysis away and reads the corrected words instead.
    */
   readonly correctWording: (text: string) => void;
-  /** Takes a word off the entry or puts it back, while choosing together. */
-  readonly toggleKept: (id: string) => void;
-  /** Adds a word typed while choosing together; never takes one away. */
-  readonly addKept: (id: string) => void;
-  /** "Choose a mood" on choosing together: on to the card's mood with the words chosen there. */
-  readonly keepChosenTogether: () => void;
-  /** From choosing together back to the question card, as it was. */
-  readonly backToCard: () => void;
   /**
    * Throws away the entry on the card before it was ever saved: its words,
    * its take and Vidlun's reading of it, landed or still on the way. Home.
@@ -561,7 +545,6 @@ const MAKING_AN_ENTRY: ReadonlySet<CaptureStage['kind']> = new Set([
   'writing',
   'processing',
   'turn',
-  'comparing',
   'reflecting',
   'saving',
   'saved',
@@ -613,9 +596,8 @@ function describe(error: unknown): string {
 }
 
 /**
- * The words choosing together starts with: the person's own first, then
- * Vidlun's, all of them already chosen (owner's word, 2026-10-01) — six at
- * most, the entry's ceiling.
+ * The words on the card once choosing together has added Vidlun's: the
+ * person's own first, then Vidlun's — six at most, the entry's ceiling.
  */
 function wordsChosenTogether(
   chosen: readonly string[],
@@ -628,8 +610,8 @@ function wordsChosenTogether(
 }
 
 /**
- * Whether the person took off any of Vidlun's words that choosing together
- * started them with. Those come already chosen, so taking one off is an act
+ * Whether the person left out any of Vidlun's words once they had seen them.
+ * Choosing together offers them already chosen, so leaving one out is an act
  * rather than an untouched screen — the refusal the disagreement log is for.
  *
  * Exported for the test, like `whenAnalysisLands`.
@@ -642,20 +624,6 @@ export function declinedVidlunsWords(proposed: MoodEntry, draft: MoodEntry): boo
   );
 }
 
-/**
- * What the card holds once the answering is over.
- *
- * Someone who named the feeling and went on has given the entry: it is saved
- * as it stands, with no card in between (owner's word, 2026-09-30) — a hard
- * entry too, whose flag still brings the grounding offer on the saved screen.
- * What Vidlun heard is not thrown away; it stays on the draft as the
- * proposal, for the revision log and the granularity metric.
- *
- * Everyone else — someone who asked to choose together, or went on without a
- * word — gets Vidlun's words, already chosen beside their own. A hard entry
- * comes here too: with the person's answer no longer set beside Vidlun's,
- * there is no comparison left to spare it (owner's word, 2026-10-01).
- */
 /** The card's topics as the domain reads them; Vidlun's are empty until the reading lands. */
 function topicsOf(card: TurnStage): CardTopics {
   return {
@@ -665,7 +633,17 @@ function topicsOf(card: TurnStage): CardTopics {
   };
 }
 
-function cardAfterAnswer(card: TurnStage, proposed: MoodEntry, together: boolean): CaptureStage {
+/**
+ * What the card holds once the answering is over: the entry, saved as it
+ * stands, with no card in between (owner's word, 2026-09-30) — a hard entry
+ * too, whose flag still brings the grounding offer on the saved screen. What
+ * Vidlun heard is not thrown away; it stays on the draft as the proposal, for
+ * the revision log and the granularity metric.
+ *
+ * No words at all is an answer as well (§6): one given with Vidlun's words in
+ * sight, or one where Vidlun heard none either (owner's word, 2026-11-24).
+ */
+function cardAfterAnswer(card: TurnStage, proposed: MoodEntry): CaptureStage {
   const { chosen } = card;
   const mood = card.mood === null ? proposed.mood : MoodScore.of(card.mood);
   const contextTags = keptTopics({
@@ -673,82 +651,72 @@ function cardAfterAnswer(card: TurnStage, proposed: MoodEntry, together: boolean
     dropped: card.droppedTopics,
     added: card.addedTopics,
   });
-  /*
-   * A card that came back from choosing together carries Vidlun's words among
-   * the chosen ones, so the unaided answer is what was named before that. No
-   * words at all is then an answer too: a deliberate one, made with Vidlun's
-   * in sight.
-   */
-  const choseTogether = card.namedAlone !== null;
-  const named = card.namedAlone ?? chosen;
-
-  if (!together && (chosen.length > 0 || choseTogether)) {
-    const draft = MoodEntry.create({
-      ...proposed.toProps(),
-      selfEmotionIds: named,
-      emotionIds: chosen,
-      mood,
-      contextTags,
-    });
-
-    return {
-      kind: 'saving',
-      proposed,
-      draft,
-      declined: choseTogether && declinedVidlunsWords(proposed, draft),
-    };
-  }
+  // Once Vidlun's words were seen, the unaided answer is what was named before.
+  const sawVidlunsWords = card.namedAlone !== null;
+  const draft = MoodEntry.create({
+    ...proposed.toProps(),
+    selfEmotionIds: card.namedAlone ?? chosen,
+    emotionIds: chosen,
+    mood,
+    contextTags,
+  });
 
   return {
-    kind: 'comparing',
+    kind: 'saving',
     proposed,
-    draft: MoodEntry.create({
-      ...proposed.toProps(),
-      selfEmotionIds: named,
-      // Again from the words left last time, not all of Vidlun's back on.
-      emotionIds: choseTogether ? chosen : wordsChosenTogether(chosen, proposed.emotionIds),
-      mood,
-      contextTags,
-    }),
-    card: { ...card, draft: proposed, holding: false, together: false },
+    draft,
+    declined: sawVidlunsWords && declinedVidlunsWords(proposed, draft),
   };
 }
 
 /**
- * Where "save" (the mood step) and "choose together" (the feelings step) go:
- * on, once the reading is in, or holding for it, and on the moment it lands.
+ * Where "save" on the mood step goes: on, once the reading is in, or holding
+ * for it, and on the moment it lands.
  *
  * Exported for the test, like `whenAnalysisLands`.
  */
-export function whenAnswered(current: CaptureStage, together: boolean): CaptureStage {
+export function whenAnswered(current: CaptureStage): CaptureStage {
   if (current.kind !== 'turn') {
     return current;
   }
 
   return current.draft === null
-    ? { ...current, holding: true, together }
-    : cardAfterAnswer(current, current.draft, together);
+    ? { ...current, holding: true }
+    : cardAfterAnswer(current, current.draft);
 }
 
 /**
- * "Choose a mood" on choosing together: on to the card's mood step with the
- * words chosen there, for the card's own "save" to write the entry (owner's
- * word, 2026-11-12 and 2026-11-23). The mood is set on the card, and only there.
+ * "Choose together" opened its sheet, and Vidlun's words are in sight (owner's
+ * word, 2026-11-24): what was named until now is the unaided answer, and stays
+ * it however often the sheet opens again.
  *
  * Exported for the test, like `whenAnalysisLands`.
  */
-export function whenChosenTogether(current: CaptureStage): CaptureStage {
-  if (current.kind !== 'comparing') {
+export function whenTogetherOpened(current: CaptureStage): CaptureStage {
+  if (current.kind !== 'turn' || current.draft === null || current.namedAlone !== null) {
+    return current;
+  }
+
+  return { ...current, namedAlone: current.chosen };
+}
+
+/**
+ * "Choose" in the choosing-together sheet: the words of Vidlun's left chosen
+ * there join the card's own row, after the person's, and the way to them is
+ * gone (owner's word, 2026-11-24). Nothing already on the card is taken off.
+ *
+ * Exported for the test, like `whenAnalysisLands`.
+ */
+export function whenChosenTogether(current: CaptureStage, picked: readonly string[]): CaptureStage {
+  if (current.kind !== 'turn' || current.draft === null) {
     return current;
   }
 
   return {
-    ...current.card,
-    // On to the mood with the words chosen together (owner's word, 2026-11-23).
-    step: 'mood',
-    draft: current.proposed,
-    chosen: current.draft.emotionIds,
-    namedAlone: current.draft.selfEmotionIds,
+    ...current,
+    chosen: wordsChosenTogether(current.chosen, picked),
+    namedAlone: current.namedAlone ?? current.chosen,
+    together: true,
   };
 }
 
@@ -824,7 +792,7 @@ export function whenAnalysisLands(
    */
   const card = { ...current, draft, nearby };
 
-  return current.holding ? cardAfterAnswer(card, draft, current.together) : card;
+  return current.holding ? cardAfterAnswer(card, draft) : card;
 }
 
 /**
@@ -2062,22 +2030,14 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
 
       // Nothing to compare against yet: hold, and the analysis will carry
       // the card forward the moment it lands.
-      setStage((current) => whenAnswered(current, false));
+      setStage(whenAnswered);
     }, [saveUnheard, stage]),
-    chooseTogether: useCallback(() => {
-      // Vidlun could not listen: there is nothing to choose together with,
-      // and what was named so far goes on to the mood as the whole answer.
-      if (stage.kind === 'turn' && stage.unheard && stage.draft !== null) {
-        setStage((current) => whenStepped(current, 'mood'));
-
-        return;
-      }
-
-      // Their words so far are kept: choosing together is not the same as
-      // having no answer, and what they named before seeing Vidlun's is
-      // still the unaided measurement.
-      setStage((current) => whenAnswered(current, true));
-    }, [stage]),
+    openTogether: useCallback(() => {
+      setStage(whenTogetherOpened);
+    }, []),
+    chooseTogether: useCallback((ids: readonly string[]) => {
+      setStage((current) => whenChosenTogether(current, ids));
+    }, []),
     correctWording: useCallback(
       (text: string) => {
         const corrected = text.trim();
@@ -2126,42 +2086,6 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       },
       [notify, stage],
     ),
-    toggleKept: useCallback((id: string) => {
-      setStage((current) => {
-        if (current.kind !== 'comparing') {
-          return current;
-        }
-
-        const kept = current.draft.emotionIds;
-
-        if (kept.includes(id)) {
-          return { ...current, draft: current.draft.withEmotionIds(kept.filter((each) => each !== id)) };
-        }
-
-        // Taking a word off is what frees a slot under the four-word ceiling.
-        return kept.length >= MoodEntry.MAX_EMOTIONS
-          ? current
-          : { ...current, draft: current.draft.withEmotionIds([...kept, id]) };
-      });
-    }, []),
-    addKept: useCallback((id: string) => {
-      setStage((current) =>
-        current.kind !== 'comparing' ||
-        current.draft.emotionIds.includes(id) ||
-        current.draft.emotionIds.length >= MoodEntry.MAX_EMOTIONS
-          ? current
-          : { ...current, draft: current.draft.withEmotionIds([...current.draft.emotionIds, id]) },
-      );
-    }, []),
-    keepChosenTogether: useCallback(() => {
-      setStage(whenChosenTogether);
-    }, []),
-    backToCard: useCallback(() => {
-      // The card as it was, with the reading — and any echo since — in hand.
-      setStage((current) =>
-        current.kind === 'comparing' ? { ...current.card, draft: current.proposed } : current,
-      );
-    }, []),
     /*
      * The way out of an entry not yet saved (owner's word, 2026-11-19). The
      * card is not saved, so there is nothing to delete but the take: its file

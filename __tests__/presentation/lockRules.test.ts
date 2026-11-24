@@ -12,7 +12,7 @@ describe('the journal lock', () => {
   });
 
   it('lets a take started from outside run to its save without Face ID', () => {
-    for (const stage of ['recording', 'processing', 'turn', 'comparing', 'saving', 'saved'] as const) {
+    for (const stage of ['recording', 'processing', 'turn', 'saving', 'saved'] as const) {
       expect(opensWhileLocked(stage)).toBe(true);
     }
   });

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Pressable, View } from 'react-native';
 
 import type { Emotion } from '@/domain/entities/Emotion';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
@@ -14,6 +14,7 @@ import { CardPage } from '../components/CardPage';
 import { Chip } from '../components/Chip';
 import { AddPill, ChipField } from '../components/ChipField';
 import { emotionLabel, emotionWordsIn, idForTypedWord } from '../components/emotionDisplay';
+import { Sparkle, TogetherSheet } from '../components/TogetherSheet';
 import { useTheme } from '../theme/ThemeProvider';
 
 type Onward = 'next' | 'together';
@@ -28,9 +29,16 @@ type Onward = 'next' | 'together';
  *
  * "Choose a mood" (named for where it goes, owner's word 2026-11-23) needs a
  * word (owner's word, 2026-09-30): one picked, or one being typed, which the
- * tap commits. Someone with no word goes on through
- * "choose together" instead — and coming back from it with none is an
- * answer, given with Vidlun's words in sight.
+ * tap commits. Someone with no word opens "choose together" instead — and
+ * going on from it with none is an answer, given with Vidlun's words in
+ * sight.
+ *
+ * "Choose together" sits under the words it is about, not under "choose a
+ * mood", where it read as choosing the mood together (owner's word,
+ * 2026-11-24). It opens a sheet of Vidlun's words rather than a page, and it
+ * is only there while Vidlun has words to offer: when it heard no clear
+ * emotion, or could not listen, there is no button, and "choose a mood" goes
+ * on without a word, since no word is an answer too (§6).
  */
 export function CardFeelingsScreen(props: {
   readonly transcript: string;
@@ -39,21 +47,27 @@ export function CardFeelingsScreen(props: {
   readonly vocabulary: EmotionVocabulary;
   /** The words offered, nearest first. */
   readonly offered: readonly Emotion[];
-  /** True once choosing together brought its words back to the card. */
-  readonly choseTogether: boolean;
+  /** Vidlun's words, for choosing together; empty when it heard none, or could not listen. */
+  readonly heard: readonly string[];
+  /** True once choosing together has shown Vidlun's words. */
+  readonly sawTogether: boolean;
+  /** True once choosing together put its words on the card, and its way is gone. */
+  readonly tookTogether: boolean;
   readonly locale: Locale;
   readonly t: Translate;
   readonly onToggle: (id: string) => void;
   /** Adds a word the person typed; a word already chosen stays chosen. */
   readonly onAddWord: (id: string) => void;
   readonly onNext: () => void;
-  /** Goes on to Vidlun's words, already chosen, to choose from together. */
-  readonly onTogether: () => void;
+  /** Choosing together opened: what is named by now is the unaided answer. */
+  readonly onOpenTogether: () => void;
+  /** "Choose" in its sheet: these of Vidlun's words join the card's. */
+  readonly onChooseTogether: (ids: readonly string[]) => void;
   readonly onBack: () => void;
   readonly onDiscard: () => void;
 }): React.JSX.Element {
   const theme = useTheme();
-  const { chosen, onNext, onTogether, t } = props;
+  const { chosen, onNext, onOpenTogether, t } = props;
   // The words beside the sentence are in the language it was said in.
   const words = emotionWordsIn(props.transcript, t);
   const full = chosen.length >= MoodEntry.MAX_EMOTIONS;
@@ -61,7 +75,19 @@ export function CardFeelingsScreen(props: {
   const [typing, setTyping] = useState<string | null>(null);
   /** A typed word committed by a button, waited for before the card moves on. */
   const [after, setAfter] = useState<{ readonly id: string; readonly to: Onward } | null>(null);
-  const answered = chosen.length > 0 || (typing ?? '').trim().length > 0 || props.choseTogether;
+  /** Whether the sheet of Vidlun's words is up. */
+  const [sheet, setSheet] = useState(false);
+  const canChooseTogether = props.heard.length > 0 && !props.tookTogether;
+  const answered =
+    chosen.length > 0 ||
+    (typing ?? '').trim().length > 0 ||
+    props.sawTogether ||
+    // With nothing of Vidlun's to choose from, no word is the answer (owner's word, 2026-11-24).
+    !canChooseTogether;
+  const openTogether = useCallback((): void => {
+    onOpenTogether();
+    setSheet(true);
+  }, [onOpenTogether]);
   const offeredIds = props.offered.map((emotion) => emotion.id);
   // A word of one's own, or one chosen together, stands after the offered ones, chosen.
   const others = chosen.filter((id) => !offeredIds.includes(id));
@@ -93,10 +119,10 @@ export function CardFeelingsScreen(props: {
       if (after.to === 'next') {
         onNext();
       } else {
-        onTogether();
+        openTogether();
       }
     }
-  }, [after, chosen, onNext, onTogether]);
+  }, [after, chosen, onNext, openTogether]);
 
   /** A word still being typed is part of the answer, so it goes in first. */
   const go = (to: Onward): void => {
@@ -107,30 +133,20 @@ export function CardFeelingsScreen(props: {
     } else if (to === 'next') {
       onNext();
     } else {
-      onTogether();
+      openTogether();
     }
   };
 
   return (
     <CardPage
       footer={
-        <>
-          <Button
-            label={t('card.chooseMood')}
-            disabled={after !== null || !answered}
-            onPress={() => {
-              go('next');
-            }}
-          />
-          <Button
-            label={t('turn.together')}
-            variant="secondary"
-            disabled={after !== null}
-            onPress={() => {
-              go('together');
-            }}
-          />
-        </>
+        <Button
+          label={t('card.chooseMood')}
+          disabled={after !== null || !answered}
+          onPress={() => {
+            go('next');
+          }}
+        />
       }
     >
       <CardHeader
@@ -195,6 +211,45 @@ export function CardFeelingsScreen(props: {
           />
         )}
       </View>
+
+      {canChooseTogether ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={after !== null}
+          onPress={() => {
+            go('together');
+          }}
+          style={({ pressed }) => ({
+            alignSelf: 'center',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 7,
+            minHeight: 44,
+            marginTop: 14,
+            paddingHorizontal: 12,
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <Sparkle colour={theme.palette.accentInk} size={14} />
+          <AppText variant="label" color="accentInk">
+            {t('turn.together')}
+          </AppText>
+        </Pressable>
+      ) : null}
+
+      <TogetherSheet
+        open={sheet}
+        heard={props.heard}
+        words={words}
+        t={t}
+        onChoose={(ids) => {
+          setSheet(false);
+          props.onChooseTogether(ids);
+        }}
+        onClose={() => {
+          setSheet(false);
+        }}
+      />
     </CardPage>
   );
 }

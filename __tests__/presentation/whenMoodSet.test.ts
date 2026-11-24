@@ -40,16 +40,6 @@ describe('setting the mood', () => {
     expect(whenMoodSet(card, 2)).toMatchObject({ kind: 'turn', mood: 2 });
   });
 
-  /*
-   * Owner's word, 2026-11-12: choosing together has no scale any more. Its
-   * "save" goes back to the card, and the card's scale is the one saved.
-   */
-  it('leaves choosing together alone, since the mood is set on the card', () => {
-    const choosing: CaptureStage = { kind: 'comparing', proposed: reading, draft: reading, card };
-
-    expect(whenMoodSet(choosing, 2)).toBe(choosing);
-  });
-
   it('leaves every other screen as it was', () => {
     const idle: CaptureStage = { kind: 'idle' };
 

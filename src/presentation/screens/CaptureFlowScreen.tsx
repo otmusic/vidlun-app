@@ -25,7 +25,6 @@ import { ProcessingScreen } from './ProcessingScreen';
 import { ParkedScreen } from './ParkedScreen';
 import { CardFeelingsScreen } from './CardFeelingsScreen';
 import { CardMoodScreen } from './CardMoodScreen';
-import { CardTogetherScreen } from './CardTogetherScreen';
 import { CardWordsScreen } from './CardWordsScreen';
 import { RecordingScreen } from './RecordingScreen';
 import { ReflectionScreen } from './ReflectionScreen';
@@ -207,8 +206,6 @@ function swipeBackFor(flow: CaptureFlow): (() => void) | null {
     case 'stats':
     case 'subscription':
       return flow.backHome;
-    case 'comparing':
-      return flow.backToCard;
     // The card's later steps go back a step; its first has nowhere to go but the bin.
     case 'turn':
       return flow.stage.step === 'words' ? null : flow.stepBack;
@@ -373,13 +370,16 @@ function Stage(
             chosen={card.chosen}
             vocabulary={props.vocabulary}
             offered={offered}
-            choseTogether={card.namedAlone !== null}
+            heard={card.unheard ? [] : draft.proposedEmotionIds}
+            sawTogether={card.namedAlone !== null}
+            tookTogether={card.together}
             locale={props.locale}
             t={t}
             onToggle={flow.toggleOwnWord}
             onAddWord={flow.addOwnWord}
             onNext={flow.toMood}
-            onTogether={flow.chooseTogether}
+            onOpenTogether={flow.openTogether}
+            onChooseTogether={flow.chooseTogether}
             onBack={flow.stepBack}
             onDiscard={flow.discardEntry}
           />
@@ -399,22 +399,6 @@ function Stage(
         />
       );
     }
-
-    case 'comparing':
-      return (
-        <CardTogetherScreen
-          proposed={flow.stage.proposed}
-          draft={flow.stage.draft}
-          vocabulary={props.vocabulary}
-          locale={props.locale}
-          t={t}
-          onToggle={flow.toggleKept}
-          onAddWord={flow.addKept}
-          onNext={flow.keepChosenTogether}
-          onBack={flow.backToCard}
-          onDiscard={flow.discardEntry}
-        />
-      );
 
     case 'reflecting':
       return (

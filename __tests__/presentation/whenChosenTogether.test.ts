@@ -4,11 +4,12 @@ import { MoodScore } from '@/domain/value-objects/MoodScore';
 import {
   whenAnswered,
   whenChosenTogether,
+  whenTogetherOpened,
   type CaptureStage,
   type TurnStage,
 } from '@/presentation/hooks/useCaptureFlow';
 
-const NOW = new Date('2026-11-12T19:00:00.000Z');
+const NOW = new Date('2026-11-24T19:00:00.000Z');
 const SPOKEN = { text: 'Finished three tasks, happy, but very tired.', confidence: Confidence.of(0.9) };
 
 const reading = MoodEntry.create({
@@ -24,10 +25,10 @@ const reading = MoodEntry.create({
   confidence: SPOKEN.confidence,
 });
 
-/** The question card with the reading in, the person having named one word. */
+/** The feelings step with the reading in, the person having named one word. */
 const card: TurnStage = {
   kind: 'turn',
-  step: 'words',
+  step: 'feelings',
   spoken: SPOKEN,
   chosen: ['happy.content'],
   draft: reading,
@@ -41,60 +42,82 @@ const card: TurnStage = {
   namedAlone: null,
 };
 
-/** "Choose together", opened from that card. */
-function choosing(): Extract<CaptureStage, { kind: 'comparing' }> {
-  const stage = whenAnswered(card, true);
-
-  if (stage.kind !== 'comparing') {
-    throw new Error(`expected the choosing-together stage, got ${stage.kind}`);
+function turn(stage: CaptureStage): TurnStage {
+  if (stage.kind !== 'turn') {
+    throw new Error(`expected the card, got ${stage.kind}`);
   }
 
   return stage;
 }
 
-/** Choosing together with these words left on the entry, then "save". */
-function backWith(kept: readonly string[]): TurnStage {
-  const stage = choosing();
-  const after = whenChosenTogether({ ...stage, draft: stage.draft.withEmotionIds(kept) });
+/** The sheet opened on that card, then "choose" with these of Vidlun's words left chosen. */
+function chose(picked: readonly string[]): TurnStage {
+  return turn(whenChosenTogether(whenTogetherOpened(card), picked));
+}
 
-  if (after.kind !== 'turn') {
-    throw new Error(`expected the card, got ${after.kind}`);
+/** "Save" on the mood step, which writes the entry. */
+function saved(stage: TurnStage): Extract<CaptureStage, { kind: 'saving' }> {
+  const after = whenAnswered({ ...stage, step: 'mood' });
+
+  if (after.kind !== 'saving') {
+    throw new Error(`expected the entry to be written, got ${after.kind}`);
   }
 
   return after;
 }
 
-describe('saving what was chosen together', () => {
+describe('choosing together in a sheet', () => {
   /*
-   * Owner's word, 2026-11-12: "save" on choosing together goes back to the
-   * entry's card with the words on it, rather than writing the entry there.
+   * Owner's word, 2026-11-24: choosing together is a sheet over the
+   * feelings step, not a page. Opening it puts Vidlun's words in sight, so
+   * what was named until then is the unaided answer from that moment.
    */
-  it('goes back to the card with the words chosen together on it', () => {
-    const after = backWith(['happy.content', 'bad.tired']);
+  it('keeps what was named before the sheet opened as the unaided answer', () => {
+    const opened = turn(whenTogetherOpened(card));
+
+    expect(opened.namedAlone).toEqual(['happy.content']);
+    // Opening it changes nothing on the card itself.
+    expect(opened.chosen).toEqual(['happy.content']);
+    expect(opened.step).toBe('feelings');
+  });
+
+  it('keeps the first unaided answer however often the sheet opens', () => {
+    const again = whenTogetherOpened({ ...turn(whenTogetherOpened(card)), chosen: ['happy.content', 'sad'] });
+
+    expect(turn(again).namedAlone).toEqual(['happy.content']);
+  });
+
+  it('puts the words chosen in the sheet on the card, after the person’s own', () => {
+    const after = chose(['happy.proud', 'bad.tired']);
 
     expect(after).toMatchObject({
       kind: 'turn',
-      chosen: ['happy.content', 'bad.tired'],
+      step: 'feelings',
+      chosen: ['happy.content', 'happy.proud', 'bad.tired'],
+      namedAlone: ['happy.content'],
+      // Its way is gone from the card once the words are on it.
+      together: true,
       // The card as it was otherwise: its mood, its topics, the reading in hand.
       mood: 2,
       droppedTopics: ['sleep'],
       draft: reading,
-      holding: false,
-      together: false,
     });
   });
 
-  it('remembers what was named before Vidlun’s words were seen', () => {
-    expect(backWith(['bad.tired']).namedAlone).toEqual(['happy.content']);
+  it('takes off nothing already on the card', () => {
+    expect(chose([]).chosen).toEqual(['happy.content']);
+  });
+
+  it('keeps no more than the six words an entry can hold', () => {
+    const full = { ...card, chosen: ['angry', 'sad', 'fearful', 'surprised', 'disgusted'] };
+    const after = turn(whenChosenTogether(whenTogetherOpened(full), ['happy.proud', 'bad.tired']));
+
+    expect(after.chosen).toEqual(['angry', 'sad', 'fearful', 'surprised', 'disgusted', 'happy.proud']);
   });
 
   it('writes the entry from the card, keeping the unaided answer apart', () => {
-    const saving = whenAnswered(backWith(['happy.content', 'bad.tired']), false);
+    const saving = saved(chose(['bad.tired']));
 
-    expect(saving.kind).toBe('saving');
-    if (saving.kind !== 'saving') {
-      return;
-    }
     expect(saving.draft.emotionIds).toEqual(['happy.content', 'bad.tired']);
     // The granularity metric reads this: Vidlun's words must not become the person's.
     expect(saving.draft.selfEmotionIds).toEqual(['happy.content']);
@@ -103,44 +126,50 @@ describe('saving what was chosen together', () => {
     expect(saving.draft.contextTags).toEqual(['work']);
   });
 
-  it('logs a word of Vidlun’s taken off while choosing together as a disagreement', () => {
-    const saving = whenAnswered(backWith(['happy.content', 'bad.tired']), false);
-
-    expect(saving.kind === 'saving' ? saving.declined : null).toBe(true);
+  it('logs a word of Vidlun’s left out of the sheet as a disagreement', () => {
+    expect(saved(chose(['bad.tired'])).declined).toBe(true);
   });
 
-  it('logs no disagreement when every word of Vidlun’s was kept', () => {
-    const saving = whenAnswered(backWith(['happy.content', 'happy.proud', 'bad.tired']), false);
-
-    expect(saving.kind === 'saving' ? saving.declined : null).toBe(false);
+  it('logs no disagreement when every word of Vidlun’s was taken', () => {
+    expect(saved(chose(['happy.proud', 'bad.tired'])).declined).toBe(false);
   });
 
   it('logs no disagreement for an answer given without seeing Vidlun’s words', () => {
-    const saving = whenAnswered(card, false);
-
-    expect(saving.kind === 'saving' ? saving.declined : null).toBe(false);
+    expect(saved(card).declined).toBe(false);
   });
 
-  it('takes no words, chosen together, as a whole answer', () => {
-    const saving = whenAnswered(backWith([]), false);
+  it('takes the sheet closed with nothing chosen as an answer given with Vidlun’s words in sight', () => {
+    const saving = saved({ ...turn(whenTogetherOpened({ ...card, chosen: [] })) });
 
     // §6: zero emotions is a complete entry, and here it was a deliberate one.
-    expect(saving.kind).toBe('saving');
-    expect(saving.kind === 'saving' ? saving.draft.emotionIds : null).toEqual([]);
+    expect(saving.draft.emotionIds).toEqual([]);
+    expect(saving.declined).toBe(true);
   });
 
-  it('opens choosing together again on the words left last time, not all of Vidlun’s', () => {
-    const again = whenAnswered(backWith(['bad.tired']), true);
+  /*
+   * Owner's word, 2026-11-24: with no clear emotion heard there is no way to
+   * choose together, and the card goes on without a word.
+   */
+  it('saves no words when Vidlun heard none and the person named none', () => {
+    const silent = MoodEntry.create({ ...reading.toProps(), emotionIds: [] });
+    const saving = saved({ ...card, chosen: [], draft: silent });
 
-    expect(again.kind === 'comparing' ? again.draft.emotionIds : null).toEqual(['bad.tired']);
-    expect(again.kind === 'comparing' ? again.draft.selfEmotionIds : null).toEqual([
-      'happy.content',
-    ]);
+    expect(saving.draft.emotionIds).toEqual([]);
+    expect(saving.draft.selfEmotionIds).toEqual([]);
+    expect(saving.declined).toBe(false);
+  });
+
+  it('waits for the reading before the sheet can open', () => {
+    const asking: TurnStage = { ...card, draft: null };
+
+    expect(whenTogetherOpened(asking)).toBe(asking);
+    expect(whenChosenTogether(asking, ['bad.tired'])).toBe(asking);
   });
 
   it('leaves every other screen as it was', () => {
     const idle: CaptureStage = { kind: 'idle' };
 
-    expect(whenChosenTogether(idle)).toBe(idle);
+    expect(whenTogetherOpened(idle)).toBe(idle);
+    expect(whenChosenTogether(idle, ['bad.tired'])).toBe(idle);
   });
 });

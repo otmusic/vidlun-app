@@ -77,20 +77,17 @@ describe('the steps of the card', () => {
   });
 
   it('saves from the mood once a word was named', () => {
-    const saving = whenAnswered({ ...card, step: 'mood', chosen: ['bad.tired'], mood: 3 }, false);
+    const saving = whenAnswered({ ...card, step: 'mood', chosen: ['bad.tired'], mood: 3 });
 
     expect(saving.kind).toBe('saving');
     expect(saving.kind === 'saving' ? saving.draft.mood?.value : null).toBe(3);
   });
 
-  it('comes back from choosing together on the mood, with the words chosen there', () => {
-    const choosing = whenAnswered({ ...card, step: 'feelings', chosen: ['bad.tired'] }, true);
+  it('stays on the feelings after choosing together, with the words chosen there', () => {
+    const after = whenChosenTogether({ ...card, step: 'feelings', chosen: ['bad.tired'] }, ['happy.peaceful']);
 
-    expect(choosing.kind).toBe('comparing');
-
-    const back = whenChosenTogether(choosing);
-
-    expect(stepOf(back)).toBe('mood');
-    expect(back).toMatchObject({ chosen: ['bad.tired', 'happy.peaceful'], namedAlone: ['bad.tired'] });
+    // Owner's word, 2026-11-24: a sheet over the step, not a page to come back from.
+    expect(stepOf(after)).toBe('feelings');
+    expect(after).toMatchObject({ chosen: ['bad.tired', 'happy.peaceful'], namedAlone: ['bad.tired'] });
   });
 });
