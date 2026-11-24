@@ -46,7 +46,8 @@ import type { CreateUnheardEntry } from '@/application/use-cases/CreateUnheardEn
 import type { HearUnheardEntries } from '@/application/use-cases/HearUnheardEntries';
 import type { MeasureVoices } from '@/application/use-cases/MeasureVoices';
 import type { DescribeVoice } from '@/application/use-cases/DescribeVoice';
-import type { FindSpokenMoment } from '@/application/use-cases/FindSpokenMoment';
+import { startFor, type FindSpokenMoment } from '@/application/use-cases/FindSpokenMoment';
+import type { SpeechSpan } from '@/domain/ports/ISpeechTimeline';
 import type { KnownTopics } from '@/application/use-cases/KnownTopics';
 import { SearchQuery } from '@/domain/value-objects/SearchQuery';
 import type { VoiceCue, VoiceHeard } from '@/domain/value-objects/VoiceCue';
@@ -255,6 +256,14 @@ export type CaptureStage =
       readonly entry: MoodEntry;
       /** Null while it is being looked up, and if there is none. */
       readonly recordingUri: string | null;
+      /** False while the recording is looked up, so the page does not show a voice entry as a typed one first. */
+      readonly recordingKnown: boolean;
+      /**
+       * Where the speech is in the recording, for the word being said to be
+       * lit as it plays (owner's word, 2026-11-24); null until read, and
+       * when it cannot be.
+       */
+      readonly speech: readonly SpeechSpan[] | null;
       /** How the voice sounded against the usual one; null while it is being worked out. */
       readonly voice: VoiceHeard | null;
       /** What the journal's search held when the entry was opened from it; null otherwise. */
@@ -1898,6 +1907,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
           kind: 'detail',
           entry,
           recordingUri: null,
+          recordingKnown: false,
+          speech: null,
           voice: null,
           from: current.kind === 'history' ? 'history' : 'idle',
           backTo: current.kind === 'month' ? current : null,
@@ -1922,28 +1933,37 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
             // quick is not instant and people tap on.
             setStage((current) =>
               current.kind === 'detail' && current.entry.id === entry.id
-                ? { ...current, recordingUri: uri }
+                ? { ...current, recordingUri: uri, recordingKnown: true }
                 : current,
             );
 
-            /*
-             * Opened from a search: where the word is said, so the player
-             * starts there (owner's word, 2026-11-20). Read from the file each
-             * time; nothing about it is stored.
-             */
-            if (uri === null || query === null) {
+            if (uri === null) {
               return;
             }
 
-            const playFromMs = await dependencies.findSpokenMoment.execute(entry, uri, query);
+            /*
+             * Where the speech is, read from the file each time and stored
+             * nowhere: for the word being said to be lit as it plays, and,
+             * opened from a search, for the player to start where the word
+             * is said (owner's word, 2026-11-20).
+             */
+            const speech = await dependencies.findSpokenMoment.speechIn(uri);
+            const playFromMs = speech === null || query === null ? null : startFor(entry, speech, query);
 
             setStage((current) =>
               current.kind === 'detail' && current.entry.id === entry.id
-                ? { ...current, playFromMs }
+                ? { ...current, speech, playFromMs }
                 : current,
             );
           })
-          .catch(() => undefined);
+          .catch(() => {
+            // A lookup that failed finds no voice: the words are shown as the whole entry.
+            setStage((current) =>
+              current.kind === 'detail' && current.entry.id === entry.id && !current.recordingKnown
+                ? { ...current, recordingKnown: true }
+                : current,
+            );
+          });
       },
       [dependencies.findRecording, dependencies.describeVoice, dependencies.findSpokenMoment],
     ),

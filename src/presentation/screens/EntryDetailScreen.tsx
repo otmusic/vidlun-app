@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { shareAt } from '@/application/use-cases/FindSpokenMoment';
 import type { EmotionVocabulary } from '@/domain/entities/EmotionVocabulary';
 import type { MoodEntry } from '@/domain/entities/MoodEntry';
-import { SearchQuery } from '@/domain/value-objects/SearchQuery';
+import type { SpeechSpan } from '@/domain/ports/ISpeechTimeline';
+import { SearchQuery, type TextMatch } from '@/domain/value-objects/SearchQuery';
 import type { VoiceHeard } from '@/domain/value-objects/VoiceCue';
 import { type Locale, type Translate } from '@/i18n';
 
@@ -15,7 +17,7 @@ import { Icon, ICON_SIZE } from '../components/Icon';
 import { moodKey } from '../components/MoodLine';
 import { toneFor } from '../components/emotionTone';
 import { Playback } from '../components/Playback';
-import { VoicePortraitSheet } from '../components/VoicePortraitSheet';
+import { VoicePortrait } from '../components/VoicePortrait';
 import { WaveMark } from '../components/WaveMark';
 import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
@@ -23,6 +25,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { fonts, type Palette } from '../theme/tokens';
 import { audioNoteKey } from './audioNote';
 import { piecesOf } from './journalSearch';
+import { transcriptPieces, wordAt } from './spokenWord';
 import { voiceLine } from './voiceLine';
 import { emotionLabel, emotionTint, emotionWordsIn } from '../components/emotionDisplay';
 
@@ -30,9 +33,15 @@ import { emotionLabel, emotionTint, emotionWordsIn } from '../components/emotion
 /**
  * An entry as it stands, months later.
  *
- * The sentence leads and is set large: what someone comes back for is their
- * own words, not the analysis of them. Everything Vidlun added sits below it,
- * in that order — voice, mood, words, topics.
+ * With a voice, the voice leads (owner's word, 2026-11-24, variant B): one
+ * card holds the player, the line on how the voice sounded — its scales
+ * folding out under it, closed to begin with — and the transcript, open to
+ * begin with. Every entry opens that way. As it plays, the word being said
+ * is lit in the mood's colour, give or take, as the played bars are.
+ *
+ * Without a voice, the sentence leads and is set large, with a note under it
+ * saying why there is nothing to play. Everything Vidlun added sits below,
+ * in that order — mood, words, topics.
  */
 export function EntryDetailScreen(props: {
   readonly entry: MoodEntry;
@@ -46,6 +55,10 @@ export function EntryDetailScreen(props: {
   readonly found: string | null;
   /** Where in the recording the searched word is said, give or take; null when unknown. */
   readonly playFromMs: number | null;
+  /** False while the recording is looked up: neither layout is drawn until it is known. */
+  readonly recordingKnown: boolean;
+  /** Where the speech is in the recording, to light the word being said; null when unknown. */
+  readonly speech: readonly SpeechSpan[] | null;
   /** The Profile switch as it stands now; it decides what a missing recording is blamed on. */
   readonly keepRecordings: boolean;
   readonly vocabulary: EmotionVocabulary;
@@ -64,6 +77,7 @@ export function EntryDetailScreen(props: {
   // The scales behind the line, when there is something to set them against.
   const portrait = props.voice?.kind === 'compared' && props.voice.portrait.length > 0 ? props.voice.portrait : null;
   const [portraitOpen, setPortraitOpen] = useState(false);
+  const [transcriptOpen, setTranscriptOpen] = useState(true);
   const marks = props.found === null ? [] : (SearchQuery.of(props.found)?.matchesIn(entry.cleanTranscript) ?? []);
   const firstFound = marks[0];
   // The sentence sits inside the language's own quotation marks, which the lit words must not break.
@@ -102,33 +116,29 @@ export function EntryDetailScreen(props: {
         </TapTarget>
       </View>
 
-      {/* Read, not re-read: a saved entry's words are no longer corrected here (owner's word, 2026-10-01). */}
-      <AppText variant="display" style={{ fontSize: 23, lineHeight: 31, marginBottom: 14 }}>
-        {marks.length === 0
-          ? t('common.quoted', { text: entry.cleanTranscript })
-          : [
-              quoteOpen,
-              ...piecesOf(entry.cleanTranscript, marks).map((piece, at) =>
-                piece.found ? (
-                  <Text key={at} style={{ backgroundColor: theme.palette.accentSoft }}>
-                    {piece.text}
-                  </Text>
-                ) : (
-                  piece.text
-                ),
-              ),
-              quoteClose,
-            ]}
-      </AppText>
-
-      {props.recordingUri === null ? (
-        <AudioNote text={t(audioNoteKey(entry.source, props.keepRecordings))} />
+      {!props.recordingKnown ? null : props.recordingUri === null ? (
+        <>
+          {/* Read, not re-read: a saved entry's words are no longer corrected here (owner's word, 2026-10-01). */}
+          <AppText variant="display" style={{ fontSize: 23, lineHeight: 31, marginBottom: 14 }}>
+            {marks.length === 0
+              ? t('common.quoted', { text: entry.cleanTranscript })
+              : [
+                  quoteOpen,
+                  ...piecesOf(entry.cleanTranscript, marks).map((piece, at) =>
+                    piece.found ? (
+                      <Text key={at} style={{ backgroundColor: theme.palette.accentSoft }}>
+                        {piece.text}
+                      </Text>
+                    ) : (
+                      piece.text
+                    ),
+                  ),
+                  quoteClose,
+                ]}
+          </AppText>
+          <AudioNote text={t(audioNoteKey(entry.source, props.keepRecordings))} />
+        </>
       ) : (
-        /*
-         * Variant A (owner's word, 2026-11-19): the played part in the
-         * entry's mood, and under the player one line on how the voice
-         * sounded against its usual self — Vidlun speaking, so in the accent.
-         */
         <Playback
           uri={props.recordingUri}
           t={t}
@@ -141,33 +151,76 @@ export function EntryDetailScreen(props: {
                   word: entry.cleanTranscript.slice(firstFound.start, firstFound.end),
                 })
           }
-          footer={
-            heard === null ? undefined : (
-              /*
-               * A tap opens the voice portrait (owner's word, 2026-11-19);
-               * the chevron says the line goes somewhere. Without scales to
-               * show — too few takes yet — it is a line and nothing more.
-               */
-              <Pressable
-                disabled={portrait === null}
-                accessibilityRole={portrait === null ? 'text' : 'button'}
-                accessibilityHint={portrait === null ? undefined : t('voice.open')}
-                onPress={() => setPortraitOpen(true)}
-                hitSlop={8}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+          footer={(place) => (
+            <View style={{ gap: 12 }}>
+              {heard === null ? null : (
+                <View style={{ gap: 14 }}>
+                  {/*
+                    * The line on how the voice sounded (variant A, owner's word,
+                    * 2026-11-19); a tap folds the scales out under it rather
+                    * than opening a sheet (2026-11-24). Without scales to show
+                    * — too few takes yet — it is a line and nothing more.
+                    */}
+                  <Pressable
+                    disabled={portrait === null}
+                    accessibilityRole={portrait === null ? 'text' : 'button'}
+                    accessibilityHint={portrait === null ? undefined : t('voice.open')}
+                    accessibilityState={portrait === null ? undefined : { expanded: portraitOpen }}
+                    onPress={() => setPortraitOpen((open) => !open)}
+                    hitSlop={8}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                  >
+                    <WaveMark width={22} color={theme.palette.accentInk} />
+                    <AppText variant="secondary" color="accentInk" style={{ flexShrink: 1 }}>
+                      {heard}
+                    </AppText>
+                    {portrait === null ? null : (
+                      <View style={{ marginLeft: 'auto' }}>
+                        <Icon name={portraitOpen ? 'chevron-up' : 'chevron-down'} size={16} color="accentInk" />
+                      </View>
+                    )}
+                  </Pressable>
+                  {portrait === null || !portraitOpen ? null : <VoicePortrait portrait={portrait} t={t} />}
+                </View>
+              )}
+
+              <View
+                style={
+                  heard === null
+                    ? { gap: 12 }
+                    : { gap: 12, borderTopWidth: 1, borderTopColor: theme.palette.line, paddingTop: 12 }
+                }
               >
-                <WaveMark width={22} color={theme.palette.accentInk} />
-                <AppText variant="secondary" color="accentInk" style={{ flexShrink: 1 }}>
-                  {heard}
-                </AppText>
-                {portrait === null ? null : (
-                  <AppText variant="secondary" color="accentInk" style={{ marginLeft: 'auto' }}>
-                    ›
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: transcriptOpen }}
+                  onPress={() => setTranscriptOpen((open) => !open)}
+                  hitSlop={8}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                >
+                  <Icon name="align-left" size={18} color="ink" />
+                  <AppText variant="label" style={{ fontSize: 14 }}>
+                    {t('entry.transcript')}
                   </AppText>
+                  <View style={{ marginLeft: 'auto' }}>
+                    <Icon name={transcriptOpen ? 'chevron-up' : 'chevron-down'} size={16} color="ink" />
+                  </View>
+                </Pressable>
+                {!transcriptOpen ? null : (
+                  <Transcript
+                    text={entry.cleanTranscript}
+                    found={marks}
+                    spoken={
+                      place.under && props.speech !== null
+                        ? wordAt(entry.cleanTranscript, shareAt(place.atMs, props.speech))
+                        : null
+                    }
+                    spokenColor={tone === null ? theme.palette.accentSoft : theme.palette[`${tone}Soft` as keyof Palette]}
+                  />
                 )}
-              </Pressable>
-            )
-          }
+              </View>
+            </View>
+          )}
         />
       )}
 
@@ -260,15 +313,6 @@ export function EntryDetailScreen(props: {
         * that describes and a product that seems to be advising.
         */}
 
-      {portrait === null || heard === null ? null : (
-        <VoicePortraitSheet
-          open={portraitOpen}
-          line={heard}
-          portrait={portrait}
-          t={t}
-          onClose={() => setPortraitOpen(false)}
-        />
-      )}
     </ScrollView>
   );
 }
@@ -282,6 +326,37 @@ const QUOTE_SLOT = '\u0000';
  * year on, the voice goes and the entry stays. This is the only place a
  * person will ever ask the question, so it is answered here and nowhere else.
  */
+/**
+ * The transcript in the card, at the size people re-read their own words at
+ * (§7.2: 16), with a searched word lit in the accent and the word being said
+ * lit in the mood's colour as it plays.
+ */
+function Transcript(props: {
+  readonly text: string;
+  readonly found: readonly TextMatch[];
+  readonly spoken: TextMatch | null;
+  readonly spokenColor: string;
+}): React.JSX.Element {
+  const theme = useTheme();
+
+  return (
+    <AppText variant="quote">
+      {transcriptPieces(props.text, props.found, props.spoken).map((piece, at) =>
+        piece.found || piece.spoken ? (
+          <Text
+            key={at}
+            style={{ backgroundColor: piece.spoken ? props.spokenColor : theme.palette.accentSoft }}
+          >
+            {piece.text}
+          </Text>
+        ) : (
+          piece.text
+        ),
+      )}
+    </AppText>
+  );
+}
+
 function AudioNote(props: { readonly text: string }): React.JSX.Element {
   const theme = useTheme();
 
@@ -299,6 +374,8 @@ function AudioNote(props: { readonly text: string }): React.JSX.Element {
         paddingHorizontal: 18,
       }}
     >
+      {/* A microphone struck through beside the note (owner's word, 2026-11-24). */}
+      <Icon name="mic-off" size={16} color="inkFaint" />
       <AppText variant="secondary" color="inkFaint" style={{ flex: 1, fontSize: 13 }}>
         {props.text}
       </AppText>

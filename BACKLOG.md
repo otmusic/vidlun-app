@@ -1801,6 +1801,35 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++++++++++++++++++. The entry page: voice and words in one card — 2026-11-24
+
+Owner's word on the canvas page «Запис: голос і текст у картці» (variant B,
+then "голос згорнутий, транскрипція розгорнута, кожен раз за замовчуванням",
+the word being said lit as it plays, and a searched word lit in the
+transcript).
+
+- **With a voice** (`EntryDetailScreen`): no large sentence at the top. The
+  player's card holds the player, the line on how the voice sounded and
+  «Транскрипція запису». The line's chevron folds the voice's scales out in
+  the card (`VoicePortrait`, which was a sheet); the transcript's chevron
+  folds it away. Every entry opens with the voice folded and the
+  transcript open; nothing is remembered between entries.
+- **The word being said** is lit in the mood's soft colour as it plays, as
+  the played bars are. It is an estimate: nothing records when each word
+  was said, so the share of the speech already heard (`shareAt`, the way
+  back from search's `momentAt`, pauses skipped) is laid over the
+  transcript (`wordAt`). It can run a word or two ahead or behind. The
+  player reports its place every 200 ms. The speech spans are read from the
+  file when the entry opens (`FindSpokenMoment.speechIn`), stored nowhere.
+- **From a search** the transcript is open, the found word lit in the
+  accent, and the player stands by it, as before.
+- **Without a voice**: the large sentence at the top as before, and the note
+  under it now has a struck-through microphone.
+- The page waits for the recording lookup (`recordingKnown`) before drawing
+  either layout, so a voice entry no longer shows as a typed one first.
+
+---
+
 ## 3ψψψ++++++++++++++++++++++++++++++++++++. Choosing together as a sheet — 2026-11-24
 
 Owner's word on the canvas page «Обрати разом» діалогом: "«Обрати разом»

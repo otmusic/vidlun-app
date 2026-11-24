@@ -1,4 +1,11 @@
-import { FindSpokenMoment, LEAD_IN_MS, momentAt, shareBefore } from '@/application/use-cases/FindSpokenMoment';
+import {
+  FindSpokenMoment,
+  LEAD_IN_MS,
+  momentAt,
+  shareAt,
+  shareBefore,
+  startFor,
+} from '@/application/use-cases/FindSpokenMoment';
 import { MoodEntry } from '@/domain/entities/MoodEntry';
 import type { ISpeechTimeline, SpeechSpan } from '@/domain/ports/ISpeechTimeline';
 import { Confidence } from '@/domain/value-objects/Confidence';
@@ -96,5 +103,60 @@ describe('FindSpokenMoment', () => {
 
     expect(await new FindSpokenMoment(timeline).execute(entry('a walk'), 'file:///x.m4a', query('meeting'))).toBeNull();
     expect(timeline.read).toBe(0);
+  });
+});
+
+describe('following the words as the recording plays', () => {
+  const spans: readonly SpeechSpan[] = [
+    { fromMs: 1_000, toMs: 5_000 },
+    { fromMs: 7_000, toMs: 11_000 },
+  ];
+
+  it('is the share of the speech already heard', () => {
+    expect(shareAt(3_000, spans)).toBeCloseTo(0.25);
+    expect(shareAt(9_000, spans)).toBeCloseTo(0.75);
+  });
+
+  it('holds still through a pause', () => {
+    expect(shareAt(5_000, spans)).toBeCloseTo(0.5);
+    expect(shareAt(6_500, spans)).toBeCloseTo(0.5);
+  });
+
+  it('is nothing before the first word and all of it after the last', () => {
+    expect(shareAt(0, spans)).toBe(0);
+    expect(shareAt(20_000, spans)).toBe(1);
+  });
+
+  it('goes back the way the search goes there', () => {
+    expect(shareAt(momentAt(0.4, spans), spans)).toBeCloseTo(0.4);
+  });
+
+  it('is nothing for a recording with no speech', () => {
+    expect(shareAt(3_000, [])).toBe(0);
+  });
+});
+
+describe('reading where the speech is', () => {
+  it('reads the spans once for a recording with speech', async () => {
+    const timeline = new FakeTimeline([{ fromMs: 0, toMs: 1_000 }]);
+
+    await expect(new FindSpokenMoment(timeline).speechIn('file:///take.m4a')).resolves.toEqual([
+      { fromMs: 0, toMs: 1_000 },
+    ]);
+    expect(timeline.read).toBe(1);
+  });
+
+  it('is nothing for a recording without speech or one that cannot be read', async () => {
+    await expect(new FindSpokenMoment(new FakeTimeline([])).speechIn('file:///take.m4a')).resolves.toBeNull();
+    await expect(new FindSpokenMoment(new FakeTimeline(null)).speechIn('file:///take.m4a')).resolves.toBeNull();
+  });
+
+  it('starts a little before a searched word, from spans already read', () => {
+    const said = entry('one two three four');
+
+    expect(startFor(said, [{ fromMs: 0, toMs: 10_000 }], query('three'))).toBe(
+      Math.max(0, momentAt(8 / 18, [{ fromMs: 0, toMs: 10_000 }]) - LEAD_IN_MS),
+    );
+    expect(startFor(said, [{ fromMs: 0, toMs: 10_000 }], query('five'))).toBeNull();
   });
 });

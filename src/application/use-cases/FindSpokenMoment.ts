@@ -22,20 +22,32 @@ export class FindSpokenMoment {
 
   /** Milliseconds into the recording to start from; null when there is no telling. */
   async execute(entry: MoodEntry, recordingUri: string, query: SearchQuery): Promise<number | null> {
-    const share = shareBefore(entry, query);
-
-    if (share === null) {
+    if (shareBefore(entry, query) === null) {
       return null;
     }
 
+    const spans = await this.speechIn(recordingUri);
+
+    return spans === null ? null : startFor(entry, spans, query);
+  }
+
+  /**
+   * Where the speech is in a recording, for the player to start at a word
+   * and for the words to be followed as it plays (owner's word,
+   * 2026-11-24). Null when the file cannot be read or holds no speech.
+   */
+  async speechIn(recordingUri: string): Promise<readonly SpeechSpan[] | null> {
     const spans = await this.timeline.spans(recordingUri).catch(() => null);
 
-    if (spans === null || spans.length === 0) {
-      return null;
-    }
-
-    return Math.max(0, momentAt(share, spans) - LEAD_IN_MS);
+    return spans === null || spans.length === 0 ? null : spans;
   }
+}
+
+/** Where to start for a searched word, a little before it; null when the word is not in the entry. */
+export function startFor(entry: MoodEntry, spans: readonly SpeechSpan[], query: SearchQuery): number | null {
+  const share = shareBefore(entry, query);
+
+  return share === null || spans.length === 0 ? null : Math.max(0, momentAt(share, spans) - LEAD_IN_MS);
 }
 
 /**
@@ -71,4 +83,24 @@ export function momentAt(share: number, spans: readonly SpeechSpan[]): number {
   }
 
   return spans[spans.length - 1]?.toMs ?? 0;
+}
+
+/**
+ * How far through the speech the recording is at `ms`, as a share: the way
+ * back from `momentAt`, so a word can be lit as it is said. A pause holds
+ * the share where the speech before it ended.
+ */
+export function shareAt(ms: number, spans: readonly SpeechSpan[]): number {
+  const total = spans.reduce((sum, span) => sum + (span.toMs - span.fromMs), 0);
+
+  if (total <= 0) {
+    return 0;
+  }
+
+  const spoken = spans.reduce(
+    (sum, span) => sum + Math.min(Math.max(ms - span.fromMs, 0), span.toMs - span.fromMs),
+    0,
+  );
+
+  return spoken / total;
 }

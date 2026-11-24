@@ -586,8 +586,12 @@ function Stage(
     case 'detail':
       return (
         <EntryDetailScreen
+          // Each entry opens as the drawing has it: voice folded, transcript open (owner's word, 2026-11-24).
+          key={flow.stage.entry.id}
           entry={flow.stage.entry}
           recordingUri={flow.stage.recordingUri}
+          recordingKnown={flow.stage.recordingKnown}
+          speech={flow.stage.speech}
           voice={flow.stage.voice}
           found={flow.stage.found}
           playFromMs={flow.stage.playFromMs}

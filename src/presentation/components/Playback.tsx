@@ -8,6 +8,16 @@ import type { Translate } from '@/i18n';
 import { AppText } from './AppText';
 import { useTheme } from '../theme/ThemeProvider';
 
+/** Where the player stands, for what is drawn under it to follow the voice. */
+export interface PlaybackPlace {
+  readonly atMs: number;
+  /** True once it has been played, paused or not, and until it runs out. */
+  readonly under: boolean;
+}
+
+/** How often the place is read while playing: often enough for a word to be lit as it is said. */
+const FOLLOW_EVERY_MS = 200;
+
 /** A fixed shape rather than the take's real amplitudes, which we do not keep. */
 const WAVE = [
   8, 14, 22, 30, 18, 11, 25, 33, 20, 13, 9, 17, 28, 34, 24, 15, 10, 21, 31, 26, 16, 12, 19, 29,
@@ -34,8 +44,12 @@ export function Playback(props: {
   readonly variant?: 'card' | 'inline';
   /** The played bars' colour: the entry's mood on its own page. The accent where none is given. */
   readonly tint?: string;
-  /** A line inside the card, under the player: how the voice sounded (owner's word, 2026-11-19). */
-  readonly footer?: React.ReactNode;
+  /**
+   * Rows inside the card, under the player: how the voice sounded (owner's
+   * word, 2026-11-19) and the transcript (2026-11-24). Given as a function,
+   * they are drawn with where the player stands, to follow the voice.
+   */
+  readonly footer?: React.ReactNode | ((place: PlaybackPlace) => React.ReactNode);
   /**
    * Where to stand before the first play, in milliseconds: the searched
    * word's place, give or take (owner's word, 2026-11-20). Null starts at
@@ -47,7 +61,7 @@ export function Playback(props: {
 }): React.JSX.Element {
   const theme = useTheme();
   const inline = props.variant === 'inline';
-  const player = useAudioPlayer(props.uri);
+  const player = useAudioPlayer(props.uri, { updateInterval: FOLLOW_EVERY_MS });
   const status = useAudioPlayerStatus(player);
   const played = status.duration > 0 ? status.currentTime / status.duration : 0;
   const placedAt = useRef<number | null>(null);
@@ -72,6 +86,12 @@ export function Playback(props: {
 
   /* Standing somewhere other than the start, the clock says where. */
   const placed = placedAt.current !== null && status.currentTime > 0;
+  /* Played at all: a pause keeps the place lit, a search's placing alone does not. */
+  const heard = useRef(false);
+
+  if (status.playing) {
+    heard.current = true;
+  }
 
   const toggle = (): void => {
     if (status.playing) {
@@ -184,7 +204,12 @@ export function Playback(props: {
       )}
       {props.footer === undefined ? null : (
         <View style={{ borderTopWidth: 1, borderTopColor: theme.palette.line, paddingTop: 12 }}>
-          {props.footer}
+          {typeof props.footer === 'function'
+            ? props.footer({
+                atMs: status.currentTime * 1000,
+                under: heard.current && !status.didJustFinish && status.currentTime < status.duration,
+              })
+            : props.footer}
         </View>
       )}
     </View>
