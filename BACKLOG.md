@@ -1801,6 +1801,34 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ+++++++++++++++++++++++++++++++++++++++++. The proxy serves only the app, a day at a time; the card stops waiting — 2026-11-26
+
+Owner's word after the security and performance review: "починай з першого
+пункту".
+
+- **The proxy rebuilt what it forwards** (`server/src/requestShape.ts`). It
+  used to check the model and `max_tokens` and pass the rest on, so a token
+  read off one's own phone opened the key to any prompt, tools and long
+  conversations, at 30 calls a minute with no daily end. Now the body is
+  rebuilt from the two shapes every version since 1.0 sends — a reflection
+  on Haiku (at most 2048 tokens back), a month on Sonnet (at most 1024), the
+  1.10 echo fits the first — with one user turn of text; any other field is
+  refused. Tests feed it the requests the app's own adapters make.
+- **A daily allowance per attested key** (`server/src/allowance.ts`, a
+  Durable Object per key holding one row): 100 Haiku calls, 30 Sonnet calls
+  and 10 feedback notes per UTC day. Feedback subjects lose control
+  characters. Needs `wrangler deploy` (migration v3); not deployed yet.
+- **The card stops waiting after 8 s** (`withinDeadline`, both the first
+  reading and the one after a corrected transcript). A weak network used to
+  hold the processing screen for 41–70 s (20 s, a retry, and the daily token
+  renewal); past the deadline the card goes on as when offline and Vidlun's
+  answer is listened for later.
+- Still open: building the prompts on the server so the app sends only the
+  words (needs an app release that asks for it), checking the subscription on
+  the server for the month, and a spend limit on the Anthropic workspace.
+
+---
+
 ## 3ψψψ++++++++++++++++++++++++++++++++++++++++. A pause button on the recording screen — 2026-11-26
 
 Owner's word on the canvas page «Пауза в записі», variant A: three buttons

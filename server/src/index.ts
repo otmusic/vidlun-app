@@ -8,7 +8,12 @@
  * device keys: not identities, just proof that a caller is a genuine build
  * of this app on real Apple hardware.
  */
+import { takeFromAllowance, type AllowanceNamespace } from './allowance';
 import { assertKey, issueChallenge, mintToken, readToken, register, type AttestStore } from './attest';
+import { shapeRequest } from './requestShape';
+
+/** Durable Object classes must be exported from the main module. */
+export { Allowance } from './allowance';
 
 
 export interface Env {
@@ -20,6 +25,8 @@ export interface Env {
   readonly RATE_LIMIT: { limit(input: { key: string }): Promise<{ success: boolean }> };
   /** Attested device keys and one-time challenges. */
   readonly ATTEST: AttestStore;
+  /** Each attested key's count of calls today, one Durable Object per key. */
+  readonly ALLOWANCE: AllowanceNamespace;
   /** Cloudflare's send-email binding, bound in wrangler.toml. */
   readonly EMAIL: { send(message: FeedbackMail): Promise<unknown> };
   /** Where a person's note lands: the inbox behind support@vidlun.app, as a verified destination address. */
@@ -37,15 +44,6 @@ interface FeedbackMail {
 const MAX_FEEDBACK_CHARS = 4_000;
 
 const UPSTREAM = 'https://api.anthropic.com/v1/messages';
-
-/**
- * The three the app actually asks for. A proxy that forwards any model is a
- * proxy someone else can point at the expensive one.
- */
-const ALLOWED_MODELS = new Set(['claude-haiku-4-5', 'claude-sonnet-5']);
-
-/** Above this nothing the app asks for is legitimate, and the bill is not either. */
-const MAX_TOKENS_CEILING = 4096;
 
 /**
  * The ceiling on what a request may carry in. `max_tokens` caps only the
@@ -121,13 +119,22 @@ export default {
     }
 
     if (path === '/feedback') {
+      if (!(await takeFromAllowance(env.ALLOWANCE, keyId, 'feedback'))) {
+        return problem(429, 'This device has sent all the notes it may send today.');
+      }
+
       return feedback(body, env);
     }
 
-    const refusal = checkBody(body);
+    // Rebuilt from what the app sends, so nothing else the caller adds reaches the key.
+    const shaped = shapeRequest(body);
 
-    if (refusal !== null) {
-      return problem(400, refusal);
+    if (!shaped.ok) {
+      return problem(400, shaped.refusal);
+    }
+
+    if (!(await takeFromAllowance(env.ALLOWANCE, keyId, shaped.kind))) {
+      return problem(429, 'This device has used its allowance for today.');
     }
 
     const answer = await fetch(UPSTREAM, {
@@ -137,7 +144,7 @@ export default {
         'anthropic-version': '2023-06-01',
         'x-api-key': env.ANTHROPIC_API_KEY,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(shaped.body),
     });
 
     /*
@@ -152,7 +159,6 @@ export default {
   },
 };
 
-/** What the caller may ask for, checked before any of it costs anything. */
 /**
  * Mails a person's note to the support inbox. Nothing is kept here: the
  * message goes out and the request is forgotten, which is the one promise
@@ -179,7 +185,8 @@ async function feedback(body: unknown, env: Env): Promise<Response> {
   const field = (name: string): string => {
     const value = app[name];
 
-    return typeof value === 'string' ? value.slice(0, 64) : 'unknown';
+    // No control characters: these go into the mail's subject line.
+    return typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/gu, ' ').slice(0, 64) : 'unknown';
   };
   const build = `Vidlun ${field('version')} (${field('build')}) · ${field('platform')}`;
 
@@ -195,27 +202,6 @@ async function feedback(body: unknown, env: Env): Promise<Response> {
   }
 
   return answer({ status: 'sent' });
-}
-
-function checkBody(body: unknown): string | null {
-  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
-    return 'The body was not an object.';
-  }
-
-  const record = body as Record<string, unknown>;
-  const model = record['model'];
-
-  if (typeof model !== 'string' || !ALLOWED_MODELS.has(model)) {
-    return 'That model is not served here.';
-  }
-
-  const maxTokens = record['max_tokens'];
-
-  if (typeof maxTokens !== 'number' || maxTokens <= 0 || maxTokens > MAX_TOKENS_CEILING) {
-    return 'max_tokens is missing or past the ceiling.';
-  }
-
-  return null;
 }
 
 /**

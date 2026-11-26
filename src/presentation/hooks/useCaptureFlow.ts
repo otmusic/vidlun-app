@@ -61,6 +61,7 @@ import type { ForgetMilestone } from '@/application/use-cases/ForgetMilestone';
 import type { GetMilestones } from '@/application/use-cases/GetMilestones';
 import type { MarkMilestone } from '@/application/use-cases/MarkMilestone';
 import type { MilestoneSheetState } from '../components/MilestoneSheet';
+import { withinDeadline } from '../withinDeadline';
 import type { IMicrophonePermission, PermissionStatus } from '@/domain/ports/IMicrophonePermission';
 
 /**
@@ -1301,7 +1302,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         namedAlone: null,
       });
 
-      build(spoken)
+      // Past the deadline the card goes up as when the network is down (2026-11-26).
+      withinDeadline(build(spoken))
         .then((reading) => {
           setStage((current) =>
             whenAnalysisLands(current, reading.draft, spoken.text, reading.nearbyEmotionIds),
@@ -2099,8 +2101,7 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
         // feeling never depended on the typo.
         setStage({ ...stage, spoken, draft: null, nearby: [], unheard: false });
 
-        builders
-          .heard(spoken)
+        withinDeadline(builders.heard(spoken))
           .then((reading) => {
             setStage((current) =>
               whenAnalysisLands(current, reading.draft, corrected, reading.nearbyEmotionIds),

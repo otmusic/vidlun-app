@@ -17,6 +17,12 @@ simple = { limit = 30, period = 60 }
 #   wrangler secret put TOKEN_SECRET
 
 
+# Each attested key's calls today (src/allowance.ts): the minute limit above
+# still let one token make tens of thousands of calls a day.
+[[durable_objects.bindings]]
+name = "ALLOWANCE"
+class_name = "Allowance"
+
 # Attested device keys and one-time challenges.
 [[kv_namespaces]]
 binding = "ATTEST"
@@ -45,3 +51,7 @@ new_sqlite_classes = ["Transcriber"]
 [[migrations]]
 tag = "v2"
 deleted_classes = ["Transcriber"]
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["Allowance"]
