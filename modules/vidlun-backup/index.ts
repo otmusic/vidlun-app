@@ -9,6 +9,8 @@ export interface NativeBackup {
   zip(source: string, target: string): Promise<void>;
   /** The ZIP at `source` unpacked into the folder at `target`; refuses a name that would leave it. */
   unzip(source: string, target: string): Promise<void>;
+  /** Every file the app wrote, moved to the protection class new files get; resolves with how many moved. */
+  protectAppData(): Promise<number>;
 }
 
 /*

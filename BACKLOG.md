@@ -1853,6 +1853,22 @@ the ones that need no product decision).
   privacy policy and Me already said entries and audio are in the backup.
   The generated `ios/` plist and strings were edited to match, so a build
   needs no prebuild for it.
+- **The journal unreadable on a locked phone** (owner's word the same day:
+  "клас захисту файлів iOS, з перевіркою на телефоні"). The app asks for
+  `NSFileProtectionCompleteUnlessOpen` (`com.apple.developer.default-data-
+  protection` in app.json and the generated entitlements), so every new
+  file is sealed while the phone is locked, yet one open at the lock — a
+  take being written, a month playing with the screen off — goes on, and a
+  new file can still be written. Files written before keep iOS's default
+  until `protectAppData` (native, `DataProtection.swift`, on the backup
+  queue) moves Documents, Application Support, Caches and tmp once per
+  install, at launch. The App ID already had the Data Protection
+  capability at Complete Protection, which the profile refused to sign
+  against this entitlement; it was switched to Protected Unless Open
+  through the App Store Connect API (owner's word "Вмикай через API").
+  Tried on the owner's phone with 1.13 (74): a take locked mid-way, a
+  month heard locked with ◀◀ ▶▶, a lock during processing, and the journal
+  opening after the first launch's move — all as before.
 - Still open, needing the owner's word: `vidlun://record` starting a take
   from any app, the privacy policy's line on App Attest.
 

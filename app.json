@@ -10,7 +10,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.vidlun.journal",
       "entitlements": {
-        "com.apple.developer.devicecheck.appattest-environment": "production"
+        "com.apple.developer.devicecheck.appattest-environment": "production",
+        "com.apple.developer.default-data-protection": "NSFileProtectionCompleteUnlessOpen"
       },
       "infoPlist": {
         "NSFaceIDUsageDescription": "Face ID opens Vidlun when the journal lock is on, so nobody else holding your phone can read your entries.",

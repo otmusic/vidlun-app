@@ -71,6 +71,7 @@ import { AsyncStorageMoodEntryRepository } from '../infrastructure/persistence/A
 import { AsyncStorageRevisionLog } from '../infrastructure/persistence/AsyncStorageRevisionLog';
 import { FileRecordingStore } from '../infrastructure/persistence/FileRecordingStore';
 import { NativeBackupArchive } from '../infrastructure/files/NativeBackupArchive';
+import { protectAppDataOnce } from '../infrastructure/files/DataProtection';
 import { detectLocale, deviceInUkraine } from '../infrastructure/settings/deviceLocale';
 import { SettingsStore } from '../infrastructure/settings/SettingsStore';
 import { ExpoParkedFiles } from '../infrastructure/persistence/ExpoParkedFiles';
@@ -195,6 +196,8 @@ export interface Container {
   readonly fileSharer: IFileSharer;
   /** Backups and picked copies an earlier session left in the cache. */
   readonly leftoverFiles: ILeftoverFiles;
+  /** Moves the files written before protection was asked for; once per install. */
+  readonly protectAppData: () => Promise<void>;
   /** When the last backup was handed over, for the profile's line. */
   readonly backupLedger: IBackupLedger;
   readonly microphonePermission: IMicrophonePermission;
@@ -442,6 +445,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     ),
     fileSharer: new ShareSheetFileSharer(),
     leftoverFiles: new CacheLeftovers(),
+    protectAppData: () => protectAppDataOnce(nativeBackup, AsyncStorage),
     backupLedger: new AsyncStorageBackupLedger(AsyncStorage),
     microphonePermission: new ExpoMicrophonePermission({
       getRecordingPermissionsAsync,

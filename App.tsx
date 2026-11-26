@@ -164,7 +164,9 @@ function Vidlun(props: {
 
     swept.current = true;
     void container.leftoverFiles.sweep();
-  }, [container.leftoverFiles]);
+    // Off the main thread and quiet: a file it cannot move stays readable, never lost.
+    void container.protectAppData().catch(() => undefined);
+  }, [container.leftoverFiles, container.protectAppData]);
 
   const changeSettings = useCallback(
     (next: Settings) => {

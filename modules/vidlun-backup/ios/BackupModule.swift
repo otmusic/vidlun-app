@@ -44,6 +44,11 @@ public class BackupModule: Module {
     AsyncFunction("unzip") { (source: String, target: String) in
       try ZipReader.read(archive: try fileURL(source), into: try fileURL(target))
     }.runOnQueue(work)
+
+    /// Every file the app already wrote, moved to the protection class new files get; how many moved.
+    AsyncFunction("protectAppData") { () -> Int in
+      DataProtection.protectAll()
+    }.runOnQueue(work)
   }
 }
 
