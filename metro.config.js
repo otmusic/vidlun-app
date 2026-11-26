@@ -16,8 +16,21 @@ const EMPTY_MODULE = path.resolve(__dirname, 'metro/empty-module.js');
  * That trade is deliberate and worth revisiting when the API key moves behind
  * a proxy and the SDK's credential handling stops mattering entirely.
  */
+/**
+ * RevenueCat's web store, which react-native-purchases loads for Expo Go and
+ * the browser and never touches in a native build: 870 KB minified, the
+ * largest module in the bundle, evaluated before the first frame
+ * (performance review, 2026-11-26). It is only read inside functions that run
+ * in browser mode, so on a phone an empty module stands in for it.
+ */
+const BROWSER_ONLY = new Set(['@revenuecat/purchases-js-hybrid-mappings']);
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (moduleName.startsWith('node:')) {
+    return { type: 'sourceFile', filePath: EMPTY_MODULE };
+  }
+
+  if (BROWSER_ONLY.has(moduleName) && (platform === 'ios' || platform === 'android')) {
     return { type: 'sourceFile', filePath: EMPTY_MODULE };
   }
 

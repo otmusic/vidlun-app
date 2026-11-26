@@ -37,6 +37,7 @@ import { OnboardingScreen } from '@/presentation/screens/OnboardingScreen';
 import { Screen } from '@/presentation/screens/Screen';
 import { ThemeProvider, useTheme } from '@/presentation/theme/ThemeProvider';
 import { emotionLabel } from '@/presentation/components/emotionDisplay';
+import { CoverContext, useAway } from '@/presentation/components/Cover';
 
 /** The splash holds at least this long, so a fast open is a beat, not a blink. */
 const MIN_SPLASH_MS = 1_200;
@@ -139,10 +140,8 @@ function Vidlun(props: {
   useEffect(() => {
     void container.feedback.flush();
 
-    const watch = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        void container.feedback.flush();
-      }
+    const watch = onReturnFromBackground(() => {
+      void container.feedback.flush();
     });
 
     return () => {
@@ -154,8 +153,7 @@ function Vidlun(props: {
    * Backups, picked copies and unkept takes an earlier session left in the
    * cache go at launch, before anything new is made or recorded — the
    * settings are still loading, so no take can have begun. Once per launch
-   * only: the container is built again when the language changes, and a
-   * backup or a take may be on its way by then.
+   * only: a backup or a take may be on its way by any later render.
    */
   const swept = useRef(false);
 
@@ -237,55 +235,66 @@ function Vidlun(props: {
     [container, props.nativeRecorder],
   );
 
-  const flow = useCaptureFlow({
-    recorder,
-    haptics: container.haptics,
-    transcribeTake: container.transcribeTake,
-    createVoiceEntry: container.createVoiceEntry,
-    createTextEntry: container.createTextEntry,
-    confirmEntry: container.confirmEntry,
-    deleteEntry: container.deleteEntry,
-    getHistory: container.getHistory,
-    findRecording: container.findRecording,
-    compactRecordings: container.compactRecordings,
-    findRecordedEntries: container.findRecordedEntries,
-    keepRecordings: props.settings.keepRecordings,
-    affirmationFrequency,
-    parkedTake: container.parkedTake,
-    createUnheardEntry: container.createUnheardEntry,
-    unheardEntries: container.unheardEntries,
-    hearUnheardEntries: container.hearUnheardEntries,
-    measureVoices: container.measureVoices,
-    describeVoice: container.describeVoice,
-    findSpokenMoment: container.findSpokenMoment,
-    knownTopics: container.knownTopics,
-    microphonePermission: container.microphonePermission,
-    getHomeView: container.getHomeView,
-    getWeekSummary: container.getWeekSummary,
-    getWeekNeighbours: container.getWeekNeighbours,
-    getMonthSummary: container.getMonthSummary,
-    getMonthVoice: container.getMonthVoice,
-    composeMonthVoice: container.composeMonthVoice,
-    getPastMonths: container.getPastMonths,
-    getWeekThemes: container.getWeekThemes,
-    findMoodPatterns: container.findMoodPatterns,
-    getVocabularyGrowth: container.getVocabularyGrowth,
-    getMilestones: container.getMilestones,
-    markMilestone: container.markMilestone,
-    forgetMilestone: container.forgetMilestone,
-    /*
-     * The free week is the whole entitlement so far. Buying what comes after
-     * it is M5's, and lands behind this same pair of flags rather than beside
-     * them.
-     */
-    hasNarrativeAccess: readsAll,
-    clock: container.clock,
-    purchases: container.purchases,
-    onEntitlementChanged: readStatus,
-    askForReview: container.askForReview,
-    checkForUpdate: container.checkForUpdate,
-    keepAffirmation: container.keepAffirmation,
-  });
+  /*
+   * Built once per change of what it holds. A new object on every render made
+   * every callback in the flow that depends on it new as well, and the flow
+   * with them, so each render of the app re-rendered the journal's cards
+   * under an opened entry (performance review, 2026-11-26).
+   */
+  const flowDependencies = useMemo(
+    () => ({
+      recorder,
+      haptics: container.haptics,
+      transcribeTake: container.transcribeTake,
+      warmAnalysis: container.warmAnalysis,
+      createVoiceEntry: container.createVoiceEntry,
+      createTextEntry: container.createTextEntry,
+      confirmEntry: container.confirmEntry,
+      deleteEntry: container.deleteEntry,
+      getHistory: container.getHistory,
+      findRecording: container.findRecording,
+      compactRecordings: container.compactRecordings,
+      findRecordedEntries: container.findRecordedEntries,
+      keepRecordings: props.settings.keepRecordings,
+      affirmationFrequency,
+      parkedTake: container.parkedTake,
+      createUnheardEntry: container.createUnheardEntry,
+      unheardEntries: container.unheardEntries,
+      hearUnheardEntries: container.hearUnheardEntries,
+      measureVoices: container.measureVoices,
+      describeVoice: container.describeVoice,
+      findSpokenMoment: container.findSpokenMoment,
+      knownTopics: container.knownTopics,
+      microphonePermission: container.microphonePermission,
+      getHomeView: container.getHomeView,
+      getWeekSummary: container.getWeekSummary,
+      getWeekNeighbours: container.getWeekNeighbours,
+      getMonthSummary: container.getMonthSummary,
+      getMonthVoice: container.getMonthVoice,
+      composeMonthVoice: container.composeMonthVoice,
+      getPastMonths: container.getPastMonths,
+      getWeekThemes: container.getWeekThemes,
+      findMoodPatterns: container.findMoodPatterns,
+      getVocabularyGrowth: container.getVocabularyGrowth,
+      getMilestones: container.getMilestones,
+      markMilestone: container.markMilestone,
+      forgetMilestone: container.forgetMilestone,
+      /*
+       * The free week is the whole entitlement so far. Buying what comes after
+       * it is M5's, and lands behind this same pair of flags rather than beside
+       * them.
+       */
+      hasNarrativeAccess: readsAll,
+      clock: container.clock,
+      purchases: container.purchases,
+      onEntitlementChanged: readStatus,
+      askForReview: container.askForReview,
+      checkForUpdate: container.checkForUpdate,
+      keepAffirmation: container.keepAffirmation,
+    }),
+    [affirmationFrequency, container, props.settings.keepRecordings, readStatus, readsAll, recorder],
+  );
+  const flow = useCaptureFlow(flowDependencies);
 
   /*
    * Whenever the preference moves, and once when the app opens: a reminder
@@ -480,12 +489,15 @@ function Vidlun(props: {
           return;
         }
 
+        // What came back shows at once, and its voices are measured; it used to wait for a relaunch.
+        flow.reloadHome();
+        flow.measureVoices();
         Alert.alert(t('profile.restoredTitle'), restoredMessage(outcome, t));
       } catch {
         Alert.alert(t('profile.importBadTitle'), t('profile.importBadBody'));
       }
     })();
-  }, [container, keepRecordings, t]);
+  }, [container, flow.measureVoices, flow.reloadHome, keepRecordings, t]);
 
   /*
    * "Record in Vidlun" from a widget, Siri, the Control Center or the Action
@@ -506,19 +518,39 @@ function Vidlun(props: {
    * whether a newer version is out, no more than every few hours.
    */
   useEffect(() => {
-    const watch = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        flow.hearUnheard();
-        flow.measureVoices();
-        flow.reloadHome();
-        flow.checkForUpdate();
-      }
+    const watch = onReturnFromBackground(() => {
+      flow.hearUnheard();
+      flow.measureVoices();
+      flow.reloadHome();
+      flow.checkForUpdate();
     });
 
     return () => {
       watch.remove();
     };
   }, [flow.hearUnheard, flow.measureVoices, flow.reloadHome, flow.checkForUpdate]);
+
+  /*
+   * The speech model goes when the app leaves the front, and when the system
+   * says memory is short: a third of a gigabyte held in the background makes
+   * Vidlun the first app iOS kills, month playback included. The next take
+   * opens it again while the person is still speaking.
+   */
+  useEffect(() => {
+    const leaving = AppState.addEventListener('change', (state) => {
+      if (state === 'background') {
+        void container.transcribeTake.release();
+      }
+    });
+    const short = AppState.addEventListener('memoryWarning', () => {
+      void container.transcribeTake.release();
+    });
+
+    return () => {
+      leaving.remove();
+      short.remove();
+    };
+  }, [container.transcribeTake]);
   /*
    * The splash lifts when the journal is open — settings read, entries read —
    * but never before MIN_SPLASH_MS, so a fast phone gets a beat rather than a
@@ -583,6 +615,8 @@ function Vidlun(props: {
     !lock.open &&
     !opensWhileLocked(flow.stage.kind);
   const { tryOpen, returns } = lock;
+  const away = useAway();
+  const cover = useMemo(() => ({ away, shut: doorShown }), [away, doorShown]);
 
   useEffect(() => {
     if (!doorShown || splash !== 'gone') {
@@ -630,6 +664,17 @@ function Vidlun(props: {
     reloadHome();
   }, [container.clock, container.settings, onSettingsChange, reloadHome]);
 
+  /*
+   * The day, not the moment. A new Date on every render was a new prop for
+   * every journal card under an opened entry, each formatting its date again
+   * (performance review, 2026-11-26). It moves on with the first render of
+   * a new day; a return to the front renders the app again.
+   */
+  const now = container.clock.now();
+  const dayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  // Keyed on the day alone: `now` changes every render and is read only when the day does.
+  const today = useMemo(() => new Date(now.getTime()), [dayKey]);
+
   const screen = !props.settings.hasOnboarded ? (
     <OnboardingScreen
       t={t}
@@ -642,7 +687,7 @@ function Vidlun(props: {
       flow={flow}
       vocabulary={container.vocabulary}
       locale={locale}
-      today={container.clock.now()}
+      today={today}
       t={t}
       settings={props.settings}
       onSettingsChange={changeSettings}
@@ -663,7 +708,7 @@ function Vidlun(props: {
   return (
     /* The next screen is already under the splash, so leaving is a crossfade. */
     <View style={{ flex: 1 }}>
-      {screen}
+      <CoverContext.Provider value={cover}>{screen}</CoverContext.Provider>
       {doorShown ? <LockScreen method={lock.method} t={t} onUnlock={tryOpen} /> : null}
       {splash === 'gone' ? null : (
         <SplashOverlay
@@ -678,6 +723,27 @@ function Vidlun(props: {
 }
 
 /**
+ * Runs `then` each time the app comes back from the background, and not on
+ * the other returns to 'active': the Face ID prompt, Control Center, the
+ * notification shade, a purchase sheet or a call banner each make the app
+ * inactive for a moment, and each used to rerun the whole return — late
+ * analyses, voice measuring, home — twice per real return with the journal
+ * lock on (battery review, 2026-11-26).
+ */
+function onReturnFromBackground(then: () => void): { remove(): void } {
+  let away = AppState.currentState === 'background';
+
+  return AppState.addEventListener('change', (state) => {
+    if (state === 'background') {
+      away = true;
+    } else if (state === 'active' && away) {
+      away = false;
+      then();
+    }
+  });
+}
+
+/**
  * The model rides inside the app, so this is a lookup rather than a wait.
  * A build made without the file — a development build that skipped
  * `scripts/fetch-model.sh` — types instead of listening, and says nothing
@@ -685,6 +751,18 @@ function Vidlun(props: {
  * without it.
  */
 function useTranscription(locale: Locale): ITranscriptionService {
+  /*
+   * One service for the app's whole life, reading the language as it is now.
+   * It used to be built again for every language — at launch on any phone
+   * not set to Ukrainian, and on a switch in Me — and each rebuild took the
+   * whole container with it: a second copy of the model the old one never
+   * let go, and every background job running twice side by side (memory
+   * review, 2026-11-26).
+   */
+  const language = useRef(locale);
+
+  language.current = locale;
+
   return useMemo(() => {
     const uri = bundledModelUri();
 
@@ -694,8 +772,8 @@ function useTranscription(locale: Locale): ITranscriptionService {
 
     const open = SPEECH_MODEL.engine === 'parakeet' ? openParakeetEngine(uri) : openSpeechEngine(uri);
 
-    return new OnDeviceTranscriptionService(open, () => locale);
-  }, [locale]);
+    return new OnDeviceTranscriptionService(open, () => language.current);
+  }, []);
 }
 
 /**

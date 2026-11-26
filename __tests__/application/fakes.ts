@@ -51,6 +51,14 @@ export class StubTranscriptionService implements ITranscriptionService {
     return Promise.resolve();
   }
 
+  released = 0;
+
+  release(): Promise<void> {
+    this.released += 1;
+
+    return Promise.resolve();
+  }
+
   transcribe(recording: AudioRecording): Promise<TranscriptionResult> {
     this.received.push(recording);
 

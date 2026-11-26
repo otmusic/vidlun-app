@@ -50,6 +50,25 @@ export class ProxyAuth {
     return this.renew();
   }
 
+  /**
+   * Readies the next request while someone is still talking: the token
+   * renewed if its day is up, the connection to the proxy opened. Both used
+   * to land between the stop and the card — two round trips and a
+   * handshake for whoever records once each evening, when the token is
+   * always due (performance review, 2026-11-26). Never fails outward.
+   */
+  async warm(): Promise<void> {
+    try {
+      await Promise.all([
+        this.token(),
+        // Answered at once with a 405, which is all an open connection needs.
+        fetch(this.baseUrl, { method: 'GET' }).then((answer) => answer.text()),
+      ]);
+    } catch {
+      // The request itself will try again, as it always did.
+    }
+  }
+
   /** Called after a 401: the stored token is wrong whatever its clock says. */
   renew(): Promise<string> {
     this.renewing ??= this.performRenewal().finally(() => {

@@ -26,6 +26,7 @@ import { useDrawnSides } from '../hooks/useDrawnSides';
 import { useDrawnTop } from '../hooks/useDrawnTop';
 import { useTheme } from '../theme/ThemeProvider';
 import { emotionLabel, emotionWordsIn, moodTint } from '../components/emotionDisplay';
+import { useCover } from '../components/Cover';
 
 export interface HomeScreenProps {
   readonly home: HomeView | null;
@@ -73,9 +74,14 @@ export interface HomeScreenProps {
   readonly affirmation: { readonly picked: Charm | null } | null;
   /** A waiting one opens the five; a picked one grows out of the button. */
   readonly onAffirmation: (origin: BloomOrigin) => void;
+  /** Home is drawn under another screen, kept for a swipe back: nothing on it moves or sounds. */
+  readonly covered?: boolean;
 }
 
 export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
+  // Under another screen, under the lock door: the same for what moves and what sounds.
+  const cover = useCover();
+  const covered = props.covered === true || cover.shut;
   const theme = useTheme();
   const top = useDrawnTop(70);
   const sides = useDrawnSides();
@@ -212,6 +218,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
           */}
         <View style={{ opacity: micRefused ? 0.55 : 1 }}>
           <RecordButton
+            covered={covered}
             onPress={
               micRefused
                 ? () => {
@@ -295,6 +302,7 @@ export function HomeScreen(props: HomeScreenProps): React.JSX.Element {
       )}
       {shownYearEcho === null ? null : (
         <YearEchoCard
+          covered={covered}
           echo={shownYearEcho}
           vocabulary={props.vocabulary}
           locale={props.locale}

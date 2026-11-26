@@ -12,6 +12,18 @@ export function relocksAfter(awayMs: number): boolean {
 }
 
 /**
+ * The same, measured twice. The wall clock alone could be set back in
+ * Settings — no passcode needed on an unlocked phone — and the journal
+ * opened without Face ID ten minutes after its owner left it (security
+ * review, 2026-11-26). The steady clock cannot be set; it stands while the
+ * phone sleeps, but a sleeping phone is locked, and then the wall clock
+ * counts. A wall clock that went backwards shuts it too.
+ */
+export function relocksAway(away: { readonly wallMs: number; readonly steadyMs: number }): boolean {
+  return away.wallMs < 0 || relocksAfter(away.wallMs) || relocksAfter(away.steadyMs);
+}
+
+/**
  * The stages a take passes through, which stay open while the journal is
  * shut (owner's word, 2026-11-20): a recording started from a widget, Siri,
  * the Control Center or the Action Button goes ahead without Face ID, since

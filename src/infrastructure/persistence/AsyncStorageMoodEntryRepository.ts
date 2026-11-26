@@ -20,23 +20,37 @@ export class AsyncStorageMoodEntryRepository implements IMoodEntryRepository {
   constructor(private readonly store: IKeyValueStore) {}
 
   /**
-   * The whole journal, kept after the first read and dropped on any write.
-   * Opening the statistics screen reads the journal five times over —
-   * summary, themes, patterns, the week before, the narrative — and each
-   * read was a full AsyncStorage scan with a JSON.parse per entry. Nothing
-   * else writes this store, so a write of our own is the only thing that
-   * can date the copy.
+   * The whole journal, kept after the first read. Opening the statistics
+   * screen reads the journal five times over — summary, themes, patterns,
+   * the week before, the narrative — and each read was a full AsyncStorage
+   * scan with a JSON.parse per entry. Nothing else writes this store, so a
+   * write of our own is the only thing that can date the copy, and a write
+   * now changes the copy rather than throwing it away: dropping it cost the
+   * next home view four full scans after every save, delete and undo
+   * (performance review, 2026-11-26).
    */
   private cache: readonly MoodEntry[] | null = null;
+  /** The full read under way, shared by everyone who asks while it runs. */
+  private loading: Promise<readonly MoodEntry[]> | null = null;
+  /** Counts writes, so a read that began before one never becomes the copy. */
+  private writes = 0;
 
   async save(entry: MoodEntry): Promise<void> {
-    this.cache = null;
+    this.wrote();
     await this.store.setItem(keyFor(entry.id), JSON.stringify(toStored(entry)));
+
+    if (this.cache !== null) {
+      this.cache = newestFirst([...this.cache.filter((kept) => kept.id !== entry.id), entry]);
+    }
   }
 
   async delete(id: string): Promise<void> {
-    this.cache = null;
+    this.wrote();
     await this.store.removeItem(keyFor(id));
+
+    if (this.cache !== null) {
+      this.cache = this.cache.filter((kept) => kept.id !== id);
+    }
   }
 
   async findById(id: string): Promise<MoodEntry | null> {
@@ -57,22 +71,53 @@ export class AsyncStorageMoodEntryRepository implements IMoodEntryRepository {
     return this.readAll();
   }
 
+  /*
+   * A read already under way when a write starts would hand its callers the
+   * journal without that write; it finishes for whoever asked before, and
+   * anyone asking after starts a read of their own.
+   */
+  private wrote(): void {
+    this.writes += 1;
+    this.loading = null;
+  }
+
   /** Newest first. */
-  private async readAll(): Promise<readonly MoodEntry[]> {
+  private readAll(): Promise<readonly MoodEntry[]> {
     if (this.cache !== null) {
-      return this.cache;
+      return Promise.resolve(this.cache);
     }
 
+    if (this.loading === null) {
+      const loading = this.load().finally(() => {
+        if (this.loading === loading) {
+          this.loading = null;
+        }
+      });
+
+      this.loading = loading;
+    }
+
+    return this.loading;
+  }
+
+  private async load(): Promise<readonly MoodEntry[]> {
+    const startedAt = this.writes;
     const keys = (await this.store.getAllKeys()).filter((key) => key.startsWith(ENTRY_KEY_PREFIX));
     const stored = keys.length === 0 ? [] : await this.store.multiGet(keys);
+    const entries = newestFirst(
+      stored.map(([, value]) => readEntry(value)).filter((entry): entry is MoodEntry => entry !== null),
+    );
 
-    this.cache = stored
-      .map(([, value]) => readEntry(value))
-      .filter((entry): entry is MoodEntry => entry !== null)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    if (this.writes === startedAt) {
+      this.cache = entries;
+    }
 
-    return this.cache;
+    return entries;
   }
+}
+
+function newestFirst(entries: readonly MoodEntry[]): readonly MoodEntry[] {
+  return [...entries].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 function keyFor(id: string): string {

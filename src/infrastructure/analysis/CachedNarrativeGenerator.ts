@@ -1,5 +1,6 @@
 import type { MoodEntry } from '../../domain/entities/MoodEntry';
 import type { INarrativeGenerator } from '../../domain/ports/INarrativeGenerator';
+import type { INarrativeMemory } from '../../domain/ports/INarrativeMemory';
 import type { VoiceCue } from '../../domain/value-objects/VoiceCue';
 import { NARRATIVE_PROMPT_VERSION } from './ClaudeNarrativeGenerator';
 import type { IKeyValueStore } from '../persistence/IKeyValueStore';
@@ -8,7 +9,12 @@ import type { IKeyValueStore } from '../persistence/IKeyValueStore';
 export const NARRATIVE_KEY_PREFIX = 'vidlun.narrative.';
 
 interface CachedNarrative {
-  /** What the month held when this was written. */
+  /**
+   * What the month held when this was written, as a hash. It used to be the
+   * month itself — every transcript in full — so a deleted entry's words
+   * outlived it here (security review, 2026-11-26); rows written that way
+   * are hashed the first time they match.
+   */
   readonly fingerprint: string;
   readonly narrative: string;
 }
@@ -22,49 +28,103 @@ interface CachedNarrative {
  * One key per month, overwritten rather than added to: a month that gains an
  * entry gets a new narrative and the old one goes with it, so the store holds
  * one row per month the person has read and never grows sideways. Weekly rows
- * written before 2026-10-01 stay under the same prefix and are not read again.
+ * written before 2026-10-01 are swept the first time a month is read.
  */
-export class CachedNarrativeGenerator implements INarrativeGenerator {
+export class CachedNarrativeGenerator implements INarrativeGenerator, INarrativeMemory {
+  private swept = false;
+
   constructor(
     private readonly inner: INarrativeGenerator,
     private readonly store: IKeyValueStore,
   ) {}
 
   async generate(entries: readonly MoodEntry[], voices?: ReadonlyMap<string, VoiceCue>): Promise<string> {
-    const key = monthKeyFor(entries);
+    this.sweepWeeks();
 
-    if (key === null) {
+    const first = entries[0];
+
+    if (first === undefined) {
       return this.inner.generate(entries, voices);
     }
 
-    const fingerprint = fingerprintOf(entries);
+    const key = monthKeyOf(first.createdAt);
+    const written = fingerprintOf(entries);
+    const fingerprint = hashOf(written);
     const cached = read(await this.store.getItem(key));
 
     if (cached !== null && cached.fingerprint === fingerprint) {
       return cached.narrative;
     }
 
+    if (cached !== null && cached.fingerprint === written) {
+      // A row from before the hash: kept, and its transcripts dropped.
+      await this.keep(key, fingerprint, cached.narrative);
+
+      return cached.narrative;
+    }
+
     const narrative = await this.inner.generate(entries, voices);
 
-    // Never let storing it cost the sentence itself: the caller asked for a
-    // month, not for a cache to succeed.
-    await this.store
-      .setItem(key, JSON.stringify({ fingerprint, narrative } satisfies CachedNarrative))
-      .catch(() => undefined);
+    await this.keep(key, fingerprint, narrative);
 
     return narrative;
   }
-}
 
-/** One row per month. Null for an empty list, which has no month to say anything about. */
-function monthKeyFor(entries: readonly MoodEntry[]): string | null {
-  const first = entries[0];
-
-  if (first === undefined) {
-    return null;
+  async forgetMonthOf(day: Date): Promise<void> {
+    await this.store.removeItem(monthKeyOf(day));
   }
 
-  return `${NARRATIVE_KEY_PREFIX}month.${first.createdAt.getFullYear()}-${first.createdAt.getMonth() + 1}`;
+  /** Never let storing it cost the sentence itself: the caller asked for a month, not for a cache to succeed. */
+  private async keep(key: string, fingerprint: string, narrative: string): Promise<void> {
+    await this.store
+      .setItem(key, JSON.stringify({ fingerprint, narrative } satisfies CachedNarrative))
+      .catch(() => undefined);
+  }
+
+  /** The weekly rows, unread since the week folded into the month; once per launch, never in the way. */
+  private sweepWeeks(): void {
+    if (this.swept) {
+      return;
+    }
+
+    this.swept = true;
+    void this.store
+      .getAllKeys()
+      .then(async (keys) => {
+        for (const key of keys) {
+          if (key.startsWith(NARRATIVE_KEY_PREFIX) && !key.startsWith(`${NARRATIVE_KEY_PREFIX}month.`)) {
+            await this.store.removeItem(key);
+          }
+        }
+      })
+      .catch(() => undefined);
+  }
+}
+
+/** One row per month. */
+function monthKeyOf(day: Date): string {
+  return `${NARRATIVE_KEY_PREFIX}month.${day.getFullYear()}-${day.getMonth() + 1}`;
+}
+
+/**
+ * cyrb53: 53 bits, so a changed month all but never hashes the same as the
+ * month before it, and nothing of what was said can be read back out of it.
+ */
+function hashOf(text: string): string {
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+
+  for (let at = 0; at < text.length; at += 1) {
+    const code = text.charCodeAt(at);
+
+    h1 = Math.imul(h1 ^ code, 2654435761);
+    h2 = Math.imul(h2 ^ code, 1597334677);
+  }
+
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+
+  return `h${(4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36)}`;
 }
 
 /**

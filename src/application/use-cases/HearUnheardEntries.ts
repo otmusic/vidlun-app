@@ -66,7 +66,20 @@ export class HearUnheardEntries {
         vocabulary: this.vocabulary,
       });
 
-      await this.repository.save(merged(entry, answer));
+      /*
+       * Asked again after the wait: an analysis takes seconds, and an entry
+       * deleted while it ran came back whole when its answer was saved
+       * (security review, 2026-11-26). The person's latest version is the
+       * one the answer is laid under.
+       */
+      const current = await this.repository.findById(id);
+
+      if (current === null) {
+        await this.unheard.remove(id);
+        continue;
+      }
+
+      await this.repository.save(merged(current, answer));
       await this.unheard.remove(id);
       heard += 1;
     }

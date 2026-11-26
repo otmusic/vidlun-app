@@ -104,6 +104,8 @@ import { UuidGenerator } from '../infrastructure/system/UuidGenerator';
 import { CreateUnheardEntry } from '../application/use-cases/CreateUnheardEntry';
 import { HearUnheardEntries } from '../application/use-cases/HearUnheardEntries';
 import type { IUnheardEntries } from '../domain/ports/IUnheardEntries';
+import type { INarrativeMemory } from '../domain/ports/INarrativeMemory';
+import type { INarrativeGenerator } from '../domain/ports/INarrativeGenerator';
 import { AsyncStorageUnheardEntries } from '../infrastructure/persistence/AsyncStorageUnheardEntries';
 import { AsyncStorageBackupLedger } from '../infrastructure/persistence/AsyncStorageBackupLedger';
 import { MeasureVoices } from '../application/use-cases/MeasureVoices';
@@ -130,6 +132,8 @@ import {
 
 export interface Container {
   readonly transcribeTake: TranscribeTake;
+  /** Readies Vidlun's reading of a take while the take is still being spoken. */
+  readonly warmAnalysis: () => void;
   readonly createVoiceEntry: CreateVoiceEntry;
   readonly createTextEntry: CreateTextEntry;
   readonly confirmEntry: ConfirmEntry;
@@ -287,7 +291,8 @@ export function createContainer(dependencies: ContainerDependencies): Container 
   const proxyUrl = readProxyUrl();
   // One attested fetch for everything that talks to the proxy, so the token
   // is bought once and renewed in one place.
-  const proxyFetch = proxyUrl === null ? null : attestedFetch(new ProxyAuth(proxyUrl));
+  const proxyAuth = proxyUrl === null ? null : new ProxyAuth(proxyUrl);
+  const proxyFetch = proxyAuth === null ? null : attestedFetch(proxyAuth);
   const anthropic = new Anthropic({
     apiKey: proxyUrl === null ? readAnthropicApiKey() : 'attested',
     baseURL: proxyUrl ?? undefined,
@@ -330,6 +335,11 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     ? new TimedTranscriptionService(dependencies.transcription)
     : dependencies.transcription;
   const repository = new AsyncStorageMoodEntryRepository(AsyncStorage);
+  // One instance both writes the months and forgets one when an entry in it is deleted.
+  const narratives: INarrativeGenerator & INarrativeMemory =
+    __DEV__ && readFakeAnalysis()
+      ? Object.assign(new FakeNarrativeGenerator(), { forgetMonthOf: () => Promise.resolve() })
+      : new CachedNarrativeGenerator(new ClaudeNarrativeGenerator(anthropic.messages), AsyncStorage);
   // One for both kinds of notification, so each cancels only its own.
   const notificationCenter = expoNotificationCenter();
   // The version this build says it is, from app.json; the build number is not part of it.
@@ -350,11 +360,14 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     inUkraine: deviceInUkraine,
     haptics: new ExpoHaptics(),
     transcribeTake: new TranscribeTake(transcription),
+    warmAnalysis: () => {
+      void proxyAuth?.warm();
+    },
     createVoiceEntry: new CreateVoiceEntry(analyzer, vocabulary, clock, idGenerator),
     createTextEntry: new CreateTextEntry(analyzer, vocabulary, clock, idGenerator),
     confirmEntry: new ConfirmEntry(repository, revisionLog, clock, recordings),
     reviseEntry: new ReviseEntry(vocabulary),
-    deleteEntry: new DeleteEntry(repository, revisionLog, recordings, voiceReadings),
+    deleteEntry: new DeleteEntry(repository, revisionLog, recordings, voiceReadings, narratives),
     getHistory: new GetHistory(repository),
     findRecording: new FindRecording(recordings),
     compactRecordings: new CompactRecordings(recordings),
@@ -399,14 +412,7 @@ export function createContainer(dependencies: ContainerDependencies): Container 
     forgetMilestone: new ForgetMilestone(milestones),
     getWeekSummary: new GetWeekSummary(repository, clock),
     getWeekNeighbours: new GetWeekNeighbours(repository, clock),
-    getMonthSummary: new GetMonthSummary(
-      repository,
-      __DEV__ && readFakeAnalysis()
-        ? new FakeNarrativeGenerator()
-        : new CachedNarrativeGenerator(new ClaudeNarrativeGenerator(anthropic.messages), AsyncStorage),
-      clock,
-      describeVoice,
-    ),
+    getMonthSummary: new GetMonthSummary(repository, narratives, clock, describeVoice),
     getMonthVoice: new GetMonthVoice(repository, recordings, montage),
     composeMonthVoice: new ComposeMonthVoice(montage),
     getPastMonths: new GetPastMonths(repository, clock),

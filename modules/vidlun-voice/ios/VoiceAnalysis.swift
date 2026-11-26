@@ -73,11 +73,17 @@ public enum VoiceAnalysis {
     return spans(samples: decoded.samples, rate: decoded.rate)
   }
 
+  /// The longest stretch measured. A take stops at five minutes; a file from
+  /// a restored backup can be any length, and decoding an hour of 48 kHz
+  /// stereo at once needs over a gigabyte (native review, 2026-11-26).
+  static let longestSeconds: Double = 6 * 60
+
   /// The recording's first channel, decoded, with its sample rate.
   static func read(url: URL) throws -> (samples: [Float], rate: Double)? {
     let file = try AVAudioFile(forReading: url)
     let format = file.processingFormat
-    let length = AVAudioFrameCount(file.length)
+    let cap = AVAudioFramePosition(format.sampleRate * longestSeconds)
+    let length = AVAudioFrameCount(min(file.length, cap))
 
     guard length > 0,
       let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: length)

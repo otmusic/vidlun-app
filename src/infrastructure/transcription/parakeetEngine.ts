@@ -26,6 +26,7 @@ export function openParakeetEngine(modelUri: string): OpenSpeechEngine {
 
     return {
       transcribe: (filePath) => context.transcribe(toNativePath(filePath)),
+      release: () => context.release(),
     };
   };
 }

@@ -23,22 +23,44 @@ function entry(id: string): MoodEntry {
   });
 }
 
+/** Remembers which months it was asked to forget. */
+class ForgettingNarratives {
+  readonly forgotten: Date[] = [];
+
+  forgetMonthOf(day: Date): Promise<void> {
+    this.forgotten.push(day);
+
+    return Promise.resolve();
+  }
+}
+
 function setup() {
   const repository = new InMemoryMoodEntryRepository();
   const revisionLog = new RecordingRevisionLog();
   const recordings = new InMemoryRecordingStore();
   const voiceReadings = new AsyncStorageVoiceReadings(new InMemoryKeyValueStore());
+  const narratives = new ForgettingNarratives();
 
   return {
     repository,
     revisionLog,
     recordings,
     voiceReadings,
-    subject: new DeleteEntry(repository, revisionLog, recordings, voiceReadings),
+    narratives,
+    subject: new DeleteEntry(repository, revisionLog, recordings, voiceReadings, narratives),
   };
 }
 
 describe('DeleteEntry', () => {
+  it("forgets the narrative of the entry's month, which may retell what it said", async () => {
+    const { repository, narratives, subject } = setup();
+
+    await repository.save(entry('entry-1'));
+    await subject.execute('entry-1');
+
+    expect(narratives.forgotten).toEqual([CREATED_AT]);
+  });
+
   it('forgets what was measured in the voice along with the voice', async () => {
     const { repository, voiceReadings, subject } = setup();
     const reading = VoiceReading.from({ version: 1, speechMs: 4000, loudnessDb: -20 });

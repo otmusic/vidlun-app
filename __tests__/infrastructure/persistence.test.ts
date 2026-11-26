@@ -32,6 +32,16 @@ function entry(overrides: Partial<MoodEntryProps> = {}): MoodEntry {
 }
 
 describe('mood entry mapper', () => {
+  it('refuses an id that could name a file outside the recordings folder', () => {
+    for (const id of ['../other', 'a/b', 'a.b', '']) {
+      expect(() => fromStored({ ...toStored(entry()), id })).toThrow();
+    }
+
+    expect(fromStored({ ...toStored(entry()), id: '0b8f8a8e-3c1d-4b8e-9b9a-2f1e5c7d6a01' }).id).toBe(
+      '0b8f8a8e-3c1d-4b8e-9b9a-2f1e5c7d6a01',
+    );
+  });
+
   it('round-trips an entry through storage without losing a field', () => {
     const original = entry();
 

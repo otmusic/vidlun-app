@@ -1801,6 +1801,50 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++++++++++++++++++++++. The review's memory, privacy and battery fixes — 2026-11-26
+
+Owner's word: "роби інші правки по плану" (steps 2–4 of the review's plan,
+the ones that need no product decision).
+
+- **Memory.** One speech service for the app's life, the language read
+  through a ref: it was rebuilt, with the whole container, for every
+  language — at launch on any non-Ukrainian phone — which loaded a second
+  model the first never let go and ran every background job twice. The
+  model is released when the app goes to the background or memory runs
+  short (`ITranscriptionService.release`, waiting for a transcription under
+  way). Backup and restore read their chunks in autorelease pools (303 MB
+  peak for 300 MB of voice, 3 MB with them). The entry cache survives
+  writes and shares one read among concurrent callers.
+- **Privacy.** The month's narrative cache keeps a hash of the month, not
+  its transcripts; old rows are hashed when they match, weekly rows swept,
+  and deleting an entry forgets its month's narrative (`INarrativeMemory`).
+  Restored entry ids must be `[A-Za-z0-9_-]`. The relock counts the steady
+  clock too, so setting the time back does not open the journal. Sheets
+  hide under the lock door and are covered while the app is out of front
+  (`Cover`). A release build refuses the direct Anthropic key. A late
+  analysis no longer brings back an entry deleted while it ran.
+  `server/.wrangler/` is ignored and untracked.
+- **Battery.** The return work (late analyses, voice measuring, home)
+  runs only after a real return from the background, not after Face ID or
+  Control Center. Home under another screen stops its rings and the
+  year-ago voice; the rings run natively with their delay once (the second
+  one used to drift to a 5.1 s lap). The recorder stops polling while a
+  take is paused and gives the session back to playing after every take.
+  A second record tap while one is starting is ignored. Backup and voice
+  work run on their own utility queues, off the one the recorder prepares
+  on. Voice analysis decodes at most six minutes. Speech spans are
+  remembered per recording; an unreadable recording is left out until the
+  next launch; ◀◀ ▶▶ leave the lock screen with the module.
+- **Speed.** The flow's dependencies and `today` are stable between
+  renders; search keeps each transcript's folded words; the token and the
+  connection to the proxy are readied at the record tap; home reloads
+  after a restore; RevenueCat's web store (870 KB) is left out of the
+  phone bundle.
+- Still open, needing the owner's word: `vidlun://record` starting a take
+  from any app, the privacy policy's line on App Attest.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++++++++++++++++++++++. The proxy serves only the app, a day at a time; the card stops waiting — 2026-11-26
 
 Owner's word after the security and performance review: "починай з першого

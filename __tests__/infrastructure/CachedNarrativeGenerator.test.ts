@@ -110,3 +110,50 @@ describe('the month is written once', () => {
     await expect(subject.generate([entry('a')])).resolves.toContain('Calmer mornings');
   });
 });
+
+describe('what the cache keeps of the month', () => {
+  it('keeps a hash of the month, never its transcripts', async () => {
+    const { store, subject } = setup();
+
+    await subject.generate([entry('a', { cleanTranscript: 'The tooth hurt all week.' })]);
+
+    const row = await store.getItem('vidlun.narrative.month.2026-8');
+
+    expect(row).not.toBeNull();
+    expect(row).not.toContain('tooth');
+  });
+
+  it('keeps a month written before the hash, and drops its transcripts', async () => {
+    const { inner, store, subject } = setup();
+    const month = [entry('a', { cleanTranscript: 'The tooth hurt all week.' })];
+    const written = `v4\na|3|||The tooth hurt all week.`;
+
+    await store.setItem('vidlun.narrative.month.2026-8', JSON.stringify({ fingerprint: written, narrative: 'Kept.' }));
+
+    expect(await subject.generate(month)).toBe('Kept.');
+    expect(inner.calls).toBe(0);
+    expect(await store.getItem('vidlun.narrative.month.2026-8')).not.toContain('tooth');
+  });
+
+  it('forgets a month when asked, so it is written again', async () => {
+    const { inner, subject } = setup();
+    const month = [entry('a')];
+
+    await subject.generate(month);
+    await subject.forgetMonthOf(new Date(2026, 7, 3));
+    await subject.generate(month);
+
+    expect(inner.calls).toBe(2);
+  });
+
+  it('sweeps the weekly rows the month replaced', async () => {
+    const { store, subject } = setup();
+
+    await store.setItem('vidlun.narrative.week.2026-09-01', '{"fingerprint":"x","narrative":"Old."}');
+    await subject.generate([entry('a')]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(await store.getItem('vidlun.narrative.week.2026-09-01')).toBeNull();
+    expect(await store.getItem('vidlun.narrative.month.2026-8')).not.toBeNull();
+  });
+});

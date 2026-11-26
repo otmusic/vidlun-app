@@ -22,6 +22,8 @@ export interface SpeechEngine {
       readonly isAborted: boolean;
     }>;
   };
+  /** Frees the weights and whatever the GPU held for them. */
+  release(): Promise<void>;
 }
 
 /**
@@ -42,6 +44,10 @@ const NOISE_MARKER = /[[(][^\])]*[\])]/g;
 
 export class OnDeviceTranscriptionService implements ITranscriptionService {
   private engine: Promise<SpeechEngine> | null = null;
+  /** Transcriptions under way; the model is never let go under one. */
+  private inFlight = 0;
+  /** Asked to let go while a transcription ran; done when the last one ends. */
+  private releaseWhenIdle = false;
 
   constructor(
     private readonly open: OpenSpeechEngine,
@@ -63,9 +69,51 @@ export class OnDeviceTranscriptionService implements ITranscriptionService {
     }
   }
 
+  /**
+   * Lets the model go now, or as soon as the transcription under way ends.
+   * A model still opening is waited for and closed, so nothing is left behind.
+   */
+  async release(): Promise<void> {
+    if (this.inFlight > 0) {
+      this.releaseWhenIdle = true;
+
+      return;
+    }
+
+    this.releaseWhenIdle = false;
+
+    const opening = this.engine;
+
+    this.engine = null;
+
+    if (opening === null) {
+      return;
+    }
+
+    try {
+      await (await opening).release();
+    } catch {
+      // A model that never opened has nothing to free.
+    }
+  }
+
   async transcribe(recording: AudioRecording): Promise<TranscriptionResult> {
-    // Held, not re-opened: the model stays loaded between takes, which is what
-    // keeps the second entry of a session fast.
+    this.inFlight += 1;
+
+    try {
+      return await this.transcribeHeld(recording);
+    } finally {
+      this.inFlight -= 1;
+
+      if (this.inFlight === 0 && this.releaseWhenIdle) {
+        void this.release();
+      }
+    }
+  }
+
+  private async transcribeHeld(recording: AudioRecording): Promise<TranscriptionResult> {
+    // Held between takes while the app is in front, which is what keeps the
+    // second entry of a session fast; let go when it leaves (see release).
     this.engine ??= this.open();
 
     const engine = await this.engine;

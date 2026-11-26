@@ -15,6 +15,14 @@ class FakeEngine implements SpeechEngine {
 
     return { promise: Promise.resolve({ result: this.result, isAborted: this.isAborted }) };
   }
+
+  released = 0;
+
+  release(): Promise<void> {
+    this.released += 1;
+
+    return Promise.resolve();
+  }
 }
 
 function take(durationMs: number): AudioRecording {
@@ -101,5 +109,63 @@ describe('what the model returns', () => {
     await subject.transcribe(take(9_000));
 
     expect(engine.calls[0]?.path).toBe('file:///take.wav');
+  });
+});
+
+describe('letting the model go when the app leaves the front', () => {
+  it('frees an open model, and the next take opens it again', async () => {
+    const engines: FakeEngine[] = [];
+    const subject = new OnDeviceTranscriptionService(() => {
+      const engine = new FakeEngine();
+
+      engines.push(engine);
+
+      return Promise.resolve(engine);
+    }, () => 'uk');
+
+    await subject.prepare();
+    await subject.release();
+    await subject.transcribe(take(9_000));
+
+    expect(engines.map((engine) => engine.released)).toEqual([1, 0]);
+    expect(engines[1]?.calls).toHaveLength(1);
+  });
+
+  it('waits for a transcription under way before freeing the model', async () => {
+    let finish: (value: { result: string; isAborted: boolean }) => void = () => undefined;
+    const engine = new FakeEngine();
+
+    engine.transcribe = () => ({
+      promise: new Promise((resolve) => {
+        finish = resolve;
+      }),
+    });
+
+    const subject = new OnDeviceTranscriptionService(() => Promise.resolve(engine), () => 'uk');
+    const running = subject.transcribe(take(9_000));
+
+    await Promise.resolve();
+    await subject.release();
+
+    expect(engine.released).toBe(0);
+
+    finish({ result: 'words', isAborted: false });
+    await running;
+    await Promise.resolve();
+
+    expect(engine.released).toBe(1);
+  });
+
+  it('does nothing when no model was ever opened', async () => {
+    const opened: number[] = [];
+    const subject = new OnDeviceTranscriptionService(() => {
+      opened.push(1);
+
+      return Promise.resolve(new FakeEngine());
+    }, () => 'uk');
+
+    await subject.release();
+
+    expect(opened).toHaveLength(0);
   });
 });

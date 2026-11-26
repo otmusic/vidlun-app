@@ -23,6 +23,11 @@ export class ManualTranscriptionService implements ITranscriptionService {
     return Promise.resolve();
   }
 
+  /** Nothing is held. */
+  release(): Promise<void> {
+    return Promise.resolve();
+  }
+
   transcribe(): Promise<TranscriptionResult> {
     return Promise.resolve({ text: this.text, confidence: 1 });
   }

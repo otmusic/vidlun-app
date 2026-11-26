@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, AppState, Easing, Pressable, View } from 'react-native';
 import { Path, Rect, Svg } from 'react-native-svg';
 
@@ -459,7 +459,7 @@ function SideButton(props: {
  * and its ring: pause while the take listens, play while it is held. The ring
  * leaves it only while listening, so a glance tells the two apart.
  */
-function PauseButton(props: {
+const PauseButton = memo(function PauseButton(props: {
   readonly t: Translate;
   readonly room: Room;
   readonly paused: boolean;
@@ -539,14 +539,14 @@ function PauseButton(props: {
       </Pressable>
     </View>
   );
-}
+});
 
 /**
  * Two lines in one place, the second fading in as the first fades out. The
  * first stays in the layout and sizes the box; the second is laid over it,
  * across the whole box, so a longer one is still centred.
  */
-function CrossFade(props: {
+const CrossFade = memo(function CrossFade(props: {
   readonly swap: Animated.Value;
   readonly first: string;
   readonly second: string;
@@ -583,7 +583,7 @@ function CrossFade(props: {
       </Animated.View>
     </View>
   );
-}
+});
 
 /** 0 while the take listens, 1 while it is held; everything that changes with the pause follows it. */
 function useSwap(held: boolean, still: boolean): Animated.Value {
@@ -809,7 +809,7 @@ const FALL = 0.22;
  * their place. Under Reduce Motion the row stands still and only fades
  * between the two.
  */
-function Waveform(props: {
+const Waveform = memo(function Waveform(props: {
   readonly still: boolean;
   readonly live: boolean;
   readonly level: () => number;
@@ -919,7 +919,7 @@ function Waveform(props: {
       </Animated.View>
     </View>
   );
-}
+});
 
 /** The voice's loudness as an animated value, eased the way the bars should follow it. */
 function useVoice(level: () => number, deaf: boolean): Animated.Value {

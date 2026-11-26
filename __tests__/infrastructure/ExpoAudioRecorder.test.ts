@@ -539,3 +539,42 @@ describe('ExpoAudioRecorder and the take on disk', () => {
     await expect(second).rejects.toThrow(RecordingCancelledError);
   });
 });
+
+describe('what a take leaves running', () => {
+  it('stops watching the recorder while a take waits on pause, and watches again when it goes on', async () => {
+    const { scheduler, subject } = setup();
+
+    void subject.start();
+    await live();
+    expect(scheduler.watching).toBe(1);
+
+    await subject.pause();
+    expect(scheduler.watching).toBe(0);
+
+    await subject.resume();
+    expect(scheduler.watching).toBe(1);
+  });
+
+  it('gives the session back to playing once a take is stopped', async () => {
+    const { audioSession, subject } = setup();
+    const take = subject.start();
+
+    await live();
+    subject.stop();
+    await take;
+
+    expect(audioSession).toEqual(['enabled', 'disabled']);
+  });
+
+  it('gives it back when a take is let go, too', async () => {
+    const { audioSession, subject } = setup();
+    const take = subject.start().catch(() => undefined);
+
+    await live();
+    subject.cancel();
+    await take;
+    await live();
+
+    expect(audioSession[audioSession.length - 1]).toBe('disabled');
+  });
+});

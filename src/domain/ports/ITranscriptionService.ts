@@ -21,4 +21,12 @@ export interface ITranscriptionService {
    */
   prepare(): Promise<void>;
   transcribe(recording: AudioRecording): Promise<TranscriptionResult>;
+  /**
+   * Let go of whatever getting ready held. The model is a third of a gigabyte
+   * kept in memory, and a phone reclaims memory by killing the app that holds
+   * the most of it in the background (memory review, 2026-11-26), month
+   * playback included. Called when the app leaves the front; a transcription
+   * under way finishes first. The next `prepare` opens it again.
+   */
+  release(): Promise<void>;
 }

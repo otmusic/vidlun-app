@@ -297,6 +297,8 @@ export interface CaptureDependencies {
   readonly recorder: IAudioRecorder;
   readonly haptics: IHaptics;
   readonly transcribeTake: TranscribeTake;
+  /** Readies Vidlun's reading while the take is still being spoken; absent in tests. */
+  readonly warmAnalysis?: () => void;
   readonly createVoiceEntry: CreateVoiceEntry;
   readonly createTextEntry: CreateTextEntry;
   readonly confirmEntry: ConfirmEntry;
@@ -1386,6 +1388,8 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
     // Not awaited, and its failure is not ours: the take must start now, and
     // an unopened model only means the transcription pays for it later.
     void dependencies.transcribeTake.prepare();
+    // The same for the network: the token and the connection, readied while the person talks.
+    dependencies.warmAnalysis?.();
 
     dependencies.recorder
       .start()
@@ -1417,10 +1421,20 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       });
   }, [ask, dependencies, fail, hearVoice, letTakeGo]);
 
+  /*
+   * A take being asked for, from the tap to the recording screen. The
+   * microphone check in between is async, and a second tap or a record link
+   * landing in it started a second take over the first: its status poll was
+   * never stopped again (battery review, 2026-11-26).
+   */
+  const startingTake = useRef(false);
+
   const startRecording = useCallback(() => {
-    if (!withinDailyLimit()) {
+    if (!withinDailyLimit() || startingTake.current) {
       return;
     }
+
+    startingTake.current = true;
 
     backfillAt.current = null;
     dependencies.haptics.tap();
@@ -1453,6 +1467,9 @@ export function useCaptureFlow(dependencies: CaptureDependencies): CaptureFlow {
       })
       .catch((error: unknown) => {
         fail(error, { kind: 'idle' });
+      })
+      .finally(() => {
+        startingTake.current = false;
       });
   }, [dependencies, fail, record]);
 

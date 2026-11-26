@@ -23,13 +23,16 @@ const RING_OPACITY = 0.34;
 export function RecordButton(props: {
   readonly accessibilityLabel: string;
   readonly onPress: () => void;
+  /** Another screen, the lock door or the affirmation is over home. */
+  readonly covered?: boolean;
 }): React.JSX.Element {
   const theme = useTheme();
 
   return (
     <View style={{ width: FIELD, height: FIELD, alignItems: 'center', justifyContent: 'center' }}>
-      <Ring delay={0} still={theme.reduceMotion} />
-      <Ring delay={RING_MS / 2} still={theme.reduceMotion} />
+      {/* Still while home is under another screen: nobody sees them travel (battery review, 2026-11-26). */}
+      <Ring delay={0} still={theme.reduceMotion || props.covered === true} />
+      <Ring delay={RING_MS / 2} still={theme.reduceMotion || props.covered === true} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={props.accessibilityLabel}
@@ -75,17 +78,23 @@ function Ring(props: { readonly delay: number; readonly still: boolean }): React
       return;
     }
 
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.delay(props.delay),
+    /*
+     * The delay once, then a loop of the ring alone. With the delay inside
+     * the loop it came round every time: the second ring took 5.1 s a lap
+     * against the first's 3.4 and they drifted apart, and a loop holding a
+     * sequence is restarted from JS each lap instead of running natively.
+     */
+    const loop = Animated.sequence([
+      Animated.delay(props.delay),
+      Animated.loop(
         Animated.timing(progress, {
           toValue: 1,
           duration: RING_MS,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
-      ]),
-    );
+      ),
+    ]);
 
     progress.setValue(0);
     loop.start();

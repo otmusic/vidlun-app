@@ -17,6 +17,13 @@ const BATCH = 40;
  */
 export class MeasureVoices {
   private running: Promise<number> | null = null;
+  /*
+   * Recordings that could not be read, left out until the next launch. One
+   * that throws was retried at every return to the front, and forty of them
+   * at the head of the line held back every recording after them (battery
+   * review, 2026-11-26).
+   */
+  private readonly unreadable = new Set<string>();
 
   constructor(
     private readonly recordings: IRecordingStore,
@@ -41,7 +48,7 @@ export class MeasureVoices {
       .filter((id) => {
         const reading = measured.get(id);
 
-        return reading === undefined || reading.stale;
+        return (reading === undefined || reading.stale) && !this.unreadable.has(id);
       })
       .slice(0, this.batch);
     let done = 0;
@@ -60,11 +67,17 @@ export class MeasureVoices {
         reading = await this.analyzer.analyze(uri);
       } catch {
         // One unreadable file costs its own reading, not the others'.
+        this.unreadable.add(id);
         continue;
       }
 
       if (reading === null) {
         return done;
+      }
+
+      // Deleted while it was measured: what was measured in the voice goes with the voice.
+      if ((await this.recordings.find(id)) === null) {
+        continue;
       }
 
       await this.readings.save(id, reading);

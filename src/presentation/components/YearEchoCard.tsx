@@ -25,6 +25,8 @@ export function YearEchoCard(props: {
   readonly locale: Locale;
   readonly t: Translate;
   readonly onOpen: (entry: MoodEntry) => void;
+  /** Home is under another screen: the voice stops. */
+  readonly covered?: boolean;
 }): React.JSX.Element {
   const theme = useTheme();
   const { entry } = props.echo;
@@ -88,7 +90,7 @@ export function YearEchoCard(props: {
           </AppText>
         </View>
       ) : (
-        <Playback uri={props.echo.recordingUri} t={props.t} variant="inline" />
+        <Playback uri={props.echo.recordingUri} t={props.t} variant="inline" covered={props.covered} />
       )}
     </View>
   );

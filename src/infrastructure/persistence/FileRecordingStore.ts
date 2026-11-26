@@ -1,6 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
 import type { IRecordingStore } from '../../domain/ports/IRecordingStore';
+import { CorruptStoredEntryError, SAFE_ID } from './moodEntryMapper';
 
 /**
  * Documents, not cache. iOS empties the cache under storage pressure, and a
@@ -189,6 +190,11 @@ export class FileRecordingStore implements IRecordingStore {
   }
 
   private fileFor(entryId: string, extension: string): File {
+    // The entry's id is the file's name; one that could leave the folder names no file of ours.
+    if (!SAFE_ID.test(entryId)) {
+      throw new CorruptStoredEntryError('id');
+    }
+
     return new File(this.directory, `${entryId}${extension}`);
   }
 

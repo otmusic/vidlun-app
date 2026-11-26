@@ -3,6 +3,9 @@ import { DomainError } from '../../domain/errors/DomainError';
 import { Confidence } from '../../domain/value-objects/Confidence';
 import { MoodScore } from '../../domain/value-objects/MoodScore';
 
+/** Letters, digits, `_` and `-`: what a UUID or a test's id is made of, and nothing a path can climb with. */
+export const SAFE_ID = /^[A-Za-z0-9_-]+$/u;
+
 export class CorruptStoredEntryError extends DomainError {
   constructor(field: string) {
     super(`Stored entry is unreadable: "${field}" is missing or the wrong type.`);
@@ -56,14 +59,25 @@ export function toStored(entry: MoodEntry): StoredMoodEntry {
  */
 export function fromStored(raw: unknown): MoodEntry {
   const record = asRecord(raw);
+  const id = readString(record, 'id');
   const createdAt = new Date(readString(record, 'createdAt'));
+
+  /*
+   * An id names a file: the entry's recording is `<id>.m4a`. One from a
+   * restored backup is the backup's word, and "../" in it would point the
+   * delete, the player or the backup at another file (security review,
+   * 2026-11-26). Every id the app makes is a UUID.
+   */
+  if (!SAFE_ID.test(id)) {
+    throw new CorruptStoredEntryError('id');
+  }
 
   if (Number.isNaN(createdAt.getTime())) {
     throw new CorruptStoredEntryError('createdAt');
   }
 
   return MoodEntry.create({
-    id: readString(record, 'id'),
+    id,
     createdAt,
     source: readOneOf(record, 'source', SOURCES),
     rawTranscript: readString(record, 'rawTranscript'),

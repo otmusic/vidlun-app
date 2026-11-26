@@ -211,6 +211,26 @@ describe('hearing the entries Vidlun could not listen to', () => {
     expect(await unheard.ids()).toEqual([]);
   });
 
+  it('does not bring back an entry deleted while its answer was on the way', async () => {
+    const repository = new InMemoryMoodEntryRepository();
+    const unheard = new InMemoryUnheard(['e1']);
+    const deletingAnalyzer: IReflectionAnalyzer = {
+      analyze: async () => {
+        await repository.delete('e1');
+
+        return heard;
+      },
+    };
+
+    await repository.save(unheardEntry('e1'));
+
+    const count = await new HearUnheardEntries(unheard, repository, deletingAnalyzer, vocabulary).execute();
+
+    expect(count).toBe(0);
+    expect(await repository.findById('e1')).toBeNull();
+    expect(await unheard.ids()).toEqual([]);
+  });
+
   it('runs once at a time: a second call joins the first', async () => {
     const repository = new InMemoryMoodEntryRepository();
     const unheard = new InMemoryUnheard(['e1']);

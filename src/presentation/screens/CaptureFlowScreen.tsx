@@ -170,6 +170,7 @@ export function CaptureFlowScreen(props: CaptureFlowScreenProps): React.JSX.Elem
                   setWritingFeedback(true);
                 }}
                 onOpenAffirmation={setAffirmationFrom}
+                covered={!top || affirmationFrom !== null}
               />
             </SwipeBack>
           </Layer>
@@ -402,6 +403,8 @@ function Stage(
   props: CaptureFlowScreenProps & {
     readonly onWriteFeedback: () => void;
     readonly onOpenAffirmation: (origin: BloomOrigin) => void;
+    /** Drawn under the screen on top, or under the affirmation. */
+    readonly covered: boolean;
   },
 ): React.JSX.Element {
   const { flow, t } = props;
@@ -723,6 +726,7 @@ function Stage(
     case 'idle':
       return (
         <HomeScreen
+          covered={props.covered}
           home={flow.home}
           monthCard={
             flow.monthCard !== null && monthKey(flow.monthCard) !== props.settings.monthCardClosed

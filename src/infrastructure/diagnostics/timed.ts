@@ -56,6 +56,10 @@ export class TimedTranscriptionService implements ITranscriptionService {
     return timed('open model', this.report, () => this.inner.prepare());
   }
 
+  release(): Promise<void> {
+    return this.inner.release();
+  }
+
   transcribe(recording: AudioRecording): Promise<TranscriptionResult> {
     return timed(
       `transcribe (${Math.round(recording.durationMs / 100) / 10}s of audio)`,

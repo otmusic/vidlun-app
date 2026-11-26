@@ -1,4 +1,5 @@
 import type { IMoodEntryRepository } from '../../domain/ports/IMoodEntryRepository';
+import type { INarrativeMemory } from '../../domain/ports/INarrativeMemory';
 import type { IRecordingStore } from '../../domain/ports/IRecordingStore';
 import type { IRevisionLog } from '../../domain/ports/IRevisionLog';
 import type { IVoiceReadings } from '../../domain/ports/IVoiceReadings';
@@ -31,6 +32,7 @@ export class DeleteEntry {
     private readonly revisionLog: IRevisionLog,
     private readonly recordings: IRecordingStore,
     private readonly voiceReadings: IVoiceReadings,
+    private readonly narratives: INarrativeMemory,
   ) {}
 
   async execute(id: string): Promise<DeletedEntry> {
@@ -48,6 +50,11 @@ export class DeleteEntry {
 
     // What was measured in the voice goes with the voice.
     await this.voiceReadings.forget(id);
+
+    // So does what the month's narrative retold of it; an undo lets the month be written again.
+    if (entry !== null) {
+      await this.narratives.forgetMonthOf(entry.createdAt);
+    }
 
     let open = true;
 

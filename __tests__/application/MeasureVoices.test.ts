@@ -117,3 +117,20 @@ describe('measuring the voice in kept recordings', () => {
     expect(analyzer.asked).toHaveLength(1);
   });
 });
+
+describe('a recording that cannot be read', () => {
+  it('is not tried again on every pass, and does not hold back the ones after it', async () => {
+    const { recordings, readings, analyzer, subject } = setup(1);
+
+    analyzer.unreadable.add('file:///broken.wav');
+    await recordings.keep('broken', 'file:///broken.wav');
+    await recordings.keep('fine', 'file:///fine.wav');
+
+    await subject.execute();
+    await subject.execute();
+    await subject.execute();
+
+    expect(analyzer.asked.filter((uri) => uri === 'file:///broken.wav')).toHaveLength(1);
+    expect((await readings.all()).has('fine')).toBe(true);
+  });
+});

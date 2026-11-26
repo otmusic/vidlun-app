@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 
 import type { IScreenLock, LockMethod, UnlockPrompt } from '@/domain/ports/IScreenLock';
 
-import { relocksAfter } from '../screens/lockRules';
+import { relocksAway } from '../screens/lockRules';
 
 export interface JournalLock {
   /** Whether the door is open. Always true while the lock is off. */
@@ -57,17 +57,17 @@ export function useJournalLock(input: {
    * again the moment someone cancelled.
    */
   useEffect(() => {
-    let leftAt: number | null = null;
+    let leftAt: { readonly wall: number; readonly steady: number } | null = null;
 
     const watch = AppState.addEventListener('change', (state) => {
       if (state === 'background') {
-        leftAt = now();
+        leftAt = { wall: now(), steady: performance.now() };
 
         return;
       }
 
       if (state === 'active' && leftAt !== null) {
-        if (relocksAfter(now() - leftAt)) {
+        if (relocksAway({ wallMs: now() - leftAt.wall, steadyMs: performance.now() - leftAt.steady })) {
           setOpen(false);
         }
 

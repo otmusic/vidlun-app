@@ -29,9 +29,9 @@ export class SearchQuery {
   }
 
   matches(text: string): boolean {
-    const words = wordsOf(text);
+    const words = foldedWordsOf(text);
 
-    return this.words.every((typed) => words.some((word) => word.text.startsWith(typed)));
+    return this.words.every((typed) => words.some((word) => word.startsWith(typed)));
   }
 
   /** Every word of the text one of the typed words begins, in the order they come. */
@@ -54,6 +54,35 @@ interface Word extends TextMatch {
 function fold(text: string): string {
   // One character in, one out, so places in the folded text are places in the original.
   return text.toLowerCase().replace(/[\u2019\u02bc`]/g, "'").replace(/\u0451/g, '\u0435');
+}
+
+/**
+ * The folded words of each text searched lately. The journal is searched a
+ * letter at a time, and each letter folded and split every transcript again:
+ * a year of entries is some two hundred thousand characters and tens of
+ * thousands of small objects per keystroke (performance review, 2026-11-26).
+ * A transcript does not change while it is being searched, so its words are
+ * kept, a few thousand texts at most.
+ */
+const FOLDED_KEPT = 4_000;
+const foldedWords = new Map<string, readonly string[]>();
+
+function foldedWordsOf(text: string): readonly string[] {
+  const known = foldedWords.get(text);
+
+  if (known !== undefined) {
+    return known;
+  }
+
+  const words = wordsOf(text).map((word) => word.text);
+
+  if (foldedWords.size >= FOLDED_KEPT) {
+    foldedWords.clear();
+  }
+
+  foldedWords.set(text, words);
+
+  return words;
 }
 
 function wordsOf(text: string): readonly Word[] {

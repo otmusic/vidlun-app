@@ -154,10 +154,23 @@ enum ZipFolder {
     var crc: UInt32 = 0xFFFF_FFFF
     var size: UInt64 = 0
 
-    while let data = try input.read(upToCount: chunk), !data.isEmpty {
+    /*
+     * Each chunk in a pool of its own. `read(upToCount:)` hands back
+     * autoreleased data, and the whole backup runs in one block on Expo's
+     * queue, so without a pool every megabyte read stayed in memory until
+     * the backup ended: 303 MB at the peak for 300 MB of voice, 3 MB with
+     * the pool (native review, 2026-11-26).
+     */
+    while try autoreleasepool(invoking: { () throws -> Bool in
+      guard let data = try input.read(upToCount: chunk), !data.isEmpty else {
+        return false
+      }
+
       crc = running(crc, over: data)
       size += UInt64(data.count)
-    }
+
+      return true
+    }) {}
 
     return (crc ^ 0xFFFF_FFFF, size)
   }
@@ -177,9 +190,16 @@ enum ZipFolder {
     let input = try FileHandle(forReadingFrom: url)
     defer { try? input.close() }
 
-    while let data = try input.read(upToCount: chunk), !data.isEmpty {
+    // A pool per chunk, as in `checksum`.
+    while try autoreleasepool(invoking: { () throws -> Bool in
+      guard let data = try input.read(upToCount: chunk), !data.isEmpty else {
+        return false
+      }
+
       try out.write(contentsOf: data)
-    }
+
+      return true
+    }) {}
   }
 
   /// MS-DOS time and date, in the phone's own time zone, as unzip tools expect.

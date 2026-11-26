@@ -28,6 +28,11 @@ export class TranscribeTake {
     await this.transcription.prepare();
   }
 
+  /** The app left the front: the model goes until the next take. */
+  async release(): Promise<void> {
+    await this.transcription.release();
+  }
+
   async execute(recording: AudioRecording): Promise<Spoken> {
     const result = await this.transcription.transcribe(recording);
     const text = result.text.trim();

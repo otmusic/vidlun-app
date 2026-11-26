@@ -71,7 +71,6 @@ export const DEFAULT_RECORDING_LIMITS: RecordingLimits = {
 interface Take {
   readonly resolve: (recording: AudioRecording) => void;
   readonly reject: (reason: Error) => void;
-  readonly stopWatching: () => void;
 }
 
 /**
@@ -110,6 +109,8 @@ export class ExpoAudioRecorder implements IAudioRecorder {
   private heard = false;
   /** The system stopped the recorder under a take that was listening. */
   private heldBySystem = false;
+  /** Stops the status poll; null while nothing is being watched. */
+  private unwatch: (() => void) | null = null;
 
   constructor(
     private readonly recorder: NativeRecorder,
@@ -130,19 +131,20 @@ export class ExpoAudioRecorder implements IAudioRecorder {
       await this.recorder.prepareToRecordAsync();
 
       this.recorder.record();
+    } catch (failure) {
+      // A take that never began leaves the session as it found it.
+      await this.leaveRecordingMode();
+      throw failure;
     } finally {
       this.starting = false;
     }
 
     this.beginListening();
     this.screen.keepOn();
+    this.watch();
 
     return new Promise<AudioRecording>((resolve, reject) => {
-      const stopWatching = this.scheduler.every(this.options.pollIntervalMs, () => {
-        this.onTick();
-      });
-
-      this.take = { resolve, reject, stopWatching };
+      this.take = { resolve, reject };
     });
   }
 
@@ -165,6 +167,8 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     this.recorder.pause();
     // A paused take may wait a long while for its answer; the phone may sleep meanwhile.
     this.screen.letSleep();
+    // Nothing to watch while it waits: the poll asked the recorder six times a second for nothing.
+    this.stopWatch();
     await this.setRecordingMode(false);
   }
 
@@ -177,6 +181,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
     this.recorder.record();
     this.beginListening();
     this.screen.keepOn();
+    this.watch();
   }
 
   cancel(): void {
@@ -188,6 +193,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
 
     void this.recorder.stop().finally(() => {
       this.discard(this.recorder.uri);
+      void this.leaveRecordingMode();
       take.reject(new RecordingCancelledError());
     });
   }
@@ -268,6 +274,7 @@ export class ExpoAudioRecorder implements IAudioRecorder {
       const durationMs = this.recorder.getStatus().durationMillis;
 
       await this.recorder.stop();
+      await this.leaveRecordingMode();
 
       const uri = this.recorder.uri;
 
@@ -293,9 +300,36 @@ export class ExpoAudioRecorder implements IAudioRecorder {
 
     this.take = null;
     this.stopListening();
-    take.stopWatching();
+    this.stopWatch();
     this.screen.letSleep();
 
     return take;
+  }
+
+  private watch(): void {
+    this.stopWatch();
+    this.unwatch = this.scheduler.every(this.options.pollIntervalMs, () => {
+      this.onTick();
+    });
+  }
+
+  private stopWatch(): void {
+    this.unwatch?.();
+    this.unwatch = null;
+  }
+
+  /*
+   * The session goes back to playing once a take is over. expo-audio stops a
+   * recorder without leaving the record-and-play category, so after a take
+   * the next playback ran in it — the call profile on Bluetooth headphones —
+   * and other apps' sound stayed interrupted (battery review, 2026-11-26).
+   * Its failure costs nothing the take needs.
+   */
+  private async leaveRecordingMode(): Promise<void> {
+    try {
+      await this.setRecordingMode(false);
+    } catch {
+      // The session stays as it was; the next take sets it again.
+    }
   }
 }

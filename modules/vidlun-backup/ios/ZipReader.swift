@@ -218,15 +218,18 @@ enum ZipReader {
   private static func stream(_ count: UInt64, from input: FileHandle, into sink: (Data) throws -> Void) throws {
     var left = count
 
+    // A pool per chunk, or a restore holds the whole archive it has read until it ends.
     while left > 0 {
-      let data = try input.read(upToCount: Int(min(left, UInt64(chunk)))) ?? Data()
+      try autoreleasepool {
+        let data = try input.read(upToCount: Int(min(left, UInt64(chunk)))) ?? Data()
 
-      guard !data.isEmpty else {
-        throw BackupFailure.stream("zip truncated")
+        guard !data.isEmpty else {
+          throw BackupFailure.stream("zip truncated")
+        }
+
+        try sink(data)
+        left -= UInt64(data.count)
       }
-
-      try sink(data)
-      left -= UInt64(data.count)
     }
   }
 

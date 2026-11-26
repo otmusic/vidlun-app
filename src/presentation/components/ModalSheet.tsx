@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, Modal, Pressable, View, useWindowDimensions } from 'react-native';
 
 import { useColumnSurface } from '../hooks/useColumn';
+import { useCover } from './Cover';
 import { useTheme } from '../theme/ThemeProvider';
 import { TapTarget } from './Button';
 import { Icon, ICON_SIZE } from './Icon';
@@ -28,6 +29,7 @@ export function ModalSheet(props: {
   readonly tall?: boolean;
 }): React.JSX.Element {
   const theme = useTheme();
+  const cover = useCover();
   // The card is the column on a wide window, not a strip across all of it.
   const sides = useColumnSurface(20);
   const { height } = useWindowDimensions();
@@ -56,7 +58,12 @@ export function ModalSheet(props: {
   }, [props.open, rise, theme.reduceMotion]);
 
   return (
-    <Modal visible={props.open} transparent animationType="fade" onRequestClose={props.onClose}>
+    /*
+     * Gone while the door is up, which only a minute or more away puts up;
+     * covered, not closed, while the app is out of front, so a Face ID prompt
+     * or Control Center does not cost what was picked in it.
+     */
+    <Modal visible={props.open && !cover.shut} transparent animationType="fade" onRequestClose={props.onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
         <Pressable
           accessibilityRole="button"
@@ -93,6 +100,19 @@ export function ModalSheet(props: {
         >
           {props.children}
         </Animated.View>
+        {cover.away ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: theme.palette.canvas,
+            }}
+          />
+        ) : null}
       </View>
     </Modal>
   );

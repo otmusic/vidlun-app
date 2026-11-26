@@ -37,3 +37,20 @@ describe('NativeSpeechTimeline', () => {
     expect(await new NativeSpeechTimeline(answering({ spans: [] })).spans('file:///take.m4a')).toBeNull();
   });
 });
+
+describe('a recording read once', () => {
+  it('remembers the spans of a recording instead of decoding it again', async () => {
+    let reads = 0;
+    const timeline = new NativeSpeechTimeline(() => {
+      reads += 1;
+
+      return Promise.resolve([[0, 1200]]);
+    });
+
+    await timeline.spans('file:///a.m4a');
+    const again = await timeline.spans('file:///a.m4a');
+
+    expect(again).toEqual([{ fromMs: 0, toMs: 1200 }]);
+    expect(reads).toBe(1);
+  });
+});

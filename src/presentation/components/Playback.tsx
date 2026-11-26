@@ -58,6 +58,12 @@ export function Playback(props: {
   readonly startAtMs?: number | null;
   /** A quiet line right under the controls, saying where the player stands. */
   readonly caption?: string;
+  /**
+   * Another screen is over this one. The player stops rather than sounding
+   * from a page nobody sees (battery review, 2026-11-26: the year-ago voice
+   * on home went on under the entry opened from it).
+   */
+  readonly covered?: boolean;
 }): React.JSX.Element {
   const theme = useTheme();
   const inline = props.variant === 'inline';
@@ -65,7 +71,13 @@ export function Playback(props: {
   const status = useAudioPlayerStatus(player);
   const played = status.duration > 0 ? status.currentTime / status.duration : 0;
   const placedAt = useRef<number | null>(null);
-  const { startAtMs } = props;
+  const { startAtMs, covered } = props;
+
+  useEffect(() => {
+    if (covered === true) {
+      player.pause();
+    }
+  }, [covered, player]);
 
   /*
    * Once the file is loaded, and once per place: a later play from the

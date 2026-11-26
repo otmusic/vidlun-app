@@ -11,6 +11,10 @@ public class VoiceModule: Module {
   /// The lock screen's previous and next buttons while a month plays, and their targets.
   private var trackTargets: [(MPRemoteCommand, Any)] = []
 
+  /// Off Expo's shared queue, where the recorder is prepared: measuring a
+  /// take must never hold up the next record tap (native review, 2026-11-26).
+  private let work = DispatchQueue(label: "app.vidlun.voice", qos: .utility)
+
   public func definition() -> ModuleDefinition {
     Name("VidlunVoice")
 
@@ -24,7 +28,7 @@ public class VoiceModule: Module {
         throw Exception(name: "BadRecordingUri", description: "Not a file: \(uri)")
       }
       return try VoiceAnalysis.analyze(url: url).dictionary
-    }
+    }.runOnQueue(work)
 
     /// Where the speech is in the recording at `uri`, as [from, to] pairs in
     /// milliseconds, for finding a searched word in it; runs off the main thread.
@@ -34,7 +38,7 @@ public class VoiceModule: Module {
         throw Exception(name: "BadRecordingUri", description: "Not a file: \(uri)")
       }
       return try VoiceAnalysis.speechSpans(url: url)
-    }
+    }.runOnQueue(work)
 
     /// Each recording's length in milliseconds, -1 for one that cannot be read.
     AsyncFunction("montageLengths") { (uris: [String]) async -> [Double] in
@@ -62,9 +66,23 @@ public class VoiceModule: Module {
       }
     }
 
+    /*
+     * The targets are taken now, not on the main queue later: by then the
+     * module is gone, a weak self is nil, and ◀◀ ▶▶ stayed on the lock
+     * screen with nothing behind them (native review, 2026-11-26).
+     */
     OnDestroy {
-      DispatchQueue.main.async { [weak self] in
-        self?.setTrackCommands(false)
+      let targets = self.trackTargets
+      self.trackTargets = []
+
+      DispatchQueue.main.async {
+        let center = MPRemoteCommandCenter.shared()
+
+        for (command, target) in targets {
+          command.removeTarget(target)
+        }
+        center.previousTrackCommand.isEnabled = false
+        center.nextTrackCommand.isEnabled = false
       }
     }
   }

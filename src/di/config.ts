@@ -14,6 +14,16 @@ declare const process: { readonly env: Readonly<Record<string, string | undefine
  * proxy is configured, which is the shape of a development machine.
  */
 export function readAnthropicApiKey(): string {
+  /*
+   * Development only. Anything EXPO_PUBLIC_ is written into the bundle, and
+   * a published build without the proxy URL would have carried the real key
+   * to every phone (security review, 2026-11-26). Refused before the read,
+   * so a release build has no reason to keep the value at all.
+   */
+  if (!__DEV__) {
+    throw new Error('A published build talks to Anthropic through the proxy. Set EXPO_PUBLIC_API_PROXY_URL.');
+  }
+
   const key = process.env['EXPO_PUBLIC_ANTHROPIC_API_KEY'];
 
   if (key === undefined || key.length === 0) {

@@ -23,6 +23,7 @@ export function openSpeechEngine(modelUri: string): OpenSpeechEngine {
 
     return {
       transcribe: (filePath, options) => context.transcribe(toNativePath(filePath), options),
+      release: () => context.release(),
     };
   };
 }
