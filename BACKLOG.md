@@ -1801,6 +1801,44 @@ as a whole no longer fades. Reduced motion turns all of it off.
 
 ---
 
+## 3ψψψ++++++++++++++++++++++++++++++++++++++++. A pause button on the recording screen — 2026-11-26
+
+Owner's word on the canvas page «Пауза в записі», variant A: three buttons
+in one row at the bottom, "ліворуч червона кнопка з хрестиком вихід, по
+середині кнопка пауза і плей, праворуч кнопка завершення запису"; done pale
+green like leave's pale red; "роби в коді варіант А, світлий для світлої
+теми".
+
+- **The row** (`RecordingScreen`): «Вийти» on the left, a pale red disc with
+  an X, asks «Вийти із запису?» as the corner X did (the X is gone); the
+  middle button pauses and goes on («Пауза» / «Продовжити»); «Готово» on the
+  right, a pale green disc with a tick, ends the take as the stop button did,
+  held or not. Each is named underneath.
+- **Held**: the label reads «На паузі», the clock stands and breathes, the
+  bars lie down as a flat dotted line, the hint becomes «Продовж, коли
+  захочеш.». Going on writes into the same recording (the recorder's own
+  pause and resume, already there for calls). The free minute and the paid
+  five count only the time spent talking.
+- **Calls and leaving the app** hold the take and ask, as before. A take the
+  person held themselves is left as it is: coming back to the app asks
+  nothing.
+- **The room follows the theme**: a paper card with a line round it in the
+  light theme, the dark panel at night. In the light room the middle button
+  is ink with a lime glyph and the lime bars are darker (`#9DC41A`), because
+  lime on paper all but vanishes.
+- **Motion**, timed by the design's prototypes: the bars rise from the
+  middle out, 22 ms apart, a touch past their height; they sink from the
+  ends in over 0.3 s when held, and the flat line comes in after them. A dot
+  blinks by «Записую» and a ring leaves the middle button every 2.8 s while
+  the take listens. The glyph turns between pause and play, captions and
+  hint cross-fade. Under Reduce Motion nothing blinks or travels; the states
+  only fade.
+- Copy: «На паузі», «Пауза», «Продовжити», «Готово», «Продовж, коли
+  захочеш.» (en: Paused, Pause, Resume, Done, "Go on whenever you like.").
+  `recording.stop` is gone with the stop button.
+
+---
+
 ## 3ψψψ+++++++++++++++++++++++++++++++++++++++. The journal filtered by topic — 2026-11-24
 
 Owner's word on the canvas page «Щоденник: фільтр за темами»: "бери А, і
