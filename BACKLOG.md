@@ -1840,6 +1840,19 @@ the ones that need no product decision).
   connection to the proxy are readied at the record tap; home reloads
   after a restore; RevenueCat's web store (870 KB) is left out of the
   phone bundle.
+- **iCloud backup carries the whole journal** (owner's word the same day:
+  "додати в копію й тексти, щоб відновлення з iCloud повертало щоденник
+  цілим, і виправити текст запиту на мікрофон"). AsyncStorage excluded
+  itself from backups by default, so a phone restored from iCloud got the
+  voices back without their entries; `RCTAsyncStorageExcludeFromBackup` is
+  false now, which also lifts the mark from the folder already there. The
+  App Attest key id travels too and fails on the new phone, where the app
+  registers a fresh one, as it does when the proxy forgets a key. The
+  microphone text no longer says the recording is "never uploaded" (the
+  fallback in app.json), and the Ukrainian one lost its "міг/могла"; the
+  privacy policy and Me already said entries and audio are in the backup.
+  The generated `ios/` plist and strings were edited to match, so a build
+  needs no prebuild for it.
 - Still open, needing the owner's word: `vidlun://record` starting a take
   from any app, the privacy policy's line on App Attest.
 

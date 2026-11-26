@@ -14,7 +14,8 @@
       },
       "infoPlist": {
         "NSFaceIDUsageDescription": "Face ID opens Vidlun when the journal lock is on, so nobody else holding your phone can read your entries.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "RCTAsyncStorageExcludeFromBackup": false
       },
       "buildNumber": "73",
       "appleTeamId": "M3K99W5FFQ"
@@ -36,7 +37,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Vidlun records your voice only while you speak a journal entry: tap the microphone, say how your day went, and the words are recognised on your device. The recording stays in your journal so you can listen to it again. It is never uploaded.",
+          "microphonePermission": "Vidlun uses the microphone only while you’re recording. Your words are recognized on your device, and the recording stays in your journal so you can listen to it again.",
           "enableBackgroundPlayback": true
         }
       ],

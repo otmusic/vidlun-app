@@ -1,4 +1,4 @@
 {
-  "NSMicrophoneUsageDescription": "Vidlun uses the microphone only while you’re recording. Your words are recognized on your device and saved in your journal so you can come back to them later.",
+  "NSMicrophoneUsageDescription": "Vidlun uses the microphone only while you’re recording. Your words are recognized on your device, and the recording stays in your journal so you can listen to it again.",
   "NSFaceIDUsageDescription": "Face ID opens Vidlun when the journal lock is on, so no one else holding your device can read your entries."
 }
